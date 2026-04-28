@@ -1,0 +1,6 @@
+{
+  "project": {
+    "name": "yologram-v1",
+    "type": "monorepo"
+  }
+}
