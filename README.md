@@ -4,13 +4,16 @@
 
 ## 구조
 
-- api/: Spring Boot (MVC/WebFlux 미정)
-- web/: React
+- backend/: Spring Boot MVC
+- frontend/: React
+- infra/: 인프라 (Terraform)
+- .github/workflows/: GitHub Actions
 
-## 배포
+## 인프라
 
-- web: S3
-- api: AWS App Runner (고려 중)
+- IaC: Terraform (루트 레벨 관리)
+- web: S3 + CloudFront 또는 Amplify (미정)
+- api: App Runner (고려 중)
 
 ## CI/CD
 
