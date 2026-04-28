@@ -33,7 +33,7 @@ terraform destroy           # 전체 삭제
 
 ## Service
 
-- n8n - 워크플로우 자동화 (Lightsail Instance, $5/mo)
+- n8n - 워크플로우 자동화 (Lightsail Instance, Docker Compose, Caddy + HTTPS, $5/mo)
 - openclaw
 
 ## Global

@@ -22,12 +22,12 @@ yologger AWS 인프라 관리. Terraform으로 서비스별/글로벌 리소스�
 
 ## n8n (terraform/service/n8n/)
 
-- AWS Lightsail Instance (Amazon Linux 2023)
-- 인스턴스: micro_3_0 (1GB RAM, 2 vCPU, 40GB SSD, $5/mo)
-- n8n DB: 내장 SQLite
-- 네트워크: 고정 IP, ALB 불필요, Route 53 도메인 연결 가능
-- 보안: 자체 방화벽 (포트/IP 제한 가능), Geo 차단은 CloudFront + WAF 필요
-- CPU burstable, 오토스케일링 없음, 롤링 업데이트 미지원
+- AWS Lightsail Instance (Amazon Linux 2023, micro_3_0, $5/mo)
+- Docker Compose로 n8n + Caddy 구성 (user_data로 자동 프로비저닝)
+- 도메인: n8n.yologram.link (Route 53 A 레코드)
+- HTTPS: Caddy가 Let's Encrypt 인증서 자동 발급/갱신
+- n8n DB: 내장 SQLite (/opt/n8n/data)
+- 방화벽: 80(HTTP), 443(HTTPS)만 개방. SSH는 Lightsail 브라우저 접속
 
 ## Terraform 명령어
 
