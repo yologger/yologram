@@ -1,17 +1,43 @@
-# yologger-n8n
+# yologger-infra
 
-yologger 전용 n8n 워크플로우 자동화 플랫폼.
+yologger AWS 인프라 관리.
 
-## 인프라
+## 구조
 
-- IaC: Terraform
-- 클라우드: AWS Lightsail (~~container~~ instance)
+```
+terraform/
+  service/
+    n8n/              # n8n 워크플로우 자동화 (Lightsail)
+  global/
+    iam/              # IAM 관리
+    route53/          # 도메인, DNS
+    database/         # DB
+```
+
+## AWS
+
+- AWS profile: yologram
+- 리전: ap-northeast-2 (서울)
+- state: 로컬
+
+## Terraform
+
+```bash
+cd terraform/service/n8n    # 또는 terraform/global/route53 등
+terraform init              # 초기화
+terraform plan              # 변경사항 확인
+terraform apply             # 배포
+terraform destroy           # 전체 삭제
+```
+
+## Service
+
+### n8n
+
+- 인프라: AWS Lightsail Instance
 - 리전: ap-northeast-2 (서울)
 - 인스턴스: OS: Amazon Linux 2023, size: micro_3_0 (1GB RAM, 2 vCPU, 40GB SSD)
 - n8n DB: 내장 SQLite
-
-## AWS Lightsail
-
 - 요금: 월 $5 (micro_3_0 기준)
     - 고정 IP: 인스턴스 연결 시 무료, 미연결 시 $0.005/hr
     - 데이터 전송: 월 2TB 포함, 초과 시 아웃바운드만 과금
@@ -28,12 +54,4 @@ yologger 전용 n8n 워크플로우 자동화 플랫폼.
 - 롤링 업데이트: 미지원, Docker Compose 컨테이너 재시작으로 업데이트
 - 백업: 필요 시 수동 스냅샷 생성
 
-## Terraform
-
-```bashte
-cd terraform
-terraform init      # 초기화
-terraform plan      # 변경사항 확인
-terraform apply     # 배포
-terraform destroy   # 전체 삭제
-```
+## Global
