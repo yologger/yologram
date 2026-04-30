@@ -8,8 +8,8 @@ yologger AWS 인프라 관리. Terraform으로 서비스별/글로벌 리소스�
 
 ## 구조
 
-- terraform/service/ - 개별 서비스 인프라 (n8n 등)
-- terraform/global/ - 공유 리소스 (IAM, Route 53, Database)
+- service/ - 개별 서비스 인프라 (n8n 등)
+- global/ - 공유 리소스 (IAM, Route 53, Database)
 - 각 디렉토리가 독립된 terraform state를 가짐
 
 ## 공통
@@ -18,7 +18,7 @@ yologger AWS 인프라 관리. Terraform으로 서비스별/글로벌 리소스�
 - 리전: ap-northeast-2 (서울)
 - state: 로컬
 
-## n8n (terraform/service/n8n/)
+## n8n (service/n8n/)
 
 - AWS Lightsail Instance (Amazon Linux 2023, micro_3_0, $5/mo)
 - Docker Compose로 n8n + Caddy 구성 (user_data로 자동 프로비저닝)
@@ -30,7 +30,7 @@ yologger AWS 인프라 관리. Terraform으로 서비스별/글로벌 리소스�
 ## Terraform 명령어
 
 ```
-cd terraform/service/n8n    # 각 디렉토리에서 개별 실행
+cd service/n8n    # 각 디렉토리에서 개별 실행
 terraform init
 terraform plan
 terraform apply
