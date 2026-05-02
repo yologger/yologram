@@ -5,14 +5,18 @@ yologger AWS 인프라 관리.
 ## 구조
 
 ```
-service/
-  n8n/              # n8n 워크플로우 자동화 (Lightsail)
-  openclaw/
+prod/
+  common/
+    ecs/                    # ECS 클러스터 (Fargate SPOT) + Task Execution Role
+    api-gateway/            # HTTP API Gateway, VPC Link, Cloud Map
+    database/
+      service-prod/         # RDS MySQL 8.0 (db.t4g.micro)
+  service/
+    n8n/                    # n8n 워크플로우 자동화 (Lightsail)
+    yologram-v1/
+      api/                  # Spring Boot (ECS Fargate SPOT)
 global/
-  iam/              # IAM 관리
-  route53/          # 도메인, DNS
-  database/
-    service-prod/   # RDS MySQL (db.t4g.micro)
+  iam/                      # IAM (github-actions-deployer)
 ```
 
 ## AWS
@@ -24,18 +28,24 @@ global/
 ## Terraform
 
 ```bash
-cd service/n8n                    # 또는 global/database/service-prod 등
-terraform init                    # 초기화
-terraform plan                    # 변경사항 확인
-terraform apply                   # 배포
-terraform destroy                 # 전체 삭제
+cd prod/service/n8n               # 각 디렉토리에서 개별 실행
+terraform init
+terraform plan
+terraform apply
+terraform destroy
 ```
 
 ## Service
 
-- n8n - 워크플로우 자동화 (Lightsail Instance, Docker Compose, Caddy + HTTPS, $5/mo)
-- openclaw
+- n8n - 워크플로우 자동화 (Lightsail, Docker Compose, Caddy + HTTPS, $5/mo)
+- yologram-api-v1 - Spring Boot API (ECS Fargate SPOT, api.yologram.link/v1/*)
+
+## Common
+
+- ECS 클러스터: prod (Fargate SPOT)
+- API Gateway: api.yologram.link (HTTP API, 스로틀링 10 req/sec)
+- Database: RDS MySQL 8.0 (db.t4g.micro)
 
 ## Global
 
-- database/service-prod - RDS MySQL 8.0 (db.t4g.micro)
+- IAM: github-actions-deployer (ECR push + ECS 배포)
