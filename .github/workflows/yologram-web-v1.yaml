@@ -1,14 +1,14 @@
-name: v2-frontend
+name: yologram-web-v1
 
 on:
   push:
     branches: [master]
     paths:
-      - 'v2/yologram-web-v2/**'
+      - 'v1/yologram-web-v1/**'
   pull_request:
     branches: [master]
     paths:
-      - 'v2/yologram-web-v2/**'
+      - 'v1/yologram-web-v1/**'
 
 jobs:
   build:

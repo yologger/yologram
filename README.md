@@ -22,3 +22,16 @@
 ## CI/CD
 
 - GitHub Actions (디렉토리별 독립 트리거)
+
+## ECS 컨테이너 접속
+
+```bash
+aws ecs execute-command \
+  --cluster prod \
+  --task <task-id> \
+  --container yologram-api-v1 \
+  --interactive \
+  --command "/bin/sh" \
+  --profile yologram \
+  --region ap-northeast-2
+```
