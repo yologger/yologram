@@ -11,11 +11,10 @@ on:
       - 'v1/yologram-api-v1/**'
 
 env:
-  AWS_REGION: ap-northeast-2
   ECR_REPOSITORY: yologram-api-v1
-  ECS_CLUSTER: production
-  ECS_SERVICE: yologram-api-v1
-  ECS_TASK_FAMILY: yologram-api-v1
+  ECS_CLUSTER: prod
+  ECS_SERVICE: yologram-api-v1-prod
+  ECS_TASK_FAMILY: yologram-api-v1-prod
 
 jobs:
   deploy:
@@ -37,7 +36,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - uses: aws-actions/amazon-ecr-login@v2
         id: ecr-login
@@ -57,4 +56,4 @@ jobs:
             --cluster ${{ env.ECS_CLUSTER }} \
             --service ${{ env.ECS_SERVICE }} \
             --force-new-deployment \
-            --region ${{ env.AWS_REGION }}
+            --region ${{ secrets.AWS_REGION }}
