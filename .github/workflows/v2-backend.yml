@@ -1,0 +1,17 @@
+name: v2-backend
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'v2/yologram-api-v2/**'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'v2/yologram-api-v2/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4

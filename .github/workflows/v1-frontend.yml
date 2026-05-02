@@ -1,0 +1,17 @@
+name: v1-frontend
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'v1/yologram-web-v1/**'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'v1/yologram-web-v1/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
