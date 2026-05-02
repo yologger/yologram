@@ -4,24 +4,22 @@
 
 ## 구조
 
-- v1/: React + Spring Boot MVC
-  - frontend/: React (S3 + CloudFront 배포)
-  - backend/: Spring Boot MVC
-  - infra/: Terraform
-- v2/: Next.js + FastAPI
-  - frontend/: Next.js (Lightsail 배포)
-  - backend/: FastAPI (Lightsail 배포)
-  - infra/: Terraform
+- v1/yologram-api-v1/: Spring Boot MVC (Kotlin)
+- v1/yologram-web-v1/: React
+- v2/yologram-api-v2/: FastAPI
+- v2/yologram-web-v2/: Next.js
+- .github/workflows/: GitHub Actions
 
 ## 인프라
 
-- IaC: Terraform
-- v1: S3 + CloudFront (web), App Runner (api) — 고려 중
-- v2: Lightsail (Docker Compose + Nginx)
+- IaC: Terraform (yologger-infra 레포에서 관리)
+- v1 API: ECS Fargate
+- v2: 미정
 
 ## CI/CD
 
 - GitHub Actions (디렉토리별 독립 트리거)
+- ECR push 시 이미지 태그: {branch}-{commit SHA 8자리}
 
 ## ECS 컨테이너 접속
 

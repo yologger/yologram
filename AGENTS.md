@@ -3,25 +3,23 @@
 ## 프로젝트 구조
 
 - 모노레포 구성
-- v1/frontend/: React (S3 + CloudFront 배포)
-- v1/backend/: Spring Boot MVC
-- v1/infra/: Terraform
-- v2/frontend/: Next.js (Lightsail 배포)
-- v2/backend/: FastAPI (Lightsail 배포)
-- v2/infra/: Terraform
+- v1/yologram-api-v1/: Spring Boot MVC (Kotlin)
+- v1/yologram-web-v1/: React
+- v2/yologram-api-v2/: FastAPI
+- v2/yologram-web-v2/: Next.js
 - .github/workflows/: GitHub Actions
 
 ## 인프라
 
-- IaC: Terraform
-- v1: S3 + CloudFront (web), App Runner (api) — 고려 중
-- v2: Lightsail (Docker Compose + Nginx)
+- IaC: Terraform (yologger-infra 레포에서 관리)
+- v1 API: ECS Fargate
 
 ## CI/CD
 
 - GitHub Actions 사용
 - v1/ 변경 시 v1 전용 workflow 트리거
 - v2/ 변경 시 v2 전용 workflow 트리거
+- ECR push 시 이미지 태그: {branch}-{commit SHA 8자리}
 
 ## 작업 규칙
 

@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/v1/test")
+@RequestMapping("/api/v1/test")
 class TestResource {
 
     @GetMapping
