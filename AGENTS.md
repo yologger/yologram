@@ -1,24 +1,27 @@
-# yologram-v1 프로젝트 지침 (Codex)
+# yologram 프로젝트 지침 (Codex)
 
 ## 프로젝트 구조
 
 - 모노레포 구성
-- backend/: Spring Boot MVC
-- frontend/: React
-- infra/: 인프라 (Terraform)
+- v1/frontend/: React (S3 + CloudFront 배포)
+- v1/backend/: Spring Boot MVC
+- v1/infra/: Terraform
+- v2/frontend/: Next.js (Lightsail 배포)
+- v2/backend/: FastAPI (Lightsail 배포)
+- v2/infra/: Terraform
 - .github/workflows/: GitHub Actions
 
 ## 인프라
 
-- IaC: Terraform (루트 레벨 관리)
-- web: S3 + CloudFront 또는 Amplify (미정)
-- api: App Runner (고려 중)
+- IaC: Terraform
+- v1: S3 + CloudFront (web), App Runner (api) — 고려 중
+- v2: Lightsail (Docker Compose + Nginx)
 
 ## CI/CD
 
 - GitHub Actions 사용
-- backend/ 변경 시 API 전용 workflow 트리거
-- frontend/ 변경 시 Web 전용 workflow 트리거
+- v1/ 변경 시 v1 전용 workflow 트리거
+- v2/ 변경 시 v2 전용 workflow 트리거
 
 ## 작업 규칙
 
