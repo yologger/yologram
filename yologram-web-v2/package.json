@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:staging": "env-cmd -f .env.staging next build",
+    "build:prod": "env-cmd -f .env.production next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -17,6 +19,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "env-cmd": "^11.0.0",
     "typescript": "^5.7.0"
   },
   "packageManager": "yarn@4.14.1",
