@@ -94,19 +94,37 @@ resource "aws_ecs_task_definition" "this" {
   ])
 }
 
-data "aws_service_discovery_dns_namespace" "prod" {
-  name = "prod.internal"
+#######################
+## Cloud Map Service ##
+#######################
+data "aws_service_discovery_dns_namespace" "this" {
+  name = "ecs-prod.internal"
   type = "DNS_PRIVATE"
 }
 
-data "aws_service_discovery_service" "this" {
-  name         = "yologram-api-v1"
-  namespace_id = data.aws_service_discovery_dns_namespace.prod.id
+resource "aws_service_discovery_service" "this" {
+  name = "yologram-api-v1"
+
+  dns_config {
+    namespace_id = data.aws_service_discovery_dns_namespace.this.id
+
+    dns_records {
+      ttl  = 10
+      type = "SRV"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
 }
 
+################
+## ECS Service ##
+################
 resource "aws_ecs_service" "this" {
   name                   = "yologram-api-v1-prod"
-  cluster                = "prod"
+  cluster                = "ecs-prod"
   task_definition        = aws_ecs_task_definition.this.arn
   desired_count          = 1
   enable_execute_command = true
@@ -126,8 +144,35 @@ resource "aws_ecs_service" "this" {
   }
 
   service_registries {
-    registry_arn   = data.aws_service_discovery_service.this.arn
+    registry_arn   = aws_service_discovery_service.this.arn
     container_name = "yologram-api-v1"
     container_port = 8080
   }
+}
+
+##############################
+## API Gateway: Integration ##
+##############################
+data "aws_apigatewayv2_apis" "this" {
+  protocol_type = "HTTP"
+  name          = "yologram-gateway"
+}
+
+locals {
+  api_gateway_id = tolist(data.aws_apigatewayv2_apis.this.ids)[0]
+}
+
+resource "aws_apigatewayv2_integration" "this" {
+  api_id             = local.api_gateway_id
+  integration_type   = "HTTP_PROXY"
+  integration_uri    = aws_service_discovery_service.this.arn
+  integration_method = "ANY"
+  connection_type    = "VPC_LINK"
+  connection_id      = var.vpc_link_id
+}
+
+resource "aws_apigatewayv2_route" "this" {
+  api_id    = local.api_gateway_id
+  route_key = "ANY /api/v1/{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.this.id}"
 }

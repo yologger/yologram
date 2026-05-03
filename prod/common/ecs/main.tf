@@ -1,5 +1,8 @@
-resource "aws_ecs_cluster" "prod" {
-  name = "prod"
+#########
+## ECS ##
+#########
+resource "aws_ecs_cluster" "this" {
+  name = "ecs-prod"
 
   setting {
     name  = "containerInsights"
@@ -7,7 +10,29 @@ resource "aws_ecs_cluster" "prod" {
   }
 }
 
-resource "aws_iam_role" "ecs_task_execution" {
+resource "aws_ecs_cluster_capacity_providers" "this" {
+  cluster_name = aws_ecs_cluster.this.name
+
+  capacity_providers = ["FARGATE_SPOT"]
+
+  default_capacity_provider_strategy {
+    capacity_provider = "FARGATE_SPOT"
+    weight            = 1
+  }
+}
+
+###############
+## Cloud Map ##
+###############
+resource "aws_service_discovery_private_dns_namespace" "this" {
+  name = "ecs-prod.internal"
+  vpc  = "vpc-00dd45cf23d6d31ee"
+}
+
+#########
+## IAM ##
+#########
+resource "aws_iam_role" "task_execution" {
   name = "ecs-task-execution-role"
 
   assume_role_policy = jsonencode({
@@ -24,18 +49,7 @@ resource "aws_iam_role" "ecs_task_execution" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
-  role       = aws_iam_role.ecs_task_execution.name
+resource "aws_iam_role_policy_attachment" "task_execution" {
+  role       = aws_iam_role.task_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-resource "aws_ecs_cluster_capacity_providers" "prod" {
-  cluster_name = aws_ecs_cluster.prod.name
-
-  capacity_providers = ["FARGATE_SPOT"]
-
-  default_capacity_provider_strategy {
-    capacity_provider = "FARGATE_SPOT"
-    weight            = 1
-  }
 }

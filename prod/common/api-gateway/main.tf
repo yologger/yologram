@@ -1,19 +1,14 @@
-# Cloud Map namespace
-resource "aws_service_discovery_private_dns_namespace" "prod" {
-  name = "prod.internal"
-  vpc  = "vpc-00dd45cf23d6d31ee"
+###############
+## Reference ##
+###############
+data "aws_service_discovery_dns_namespace" "this" {
+  name = "ecs-prod.internal"
+  type = "DNS_PRIVATE"
 }
 
-# VPC Link
-resource "aws_apigatewayv2_vpc_link" "prod" {
-  name               = "prod-vpc-link"
-  security_group_ids = [aws_security_group.vpc_link.id]
-  subnet_ids = [
-    "subnet-02695a768e3c457df",
-    "subnet-0c36f6f4a5208338a",
-  ]
-}
-
+###########################
+## API Gateway: VPC Link ##
+###########################
 resource "aws_security_group" "vpc_link" {
   name        = "api-gateway-vpc-link-sg"
   description = "Security group for API Gateway VPC Link"
@@ -31,15 +26,25 @@ resource "aws_security_group" "vpc_link" {
   }
 }
 
-# HTTP API Gateway
-resource "aws_apigatewayv2_api" "api" {
-  name          = "api-yologram"
+resource "aws_apigatewayv2_vpc_link" "prod" {
+  name               = "prod-vpc-link"
+  security_group_ids = [aws_security_group.vpc_link.id]
+  subnet_ids = [
+    "subnet-02695a768e3c457df",
+    "subnet-0c36f6f4a5208338a",
+  ]
+}
+
+######################
+## API Gateway: API ##
+######################
+resource "aws_apigatewayv2_api" "this" {
+  name          = "yologram-gateway"
   protocol_type = "HTTP"
 }
 
-# Stage
 resource "aws_apigatewayv2_stage" "default" {
-  api_id      = aws_apigatewayv2_api.api.id
+  api_id      = aws_apigatewayv2_api.this.id
   name        = "$default"
   auto_deploy = true
 
@@ -49,7 +54,9 @@ resource "aws_apigatewayv2_stage" "default" {
   }
 }
 
-# Custom domain: api.yologram.link
+#################################
+## API Gateway: Custom Domain  ##
+#################################
 resource "aws_acm_certificate" "api" {
   domain_name       = "api.yologram.link"
   validation_method = "DNS"
@@ -91,7 +98,7 @@ resource "aws_apigatewayv2_domain_name" "api" {
 }
 
 resource "aws_apigatewayv2_api_mapping" "api" {
-  api_id      = aws_apigatewayv2_api.api.id
+  api_id      = aws_apigatewayv2_api.this.id
   domain_name = aws_apigatewayv2_domain_name.api.id
   stage       = aws_apigatewayv2_stage.default.id
 }
@@ -106,39 +113,4 @@ resource "aws_route53_record" "api" {
     zone_id                = aws_apigatewayv2_domain_name.api.domain_name_configuration[0].hosted_zone_id
     evaluate_target_health = false
   }
-}
-
-# ============================================
-# yologram-api-v1 (Spring Boot)
-# ============================================
-resource "aws_service_discovery_service" "yologram_api_v1" {
-  name = "yologram-api-v1"
-
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.prod.id
-
-    dns_records {
-      ttl  = 10
-      type = "SRV"
-    }
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
-resource "aws_apigatewayv2_integration" "yologram_api_v1" {
-  api_id             = aws_apigatewayv2_api.api.id
-  integration_type   = "HTTP_PROXY"
-  integration_uri    = aws_service_discovery_service.yologram_api_v1.arn
-  integration_method = "ANY"
-  connection_type    = "VPC_LINK"
-  connection_id      = aws_apigatewayv2_vpc_link.prod.id
-}
-
-resource "aws_apigatewayv2_route" "yologram_api_v1" {
-  api_id    = aws_apigatewayv2_api.api.id
-  route_key = "ANY /v1/{proxy+}"
-  target    = "integrations/${aws_apigatewayv2_integration.yologram_api_v1.id}"
 }
