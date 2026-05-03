@@ -27,6 +27,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+          cache: gradle
 
       - name: Gradle build
         working-directory: v1/yologram-api-v1
