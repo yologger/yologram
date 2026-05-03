@@ -1,6 +1,7 @@
 name: yologram-web-v1
 
 on:
+  workflow_dispatch:
   push:
     branches: [master]
     paths:
@@ -10,8 +11,39 @@ on:
     paths:
       - 'yologram-web-v1/**'
 
+env:
+  S3_BUCKET: yologram-web-v1
+
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: yologram-web-v1/yarn.lock
+
+      - name: Install dependencies
+        working-directory: yologram-web-v1
+        run: corepack enable && yarn install --immutable
+
+      - name: Build
+        working-directory: yologram-web-v1
+        run: yarn build:prod
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to S3
+        working-directory: yologram-web-v1
+        run: |
+          aws s3 sync build/ s3://${{ env.S3_BUCKET }} --delete --cache-control "max-age=31536000,public"
+          aws s3 cp build/index.html s3://${{ env.S3_BUCKET }}/index.html --cache-control "no-cache,no-store,must-revalidate"
