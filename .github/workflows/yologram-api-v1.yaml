@@ -12,7 +12,7 @@ on:
 
 env:
   ECR_REPOSITORY: yologram-api-v1
-  ECS_CLUSTER: prod
+  ECS_CLUSTER: ecs-prod
   ECS_SERVICE: yologram-api-v1-prod
   ECS_TASK_FAMILY: yologram-api-v1-prod
 
