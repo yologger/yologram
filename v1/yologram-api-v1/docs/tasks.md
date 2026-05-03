@@ -1,0 +1,2 @@
+- [ ] ECS 헬스체크 설정: actuator 의존성 추가 + Task Definition에 healthCheck 설정
+- [ ] GitHub Actions job timeout 설정: 배포 완료 대기(aws ecs wait services-stable) 포함하여 적절한 timeout 지정
