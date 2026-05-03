@@ -1,13 +1,16 @@
 package link.yologram.api.v1.api.domain.test.resource
 
 import jakarta.servlet.http.HttpServletRequest
+import org.springframework.core.env.Environment
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v1/test")
-class TestResource {
+class TestResource(
+    private val environment: Environment
+) {
 
     @GetMapping
     fun index(): String {
@@ -31,5 +34,10 @@ class TestResource {
             "protocol" to request.protocol,
             "headers" to headers
         )
+    }
+
+    @GetMapping("profile")
+    fun profile(): Array<String> {
+        return environment.activeProfiles
     }
 }
