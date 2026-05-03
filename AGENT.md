@@ -9,7 +9,7 @@ yologger AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 ## 구조
 
 - prod/common/ - 환경 공통 리소스 (ECS 클러스터, API Gateway, Database)
-- prod/service/ - 개별 서비스 인프라 (n8n, yologram-v1 등)
+- prod/service/ - 개별 서비스 인프라 (n8n, yologram-api-v1 등)
 - global/ - 환경 무관 공유 리소스 (IAM)
 - 각 디렉토리가 독립된 terraform state를 가짐
 
@@ -28,12 +28,12 @@ yologger AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 - n8n DB: 내장 SQLite (/opt/n8n/data)
 - 방화벽: 80(HTTP), 443(HTTPS)만 개방. SSH는 Lightsail 브라우저 접속
 
-## yologram-api-v1 (prod/service/yologram-v1/api/)
+## yologram-api-v1 (prod/service/yologram-api-v1/)
 
 - ECS Fargate SPOT (0.25 vCPU, 512MB)
 - Spring Boot, 컨테이너 포트 8080
 - ECR: yologram-api-v1
-- API Gateway 경로: api.yologram.link/v1/*
+- API Gateway 경로: api.yologram.link/api/v1/*
 
 ## Terraform 명령어
 

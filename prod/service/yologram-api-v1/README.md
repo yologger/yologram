@@ -6,23 +6,23 @@ Spring Boot API 서비스.
 
 ```
 사용자
-  │ https://api.yologram.link/v1/*
+  │ https://api.yologram.link/api/v1/*
   ▼
 Route 53 (DNS)
   │ api.yologram.link → d-xxx.execute-api (ALIAS)
   ▼
 API Gateway (Custom Domain)
-  │ api.yologram.link → api-yologram API 매핑
+  │ api.yologram.link → yologram-gateway API 매핑
   ▼
-API Gateway (HTTP API: api-yologram)
-  │ Route: ANY /v1/{proxy+}
-  │ Stage: $default (스로틀링 10 req/sec)
+API Gateway (HTTP API: yologram-gateway)
+  │ Route: ANY /api/v1/{proxy+}
+  │ Stage: $default (스로틀링 3 req/sec)
   ▼
 VPC Link
   │ API Gateway → VPC 내부 연결
   ▼
 Cloud Map (서비스 디스커버리)
-  │ yologram-api-v1.prod.internal → 현재 태스크 IP:8080
+  │ yologram-api-v1.ecs-prod.internal → 현재 태스크 IP:8080
   ▼
 ECS Fargate Task (Spring Boot)
   │ 컨테이너 포트 8080
@@ -43,9 +43,9 @@ HTTPS 처리, 경로 라우팅 (/v1/*), 스로틀링 (악성 트래픽 방지)
 - Custom Domains
 ### Cloud Map
 Fargate 태스크의 전화번호부. 태스크 IP가 바뀔 때마다 자동 업데이트하여 현재 태스크를 찾을 수 있게 함
-- Namespace 1개 → Route 53 Private Hosted Zone 1개 생성 (prod.internal)
-- Service 1개 → Hosted Zone 안에 DNS 레코드 1개 생성 (yologram-api-v1.prod.internal)
-- 서비스 추가 시 같은 네임스페이스에 레코드만 추가됨 (예: yologram-api-v2.prod.internal)
+- Namespace 1개 → Route 53 Private Hosted Zone 1개 생성 (ecs-prod.internal)
+- Service 1개 → Hosted Zone 안에 DNS 레코드 1개 생성 (yologram-api-v1.ecs-prod.internal)
+- 서비스 추가 시 같은 네임스페이스에 레코드만 추가됨 (예: yologram-api-v2.ecs-prod.internal)
 
 ### ECS
 - Cluster → Service → Task: Cloud Map에 태스크 IP 자동 등록/해제 (service_registries 설정)
@@ -66,38 +66,37 @@ terraform apply
 ```
 
 생성되는 리소스:
-- ECS 클러스터 (prod, Fargate SPOT)
+- ECS 클러스터 (ecs-prod, Fargate SPOT)
 - IAM Role (ecs-task-execution-role)
-- Cloud Map 네임스페이스 (prod.internal)
-- Cloud Map 서비스 (yologram-api-v1)
-- API Gateway HTTP API (api-yologram)
+- Cloud Map 네임스페이스 (ecs-prod.internal)
+- API Gateway HTTP API (yologram-gateway)
 - API Gateway Stage ($default)
 - VPC Link + 보안그룹
 - ACM 인증서 (api.yologram.link)
 - API Gateway 커스텀 도메인 + API 매핑
 - Route 53 A 레코드 (api.yologram.link → 커스텀 도메인)
-- API Gateway Route (ANY /v1/{proxy+})
-- API Gateway Integration (VPC Link → Cloud Map)
 
-### 2단계: 서비스 (prod/service/yologram-v1/api/)
+### 2단계: 서비스 (prod/service/yologram-api-v1/)
 
 ```bash
-cd prod/service/yologram-v1/api
+cd prod/service/yologram-api-v1
 terraform apply
 ```
 
 생성되는 리소스:
-- ECR 리포지토리 (yologram-api-v1)
+- ECR 리포지토리 (yologram-api-v1) + lifecycle policy (최신 5개 유지)
 - IAM Role (yologram-api-v1-prod-role) + SSM 권한
 - 보안그룹 (8080 포트)
 - ECS Task Definition (0.25 vCPU, 512MB)
+- Cloud Map 서비스 (yologram-api-v1)
 - ECS Service (Cloud Map 서비스 디스커버리 연결)
+- API Gateway Integration + Route (ANY /api/v1/{proxy+})
 
 ### 3단계: 배포
 
 ```bash
 # ECR에 이미지 push 후 ECS 서비스 업데이트
-aws ecs update-service --cluster prod --service yologram-api-v1-prod --force-new-deployment --profile yologram --region ap-northeast-2
+aws ecs update-service --cluster ecs-prod --service yologram-api-v1-prod --force-new-deployment --profile yologram --region ap-northeast-2
 ```
 
 ## 인프라 사양
@@ -111,11 +110,11 @@ aws ecs update-service --cluster prod --service yologram-api-v1-prod --force-new
 
 ```bash
 # 태스크 목록
-aws ecs list-tasks --cluster prod --service-name yologram-api-v1-prod --profile yologram --region ap-northeast-2
+aws ecs list-tasks --cluster ecs-prod --service-name yologram-api-v1-prod --profile yologram --region ap-northeast-2
 
 # 컨테이너 접속
-aws ecs execute-command --cluster prod --task <task-id> --container yologram-api-v1 --interactive --command "/bin/sh" --profile yologram --region ap-northeast-2
+aws ecs execute-command --cluster ecs-prod--task <task-id> --container yologram-api-v1 --interactive --command "/bin/sh" --profile yologram --region ap-northeast-2
 
 # 강제 재배포
-aws ecs update-service --cluster prod --service yologram-api-v1-prod --force-new-deployment --profile yologram --region ap-northeast-2
+aws ecs update-service --cluster ecs-prod --service yologram-api-v1-prod --force-new-deployment --profile yologram --region ap-northeast-2
 ```

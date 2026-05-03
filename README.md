@@ -7,14 +7,16 @@ yologger AWS 인프라 관리.
 ```
 prod/
   common/
-    ecs/                    # ECS 클러스터 (Fargate SPOT) + Task Execution Role
-    api-gateway/            # HTTP API Gateway, VPC Link, Cloud Map
+    ecs/                    # ECS 클러스터 (Fargate SPOT) + Cloud Map + Task Execution Role
+    api-gateway/            # HTTP API Gateway (yologram-gateway), VPC Link, Custom Domain
     database/
       service-prod/         # RDS MySQL 8.0 (db.t4g.micro)
   service/
     n8n/                    # n8n 워크플로우 자동화 (Lightsail)
-    yologram-v1/
-      api/                  # Spring Boot (ECS Fargate SPOT)
+    yologram-api-v1/        # Spring Boot API (ECS Fargate SPOT)
+    yologram-api-v2/
+    yologram-web-v1/
+    yologram-web-v2/
 global/
   iam/                      # IAM (github-actions-deployer)
 ```
@@ -38,12 +40,12 @@ terraform destroy
 ## Service
 
 - n8n - 워크플로우 자동화 (Lightsail, Docker Compose, Caddy + HTTPS, $5/mo)
-- yologram-api-v1 - Spring Boot API (ECS Fargate SPOT, api.yologram.link/v1/*)
+- yologram-api-v1 - Spring Boot API (ECS Fargate SPOT, api.yologram.link/api/v1/*)
 
 ## Common
 
-- ECS 클러스터: prod (Fargate SPOT)
-- API Gateway: api.yologram.link (HTTP API, 스로틀링 10 req/sec)
+- ECS 클러스터: ecs-prod (Fargate SPOT)
+- API Gateway: api.yologram.link (HTTP API, 스로틀링 3 req/sec)
 - Database: RDS MySQL 8.0 (db.t4g.micro)
 
 ## Global
