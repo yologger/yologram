@@ -39,8 +39,9 @@ resource "aws_apigatewayv2_vpc_link" "prod" {
 ## API Gateway: API ##
 ######################
 resource "aws_apigatewayv2_api" "this" {
-  name          = "yologram-gateway"
-  protocol_type = "HTTP"
+  name                         = "yologram-gateway"
+  protocol_type                = "HTTP"
+  disable_execute_api_endpoint = true
 }
 
 resource "aws_apigatewayv2_stage" "default" {
