@@ -23,6 +23,12 @@
 - yologram-web-v2/ 변경 시 yologram-web-v2 workflow 트리거
 - ECR push 시 이미지 태그: {branch}-{commit SHA 8자리}
 
+## 커밋 메시지 컨벤션
+
+- 형식: [프로젝트명] 타입: 설명
+- 예시: [yologram-api-v1] feat: actuator 의존성 추가
+- 여러 프로젝트에 걸친 변경: [all] chore: 프로젝트 구조 변경
+
 ## 작업 규칙
 
 - 코드 변경 전 반드시 plan을 먼저 보여주고, 승인 후 적용
