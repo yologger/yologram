@@ -4,11 +4,11 @@ on:
   push:
     branches: [master]
     paths:
-      - 'v1/yologram-web-v1/**'
+      - 'yologram-web-v1/**'
   pull_request:
     branches: [master]
     paths:
-      - 'v1/yologram-web-v1/**'
+      - 'yologram-web-v1/**'
 
 jobs:
   build:

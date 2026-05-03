@@ -3,10 +3,10 @@
 ## 프로젝트 구조
 
 - 모노레포 구성
-- v1/yologram-api-v1/: Spring Boot MVC (Kotlin)
-- v1/yologram-web-v1/: React
-- v2/yologram-api-v2/: FastAPI
-- v2/yologram-web-v2/: Next.js
+- yologram-api-v1/: Spring Boot MVC (Kotlin)
+- yologram-web-v1/: React
+- yologram-api-v2/: FastAPI
+- yologram-web-v2/: Next.js
 - .github/workflows/: GitHub Actions
 
 ## 인프라
@@ -17,8 +17,10 @@
 ## CI/CD
 
 - GitHub Actions 사용
-- v1/ 변경 시 v1 전용 workflow 트리거
-- v2/ 변경 시 v2 전용 workflow 트리거
+- yologram-api-v1/ 변경 시 yologram-api-v1 workflow 트리거
+- yologram-web-v1/ 변경 시 yologram-web-v1 workflow 트리거
+- yologram-api-v2/ 변경 시 yologram-api-v2 workflow 트리거
+- yologram-web-v2/ 변경 시 yologram-web-v2 workflow 트리거
 - ECR push 시 이미지 태그: {branch}-{commit SHA 8자리}
 
 ## 작업 규칙

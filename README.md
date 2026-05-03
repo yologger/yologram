@@ -4,10 +4,10 @@
 
 ## 구조
 
-- v1/yologram-api-v1/: Spring Boot MVC (Kotlin)
-- v1/yologram-web-v1/: React
-- v2/yologram-api-v2/: FastAPI
-- v2/yologram-web-v2/: Next.js
+- yologram-api-v1/: Spring Boot MVC (Kotlin)
+- yologram-web-v1/: React
+- yologram-api-v2/: FastAPI
+- yologram-web-v2/: Next.js
 - .github/workflows/: GitHub Actions
 
 ## 인프라
@@ -25,7 +25,7 @@
 
 ```bash
 aws ecs execute-command \
-  --cluster prod \
+  --cluster ecs-prod \
   --task <task-id> \
   --container yologram-api-v1 \
   --interactive \

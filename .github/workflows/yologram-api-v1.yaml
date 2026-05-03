@@ -5,11 +5,11 @@ on:
   push:
     branches: [master]
     paths:
-      - 'v1/yologram-api-v1/**'
+      - 'yologram-api-v1/**'
   pull_request:
     branches: [master]
     paths:
-      - 'v1/yologram-api-v1/**'
+      - 'yologram-api-v1/**'
 
 env:
   ECR_REPOSITORY: yologram-api-v1
@@ -32,7 +32,7 @@ jobs:
           cache: gradle
 
       - name: Gradle build
-        working-directory: v1/yologram-api-v1
+        working-directory: yologram-api-v1
         run: ./gradlew build
 
       - uses: aws-actions/configure-aws-credentials@v4
@@ -45,7 +45,7 @@ jobs:
         id: ecr-login
 
       - name: Build and push Docker image
-        working-directory: v1/yologram-api-v1
+        working-directory: yologram-api-v1
         run: |
           BRANCH=${GITHUB_REF##*/}
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-8)
