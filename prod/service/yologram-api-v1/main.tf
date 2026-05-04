@@ -67,6 +67,92 @@ resource "aws_iam_role_policy" "task_exec_ssm" {
   })
 }
 
+resource "aws_iam_role_policy" "task_ssm_read" {
+  name = "ssm-parameter-read"
+  role = aws_iam_role.task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+          "ssm:GetParametersByPath",
+        ]
+        Resource = "arn:aws:ssm:ap-northeast-2:000000000000:parameter/yologram/service/yologram-api-v1_*"
+      }
+    ]
+  })
+}
+
+################################
+## SSM Parameter Store (prod) ##
+################################
+resource "aws_ssm_parameter" "grafana_loki_url_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/grafana.loki.url"
+  type  = "String"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "grafana_loki_username_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/grafana.loki.username"
+  type  = "String"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "grafana_loki_password_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/grafana.loki.password"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+#################################
+## SSM Parameter Store (local) ##
+#################################
+resource "aws_ssm_parameter" "grafana_loki_url_local" {
+  name  = "/yologram/service/yologram-api-v1_local/grafana.loki.url"
+  type  = "String"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "grafana_loki_username_local" {
+  name  = "/yologram/service/yologram-api-v1_local/grafana.loki.username"
+  type  = "String"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "grafana_loki_password_local" {
+  name  = "/yologram/service/yologram-api-v1_local/grafana.loki.password"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "aws_security_group" "this" {
   name        = "yologram-api-v1-prod-sg"
   description = "Security group for yologram-api-v1-prod"
@@ -109,6 +195,12 @@ resource "aws_ecs_task_definition" "this" {
         {
           containerPort = 8080
           protocol      = "tcp"
+        }
+      ]
+      environment = [
+        {
+          name  = "SPRING_PROFILES_ACTIVE"
+          value = "prod"
         }
       ]
     }
