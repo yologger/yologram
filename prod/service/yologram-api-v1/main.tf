@@ -140,11 +140,8 @@ resource "aws_ssm_parameter" "grafana_metrics_auth_prod" {
   }
 }
 
-#################################
-## SSM Parameter Store (local) ##
-#################################
-resource "aws_ssm_parameter" "grafana_loki_url_local" {
-  name  = "/yologram/service/yologram-api-v1_local/grafana.loki.url"
+resource "aws_ssm_parameter" "grafana_traces_endpoint_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/management.otlp.tracing.endpoint"
   type  = "String"
   value = "PLACEHOLDER"
 
@@ -153,18 +150,8 @@ resource "aws_ssm_parameter" "grafana_loki_url_local" {
   }
 }
 
-resource "aws_ssm_parameter" "grafana_loki_username_local" {
-  name  = "/yologram/service/yologram-api-v1_local/grafana.loki.username"
-  type  = "String"
-  value = "PLACEHOLDER"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "aws_ssm_parameter" "grafana_loki_password_local" {
-  name  = "/yologram/service/yologram-api-v1_local/grafana.loki.password"
+resource "aws_ssm_parameter" "grafana_traces_auth_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/management.otlp.tracing.headers.Authorization"
   type  = "SecureString"
   value = "PLACEHOLDER"
 
