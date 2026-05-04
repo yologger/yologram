@@ -120,6 +120,26 @@ resource "aws_ssm_parameter" "grafana_loki_password_prod" {
   }
 }
 
+resource "aws_ssm_parameter" "grafana_metrics_url_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/management.otlp.metrics.export.url"
+  type  = "String"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "grafana_metrics_auth_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/management.otlp.metrics.export.headers.Authorization"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 #################################
 ## SSM Parameter Store (local) ##
 #################################
