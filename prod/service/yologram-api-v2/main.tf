@@ -139,6 +139,26 @@ resource "aws_ssm_parameter" "grafana_loki_password_prod" {
   }
 }
 
+resource "aws_ssm_parameter" "grafana_metrics_url_prod" {
+  name  = "/yologram/service/yologram-api-v2_prod/GRAFANA_METRICS_URL"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "grafana_metrics_auth_prod" {
+  name  = "/yologram/service/yologram-api-v2_prod/GRAFANA_METRICS_AUTHORIZATION"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "aws_security_group" "this" {
   name        = "yologram-api-v2-prod-sg"
   description = "Security group for yologram-api-v2-prod"
@@ -195,6 +215,14 @@ resource "aws_ecs_task_definition" "this" {
         {
           name      = "GRAFANA_LOKI_PASSWORD"
           valueFrom = aws_ssm_parameter.grafana_loki_password_prod.arn
+        },
+        {
+          name      = "GRAFANA_METRICS_URL"
+          valueFrom = aws_ssm_parameter.grafana_metrics_url_prod.arn
+        },
+        {
+          name      = "GRAFANA_METRICS_AUTHORIZATION"
+          valueFrom = aws_ssm_parameter.grafana_metrics_auth_prod.arn
         },
       ]
     }
