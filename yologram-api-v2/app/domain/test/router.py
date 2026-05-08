@@ -1,15 +1,21 @@
-from fastapi import APIRouter, Depends, Request
+import logging
 
-from app.core.di import get_test_service
+from fastapi import APIRouter, Request
+
+from app.config.settings import get_settings
+
+logger = logging.getLogger(__name__)
 from app.domain.test.schema import EchoResponse
 from app.domain.test.service import TestService
 
 router = APIRouter(prefix="/api/v2/test")
+service = TestService(settings=get_settings())
 
 
 @router.get("")
 def index() -> str:
-    return "/v2/test"
+    logger.info("GET /api/v2/test")
+    return "/api/v2/test"
 
 
 @router.get("/echo")
@@ -25,13 +31,10 @@ def echo(request: Request) -> EchoResponse:
 
 
 @router.get("/profile")
-def profile(service: TestService = Depends(get_test_service)) -> str:
+def profile() -> str:
     return service.get_profile()
 
 
 @router.get("/property")
-def get_property(
-    key: str,
-    service: TestService = Depends(get_test_service),
-) -> str | None:
+def get_property(key: str) -> str | None:
     return service.get_property(key)
