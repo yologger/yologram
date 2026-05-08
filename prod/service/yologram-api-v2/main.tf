@@ -67,6 +67,78 @@ resource "aws_iam_role_policy" "task_exec_ssm" {
   })
 }
 
+resource "aws_iam_role_policy" "task_ssm_read" {
+  name = "ssm-parameter-read"
+  role = aws_iam_role.task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+          "ssm:GetParametersByPath",
+        ]
+        Resource = "arn:aws:ssm:ap-northeast-2:000000000000:parameter/yologram/service/yologram-api-v2_*"
+      }
+    ]
+  })
+}
+
+# ECS Task Execution Role에도 SSM 읽기 권한 필요 (secrets 주입용)
+resource "aws_iam_role_policy" "execution_ssm_read" {
+  name = "yologram-api-v2-ssm-read"
+  role = "ecs-task-execution-role"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameters",
+        ]
+        Resource = "arn:aws:ssm:ap-northeast-2:000000000000:parameter/yologram/service/yologram-api-v2_*"
+      }
+    ]
+  })
+}
+
+################################
+## SSM Parameter Store (prod) ##
+################################
+resource "aws_ssm_parameter" "grafana_loki_url_prod" {
+  name  = "/yologram/service/yologram-api-v2_prod/GRAFANA_LOKI_URL"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "grafana_loki_username_prod" {
+  name  = "/yologram/service/yologram-api-v2_prod/GRAFANA_LOKI_USERNAME"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "grafana_loki_password_prod" {
+  name  = "/yologram/service/yologram-api-v2_prod/GRAFANA_LOKI_PASSWORD"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "aws_security_group" "this" {
   name        = "yologram-api-v2-prod-sg"
   description = "Security group for yologram-api-v2-prod"
@@ -110,6 +182,20 @@ resource "aws_ecs_task_definition" "this" {
           containerPort = 8000
           protocol      = "tcp"
         }
+      ]
+      secrets = [
+        {
+          name      = "GRAFANA_LOKI_URL"
+          valueFrom = aws_ssm_parameter.grafana_loki_url_prod.arn
+        },
+        {
+          name      = "GRAFANA_LOKI_USERNAME"
+          valueFrom = aws_ssm_parameter.grafana_loki_username_prod.arn
+        },
+        {
+          name      = "GRAFANA_LOKI_PASSWORD"
+          valueFrom = aws_ssm_parameter.grafana_loki_password_prod.arn
+        },
       ]
     }
   ])
