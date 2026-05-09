@@ -1,5 +1,6 @@
 package link.yologram.api.v1.api.domain.test.resource
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.env.Environment
 import org.springframework.web.bind.annotation.GetMapping
@@ -12,14 +13,19 @@ import org.springframework.web.bind.annotation.RestController
 class TestResource(
     private val environment: Environment
 ) {
+    private val logger = KotlinLogging.logger {}
 
     @GetMapping
     fun index(): String {
+        logger.info { "api.v1.test.index called" }
         return "/v1/test"
     }
 
     @GetMapping("echo")
     fun echo(request: HttpServletRequest): Map<String, Any?> {
+        logger.info {
+            "api.v1.test.echo called method=${request.method} uri=${request.requestURI} remoteAddr=${request.remoteAddr}"
+        }
         val headers = mutableMapOf<String, String>()
         val headerNames = request.headerNames
         while (headerNames.hasMoreElements()) {
@@ -39,11 +45,14 @@ class TestResource(
 
     @GetMapping("profile")
     fun profile(): Array<String> {
-        return environment.activeProfiles
+        val activeProfiles = environment.activeProfiles
+        logger.info { "api.v1.test.profile called activeProfiles=${activeProfiles.joinToString(",")}" }
+        return activeProfiles
     }
 
     @GetMapping("property")
     fun getProperty(@RequestParam("key") key: String): String? {
+        logger.info { "api.v1.test.property called key=$key" }
         return environment.getProperty(key)
     }
 

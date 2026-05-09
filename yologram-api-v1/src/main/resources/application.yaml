@@ -10,6 +10,10 @@ management:
         step: 1m
         headers:
           Authorization:  # /yologram/service/yologram-api-v1_{ENV}/management.otlp.metrics.export.headers.Authorization
+    logging:
+      endpoint:   # /yologram/service/yologram-api-v1_{ENV}/management.otlp.logging.endpoint
+      headers:
+        Authorization:  # /yologram/service/yologram-api-v1_{ENV}/management.otlp.logging.headers.Authorization
   opentelemetry:
     resource-attributes:
       service.name: ${spring.application.name}
