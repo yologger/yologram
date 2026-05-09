@@ -27,6 +27,8 @@ dependencies {
     implementation("io.github.oshai:kotlin-logging-jvm:6.0.3")
     implementation("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.15.0-alpha")
     implementation("io.micrometer:micrometer-registry-otlp")
+    implementation("io.micrometer:micrometer-tracing-bridge-otel")
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.1.0"))
     implementation("io.awspring.cloud:spring-cloud-aws-starter-parameter-store")
     developmentOnly("org.springframework.boot:spring-boot-devtools")

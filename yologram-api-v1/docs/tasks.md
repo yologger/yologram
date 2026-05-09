@@ -1,2 +1,5 @@
 - [ ] ECS 헬스체크 설정: actuator 의존성 추가 + Task Definition에 healthCheck 설정
 - [x] GitHub Actions job timeout 설정: 배포 완료 대기(aws ecs wait services-stable) 포함하여 적절한 timeout 지정
+- [x] Grafana Cloud 연동 - Logs: OTLP (opentelemetry-logback-appender)
+- [x] Grafana Cloud 연동 - Traces: OTLP (micrometer-tracing-bridge-otel + opentelemetry-exporter-otlp)
+- [x] Grafana Cloud 연동 - Metrics: OTLP (micrometer-registry-otlp)
