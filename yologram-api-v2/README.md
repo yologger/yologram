@@ -23,7 +23,6 @@ uv run uvicorn app.main:app --reload
 프로파일 지정:
 ```bash
 APP_PROFILE=prod uv run uvicorn app.main:app --reload
-APP_PROFILE=staging uv run uvicorn app.main:app --reload
 ```
 
 서버 기본 주소: http://localhost:8000
@@ -38,3 +37,20 @@ APP_PROFILE=staging uv run uvicorn app.main:app --reload
 | GET | /api/v2/test/property?key=... | 설정값 조회 |
 
 API 문서: http://localhost:8000/docs
+
+## Observability (Grafana Cloud, OTLP)
+
+| 구분 | 라이브러리 |
+|---|---|
+| 자동 계측 | opentelemetry-instrumentation-fastapi + opentelemetry-instrumentation-system-metrics |
+| Logs | opentelemetry-sdk (LoggerProvider + OTLPLogExporter) |
+| Traces | opentelemetry-sdk (TracerProvider + OTLPSpanExporter) |
+| Metrics | opentelemetry-sdk (MeterProvider + OTLPMetricExporter) |
+
+설정값은 ECS secrets (Parameter Store) 에서 환경변수로 주입.
+OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS를 OpenTelemetry SDK가 자동으로 읽음.
+
+### 프로필별 동작
+
+- default/local: 콘솔 로그만 출력
+- prod: 콘솔 + Grafana Cloud (OTLP) 전송
