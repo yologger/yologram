@@ -109,8 +109,8 @@ resource "aws_iam_role_policy" "execution_ssm_read" {
 ################################
 ## SSM Parameter Store (prod) ##
 ################################
-resource "aws_ssm_parameter" "grafana_loki_url_prod" {
-  name  = "/yologram/service/yologram-api-v2_prod/GRAFANA_LOKI_URL"
+resource "aws_ssm_parameter" "otel_endpoint_prod" {
+  name  = "/yologram/service/yologram-api-v2_prod/OTEL_EXPORTER_OTLP_ENDPOINT"
   type  = "SecureString"
   value = "PLACEHOLDER"
 
@@ -119,38 +119,8 @@ resource "aws_ssm_parameter" "grafana_loki_url_prod" {
   }
 }
 
-resource "aws_ssm_parameter" "grafana_loki_username_prod" {
-  name  = "/yologram/service/yologram-api-v2_prod/GRAFANA_LOKI_USERNAME"
-  type  = "SecureString"
-  value = "PLACEHOLDER"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "aws_ssm_parameter" "grafana_loki_password_prod" {
-  name  = "/yologram/service/yologram-api-v2_prod/GRAFANA_LOKI_PASSWORD"
-  type  = "SecureString"
-  value = "PLACEHOLDER"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "aws_ssm_parameter" "grafana_metrics_url_prod" {
-  name  = "/yologram/service/yologram-api-v2_prod/GRAFANA_METRICS_URL"
-  type  = "SecureString"
-  value = "PLACEHOLDER"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "aws_ssm_parameter" "grafana_metrics_auth_prod" {
-  name  = "/yologram/service/yologram-api-v2_prod/GRAFANA_METRICS_AUTHORIZATION"
+resource "aws_ssm_parameter" "otel_headers_prod" {
+  name  = "/yologram/service/yologram-api-v2_prod/OTEL_EXPORTER_OTLP_HEADERS"
   type  = "SecureString"
   value = "PLACEHOLDER"
 
@@ -205,24 +175,12 @@ resource "aws_ecs_task_definition" "this" {
       ]
       secrets = [
         {
-          name      = "GRAFANA_LOKI_URL"
-          valueFrom = aws_ssm_parameter.grafana_loki_url_prod.arn
+          name      = "OTEL_EXPORTER_OTLP_ENDPOINT"
+          valueFrom = aws_ssm_parameter.otel_endpoint_prod.arn
         },
         {
-          name      = "GRAFANA_LOKI_USERNAME"
-          valueFrom = aws_ssm_parameter.grafana_loki_username_prod.arn
-        },
-        {
-          name      = "GRAFANA_LOKI_PASSWORD"
-          valueFrom = aws_ssm_parameter.grafana_loki_password_prod.arn
-        },
-        {
-          name      = "GRAFANA_METRICS_URL"
-          valueFrom = aws_ssm_parameter.grafana_metrics_url_prod.arn
-        },
-        {
-          name      = "GRAFANA_METRICS_AUTHORIZATION"
-          valueFrom = aws_ssm_parameter.grafana_metrics_auth_prod.arn
+          name      = "OTEL_EXPORTER_OTLP_HEADERS"
+          valueFrom = aws_ssm_parameter.otel_headers_prod.arn
         },
       ]
     }

@@ -90,36 +90,6 @@ resource "aws_iam_role_policy" "task_ssm_read" {
 ################################
 ## SSM Parameter Store (prod) ##
 ################################
-resource "aws_ssm_parameter" "grafana_loki_url_prod" {
-  name  = "/yologram/service/yologram-api-v1_prod/grafana.loki.url"
-  type  = "String"
-  value = "PLACEHOLDER"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "aws_ssm_parameter" "grafana_loki_username_prod" {
-  name  = "/yologram/service/yologram-api-v1_prod/grafana.loki.username"
-  type  = "String"
-  value = "PLACEHOLDER"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "aws_ssm_parameter" "grafana_loki_password_prod" {
-  name  = "/yologram/service/yologram-api-v1_prod/grafana.loki.password"
-  type  = "SecureString"
-  value = "PLACEHOLDER"
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "aws_ssm_parameter" "grafana_metrics_url_prod" {
   name  = "/yologram/service/yologram-api-v1_prod/management.otlp.metrics.export.url"
   type  = "String"
@@ -152,6 +122,26 @@ resource "aws_ssm_parameter" "grafana_traces_endpoint_prod" {
 
 resource "aws_ssm_parameter" "grafana_traces_auth_prod" {
   name  = "/yologram/service/yologram-api-v1_prod/management.otlp.tracing.headers.Authorization"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "grafana_logs_endpoint_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/management.otlp.logging.endpoint"
+  type  = "String"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "grafana_logs_auth_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/management.otlp.logging.headers.Authorization"
   type  = "SecureString"
   value = "PLACEHOLDER"
 
