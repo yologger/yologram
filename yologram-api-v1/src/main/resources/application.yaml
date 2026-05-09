@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: yologram-api-v1
+
+management:
+  otlp:
+    metrics:
+      export:
+        url:    # /yologram/service/yologram-api-v1_{ENV}/management.otlp.metrics.export.url
+        step: 1m
+        headers:
+          Authorization:  # /yologram/service/yologram-api-v1_{ENV}/management.otlp.metrics.export.headers.Authorization
+  opentelemetry:
+    resource-attributes:
+      service.name: ${spring.application.name}
+      deployment.environment.name: ${spring.profiles.active:default}
+      service.instance.id: ${server.hostname:unknown}
+      service.namespace: yologram
+  metrics:
+    tags:
+      service.name: ${spring.application.name}
+      deployment.environment.name: ${spring.profiles.active:default}
+      service.instance.id: ${server.hostname:unknown}
+      service.namespace: yologram

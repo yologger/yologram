@@ -1,1 +1,4 @@
-spring.application.name=yologram-api-v1
+spring:
+  config:
+    import:
+      - 'aws-parameterstore:/yologram/service/yologram-api-v1_prod/'
