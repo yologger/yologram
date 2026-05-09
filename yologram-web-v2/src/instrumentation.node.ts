@@ -1,8 +1,10 @@
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http'
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http'
 import { resourceFromAttributes } from '@opentelemetry/resources'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics'
+import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs'
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http'
 import { HostMetrics } from '@opentelemetry/host-metrics'
 
@@ -34,8 +36,7 @@ function createSdk() {
       exporter: new OTLPMetricExporter(),
       exportIntervalMillis: 60000,
     }),
-    // HttpInstrumentation: http.server.request.duration 메트릭 자동 수집
-    // 요청 수는 http.server.request.duration의 count로 확인
+    logRecordProcessor: new BatchLogRecordProcessor(new OTLPLogExporter()),
     instrumentations: [new HttpInstrumentation()],
     resource: resourceFromAttributes({
       'service.name': process.env.OTEL_SERVICE_NAME ?? 'yologram-web-v2',
@@ -65,7 +66,6 @@ if (endpoint && !globalForOtel.__yologramWebV2OtelSdk) {
   registerShutdown(sdk)
   globalForOtel.__yologramWebV2OtelSdk = sdk
 
-  // HostMetrics: process.cpu.utilization, process.memory.usage 등 수집
   const hostMetrics = new HostMetrics()
   hostMetrics.start()
 }
