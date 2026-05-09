@@ -1,1 +1,10 @@
+- [x] Next.js instrumentation 엔트리 추가 (`src/instrumentation.ts`)
+- [x] Node runtime tracing 초기화 추가 (`src/instrumentation.node.ts`)
+- [x] Grafana Cloud OTLP trace export 의존성 추가
+- [x] trace용 환경변수 체계 정리 (`APP_ENV`, `OTEL_EXPORTER_OTLP_*`)
+- [x] Docker 빌드를 Yarn Berry non-zero-install 기준으로 수정
+- [x] Next.js standalone 출력 제거
+- [x] `APP_ENV`는 런타임 주입, `NEXT_PUBLIC_APP_ENV`는 `.env` 유지로 역할 분리
+- [ ] staging/prod 런타임에 OTEL secret 주입
+- [ ] Grafana Tempo에서 trace 수신 확인
 - [ ] GitHub Actions 빌드 캐시 적용: Docker 레이어 캐시 (docker/build-push-action)

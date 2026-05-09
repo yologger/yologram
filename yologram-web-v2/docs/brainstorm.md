@@ -26,7 +26,8 @@
 - .env.staging : 스테이징
 - .env.production : 프로덕션
 - 환경 변수 prefix: NEXT_PUBLIC_ (레거시는 VITE_)
-- 주요 변수: APP_ENV, API URL, AUTH TOKEN KEY
+- 주요 변수: NEXT_PUBLIC_APP_ENV, API URL, AUTH TOKEN KEY
+- 서버 런타임 env(`APP_ENV`)는 `.env`가 아니라 실행 주체(package script, ECS)가 주입
 
 ## src/ 디렉토리 구조 (레거시 참고)
 
@@ -43,9 +44,20 @@
 ## Dockerfile
 
 - multi-stage 빌드 (의존성 설치 + 빌드 → standalone 실행)
-- next.config.js output: 'standalone'
+- Yarn Berry는 사용하되 zero-install은 사용하지 않음
+- 빌드 컨테이너 내부에서 `yarn install --immutable`
+- Next.js는 일반 `next start` 방식으로 실행
 - 빌드 시 ENV arg로 환경 지정
-- node server.js로 실행 (포트 3000)
+- 포트 3000
+
+## Observability
+
+- 1차는 server-side trace만 적용
+- Next.js `src/instrumentation.ts`에서 런타임 부팅 시 OTel 등록
+- Node runtime에서만 tracing SDK 초기화
+- Grafana Cloud OTLP endpoint로 direct push
+- 운영 env는 `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_SERVICE_NAME` 사용
+- 환경명은 `APP_ENV`를 우선 사용하고 없으면 `NEXT_PUBLIC_APP_ENV` fallback
 
 ## React → Next.js 전환 시 차이점
 

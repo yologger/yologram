@@ -3,14 +3,18 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "APP_ENV=development next dev",
     "build": "next build",
-    "build:staging": "env-cmd -f .env.staging next build",
-    "build:prod": "env-cmd -f .env.production next build",
-    "start": "next start",
+    "build:staging": "APP_ENV=staging env-cmd -f .env.staging next build",
+    "build:prod": "APP_ENV=production env-cmd -f .env.production next build",
+    "start": "APP_ENV=${APP_ENV:-development} next start -p 3000",
     "lint": "eslint"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.206.0",
+    "@opentelemetry/resources": "^2.1.0",
+    "@opentelemetry/sdk-node": "^0.206.0",
     "next": "^16.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
