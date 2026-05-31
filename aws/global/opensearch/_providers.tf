@@ -8,6 +8,6 @@ terraform {
 }
 
 provider "aws" {
-  profile = "yologram202606"
+  profile = "yologram"
   region  = "ap-northeast-2"
 }
