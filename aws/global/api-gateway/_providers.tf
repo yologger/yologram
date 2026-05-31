@@ -11,5 +11,5 @@ terraform {
 
 provider "aws" {
   profile = "yologram"
-  region  = var.aws_region
+  region  = "ap-northeast-2"
 }
