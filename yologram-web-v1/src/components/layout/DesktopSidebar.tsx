@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { Menu } from 'antd'
-import { FundOutlined, GlobalOutlined, SettingOutlined, DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons'
+import { FundOutlined, GlobalOutlined, BellOutlined, SettingOutlined, DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons'
 import styles from './DesktopSidebar.module.css'
 
 const menuItems = [
   { key: '/invest', label: '투자', icon: <FundOutlined /> },
   { key: '/politics', label: '정치', icon: <GlobalOutlined /> },
+  { key: '/notifications', label: '알림', icon: <BellOutlined /> },
   { key: '/settings', label: '설정', icon: <SettingOutlined /> },
 ]
 
