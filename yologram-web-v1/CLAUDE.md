@@ -24,7 +24,7 @@
 
 ## 로컬 개발
 
-- 포트: 6001 (yarn start:dev)
+- 포트: 3001 (yarn start:dev)
 
 ## 배포
 

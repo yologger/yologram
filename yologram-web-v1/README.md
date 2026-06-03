@@ -14,7 +14,7 @@ React 기반 하이브리드 웹 애플리케이션. 투자/정치/기술 서비
 
 ```bash
 yarn install
-yarn start:dev    # http://localhost:6001
+yarn start:dev    # http://localhost:3001
 ```
 
 ## 빌드
@@ -48,7 +48,7 @@ src/
 
 ## 로컬 포트
 
-- 개발 서버: 6001
+- 개발 서버: 3001
 
 ## 배포
 
