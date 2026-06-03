@@ -1,14 +1,15 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { FundOutlined, GlobalOutlined, BellOutlined, SettingOutlined } from '@ant-design/icons'
+import { FundFilled, GlobalOutlined, CodeFilled, BellFilled, SettingFilled } from '@ant-design/icons'
 import styles from './MobileTabBar.module.css'
 
 const tabs = [
-  { key: '/invest', label: '투자', icon: <FundOutlined /> },
+  { key: '/invest', label: '투자', icon: <FundFilled /> },
   { key: '/politics', label: '정치', icon: <GlobalOutlined /> },
-  { key: '/notifications', label: '알림', icon: <BellOutlined /> },
-  { key: '/settings', label: '설정', icon: <SettingOutlined /> },
+  { key: '/tech', label: '기술', icon: <CodeFilled /> },
+  { key: '/notifications', label: '알림', icon: <BellFilled /> },
+  { key: '/settings', label: '설정', icon: <SettingFilled /> },
 ]
 
 export default function MobileTabBar() {

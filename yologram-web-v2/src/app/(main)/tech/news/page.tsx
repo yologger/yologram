@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { Typography } from 'antd'
 import FilterChips from '@/components/common/FilterChips'
 
-const categories = ['전체', '국내', '해외']
+const categories = ['Frontend', 'Backend', 'AI/ML', 'DevOps', 'Cloud']
 
-export default function InvestNews() {
-  const [category, setCategory] = useState('전체')
+export default function TechNews() {
+  const [category, setCategory] = useState('Frontend')
 
   return (
     <div>

@@ -5,6 +5,7 @@
 - React 19, React Router 7, TypeScript
 - Vite 빌드
 - Ant Design UI + CSS Modules (커스텀 스타일)
+- Jotai (상태 관리), axios + TanStack Query (API 통신)
 - Yarn Berry (non-zero-install)
 
 ## 작업 규칙
@@ -18,8 +19,12 @@
 ## 라우팅
 
 - / → /invest 리다이렉트
-- /invest, /politics, /settings 3개 탭
+- /invest, /politics, /tech, /notifications, /settings 5개 탭
 - ResponsiveLayout이 모바일 탭바 / 데스크탑 사이드바 분기
+
+## 로컬 개발
+
+- 포트: 6001 (yarn start:dev)
 
 ## 배포
 

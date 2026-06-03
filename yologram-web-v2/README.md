@@ -13,7 +13,7 @@ yarn install
 개발 서버 실행:
 
 ```bash
-yarn dev
+yarn start:dev    # http://localhost:6002
 ```
 
 빌드:

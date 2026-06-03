@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --mode development",
+    "start:dev": "vite --mode development --port 6001",
     "build": "tsc && vite build",
     "build:staging": "tsc && vite build --mode staging",
     "build:prod": "tsc && vite build --mode production",
