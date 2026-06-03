@@ -1,0 +1,17 @@
+.layout {
+  min-height: 100vh;
+}
+
+.content {
+  min-height: 100vh;
+}
+
+.content.mobile {
+  padding: 16px;
+  padding-bottom: 72px;
+}
+
+.content.desktop {
+  margin-left: 200px;
+  padding: 24px;
+}

@@ -17,15 +17,15 @@ uv sync
 
 기본 프로파일 (default):
 ```bash
-uv run uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload --port 5002
 ```
 
 프로파일 지정:
 ```bash
-APP_PROFILE=prod uv run uvicorn app.main:app --reload
+APP_PROFILE=prod uv run uvicorn app.main:app --reload --port 5002
 ```
 
-서버 기본 주소: http://localhost:8000
+서버 기본 주소: http://localhost:5002
 
 ## API 엔드포인트
 
