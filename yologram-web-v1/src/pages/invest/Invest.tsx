@@ -1,5 +1,10 @@
-import { Typography } from 'antd'
+import SubTabLayout from '../../components/common/SubTabLayout'
+
+const tabs = [
+  { key: 'news', label: '뉴스' },
+  { key: 'community', label: '커뮤니티' },
+]
 
 export default function Invest() {
-  return <Typography.Title level={3}>투자</Typography.Title>
+  return <SubTabLayout basePath="/invest" tabs={tabs} />
 }
