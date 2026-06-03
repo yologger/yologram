@@ -20,6 +20,11 @@
 - Traces: micrometer-tracing-bridge-otel + opentelemetry-exporter-otlp
 - Resource 속성: service.name, deployment.environment.name, service.instance.id, service.namespace
 
+## 포트
+
+- 기본(ECS): 5000
+- 로컬: 5002 (application-local.yaml에서 override)
+
 ## 배포
 
 - Docker (amazoncorretto:17 multi-stage)
