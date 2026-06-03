@@ -1,10 +1,11 @@
 import { useLocation, useNavigate } from 'react-router'
-import { FundOutlined, GlobalOutlined, BellOutlined, SettingOutlined } from '@ant-design/icons'
+import { FundOutlined, GlobalOutlined, CodeOutlined, BellOutlined, SettingOutlined } from '@ant-design/icons'
 import styles from './MobileTabBar.module.css'
 
 const tabs = [
   { key: '/invest', label: '투자', icon: <FundOutlined /> },
   { key: '/politics', label: '정치', icon: <GlobalOutlined /> },
+  { key: '/tech', label: '기술', icon: <CodeOutlined /> },
   { key: '/notifications', label: '알림', icon: <BellOutlined /> },
   { key: '/settings', label: '설정', icon: <SettingOutlined /> },
 ]
