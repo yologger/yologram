@@ -7,7 +7,9 @@ import InvestCommunity from './pages/invest/InvestCommunity'
 import InvestInfo from './pages/invest/InvestInfo'
 import Politics from './pages/politics/Politics'
 import PoliticsNews from './pages/politics/PoliticsNews'
+import PoliticsFavoriteNews from './pages/politics/PoliticsFavoriteNews'
 import PoliticsCommunity from './pages/politics/PoliticsCommunity'
+import PoliticsInfo from './pages/politics/PoliticsInfo'
 import Notifications from './pages/notifications/Notifications'
 import Settings from './pages/settings/Settings'
 
@@ -26,7 +28,9 @@ export default function Router() {
         <Route path="/politics" element={<Politics />}>
           <Route index element={<Navigate to="/politics/news" replace />} />
           <Route path="news" element={<PoliticsNews />} />
+          <Route path="favorite-news" element={<PoliticsFavoriteNews />} />
           <Route path="community" element={<PoliticsCommunity />} />
+          <Route path="info" element={<PoliticsInfo />} />
         </Route>
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/settings" element={<Settings />} />
