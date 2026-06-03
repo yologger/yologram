@@ -21,6 +21,10 @@
 - Traces: OpenTelemetry TracerProvider + OTLPSpanExporter + FastAPIInstrumentor (app/config/tracing.py)
 - Resource 속성: service.name, deployment.environment.name, service.instance.id, service.namespace
 
+## 포트
+
+- 로컬/ECS 모두 5000
+
 ## 배포
 
 - Docker (python:3.12-slim multi-stage)
