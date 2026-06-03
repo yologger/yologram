@@ -2,7 +2,9 @@ import { Routes, Route, Navigate } from 'react-router'
 import ResponsiveLayout from './components/layout/ResponsiveLayout'
 import Invest from './pages/invest/Invest'
 import InvestNews from './pages/invest/InvestNews'
+import InvestFavoriteNews from './pages/invest/InvestFavoriteNews'
 import InvestCommunity from './pages/invest/InvestCommunity'
+import InvestInfo from './pages/invest/InvestInfo'
 import Politics from './pages/politics/Politics'
 import PoliticsNews from './pages/politics/PoliticsNews'
 import PoliticsCommunity from './pages/politics/PoliticsCommunity'
@@ -17,7 +19,9 @@ export default function Router() {
         <Route path="/invest" element={<Invest />}>
           <Route index element={<Navigate to="/invest/news" replace />} />
           <Route path="news" element={<InvestNews />} />
+          <Route path="favorite-news" element={<InvestFavoriteNews />} />
           <Route path="community" element={<InvestCommunity />} />
+          <Route path="info" element={<InvestInfo />} />
         </Route>
         <Route path="/politics" element={<Politics />}>
           <Route index element={<Navigate to="/politics/news" replace />} />

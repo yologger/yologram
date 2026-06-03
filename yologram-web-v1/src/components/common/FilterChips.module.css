@@ -1,0 +1,28 @@
+.container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.chip {
+  cursor: pointer;
+  padding: 4px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  border: 1px solid #d9d9d9;
+  background: #fff;
+  color: #595959;
+  transition: all 0.2s;
+}
+
+.chip:hover {
+  border-color: #1677ff;
+  color: #1677ff;
+}
+
+.chip.active {
+  background: #262626;
+  color: #fff;
+  border-color: #262626;
+}
