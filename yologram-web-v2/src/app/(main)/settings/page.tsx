@@ -1,6 +1,6 @@
 'use client'
 
-import { Avatar, Typography, List } from 'antd'
+import { Avatar, Typography } from 'antd'
 import {
   UserOutlined,
   BulbOutlined,
@@ -46,18 +46,16 @@ export default function Settings() {
       {sections.map((section) => (
         <div key={section.title} className={styles.section}>
           <Text type="secondary" className={styles.sectionTitle}>{section.title}</Text>
-          <List
-            dataSource={section.items}
-            renderItem={(item) => (
-              <List.Item className={styles.listItem} extra={<RightOutlined className={styles.arrow} />}>
-                <List.Item.Meta
-                  avatar={<span className={styles.itemIcon}>{item.icon}</span>}
-                  title={item.label}
-                  description={item.desc}
-                />
-              </List.Item>
-            )}
-          />
+          {section.items.map((item) => (
+            <div key={item.label} className={styles.listItem}>
+              <span className={styles.itemIcon}>{item.icon}</span>
+              <div className={styles.itemContent}>
+                <Text strong>{item.label}</Text>
+                {item.desc && <Text type="secondary" className={styles.itemDesc}>{item.desc}</Text>}
+              </div>
+              <RightOutlined className={styles.arrow} />
+            </div>
+          ))}
         </div>
       ))}
 
