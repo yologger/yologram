@@ -134,8 +134,8 @@ resource "aws_security_group" "this" {
   vpc_id      = data.aws_vpc.prod.id
 
   ingress {
-    from_port   = 8000
-    to_port     = 8000
+    from_port   = 5000
+    to_port     = 5000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -168,7 +168,7 @@ resource "aws_ecs_task_definition" "this" {
       essential = true
       portMappings = [
         {
-          containerPort = 8000
+          containerPort = 5000
           protocol      = "tcp"
         }
       ]
@@ -230,7 +230,7 @@ resource "aws_ecs_service" "this" {
   service_registries {
     registry_arn   = aws_service_discovery_service.this.arn
     container_name = "yologram-api-v2"
-    container_port = 8000
+    container_port = 5000
   }
 }
 
