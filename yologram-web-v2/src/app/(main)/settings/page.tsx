@@ -1,6 +1,6 @@
 'use client'
 
-import { Avatar, Typography } from 'antd'
+import { Avatar, Modal, Typography } from 'antd'
 import {
   UserOutlined,
   BulbOutlined,
@@ -9,6 +9,10 @@ import {
   FileTextOutlined,
   RightOutlined,
 } from '@ant-design/icons'
+import { useAtomValue } from 'jotai'
+import { authAtom } from '@/stores/auth'
+import useLogoutMutation from '@/queries/useLogoutMutation'
+import RequireAuth from '@/components/auth/RequireAuth'
 import styles from './Settings.module.css'
 
 const { Title, Text } = Typography
@@ -36,34 +40,47 @@ const sections = [
 ]
 
 export default function Settings() {
+  const auth = useAtomValue(authAtom)
+  const { mutate: logoutMutate } = useLogoutMutation()
+
   return (
-    <div className={styles.container}>
-      <div className={styles.profile}>
-        <Avatar size={64} icon={<UserOutlined />} className={styles.avatar} />
-        <Title level={4} className={styles.username}>yologram</Title>
-      </div>
-
-      {sections.map((section) => (
-        <div key={section.title} className={styles.section}>
-          <Text type="secondary" className={styles.sectionTitle}>{section.title}</Text>
-          {section.items.map((item) => (
-            <div key={item.label} className={styles.listItem}>
-              <span className={styles.itemIcon}>{item.icon}</span>
-              <div className={styles.itemContent}>
-                <Text strong>{item.label}</Text>
-                {item.desc && <Text type="secondary" className={styles.itemDesc}>{item.desc}</Text>}
-              </div>
-              <RightOutlined className={styles.arrow} />
-            </div>
-          ))}
+    <RequireAuth>
+      <div className={styles.container}>
+        <div className={styles.profile}>
+          <Avatar size={64} icon={<UserOutlined />} className={styles.avatar} />
+          <Title level={4} className={styles.username}>{auth?.nickname ?? 'yologram'}</Title>
         </div>
-      ))}
 
-      <div className={styles.footer}>
-        <Text type="secondary" className={styles.footerLink}>로그아웃</Text>
-        <Text type="secondary"> | </Text>
-        <Text type="secondary" className={styles.footerLink}>회원탈퇴</Text>
+        {sections.map((section) => (
+          <div key={section.title} className={styles.section}>
+            <Text type="secondary" className={styles.sectionTitle}>{section.title}</Text>
+            {section.items.map((item) => (
+              <div key={item.label} className={styles.listItem}>
+                <span className={styles.itemIcon}>{item.icon}</span>
+                <div className={styles.itemContent}>
+                  <Text strong>{item.label}</Text>
+                  {item.desc && <Text type="secondary" className={styles.itemDesc}>{item.desc}</Text>}
+                </div>
+                <RightOutlined className={styles.arrow} />
+              </div>
+            ))}
+          </div>
+        ))}
+
+        <div className={styles.footer}>
+          <Text type="secondary" className={styles.footerLink} onClick={() => {
+            Modal.confirm({
+              title: '로그아웃',
+              content: '정말 로그아웃 하시겠어요?',
+              okText: '로그아웃',
+              cancelText: '취소',
+              onOk: () => logoutMutate(),
+            })
+          }}>로그아웃</Text>
+          <Text type="secondary"> | </Text>
+          <Text type="secondary" className={styles.footerLink}>회원탈퇴</Text>
+        </div>
       </div>
-    </div>
+    </RequireAuth>
   )
 }

@@ -8,3 +8,6 @@
 - [ ] staging/prod 런타임에 OTEL secret 주입
 - [ ] Grafana Tempo에서 trace 수신 확인
 - [ ] GitHub Actions 빌드 캐시 적용: Docker 레이어 캐시 (docker/build-push-action)
+- [ ] Next.js 서버 컴포넌트 / 클라이언트 컴포넌트 완벽히 이해하기
+- [ ] 인증: cookie 기반 토큰 전환 시 middleware 방식으로 route 보호 검토
+- [ ] route group 구조 검토: (app)/(app-private) 분리 또는 현재 RequireAuth 유지 판단
