@@ -1,5 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router'
 import ResponsiveLayout from './components/layout/ResponsiveLayout'
+import RequireAuth from './components/auth/RequireAuth'
+import LoginPage from './pages/auth/LoginPage'
+import RegisterPage from './pages/auth/RegisterPage'
 import InvestPage from './pages/invest/InvestPage'
 import InvestNewsPage from './pages/invest/InvestNewsPage'
 import InvestFavoriteNewsPage from './pages/invest/InvestFavoriteNewsPage'
@@ -19,29 +22,34 @@ import SettingsPage from './pages/settings/SettingsPage'
 export default function Router() {
   return (
     <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route element={<ResponsiveLayout />}>
         <Route path="/" element={<Navigate to="/invest" replace />} />
         <Route path="/invest" element={<InvestPage />}>
           <Route index element={<Navigate to="/invest/news" replace />} />
           <Route path="news" element={<InvestNewsPage />} />
-          <Route path="favorite-news" element={<InvestFavoriteNewsPage />} />
           <Route path="community" element={<InvestCommunityPage />} />
           <Route path="info" element={<InvestInfoPage />} />
         </Route>
         <Route path="/politics" element={<PoliticsPage />}>
           <Route index element={<Navigate to="/politics/news" replace />} />
           <Route path="news" element={<PoliticsNewsPage />} />
-          <Route path="favorite-news" element={<PoliticsFavoriteNewsPage />} />
           <Route path="community" element={<PoliticsCommunityPage />} />
           <Route path="info" element={<PoliticsInfoPage />} />
         </Route>
         <Route path="/tech" element={<TechPage />}>
           <Route index element={<Navigate to="/tech/news" replace />} />
           <Route path="news" element={<TechNewsPage />} />
-          <Route path="favorite-news" element={<TechFavoriteNewsPage />} />
         </Route>
-        <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+
+        <Route element={<RequireAuth />}>
+          <Route path="/invest/favorite-news" element={<InvestFavoriteNewsPage />} />
+          <Route path="/politics/favorite-news" element={<PoliticsFavoriteNewsPage />} />
+          <Route path="/tech/favorite-news" element={<TechFavoriteNewsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
       </Route>
     </Routes>
   )
