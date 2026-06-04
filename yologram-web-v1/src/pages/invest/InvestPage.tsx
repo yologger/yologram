@@ -7,6 +7,6 @@ const tabs = [
   { key: 'info', label: '정보' },
 ]
 
-export default function Invest() {
+export default function InvestPage() {
   return <SubTabLayout basePath="/invest" tabs={tabs} />
 }

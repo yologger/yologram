@@ -4,7 +4,7 @@ import FilterChips from '../../components/common/FilterChips'
 
 const filters = ['시가총액', '거래대금', '거래량', '인기']
 
-export default function InvestInfo() {
+export default function InvestInfoPage() {
   const [selected, setSelected] = useState('시가총액')
 
   return (

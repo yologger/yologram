@@ -7,6 +7,6 @@ const tabs = [
   { key: 'info', label: '정보' },
 ]
 
-export default function Politics() {
+export default function PoliticsPage() {
   return <SubTabLayout basePath="/politics" tabs={tabs} />
 }

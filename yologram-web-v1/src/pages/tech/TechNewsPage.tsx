@@ -4,7 +4,7 @@ import FilterChips from '../../components/common/FilterChips'
 
 const categories = ['Frontend', 'Backend', 'AI/ML', 'DevOps', 'Cloud']
 
-export default function TechNews() {
+export default function TechNewsPage() {
   const [category, setCategory] = useState('Frontend')
 
   return (

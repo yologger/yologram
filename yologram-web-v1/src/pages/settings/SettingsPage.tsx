@@ -7,7 +7,7 @@ import {
   FileTextOutlined,
   RightOutlined,
 } from '@ant-design/icons'
-import styles from './Settings.module.css'
+import styles from './SettingsPage.module.css'
 
 const { Title, Text } = Typography
 
@@ -33,7 +33,7 @@ const sections = [
   },
 ]
 
-export default function Settings() {
+export default function SettingsPage() {
   return (
     <div className={styles.container}>
       <div className={styles.profile}>

@@ -5,6 +5,6 @@ const tabs = [
   { key: 'favorite-news', label: '관심 뉴스' },
 ]
 
-export default function Tech() {
+export default function TechPage() {
   return <SubTabLayout basePath="/tech" tabs={tabs} />
 }
