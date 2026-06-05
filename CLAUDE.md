@@ -11,8 +11,10 @@
 
 ## 인프라
 
-- IaC: Terraform (yologger-infra 레포에서 관리)
-- v1 API: ECS Fargate
+- IaC: Terraform (~/Workspace/yologger/yologger-infra/ 에서 관리)
+- ECS Fargate: api-v1(5000), api-v2(5000), web-v2(3000)
+- API Gateway: api.yologram.link → /api/v1/{proxy+}는 api-v1, /api/v2/{proxy+}는 api-v2, /{proxy+}는 web-v2
+- web-v1: S3 + CloudFront
 
 ## CI/CD
 
