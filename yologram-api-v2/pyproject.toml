@@ -12,4 +12,16 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-http>=1.20.0",
     "opentelemetry-instrumentation-system-metrics>=0.42b0",
     "opentelemetry-instrumentation-fastapi>=0.42b0",
+    "sqlalchemy>=2.0.50",
+    "pymysql>=1.2.0",
+    "bcrypt>=5.0.0",
+    "pydantic[email]>=2.13.3",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+    "testcontainers>=4.14.2",
 ]

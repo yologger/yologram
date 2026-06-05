@@ -25,7 +25,18 @@ uv run uvicorn app.main:app --reload --port 5002
 APP_PROFILE=prod uv run uvicorn app.main:app --reload --port 5002
 ```
 
+prod DB 연결:
+```bash
+./scripts/run-prod.sh
+```
+
 서버 기본 주소: http://localhost:5002
+
+## 테스트
+
+```bash
+uv run pytest tests/ -v
+```
 
 ## API 엔드포인트
 
@@ -35,8 +46,9 @@ APP_PROFILE=prod uv run uvicorn app.main:app --reload --port 5002
 | GET | /api/v2/test/echo | 클라이언트 요청 정보 반환 |
 | GET | /api/v2/test/profile | 활성 프로파일 반환 |
 | GET | /api/v2/test/property?key=... | 설정값 조회 |
+| POST | /api/v2/ums/user/join | 회원가입 |
 
-API 문서: http://localhost:5002/docs
+API 문서: http://localhost:5002/api/v2/docs
 
 ## Observability (Grafana Cloud, OTLP)
 
