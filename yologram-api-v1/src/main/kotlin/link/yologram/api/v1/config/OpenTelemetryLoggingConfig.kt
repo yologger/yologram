@@ -1,4 +1,4 @@
-package link.yologram.api.v1.api.config
+package link.yologram.api.v1.config
 
 import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender
 import io.opentelemetry.sdk.OpenTelemetrySdk

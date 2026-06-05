@@ -1,4 +1,4 @@
-package link.yologram.api.v1.api.domain.test.resource
+package link.yologram.api.v1.domain.test.resource
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.http.HttpServletRequest

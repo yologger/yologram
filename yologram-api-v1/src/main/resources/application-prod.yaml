@@ -2,3 +2,20 @@ spring:
   config:
     import:
       - 'aws-parameterstore:/yologram/service/yologram-api-v1_prod/'
+
+database:
+  main:
+    writer:
+      datasource:
+        url:
+        username:
+        password:
+    reader:
+      datasource:
+        url:
+        username:
+        password:
+    jpa:
+      properties:
+        hibernate.hbm2ddl.auto: update
+      show-sql: true

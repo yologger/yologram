@@ -4,6 +4,37 @@ server:
 spring:
   application:
     name: yologram-api-v1
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
+database:
+  main:
+    writer:
+      datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+    reader:
+      datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+    jpa:
+      properties:
+        hibernate.jdbc.batch_size: 50
+        hibernate.order_inserts: true
+        hibernate.order_updates: true
+        hibernate.default_batch_fetch_size: 100
+        hibernate.jdbc.time_zone: Asia/Seoul
+        hibernate.cache.use_second_level_cache: false
+        hibernate.cache.use_query_cache: false
+        hibernate.hbm2ddl.auto: validate
+      show-sql: false
+      open-in-view: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
 
 management:
   tracing:

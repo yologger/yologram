@@ -1,0 +1,26 @@
+database:
+  main:
+    writer:
+      datasource:
+        url: jdbc:tc:mysql:8.0:///yologram?useUnicode=true&charset=utf8mb4&characterEncoding=utf8&serverTimezone=Asia/Seoul
+        driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    reader:
+      datasource:
+        url: jdbc:tc:mysql:8.0:///yologram?useUnicode=true&charset=utf8mb4&characterEncoding=utf8&serverTimezone=Asia/Seoul
+        driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    jpa:
+      properties:
+        hibernate.hbm2ddl.auto: create-drop
+      show-sql: true
+
+management:
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
+    metrics:
+      export:
+        url: http://localhost:4318/v1/metrics
+    logging:
+      endpoint: http://localhost:4318/v1/logs
+  tracing:
+    enabled: false
