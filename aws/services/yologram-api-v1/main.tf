@@ -150,6 +150,69 @@ resource "aws_ssm_parameter" "grafana_logs_auth_prod" {
   }
 }
 
+#################################
+## SSM Parameter Store (DB prod) ##
+#################################
+resource "aws_ssm_parameter" "db_writer_url_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/database.main.writer.datasource.url"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "db_writer_username_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/database.main.writer.datasource.username"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "db_writer_password_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/database.main.writer.datasource.password"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "db_reader_url_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/database.main.reader.datasource.url"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "db_reader_username_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/database.main.reader.datasource.username"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "db_reader_password_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/database.main.reader.datasource.password"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "aws_security_group" "this" {
   name        = "yologram-api-v1-prod-sg"
   description = "Security group for yologram-api-v1-prod"
