@@ -33,7 +33,7 @@ jobs:
 
       - name: Gradle build
         working-directory: yologram-api-v1
-        run: ./gradlew build
+        run: ./gradlew build --build-cache
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
