@@ -18,9 +18,26 @@ env:
   ECS_TASK_FAMILY: yologram-api-v2-prod
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        working-directory: yologram-api-v2
+        run: uv sync
+
+      - name: Run tests
+        working-directory: yologram-api-v2
+        run: uv run pytest tests/ -v
+
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: test
     if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v4
