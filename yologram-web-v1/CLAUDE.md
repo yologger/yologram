@@ -22,9 +22,17 @@
 - /invest, /politics, /tech, /notifications, /settings 5개 탭
 - ResponsiveLayout이 모바일 탭바 / 데스크탑 사이드바 분기
 
+## 테스트
+
+- vitest + jsdom + @testing-library/react + msw
+- 테스트 유틸리티: src/test/ (setup.ts, handlers.ts, server.ts, utils.tsx)
+- 테스트 파일은 소스 파일 옆에 배치 (colocation)
+- yarn test (단일 실행), yarn test:watch (감시 모드)
+
 ## 로컬 개발
 
 - 포트: 3001 (yarn start:dev)
+- API URL: http://localhost:5001 (.env.development)
 
 ## 배포
 
