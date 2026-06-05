@@ -25,8 +25,10 @@ class Settings(BaseSettings):
     )
 
     def get_database_url(self) -> str:
-        if self.db_url.startswith("mysql"):
-            return self.db_url
+        if "://" in self.db_url:
+            # mysql+pymysql://host:port/db → mysql+pymysql://user:pass@host:port/db
+            scheme, rest = self.db_url.split("://", 1)
+            return f"{scheme}://{self.db_username}:{self.db_password}@{rest}"
         return f"mysql+pymysql://{self.db_username}:{self.db_password}@{self.db_url}"
 
     def get_property(self, key: str) -> str | None:
