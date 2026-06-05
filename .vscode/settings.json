@@ -1,0 +1,3 @@
+{
+  "vitest.rootConfig": "yologram-web-v1/vite.config.ts"
+}
