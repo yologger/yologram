@@ -31,10 +31,8 @@ database:
 
 springdoc:
   swagger-ui:
-    path: /swagger
+    path: /api/v1/docs
     tags-sorter: alpha
-  api-docs:
-    path: /v3/api-docs
 
 management:
   tracing:
