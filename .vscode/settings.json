@@ -1,3 +1,9 @@
 {
-  "vitest.rootConfig": "yologram-web-v1/vite.config.ts"
+  "vitest.rootConfig": "yologram-web-v1/vite.config.ts",
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
+  "python.testing.cwd": "yologram-api-v2",
+  "python.defaultInterpreterPath": "yologram-api-v2/.venv/bin/python"
 }
