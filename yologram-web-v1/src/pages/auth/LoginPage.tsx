@@ -31,7 +31,7 @@ export default function LoginPage() {
           </Form.Item>
         </Form>
         <div className={styles.links}>
-          <Text type="secondary">계정이 없으신가요? <Link to="/register">회원가입</Link></Text>
+          <Text type="secondary">계정이 없으신가요? <Link to="/join">회원가입</Link></Text>
         </div>
         <Text type="secondary" className={styles.hint}>
           테스트: test@yologram.link / password

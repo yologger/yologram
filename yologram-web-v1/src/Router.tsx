@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router'
 import ResponsiveLayout from './components/layout/ResponsiveLayout'
 import RequireAuth from './components/auth/RequireAuth'
 import LoginPage from './pages/auth/LoginPage'
-import RegisterPage from './pages/auth/RegisterPage'
+import JoinPage from './pages/auth/JoinPage'
 import InvestPage from './pages/invest/InvestPage'
 import InvestNewsPage from './pages/invest/InvestNewsPage'
 import InvestFavoriteNewsPage from './pages/invest/InvestFavoriteNewsPage'
@@ -23,7 +23,7 @@ export default function Router() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/join" element={<JoinPage />} />
       <Route element={<ResponsiveLayout />}>
         <Route path="/" element={<Navigate to="/invest" replace />} />
         <Route path="/invest" element={<InvestPage />}>
