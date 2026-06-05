@@ -20,13 +20,22 @@
 - Traces: micrometer-tracing-bridge-otel + opentelemetry-exporter-otlp
 - Resource 속성: service.name, deployment.environment.name, service.instance.id, service.namespace
 
+## Swagger
+
+- Swagger UI: /api/v1/docs
+- api-docs: /api/v1/api-docs
+
+## CORS
+
+- WebConfig에서 전체 허용 (*) — 인증 구현 시 origin 제한 필요
+
 ## 포트
 
 - 기본(ECS): 5000
-- 로컬: 5002 (application-local.yaml에서 override)
+- 로컬: 5001 (application-local.yaml에서 override)
 
 ## 배포
 
-- Docker (amazoncorretto:17 multi-stage)
+- Docker (amazoncorretto:17-alpine, jar copy only)
 - ECS Fargate
-- GitHub Actions: Gradle build → ECR push → ECS 재배포
+- GitHub Actions: Gradle build (--build-cache) → ECR push → ECS 재배포

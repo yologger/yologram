@@ -11,24 +11,30 @@
 
 ## DB 설정
 
-- [ ] 의존성 추가 (JPA, MySQL, QueryDSL, Testcontainers)
-- [ ] R/W splitting 구성 (MasterSlaveRoutingDataSource)
-- [ ] application.yaml JPA/Hibernate 설정
-- [ ] application-local.yaml 로컬 DB 설정
-- [ ] application-prod.yaml RDS 설정 (Parameter Store)
+- [x] 의존성 추가 (JPA, MySQL, QueryDSL, Testcontainers)
+- [x] R/W splitting 구성 (MasterSlaveRoutingDataSource)
+- [x] application.yaml JPA/Hibernate 설정
+- [x] application-local.yaml 로컬 DB 설정
+- [x] application-prod.yaml RDS 설정 (Parameter Store)
 
 ## UMS - 회원가입 (1단계)
 
-- [ ] User 엔티티 (email, name, nickname, password, avatar, accessToken, type, status)
-- [ ] UserType enum (DEFAULT, POLITICIAN, ECONOMIST, ADMIN)
-- [ ] UserStatus enum (ACTIVE, INACTIVE, DELETED)
-- [ ] UserRepository
-- [ ] BCryptPasswordEncoder 설정
-- [ ] UserService.join()
-- [ ] POST /api/v1/ums/user/join 컨트롤러
-- [ ] UserDuplicateException 예외 처리
-- [ ] 회원가입 단위 테스트
-- [ ] 회원가입 통합 테스트 (Testcontainers)
+- [x] User 엔티티 (email, name, nickname, password, avatar, accessToken, type, status)
+- [x] UserType enum (DEFAULT, POLITICIAN, ECONOMIST, ADMIN)
+- [x] UserStatus enum (ACTIVE, INACTIVE, DELETED)
+- [x] UserRepository
+- [x] BCryptPasswordEncoder 설정
+- [x] UserService.join()
+- [x] POST /api/v1/ums/user/join 컨트롤러
+- [x] UserDuplicateException 예외 처리
+- [x] 회원가입 단위 테스트
+- [x] 회원가입 통합 테스트 (Testcontainers)
+
+## API 설정
+
+- [x] Swagger UI 경로: /api/v1/docs
+- [x] api-docs 경로: /api/v1/api-docs
+- [x] CORS 전체 허용 (WebConfig)
 
 ## UMS - 로그인/로그아웃 (2단계)
 
