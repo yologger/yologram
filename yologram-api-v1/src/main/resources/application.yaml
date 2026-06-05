@@ -31,7 +31,7 @@ database:
 
 springdoc:
   swagger-ui:
-    path: /swagger-ui.html
+    path: /swagger
     tags-sorter: alpha
   api-docs:
     path: /v3/api-docs
