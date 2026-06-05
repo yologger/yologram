@@ -31,8 +31,9 @@
 
 ## 작업 규칙
 
+- 기능 구현 시 docs/ (brainstorm.md, plan.md, tasks.md)와 README.md, CLAUDE.md, AGENTS.md를 먼저 업데이트한 후 코드 작성
 - 코드 변경 전 반드시 plan을 먼저 보여주고, 승인 후 적용
-- 코드 변경 시 README.md, CLAUDE.md, AGENTS.md를 함께 업데이트
+- 코드 구현 시 항상 테스트코드도 함께 작성
 - 작업 전 해당 프로젝트의 docs/ (plan.md, tasks.md, brainstorm.md)를 참고할 것
 - observability는 OpenTelemetry 기준으로 구성하고, 가능하면 기존 서비스와 동일하게 Grafana Cloud OTLP direct push 패턴을 우선 검토할 것
 - Next.js 계열 프로젝트에서는 서버 런타임 env와 `NEXT_PUBLIC_*` env를 분리해서 관리할 것
