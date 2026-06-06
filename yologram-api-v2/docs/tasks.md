@@ -31,13 +31,21 @@
 - [x] POST /api/v2/ums/user/join router
 - [x] 회원가입 테스트 (service, router)
 
-## UMS - 로그인/로그아웃 (2단계)
+## UMS - 로그인/로그아웃/토큰검증 (2단계)
 
-- [ ] JWT 유틸 (생성, 검증)
-- [ ] AuthService (login, logout)
-- [ ] POST /api/v2/ums/auth/login
-- [ ] POST /api/v2/ums/auth/logout
-- [ ] 로그인/로그아웃 테스트
+- [x] Settings에 jwt_secret, jwt_expire, jwt_issuer, jwt_audience 추가
+- [x] PyJWT 의존성 추가
+- [x] jwt_util.py (create_token, validate_and_get_uid)
+- [x] 인증 스키마 (LoginRequest, LoginResponse, ValidateTokenResponse, AuthData)
+- [x] 인증 예외 (AuthWrongPasswordException, AuthTokenExpiredException, AuthTokenInvalidException)
+- [x] 인증 의존성 (get_authenticated_user - Bearer 토큰 추출/검증)
+- [x] AuthService (login, validate_token, logout)
+- [x] POST /api/v2/ums/auth/login
+- [x] POST /api/v2/ums/auth/validate-token
+- [x] POST /api/v2/ums/auth/logout (204)
+- [x] jwt_util 단위 테스트 (4개)
+- [x] auth_service 단위 테스트 (8개)
+- [x] auth_router E2E 테스트 (10개)
 
 ## UMS - 유저 조회/탈퇴 (3단계)
 

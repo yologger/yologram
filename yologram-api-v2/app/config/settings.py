@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     db_username: str = ""
     db_password: str = ""
 
+    # JWT 설정 (JWT_SECRET은 ECS secrets 또는 환경변수로 주입)
+    jwt_secret: str = ""
+    jwt_expire: int = 86400
+    jwt_issuer: str = "yologram.link"
+    jwt_audience: str = "yologram.client"
+
     # OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS는
     # OpenTelemetry SDK가 자동으로 읽음 (ECS secrets에서 주입)
 

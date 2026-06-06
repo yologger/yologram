@@ -8,6 +8,9 @@ class UserRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    def find_by_id(self, uid: int) -> User | None:
+        return self.db.query(User).filter(User.id == uid).first()
+
     def find_by_email(self, email: str) -> User | None:
         return self.db.query(User).filter(User.email == email).first()
 

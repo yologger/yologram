@@ -55,3 +55,26 @@
 ### 테스트
 - service 단위 테스트
 - router 테스트 (TestClient)
+
+## Phase 7: UMS 로그인/로그아웃/토큰검증
+
+### 설정
+- Settings에 jwt_secret (환경변수 JWT_SECRET), jwt_expire(86400), jwt_issuer(yologram.link), jwt_audience(yologram.client) 추가
+- run-prod.sh에 JWT_SECRET Parameter Store 가져오기 추가
+
+### JWT
+- PyJWT 의존성 추가
+- jwt_util.py: create_token(uid), validate_and_get_uid(token)
+- api-v1과 동일한 HMAC256, 동일한 secret/issuer/audience
+
+### 인증 흐름
+- auth_schema.py: LoginRequest, LoginResponse, ValidateTokenResponse, AuthData
+- auth_dependency.py: get_authenticated_user (Bearer 헤더 → JWT 검증 → AuthData)
+- auth_service.py: login(비밀번호 검증→토큰 생성→DB 저장), validate_token(DB 일치 확인), logout(access_token null)
+- auth_router.py: login, validate-token, logout 엔드포인트
+- 예외: AuthWrongPasswordException(401), AuthTokenExpiredException(401), AuthTokenInvalidException(401)
+
+### 테스트
+- jwt_util 단위 테스트
+- auth_service 단위 테스트 (mock repository)
+- auth_router E2E 테스트 (TestClient)

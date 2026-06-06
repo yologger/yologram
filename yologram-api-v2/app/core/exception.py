@@ -24,6 +24,21 @@ class UserNotFoundException(AppException):
         super().__init__(404, "존재하지 않는 사용자입니다.", "USER_NOT_FOUND")
 
 
+class AuthWrongPasswordException(AppException):
+    def __init__(self):
+        super().__init__(401, "비밀번호가 일치하지 않습니다.", "AUTH_WRONG_PASSWORD")
+
+
+class AuthTokenExpiredException(AppException):
+    def __init__(self):
+        super().__init__(401, "토큰이 만료되었습니다.", "AUTH_TOKEN_EXPIRED")
+
+
+class AuthTokenInvalidException(AppException):
+    def __init__(self):
+        super().__init__(401, "유효하지 않은 토큰입니다.", "AUTH_TOKEN_INVALID")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:
