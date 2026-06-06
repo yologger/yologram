@@ -18,9 +18,33 @@ env:
   ECS_TASK_FAMILY: yologram-web-v2-prod
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: yologram-web-v2/yarn.lock
+
+      - name: Install dependencies
+        working-directory: yologram-web-v2
+        run: yarn install --immutable
+
+      - name: Run tests
+        working-directory: yologram-web-v2
+        run: yarn test
+
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: test
     if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v4

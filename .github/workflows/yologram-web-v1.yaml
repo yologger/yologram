@@ -15,9 +15,33 @@ env:
   S3_BUCKET: yologram-web-v1
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: yologram-web-v1/yarn.lock
+
+      - name: Install dependencies
+        working-directory: yologram-web-v1
+        run: yarn install --immutable
+
+      - name: Run tests
+        working-directory: yologram-web-v1
+        run: yarn test
+
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: test
     if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v4
