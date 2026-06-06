@@ -38,12 +38,17 @@
 
 ## UMS - 로그인/로그아웃 (2단계)
 
-- [ ] JWT 유틸 (생성, 검증)
-- [ ] AuthService (login, logout, validateToken)
-- [ ] POST /api/v1/ums/auth/login
-- [ ] POST /api/v1/ums/auth/logout
-- [ ] POST /api/v1/ums/auth/validate-token
-- [ ] 로그인/로그아웃 테스트
+- [x] JwtProperties (secret, expire, issuer, audience)
+- [x] JwtUtil (토큰 생성, 검증, uid 추출)
+- [x] AuthService (login, logout, validateToken)
+- [x] POST /api/v1/ums/auth/login
+- [x] POST /api/v1/ums/auth/logout
+- [x] POST /api/v1/ums/auth/validate-token
+- [x] @AuthenticatedUser 리졸버 (Authorization: Bearer 헤더)
+- [x] 로그아웃 후 토큰 무효화 (DB accessToken 비교)
+- [x] JwtUtil 단위 테스트
+- [x] AuthService 단위 테스트
+- [x] AuthResource 슬라이스 테스트
 
 ## UMS - 유저 조회/탈퇴 (3단계)
 

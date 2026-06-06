@@ -20,6 +20,15 @@
 - Traces: micrometer-tracing-bridge-otel + opentelemetry-exporter-otlp
 - Resource 속성: service.name, deployment.environment.name, service.instance.id, service.namespace
 
+## 인증
+
+- JWT: Auth0 java-jwt (HMAC256)
+- 설정: yologram.auth.jwt.secret/expire/issuer/audience (Parameter Store + application.yaml)
+- 인증 헤더: Authorization: Bearer {token}
+- @AuthenticatedUser + AuthenticatedUserResolver로 인증 정보 주입
+- 토큰 저장: DB User.accessToken (로그아웃 시 null 처리)
+- validate-token: JWT 검증 + DB accessToken 일치 확인
+
 ## Swagger
 
 - Swagger UI: /api/v1/docs
