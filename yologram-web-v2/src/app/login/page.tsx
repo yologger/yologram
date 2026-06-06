@@ -35,9 +35,6 @@ export default function LoginPage() {
         <div className={styles.links}>
           <Text type="secondary">계정이 없으신가요? <Link href="/join">회원가입</Link></Text>
         </div>
-        <Text type="secondary" className={styles.hint}>
-          테스트: test@yologram.link / password
-        </Text>
       </div>
     </div>
   )

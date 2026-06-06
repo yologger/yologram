@@ -12,24 +12,37 @@ export interface JoinResponse {
   uid: number
 }
 
+interface LoginResponse {
+  uid: number
+  accessToken: string
+  email: string
+  name: string
+  nickname: string
+}
+
+interface ValidateTokenResponse {
+  uid: number
+  email: string
+  name: string
+  nickname: string
+}
+
 export async function join(request: JoinRequest): Promise<JoinResponse> {
   const response = await api.post<{ data: JoinResponse }>('/api/v2/ums/user/join', request)
   return response.data.data
 }
 
-// TODO: 로그인 API 구현 후 실제 API 호출로 교체
 export async function login(email: string, password: string): Promise<AuthState> {
-  if (email === 'test@yologram.link' && password === 'password') {
-    return {
-      uid: 1,
-      email,
-      nickname: 'yologram',
-      accessToken: 'dummy-access-token',
-    }
-  }
-  throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.')
+  const response = await api.post<{ data: LoginResponse }>('/api/v2/ums/auth/login', { email, password })
+  const { uid, accessToken, email: resEmail, name, nickname } = response.data.data
+  return { uid, accessToken, email: resEmail, name, nickname }
+}
+
+export async function validateToken(): Promise<ValidateTokenResponse> {
+  const response = await api.post<{ data: ValidateTokenResponse }>('/api/v2/ums/auth/validate-token')
+  return response.data.data
 }
 
 export async function logout(): Promise<void> {
-  // TODO: 로그아웃 API 구현 후 교체
+  await api.post('/api/v2/ums/auth/logout')
 }

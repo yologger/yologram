@@ -1,3 +1,42 @@
+# yologram-web-v2 Plan
+
+## 인증 - 로그인/로그아웃/토큰검증 API 연동
+
+### 1단계: 공통 유틸리티
+- lib/error.ts 생성 (getErrorMessage - 네트워크/서버/비즈니스 에러 분류)
+
+### 2단계: 인증 상태 보강
+- AuthState에 name 필드 추가
+- atomWithStorage에 getOnInit: true 추가
+
+### 3단계: API 함수 교체
+- login() → POST /api/v2/ums/auth/login
+- logout() → POST /api/v2/ums/auth/logout
+- validateToken() 추가 → POST /api/v2/ums/auth/validate-token
+
+### 4단계: 401 인터셉터 수정
+- /ums/auth/ URL 제외
+- window.location.href = '/login' 제거 (authAtom 초기화만)
+
+### 5단계: AuthGate 추가
+- providers.tsx에서 AuthGate로 감싸기
+- 앱 마운트 시 저장된 토큰 검증 후 라우터 렌더링
+
+### 6단계: Mutation 훅 수정
+- useLoginMutation: getErrorMessage 적용
+- useLogoutMutation: localStorage.removeItem + window.location.href 방식
+- useJoinMutation: getErrorMessage 적용
+
+### 7단계: UI 수정
+- LoginPage 테스트 힌트 제거
+
+### 8단계: 테스트
+- MSW 핸들러 추가 (login, validate-token, logout)
+- auth.test.ts 로그인/토큰검증/로그아웃 테스트
+- LoginPage.test.tsx 생성
+
+---
+
 # yologram-web-v2 Observability Plan
 
 ## Trace

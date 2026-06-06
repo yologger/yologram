@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { message } from 'antd'
 import { join, type JoinRequest } from '../apis/auth'
-import axios from 'axios'
+import { getErrorMessage } from '../lib/error'
 
 export default function useJoinMutation() {
   const router = useRouter()
@@ -16,11 +16,7 @@ export default function useJoinMutation() {
       router.push('/login')
     },
     onError: (error) => {
-      if (axios.isAxiosError(error) && error.response?.data?.errorMessage) {
-        message.error(error.response.data.errorMessage)
-      } else {
-        message.error('회원가입에 실패했습니다.')
-      }
+      message.error(getErrorMessage(error))
     },
   })
 }

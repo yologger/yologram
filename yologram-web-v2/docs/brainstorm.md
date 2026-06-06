@@ -59,6 +59,19 @@
 - 운영 env는 `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_SERVICE_NAME` 사용
 - 환경명은 `APP_ENV`를 우선 사용하고 없으면 `NEXT_PUBLIC_APP_ENV` fallback
 
+## 인증 (로그인/로그아웃/토큰검증)
+
+- web-v1에서 겪은 이슈 반영
+  - atomWithStorage getOnInit: true → 새 탭/새로고침 시 null 방지
+  - AuthGate 패턴 → 앱 마운트 시 저장된 토큰 검증 후 렌더링
+  - 401 인터셉터에서 /ums/auth/ URL 제외 → 로그인 실패 시 auth 초기화 방지
+  - 401 인터셉터에서 redirect 제거 → authAtom 초기화만
+  - 로그아웃: localStorage.removeItem + window.location.href → RequireAuth 타이밍 이슈 회피
+- Next.js 차이점
+  - AuthGate를 providers.tsx에서 래핑 (web-v1은 BrowserRouter 밖)
+  - RequireAuth는 children prop 기반 (web-v1은 Outlet 기반)
+  - window 접근은 'use client' 컴포넌트에서만 가능
+
 ## React → Next.js 전환 시 차이점
 
 - 라우팅: React Router → App Router (파일 기반)

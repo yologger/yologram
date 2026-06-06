@@ -6,6 +6,7 @@ import { useSetAtom } from 'jotai'
 import { message } from 'antd'
 import { authAtom } from '../stores/auth'
 import { login } from '../apis/auth'
+import { getErrorMessage } from '../lib/error'
 
 export default function useLoginMutation() {
   const router = useRouter()
@@ -18,8 +19,8 @@ export default function useLoginMutation() {
       message.success(`${data.nickname}님, 반갑습니다.`)
       router.push('/')
     },
-    onError: (error: Error) => {
-      message.error(error.message)
+    onError: (error) => {
+      message.error(getErrorMessage(error))
     },
   })
 }

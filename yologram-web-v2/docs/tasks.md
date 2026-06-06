@@ -15,7 +15,20 @@
 
 - [x] 회원가입 API 연동 (POST /api/v2/ums/user/join)
 - [x] JoinPage, useJoinMutation, apis/auth.ts join 함수
-- [ ] 로그인/로그아웃 API 연동 (api-v2 2단계 완료 후)
+- [ ] lib/error.ts 생성 (getErrorMessage)
+- [ ] AuthState에 name 필드 추가, atomWithStorage에 getOnInit: true
+- [ ] login() 실제 API 호출로 교체
+- [ ] logout() 실제 API 호출로 교체
+- [ ] validateToken() 함수 추가
+- [ ] 401 인터셉터 수정 (/ums/auth/ 제외, redirect 제거)
+- [ ] AuthGate 컴포넌트 추가
+- [ ] useLoginMutation: getErrorMessage 적용
+- [ ] useLogoutMutation: localStorage.removeItem + window.location.href 방식
+- [ ] useJoinMutation: getErrorMessage 적용
+- [ ] LoginPage 테스트 힌트 제거
+- [ ] MSW 핸들러 추가 (login, validate-token, logout)
+- [ ] auth.test.ts 로그인/토큰검증/로그아웃 테스트
+- [ ] LoginPage.test.tsx 생성
 
 ## 개발 환경
 
