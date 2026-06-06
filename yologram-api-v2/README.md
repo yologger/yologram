@@ -47,6 +47,9 @@ uv run pytest tests/ -v
 | GET | /api/v2/test/profile | 활성 프로파일 반환 |
 | GET | /api/v2/test/property?key=... | 설정값 조회 |
 | POST | /api/v2/ums/user/join | 회원가입 |
+| POST | /api/v2/ums/auth/login | 로그인 |
+| POST | /api/v2/ums/auth/validate-token | 토큰 검증 |
+| POST | /api/v2/ums/auth/logout | 로그아웃 |
 
 API 문서: http://localhost:5002/api/v2/docs
 
