@@ -20,6 +20,13 @@
 - Logs: OTLPLogExporter (API Route, dynamic 페이지에서 사용)
 - 설정: src/instrumentation.ts → src/instrumentation.node.ts
 
+## 테스트
+
+- vitest + jsdom + @testing-library/react + msw
+- 테스트 유틸리티: src/test/ (setup.ts, handlers.ts, server.ts, utils.tsx)
+- 테스트 파일은 소스 파일 옆에 배치 (colocation)
+- yarn test (단일 실행), yarn test:watch (감시 모드)
+
 ## 배포
 
 - Docker (Yarn Berry non-zero-install, next start)

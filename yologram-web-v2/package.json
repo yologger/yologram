@@ -4,11 +4,14 @@
   "private": true,
   "scripts": {
     "start:dev": "APP_ENV=development next dev -p 3002",
+    "start:prod": "APP_ENV=production next start -p 3002",
     "build": "next build",
     "build:staging": "APP_ENV=staging env-cmd -f .env.staging next build",
     "build:prod": "APP_ENV=production env-cmd -f .env.production next build",
     "start": "APP_ENV=${APP_ENV:-development} next start -p 3000",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@ant-design/cssinjs": "^2.1.2",
@@ -34,11 +37,18 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "env-cmd": "^11.0.0",
-    "typescript": "^5.7.0"
+    "jsdom": "^29.1.1",
+    "msw": "^2.14.6",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.8"
   },
   "packageManager": "yarn@4.14.1",
   "engines": {
