@@ -40,7 +40,7 @@ class AuthService(
         )
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = false)
     fun validateToken(token: String): ValidateTokenResponse {
         val uid = jwtUtil.validateAndGetUid(token)
         val user = userRepository.findById(uid)

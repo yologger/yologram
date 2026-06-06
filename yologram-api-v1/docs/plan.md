@@ -32,7 +32,7 @@
 ### API
 - POST /api/v1/ums/auth/login
 - POST /api/v1/ums/auth/logout
-- POST /api/v1/ums/auth/validate-token
+- POST /api/v1/ums/auth/validate-token (master DB 조회)
 
 ### JWT
 - HMAC256, Auth0 java-jwt

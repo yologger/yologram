@@ -9,6 +9,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - src/main/resources/application.yaml: 공통 설정 (OTLP endpoint, resource attributes)
 - src/main/resources/logback-spring.xml: 로깅 설정 (콘솔 + OTEL appender)
 - src/main/kotlin/.../config/OpenTelemetryLoggingConfig.kt: OTEL logback 초기화
+- src/main/kotlin/.../domain/ums/service/AuthService.kt: JWT 로그인/로그아웃/토큰 검증. validate-token은 master DB 조회
 
 ## 코드 컨벤션
 

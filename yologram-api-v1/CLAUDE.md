@@ -28,6 +28,7 @@
 - @AuthenticatedUser + AuthenticatedUserResolver로 인증 정보 주입
 - 토큰 저장: DB User.accessToken (로그아웃 시 null 처리)
 - validate-token: JWT 검증 + DB accessToken 일치 확인
+- validate-token은 로그인 직후 replica lag를 피하기 위해 master DB 트랜잭션으로 조회
 
 ## Swagger
 

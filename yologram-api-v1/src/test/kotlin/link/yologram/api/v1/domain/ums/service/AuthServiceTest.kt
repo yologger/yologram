@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -97,6 +98,15 @@ class AuthServiceTest {
 
     @Nested
     inner class 토큰_검증 {
+
+        @Test
+        fun `토큰 검증은 master DB를 조회하도록 readOnly false 트랜잭션을 사용한다`() {
+            val method = AuthService::class.java.getMethod("validateToken", String::class.java)
+            val transactional = method.getAnnotation(Transactional::class.java)
+
+            assertNotNull(transactional)
+            assertFalse(transactional.readOnly)
+        }
 
         @Test
         fun `DB에 저장된 토큰과 일치하면 유저 정보를 반환한다`() {

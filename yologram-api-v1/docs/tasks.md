@@ -46,6 +46,7 @@
 - [x] POST /api/v1/ums/auth/validate-token
 - [x] @AuthenticatedUser 리졸버 (Authorization: Bearer 헤더)
 - [x] 로그아웃 후 토큰 무효화 (DB accessToken 비교)
+- [x] validate-token master DB 조회 (로그인 직후 replica lag 방지)
 - [x] JwtUtil 단위 테스트
 - [x] AuthService 단위 테스트
 - [x] AuthResource 슬라이스 테스트
