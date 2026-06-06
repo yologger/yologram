@@ -8,6 +8,8 @@ React 기반 하이브리드 웹앱. 투자/정치/기술 서비스를 반응형
 
 - src/Router.tsx: 라우팅 정의
 - src/App.tsx: 앱 진입점
+- src/components/auth/AuthGate.tsx: 저장된 JWT 검증 후 라우터 렌더링
+- src/components/auth/RequireAuth.tsx: 보호 라우트 인증 가드
 - src/components/layout/ResponsiveLayout.tsx: 반응형 레이아웃 분기
 - src/components/common/SubTabLayout.tsx: 서브탭 공통 레이아웃
 - src/components/common/FilterChips.tsx: 필터 칩 공통 컴포넌트

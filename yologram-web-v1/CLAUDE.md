@@ -22,6 +22,12 @@
 - /invest, /politics, /tech, /notifications, /settings 5개 탭
 - ResponsiveLayout이 모바일 탭바 / 데스크탑 사이드바 분기
 
+## 인증
+
+- JWT는 Jotai `authAtom`과 localStorage에 저장
+- `AuthGate`가 앱 시작 시 저장된 토큰을 `validate-token`으로 검증한 뒤 라우터 렌더링
+- `RequireAuth`는 인증 초기화 완료 후 보호 라우트 진입 여부만 판단
+
 ## 테스트
 
 - vitest + jsdom + @testing-library/react + msw

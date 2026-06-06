@@ -7,7 +7,15 @@
 
 - [x] 회원가입 API 연동 (POST /api/v1/ums/user/join)
 - [x] JoinPage, useJoinMutation, apis/auth.ts join 함수
-- [ ] 로그인/로그아웃 API 연동 (api-v1 2단계 완료 후)
+- [x] login() 실제 API 호출로 교체
+- [x] logout() 실제 API 호출
+- [x] validateToken() 추가
+- [x] AuthState에 name 필드 추가
+- [x] LoginPage 테스트 힌트 제거
+- [x] MSW 핸들러 추가 (login, logout, validate-token)
+- [x] 로그인/로그아웃 테스트 작성
+- [x] AuthGate 추가 (저장 토큰 검증 후 라우터 렌더링)
+- [x] 새 탭/새로고침 authAtom rehydrate 보강
 
 ## 공통 기능
 

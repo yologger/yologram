@@ -1,0 +1,88 @@
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { server } from '../../test/server'
+import { renderWithProviders } from '../../test/utils'
+import LoginPage from './LoginPage'
+
+const mockNavigate = vi.fn()
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual('react-router')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
+beforeAll(() => server.listen())
+afterEach(() => {
+  server.resetHandlers()
+  mockNavigate.mockClear()
+})
+afterAll(() => server.close())
+
+describe('LoginPage', () => {
+  describe('렌더링', () => {
+    it('로그인 폼이 렌더링된다', () => {
+      renderWithProviders(<LoginPage />)
+
+      expect(screen.getByPlaceholderText('이메일')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('비밀번호')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '로그인' })).toBeInTheDocument()
+      expect(screen.getByText('회원가입')).toBeInTheDocument()
+    })
+  })
+
+  describe('입력값 검증', () => {
+    it('필수 필드가 비어있으면 에러 메시지를 표시한다', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<LoginPage />)
+
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('이메일을 입력해주세요')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('로그인 성공', () => {
+    it('성공 시 메인 페이지로 이동한다', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<LoginPage />)
+
+      await user.type(screen.getByPlaceholderText('이메일'), 'test@yologram.link')
+      await user.type(screen.getByPlaceholderText('비밀번호'), 'password123!')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/')
+      })
+    })
+  })
+
+  describe('로그인 실패', () => {
+    it('존재하지 않는 사용자일 때 에러 메시지를 표시한다', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<LoginPage />)
+
+      await user.type(screen.getByPlaceholderText('이메일'), 'notfound@yologram.link')
+      await user.type(screen.getByPlaceholderText('비밀번호'), 'password123!')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('존재하지 않는 사용자입니다.')).toBeInTheDocument()
+      })
+    })
+
+    it('비밀번호 불일치 시 에러 메시지를 표시한다', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<LoginPage />)
+
+      await user.type(screen.getByPlaceholderText('이메일'), 'test@yologram.link')
+      await user.type(screen.getByPlaceholderText('비밀번호'), 'wrongpassword')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('비밀번호가 일치하지 않습니다.')).toBeInTheDocument()
+      })
+    })
+  })
+})

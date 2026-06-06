@@ -16,4 +16,65 @@ export const handlers = [
       { status: 201 },
     )
   }),
+
+  http.post('http://localhost:5001/api/v1/ums/auth/login', async ({ request }) => {
+    const body = await request.json() as { email: string; password: string }
+
+    if (body.email === 'notfound@yologram.link') {
+      return HttpResponse.json(
+        { errorMessage: '존재하지 않는 사용자입니다.', errorCode: 'USER_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+
+    if (body.password === 'wrongpassword') {
+      return HttpResponse.json(
+        { errorMessage: '비밀번호가 일치하지 않습니다.', errorCode: 'AUTH_WRONG_PASSWORD' },
+        { status: 401 },
+      )
+    }
+
+    return HttpResponse.json({
+      data: {
+        uid: 1,
+        accessToken: 'mock-access-token',
+        email: body.email,
+        name: '테스터',
+        nickname: 'tester',
+      },
+    })
+  }),
+
+  http.post('http://localhost:5001/api/v1/ums/auth/validate-token', ({ request }) => {
+    const authHeader = request.headers.get('Authorization')
+
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.substring(7) === 'expired-token') {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_TOKEN_INVALID' },
+        { status: 401 },
+      )
+    }
+
+    return HttpResponse.json({
+      data: {
+        uid: 1,
+        email: 'test@yologram.link',
+        name: '테스터',
+        nickname: 'tester',
+      },
+    })
+  }),
+
+  http.post('http://localhost:5001/api/v1/ums/auth/logout', ({ request }) => {
+    const authHeader = request.headers.get('Authorization')
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_TOKEN_INVALID' },
+        { status: 401 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
 ]
