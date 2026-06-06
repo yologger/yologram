@@ -1,13 +1,16 @@
 package link.yologram.api.v1.domain.ums.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.ums.exception.UmsExceptionHandler
-import link.yologram.api.v1.global.exception.GlobalExceptionHandler
-import link.yologram.api.v1.global.exception.ValidationExceptionHandler
 import link.yologram.api.v1.domain.ums.exception.UserDuplicateException
 import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.JoinResponse
+import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.service.UserService
+import link.yologram.api.v1.domain.ums.util.JwtUtil
+import link.yologram.api.v1.global.exception.GlobalExceptionHandler
+import link.yologram.api.v1.global.exception.ValidationExceptionHandler
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -21,7 +24,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 
 @WebMvcTest(UserResource::class)
-@Import(UmsExceptionHandler::class, ValidationExceptionHandler::class, GlobalExceptionHandler::class)
+@Import(UmsExceptionHandler::class, ValidationExceptionHandler::class, GlobalExceptionHandler::class, AuthenticatedUserResolver::class)
 class UserResourceTest {
 
     @Autowired
@@ -32,6 +35,12 @@ class UserResourceTest {
 
     @MockitoBean
     lateinit var userService: UserService
+
+    @MockitoBean
+    lateinit var jwtUtil: JwtUtil
+
+    @MockitoBean
+    lateinit var jwtProperties: JwtProperties
 
     private fun joinRequest(
         email: String = "test@yologram.link",

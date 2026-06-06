@@ -29,6 +29,14 @@ database:
       show-sql: false
       open-in-view: false
 
+yologram:
+  auth:
+    jwt:
+      secret:   # /yologram/service/yologram-api-v1_{ENV}/yologram.auth.jwt.secret
+      expire: 86400
+      issuer: yologram.link
+      audience: yologram.client
+
 springdoc:
   swagger-ui:
     path: /api/v1/docs
