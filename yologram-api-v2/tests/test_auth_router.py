@@ -100,7 +100,6 @@ class TestAuthRouter:
             token = create_token(1)
             user = User(email="test@yologram.link", name="테스터", nickname="tester", password="hashed")
             user.id = 1
-            user.access_token = token
             mock_repo = MagicMock()
             mock_repo.find_by_id.return_value = user
             mock_repo_cls.return_value = mock_repo
@@ -160,26 +159,6 @@ class TestAuthRouter:
             assert response.status_code == 401
             assert response.json()["errorCode"] == "AUTH_TOKEN_EXPIRED"
 
-        @patch("app.domain.ums.auth_service.UserRepository")
-        def test_DB_토큰_불일치_401(self, mock_repo_cls):
-            token = create_token(1)
-            user = User(email="test@yologram.link", name="테스터", nickname="tester", password="hashed")
-            user.id = 1
-            user.access_token = "different-token"
-            mock_repo = MagicMock()
-            mock_repo.find_by_id.return_value = user
-            mock_repo_cls.return_value = mock_repo
-
-            response = self.client.post(
-                "/api/v2/ums/auth/validate-token",
-                headers={"Authorization": f"Bearer {token}"},
-            )
-
-            assert response.status_code == 401
-            assert response.json()["errorCode"] == "AUTH_TOKEN_INVALID"
-
-            assert response.status_code == 401
-
     class TestLogout:
 
         def setup_method(self):
@@ -193,11 +172,7 @@ class TestAuthRouter:
         @patch("app.domain.ums.auth_service.UserRepository")
         def test_로그아웃_성공_204(self, mock_repo_cls):
             token = create_token(1)
-            user = User(email="test@yologram.link", name="테스터", nickname="tester", password="hashed")
-            user.id = 1
-            user.access_token = token
             mock_repo = MagicMock()
-            mock_repo.find_by_id.return_value = user
             mock_repo_cls.return_value = mock_repo
 
             response = self.client.post(

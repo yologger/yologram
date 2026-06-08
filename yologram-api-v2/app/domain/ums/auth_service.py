@@ -1,7 +1,7 @@
 import bcrypt
 from sqlalchemy.orm import Session
 
-from app.core.exception import AuthTokenInvalidException, AuthWrongPasswordException, UserNotFoundException
+from app.core.exception import AuthWrongPasswordException, UserNotFoundException
 from app.domain.ums.auth_schema import AuthData, LoginRequest, LoginResponse, ValidateTokenResponse
 from app.domain.ums.jwt_util import create_token
 from app.domain.ums.repository import UserRepository
@@ -21,7 +21,6 @@ class AuthService:
             raise AuthWrongPasswordException()
 
         access_token = create_token(user.id)
-        user.access_token = access_token
 
         return LoginResponse(
             uid=user.id,
@@ -36,9 +35,6 @@ class AuthService:
         if not user:
             raise UserNotFoundException()
 
-        if user.access_token != auth_data.access_token:
-            raise AuthTokenInvalidException()
-
         return ValidateTokenResponse(
             uid=user.id,
             email=user.email,
@@ -47,7 +43,4 @@ class AuthService:
         )
 
     def logout(self, auth_data: AuthData) -> None:
-        user = self.repository.find_by_id(auth_data.uid)
-        if not user:
-            raise UserNotFoundException()
-        user.access_token = None
+        pass

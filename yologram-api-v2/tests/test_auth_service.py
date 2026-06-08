@@ -6,7 +6,7 @@ import pytest
 
 os.environ["JWT_SECRET"] = "test-jwt-secret-key-for-testing"
 
-from app.core.exception import AuthTokenInvalidException, AuthWrongPasswordException, UserNotFoundException
+from app.core.exception import AuthWrongPasswordException, UserNotFoundException
 from app.domain.ums.auth_schema import AuthData, LoginRequest
 from app.domain.ums.auth_service import AuthService
 from app.domain.ums.model import User
@@ -56,7 +56,6 @@ class TestAuthService:
             self.service = AuthService(self.db)
             self.user = User(email="test@yologram.link", name="테스터", nickname="tester", password="hashed")
             self.user.id = 1
-            self.user.access_token = "valid-token"
 
         def test_토큰_검증_성공(self):
             self.service.repository.find_by_id = MagicMock(return_value=self.user)
@@ -66,13 +65,6 @@ class TestAuthService:
 
             assert result.uid == 1
             assert result.email == "test@yologram.link"
-
-        def test_DB_토큰_불일치(self):
-            self.service.repository.find_by_id = MagicMock(return_value=self.user)
-            auth_data = AuthData(uid=1, access_token="different-token")
-
-            with pytest.raises(AuthTokenInvalidException):
-                self.service.validate_token(auth_data)
 
         def test_사용자_없음(self):
             self.service.repository.find_by_id = MagicMock(return_value=None)
@@ -86,21 +78,7 @@ class TestAuthService:
         def setup_method(self):
             self.db = MagicMock()
             self.service = AuthService(self.db)
-            self.user = User(email="test@yologram.link", name="테스터", nickname="tester", password="hashed")
-            self.user.id = 1
-            self.user.access_token = "valid-token"
 
         def test_로그아웃_성공(self):
-            self.service.repository.find_by_id = MagicMock(return_value=self.user)
             auth_data = AuthData(uid=1, access_token="valid-token")
-
             self.service.logout(auth_data)
-
-            assert self.user.access_token is None
-
-        def test_사용자_없음(self):
-            self.service.repository.find_by_id = MagicMock(return_value=None)
-            auth_data = AuthData(uid=999, access_token="any-token")
-
-            with pytest.raises(UserNotFoundException):
-                self.service.logout(auth_data)
