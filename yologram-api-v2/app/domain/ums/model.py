@@ -15,7 +15,6 @@ class User(Base):
     nickname = Column(String(200), nullable=False)
     password = Column(String(200), nullable=False)
     avatar = Column(String(512), nullable=True)
-    access_token = Column(String(256), nullable=True)
     type = Column(Enum(UserType), nullable=False, default=UserType.DEFAULT)
     status = Column(Enum(UserStatus), nullable=False, default=UserStatus.ACTIVE)
     deleted_date = Column(DateTime, nullable=True)
