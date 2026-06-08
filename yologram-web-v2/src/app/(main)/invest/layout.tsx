@@ -8,5 +8,5 @@ const tabs = [
 ]
 
 export default function InvestLayout({ children }: { children: React.ReactNode }) {
-  return <SubTabLayout basePath="/invest" tabs={tabs}>{children}</SubTabLayout>
+  return <SubTabLayout basePath="/invest" tabs={tabs} title="투자">{children}</SubTabLayout>
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { Tabs } from 'antd'
+import { Tabs, Typography } from 'antd'
 import { usePathname, useRouter } from 'next/navigation'
 
 interface Tab {
@@ -11,10 +11,11 @@ interface Tab {
 interface SubTabLayoutProps {
   basePath: string
   tabs: Tab[]
+  title: string
   children: React.ReactNode
 }
 
-export default function SubTabLayout({ basePath, tabs, children }: SubTabLayoutProps) {
+export default function SubTabLayout({ basePath, tabs, title, children }: SubTabLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -22,6 +23,7 @@ export default function SubTabLayout({ basePath, tabs, children }: SubTabLayoutP
 
   return (
     <div>
+      <Typography.Title level={3}>{title}</Typography.Title>
       <Tabs
         activeKey={activeKey}
         onChange={(key) => router.push(`${basePath}/${key}`)}

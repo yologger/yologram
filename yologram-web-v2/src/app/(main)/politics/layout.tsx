@@ -8,5 +8,5 @@ const tabs = [
 ]
 
 export default function PoliticsLayout({ children }: { children: React.ReactNode }) {
-  return <SubTabLayout basePath="/politics" tabs={tabs}>{children}</SubTabLayout>
+  return <SubTabLayout basePath="/politics" tabs={tabs} title="정치">{children}</SubTabLayout>
 }

@@ -6,5 +6,5 @@ const tabs = [
 ]
 
 export default function TechLayout({ children }: { children: React.ReactNode }) {
-  return <SubTabLayout basePath="/tech" tabs={tabs}>{children}</SubTabLayout>
+  return <SubTabLayout basePath="/tech" tabs={tabs} title="기술">{children}</SubTabLayout>
 }
