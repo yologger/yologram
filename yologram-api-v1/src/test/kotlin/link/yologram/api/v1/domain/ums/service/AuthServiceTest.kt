@@ -1,7 +1,6 @@
 package link.yologram.api.v1.domain.ums.service
 
 import link.yologram.api.v1.domain.ums.entity.User
-import link.yologram.api.v1.domain.ums.exception.AuthTokenInvalidException
 import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException
 import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
 import link.yologram.api.v1.domain.ums.model.LoginRequest
@@ -100,16 +99,16 @@ class AuthServiceTest {
     inner class 토큰_검증 {
 
         @Test
-        fun `토큰 검증은 master DB를 조회하도록 readOnly false 트랜잭션을 사용한다`() {
+        fun `토큰 검증은 readOnly true 트랜잭션을 사용한다`() {
             val method = AuthService::class.java.getMethod("validateToken", String::class.java)
             val transactional = method.getAnnotation(Transactional::class.java)
 
             assertNotNull(transactional)
-            assertFalse(transactional.readOnly)
+            assertTrue(transactional.readOnly)
         }
 
         @Test
-        fun `DB에 저장된 토큰과 일치하면 유저 정보를 반환한다`() {
+        fun `JWT가 유효하면 유저 정보를 반환한다`() {
             val user = User(
                 id = 1L,
                 email = "test@yologram.link",
@@ -117,7 +116,6 @@ class AuthServiceTest {
                 nickname = "tester",
                 password = "encoded-password",
             )
-            user.accessToken = "valid-token"
             whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
             whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
 
@@ -128,20 +126,12 @@ class AuthServiceTest {
         }
 
         @Test
-        fun `로그아웃된 토큰이면 AuthTokenInvalidException을 던진다`() {
-            val user = User(
-                id = 1L,
-                email = "test@yologram.link",
-                name = "테스트",
-                nickname = "tester",
-                password = "encoded-password",
-            )
-            user.accessToken = null
-            whenever(jwtUtil.validateAndGetUid("logged-out-token")).thenReturn(1L)
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+        fun `존재하지 않는 유저면 UserNotFoundException을 던진다`() {
+            whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(999L)
+            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
 
-            assertThrows<AuthTokenInvalidException> {
-                authService.validateToken("logged-out-token")
+            assertThrows<UserNotFoundException> {
+                authService.validateToken("valid-token")
             }
         }
     }
@@ -150,29 +140,8 @@ class AuthServiceTest {
     inner class 로그아웃 {
 
         @Test
-        fun `로그아웃 시 accessToken을 null로 설정한다`() {
-            val user = User(
-                id = 1L,
-                email = "test@yologram.link",
-                name = "테스트",
-                nickname = "tester",
-                password = "encoded-password",
-            )
-            user.accessToken = "some-token"
-            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
-
+        fun `로그아웃은 아무 동작 없이 성공한다`() {
             authService.logout(1L)
-
-            assertNull(user.accessToken)
-        }
-
-        @Test
-        fun `존재하지 않는 유저면 UserNotFoundException을 던진다`() {
-            whenever(userRepository.findById(any())).thenReturn(Optional.empty())
-
-            assertThrows<UserNotFoundException> {
-                authService.logout(999L)
-            }
         }
     }
 }

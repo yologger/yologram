@@ -1,6 +1,5 @@
 package link.yologram.api.v1.domain.ums.service
 
-import link.yologram.api.v1.domain.ums.exception.AuthTokenInvalidException
 import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException
 import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
 import link.yologram.api.v1.domain.ums.model.LoginRequest
@@ -19,7 +18,6 @@ class AuthService(
     private val jwtUtil: JwtUtil,
 ) {
 
-    @Transactional
     fun login(request: LoginRequest): LoginResponse {
         val user = userRepository.findByEmail(request.email)
             .orElseThrow { UserNotFoundException() }
@@ -29,7 +27,6 @@ class AuthService(
         }
 
         val accessToken = jwtUtil.createToken(user.id)
-        user.accessToken = accessToken
 
         return LoginResponse(
             uid = user.id,
@@ -40,15 +37,11 @@ class AuthService(
         )
     }
 
-    @Transactional(readOnly = false)
+    @Transactional(readOnly = true)
     fun validateToken(token: String): ValidateTokenResponse {
         val uid = jwtUtil.validateAndGetUid(token)
         val user = userRepository.findById(uid)
             .orElseThrow { UserNotFoundException() }
-
-        if (user.accessToken != token) {
-            throw AuthTokenInvalidException()
-        }
 
         return ValidateTokenResponse(
             uid = user.id,
@@ -58,10 +51,6 @@ class AuthService(
         )
     }
 
-    @Transactional
     fun logout(uid: Long) {
-        val user = userRepository.findById(uid)
-            .orElseThrow { UserNotFoundException() }
-        user.accessToken = null
     }
 }
