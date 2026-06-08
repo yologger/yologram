@@ -31,9 +31,6 @@ class User(
     @Column(length = 512)
     var avatar: String? = null,
 
-    @Column(length = 256)
-    var accessToken: String? = null,
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var type: UserType = UserType.DEFAULT,
