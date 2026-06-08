@@ -8,5 +8,5 @@ const tabs = [
 ]
 
 export default function InvestPage() {
-  return <SubTabLayout basePath="/invest" tabs={tabs} />
+  return <SubTabLayout basePath="/invest" tabs={tabs} title="투자" />
 }

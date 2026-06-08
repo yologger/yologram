@@ -6,5 +6,5 @@ const tabs = [
 ]
 
 export default function TechPage() {
-  return <SubTabLayout basePath="/tech" tabs={tabs} />
+  return <SubTabLayout basePath="/tech" tabs={tabs} title="기술" />
 }

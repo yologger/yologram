@@ -8,5 +8,5 @@ const tabs = [
 ]
 
 export default function PoliticsPage() {
-  return <SubTabLayout basePath="/politics" tabs={tabs} />
+  return <SubTabLayout basePath="/politics" tabs={tabs} title="정치" />
 }

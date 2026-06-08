@@ -1,4 +1,4 @@
-import { Tabs } from 'antd'
+import { Tabs, Typography } from 'antd'
 import { useLocation, useNavigate, Outlet } from 'react-router'
 
 interface Tab {
@@ -9,9 +9,10 @@ interface Tab {
 interface SubTabLayoutProps {
   basePath: string
   tabs: Tab[]
+  title: string
 }
 
-export default function SubTabLayout({ basePath, tabs }: SubTabLayoutProps) {
+export default function SubTabLayout({ basePath, tabs, title }: SubTabLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -19,6 +20,7 @@ export default function SubTabLayout({ basePath, tabs }: SubTabLayoutProps) {
 
   return (
     <div>
+      <Typography.Title level={3}>{title}</Typography.Title>
       <Tabs
         activeKey={activeKey}
         onChange={(key) => navigate(`${basePath}/${key}`)}
