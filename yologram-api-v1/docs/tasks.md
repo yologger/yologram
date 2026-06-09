@@ -51,8 +51,10 @@
 - [x] AuthService 단위 테스트
 - [x] AuthResource 슬라이스 테스트
 
-## UMS - 유저 조회/탈퇴 (3단계)
+## UMS - 유저 조회/수정/탈퇴 (3단계)
 
-- [ ] GET /api/v1/ums/user/{uid}
-- [ ] DELETE /api/v1/ums/user/withdraw
-- [ ] 유저 조회/탈퇴 테스트
+- [ ] GET /api/v1/ums/user/{uid} (유저 조회)
+- [ ] PUT /api/v1/ums/user (회원정보 수정 - 이름, 닉네임)
+- [ ] PUT /api/v1/ums/user/password (비밀번호 변경)
+- [ ] DELETE /api/v1/ums/user/withdraw (회원 탈퇴)
+- [ ] 유저 조회/수정/탈퇴 테스트

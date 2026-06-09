@@ -15,20 +15,35 @@
 
 - [x] 회원가입 API 연동 (POST /api/v2/ums/user/join)
 - [x] JoinPage, useJoinMutation, apis/auth.ts join 함수
-- [ ] lib/error.ts 생성 (getErrorMessage)
-- [ ] AuthState에 name 필드 추가, atomWithStorage에 getOnInit: true
-- [ ] login() 실제 API 호출로 교체
-- [ ] logout() 실제 API 호출로 교체
-- [ ] validateToken() 함수 추가
-- [ ] 401 인터셉터 수정 (/ums/auth/ 제외, redirect 제거)
-- [ ] AuthGate 컴포넌트 추가
-- [ ] useLoginMutation: getErrorMessage 적용
-- [ ] useLogoutMutation: localStorage.removeItem + window.location.href 방식
-- [ ] useJoinMutation: getErrorMessage 적용
-- [ ] LoginPage 테스트 힌트 제거
-- [ ] MSW 핸들러 추가 (login, validate-token, logout)
-- [ ] auth.test.ts 로그인/토큰검증/로그아웃 테스트
-- [ ] LoginPage.test.tsx 생성
+- [x] lib/error.ts 생성 (getErrorMessage)
+- [x] AuthState에 name 필드 추가, atomWithStorage에 getOnInit: true
+- [x] login() 실제 API 호출로 교체
+- [x] logout() 실제 API 호출로 교체
+- [x] validateToken() 함수 추가
+- [x] 401 인터셉터 수정 (/ums/auth/ 제외, redirect 제거)
+- [x] AuthGate 컴포넌트 추가
+- [x] useLoginMutation: getErrorMessage 적용
+- [x] useLogoutMutation: localStorage.removeItem + window.location.href 방식
+- [x] useJoinMutation: getErrorMessage 적용
+- [x] LoginPage 테스트 힌트 제거
+- [x] MSW 핸들러 추가 (login, validate-token, logout)
+- [x] auth.test.ts 로그인/토큰검증/로그아웃 테스트
+- [x] LoginPage.test.tsx 생성
+
+## 설정 - 계정
+
+- [ ] 회원정보 수정 페이지 (이름, 닉네임 변경)
+- [ ] 비밀번호 변경 페이지
+
+## 설정 - 환경 설정
+
+- [ ] 알림 설정 페이지
+- [ ] 다크 모드 설정 페이지
+
+## 설정 - 활동
+
+- [ ] 내가 쓴 글 페이지
+- [ ] 저장한 글 페이지
 
 ## 개발 환경
 
