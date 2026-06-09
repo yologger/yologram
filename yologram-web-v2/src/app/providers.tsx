@@ -9,7 +9,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
 
   return (
-    <ConfigProvider theme={{ token: { colorPrimary: '#1677ff' } }}>
+    <ConfigProvider theme={{ token: { colorPrimary: '#f2a0b5' } }}>
       <QueryClientProvider client={queryClient}>
         <AuthGate>
           {children}

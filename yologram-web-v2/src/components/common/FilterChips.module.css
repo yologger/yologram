@@ -17,8 +17,8 @@
 }
 
 .chip:hover {
-  border-color: #1677ff;
-  color: #1677ff;
+  border-color: #f2a0b5;
+  color: #f2a0b5;
 }
 
 .chip.active {
