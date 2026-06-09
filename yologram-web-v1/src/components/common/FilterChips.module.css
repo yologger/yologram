@@ -7,7 +7,7 @@
 
 .chip {
   cursor: pointer;
-  padding: 4px 16px;
+  padding: 6px 18px;
   border-radius: 20px;
   font-size: 14px;
   border: 1px solid #d9d9d9;
@@ -17,8 +17,8 @@
 }
 
 .chip:hover {
-  border-color: #1677ff;
-  color: #1677ff;
+  border-color: #08979c;
+  color: #08979c;
 }
 
 .chip.active {
