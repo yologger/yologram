@@ -3,6 +3,8 @@
 import { Avatar, Modal, Typography } from 'antd'
 import {
   UserOutlined,
+  BellOutlined,
+  LockOutlined,
   BulbOutlined,
   EditOutlined,
   BookOutlined,
@@ -19,8 +21,16 @@ const { Title, Text } = Typography
 
 const sections = [
   {
+    title: '계정',
+    items: [
+      { icon: <UserOutlined />, label: '회원정보 수정', desc: '이름, 닉네임 등을 변경해요' },
+      { icon: <LockOutlined />, label: '비밀번호 변경', desc: '비밀번호를 변경해요' },
+    ],
+  },
+  {
     title: '환경 설정',
     items: [
+      { icon: <BellOutlined />, label: '알림 설정', desc: '푸시 알림을 관리해요' },
       { icon: <BulbOutlined />, label: '다크 모드 설정', desc: '라이트·다크 모드를 선택해요' },
     ],
   },
