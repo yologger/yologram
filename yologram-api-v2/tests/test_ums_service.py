@@ -2,7 +2,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.core.exception import UserDuplicateException
+from app.core.exception import UserDuplicateException, UserNotFoundException
+from app.domain.ums.enum import UserType
 from app.domain.ums.model import User
 from app.domain.ums.schema import JoinRequest
 from app.domain.ums.service import UserService
@@ -44,3 +45,47 @@ class TestUserService:
 
             with pytest.raises(UserDuplicateException):
                 self.service.join(self.request)
+
+    class TestGetMe:
+
+        def setup_method(self):
+            self.db = MagicMock()
+            self.service = UserService(self.db)
+
+        def _make_user(self, uid=1, avatar=None):
+            user = MagicMock()
+            user.id = uid
+            user.email = "test@yologram.link"
+            user.name = "테스트"
+            user.nickname = "tester"
+            user.avatar = avatar
+            user.type = UserType.DEFAULT
+            user.joined_date = "2025-01-01T00:00:00"
+            return user
+
+        def test_회원정보_조회_성공(self):
+            user = self._make_user()
+            self.service.repository.find_by_id = MagicMock(return_value=user)
+
+            result = self.service.get_me(1)
+
+            assert result.uid == 1
+            assert result.email == "test@yologram.link"
+            assert result.name == "테스트"
+            assert result.nickname == "tester"
+            assert result.avatar is None
+            assert result.type == "DEFAULT"
+
+        def test_아바타가_있으면_포함(self):
+            user = self._make_user(avatar="https://example.com/avatar.png")
+            self.service.repository.find_by_id = MagicMock(return_value=user)
+
+            result = self.service.get_me(1)
+
+            assert result.avatar == "https://example.com/avatar.png"
+
+        def test_존재하지_않는_유저_시_예외(self):
+            self.service.repository.find_by_id = MagicMock(return_value=None)
+
+            with pytest.raises(UserNotFoundException):
+                self.service.get_me(999)
