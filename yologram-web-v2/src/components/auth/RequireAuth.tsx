@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAtomValue } from 'jotai'
 import { isAuthenticatedAtom } from '../../stores/auth'
@@ -8,14 +8,19 @@ import { isAuthenticatedAtom } from '../../stores/auth'
 export default function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAtomValue(isAuthenticatedAtom)
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (mounted && !isAuthenticated) {
       router.replace('/login')
     }
-  }, [isAuthenticated, router])
+  }, [mounted, isAuthenticated, router])
 
-  if (!isAuthenticated) return null
+  if (!mounted || !isAuthenticated) return null
 
   return <>{children}</>
 }
