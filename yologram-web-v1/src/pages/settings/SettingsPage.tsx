@@ -9,6 +9,7 @@ import {
   FileTextOutlined,
   RightOutlined,
 } from '@ant-design/icons'
+import { useNavigate } from 'react-router'
 import { useAtomValue } from 'jotai'
 import { authAtom } from '../../stores/auth'
 import useLogoutMutation from '../../queries/useLogoutMutation'
@@ -21,8 +22,8 @@ const sections = [
   {
     title: '계정',
     items: [
-      { icon: <UserOutlined />, label: '회원정보 수정', desc: '이름, 닉네임 등을 변경해요' },
-      { icon: <LockOutlined />, label: '비밀번호 변경', desc: '비밀번호를 변경해요' },
+      { icon: <UserOutlined />, label: '회원정보 수정', desc: '이름, 닉네임 등을 변경해요', path: '' },
+      { icon: <LockOutlined />, label: '비밀번호 변경', desc: '비밀번호를 변경해요', path: '/settings/change-password' },
     ],
   },
   {
@@ -48,6 +49,7 @@ const sections = [
 ]
 
 export default function SettingsPage() {
+  const navigate = useNavigate()
   const auth = useAtomValue(authAtom)
   const { data: user } = useUserQuery()
   const { mutate: logoutMutate } = useLogoutMutation()
@@ -63,7 +65,7 @@ export default function SettingsPage() {
         <div key={section.title} className={styles.section}>
           <Text type="secondary" className={styles.sectionTitle}>{section.title}</Text>
           {section.items.map((item) => (
-            <div key={item.label} className={styles.listItem}>
+            <div key={item.label} className={styles.listItem} onClick={() => item.path && navigate(item.path)}>
               <span className={styles.itemIcon}>{item.icon}</span>
               <div className={styles.itemContent}>
                 <Text strong>{item.label}</Text>

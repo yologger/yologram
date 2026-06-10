@@ -88,6 +88,28 @@ export const handlers = [
     })
   }),
 
+  http.patch('http://localhost:5001/api/v1/ums/user/me/password', async ({ request }) => {
+    const authHeader = request.headers.get('Authorization')
+
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.substring(7) === 'expired-token') {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_TOKEN_INVALID' },
+        { status: 401 },
+      )
+    }
+
+    const body = await request.json() as { currentPassword: string; newPassword: string }
+
+    if (body.currentPassword === 'wrongpassword') {
+      return HttpResponse.json(
+        { errorMessage: '비밀번호가 올바르지 않습니다.', errorCode: 'AUTH_WRONG_PASSWORD' },
+        { status: 401 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.post('http://localhost:5001/api/v1/ums/auth/logout', ({ request }) => {
     const authHeader = request.headers.get('Authorization')
 

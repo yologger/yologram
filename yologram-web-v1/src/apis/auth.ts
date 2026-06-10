@@ -61,3 +61,12 @@ export async function getMe(): Promise<UserMeResponse> {
   const response = await api.get<{ data: UserMeResponse }>('/api/v1/ums/user/me')
   return response.data.data
 }
+
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+}
+
+export async function changePassword(request: ChangePasswordRequest): Promise<void> {
+  await api.patch('/api/v1/ums/user/me/password', request)
+}
