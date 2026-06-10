@@ -2,10 +2,13 @@ package link.yologram.api.v1.domain.ums.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import link.yologram.api.v1.config.JwtProperties
+import link.yologram.api.v1.domain.ums.enum.UserType
 import link.yologram.api.v1.domain.ums.exception.UmsExceptionHandler
 import link.yologram.api.v1.domain.ums.exception.UserDuplicateException
+import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
 import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.JoinResponse
+import link.yologram.api.v1.domain.ums.model.UserMeResponse
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.service.UserService
 import link.yologram.api.v1.domain.ums.util.JwtUtil
@@ -21,7 +24,9 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import java.time.LocalDateTime
 
 @WebMvcTest(UserResource::class)
 @Import(UmsExceptionHandler::class, ValidationExceptionHandler::class, GlobalExceptionHandler::class, AuthenticatedUserResolver::class)
@@ -191,6 +196,96 @@ class UserResourceTest {
             }.andExpect {
                 status { isBadRequest() }
                 jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
+            }
+        }
+    }
+
+    @Nested
+    inner class 회원정보_조회 {
+
+        private val meResponse = UserMeResponse(
+            uid = 1L,
+            email = "test@yologram.link",
+            name = "테스터",
+            nickname = "tester",
+            avatar = null,
+            type = UserType.DEFAULT,
+            joinedDate = LocalDateTime.of(2025, 1, 1, 0, 0),
+        )
+
+        @Nested
+        inner class 성공 {
+
+            @Test
+            fun `200과 유저 정보를 반환한다`() {
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+                whenever(userService.getMe(1L)).thenReturn(meResponse)
+
+                mockMvc.get("/api/v1/ums/user/me") {
+                    header("Authorization", "Bearer valid-token")
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.data.uid") { value(1) }
+                    jsonPath("$.data.email") { value("test@yologram.link") }
+                    jsonPath("$.data.name") { value("테스터") }
+                    jsonPath("$.data.nickname") { value("tester") }
+                    jsonPath("$.data.avatar") { doesNotExist() }
+                    jsonPath("$.data.type") { value("DEFAULT") }
+                    jsonPath("$.data.joinedDate") { isNotEmpty() }
+                }
+            }
+
+            @Test
+            fun `아바타가 있으면 포함된다`() {
+                val withAvatar = meResponse.copy(avatar = "https://example.com/avatar.png")
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+                whenever(userService.getMe(1L)).thenReturn(withAvatar)
+
+                mockMvc.get("/api/v1/ums/user/me") {
+                    header("Authorization", "Bearer valid-token")
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.data.avatar") { value("https://example.com/avatar.png") }
+                }
+            }
+        }
+
+        @Nested
+        inner class 실패 {
+
+            @Test
+            fun `Authorization 헤더 없으면 401 반환`() {
+                mockMvc.get("/api/v1/ums/user/me")
+                    .andExpect {
+                        status { isUnauthorized() }
+                        jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+                    }
+            }
+
+            @Test
+            fun `유효하지 않은 토큰이면 401 반환`() {
+                whenever(jwtUtil.validateAndGetUid("invalid-token"))
+                    .thenThrow(link.yologram.api.v1.domain.ums.exception.AuthTokenInvalidException())
+
+                mockMvc.get("/api/v1/ums/user/me") {
+                    header("Authorization", "Bearer invalid-token")
+                }.andExpect {
+                    status { isUnauthorized() }
+                    jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+                }
+            }
+
+            @Test
+            fun `존재하지 않는 유저면 404 반환`() {
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(999L)
+                whenever(userService.getMe(999L)).thenThrow(UserNotFoundException())
+
+                mockMvc.get("/api/v1/ums/user/me") {
+                    header("Authorization", "Bearer valid-token")
+                }.andExpect {
+                    status { isNotFound() }
+                    jsonPath("$.errorCode") { value("USER_NOT_FOUND") }
+                }
             }
         }
     }
