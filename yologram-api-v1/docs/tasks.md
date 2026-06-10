@@ -55,16 +55,19 @@
 
 - [ ] GET /api/v1/ums/user/me (본인 정보 조회)
 - [ ] 회원정보 조회 테스트
+- [ ] Swagger 문서화
 
 ## UMS - 회원정보 수정 (4단계)
 
 - [ ] PUT /api/v1/ums/user (이름, 닉네임 변경)
 - [ ] 회원정보 수정 테스트
+- [ ] Swagger 문서화
 
 ## UMS - 비밀번호 변경 (5단계)
 
 - [ ] PUT /api/v1/ums/user/password (현재 비밀번호 + 새 비밀번호)
 - [ ] 비밀번호 변경 테스트
+- [ ] Swagger 문서화
 
 ## UMS - 이메일 인증 (6단계)
 
@@ -74,12 +77,14 @@
 - [ ] POST /api/v1/ums/auth/verify-email
 - [ ] 회원가입 시 이메일 인증 필수화
 - [ ] 이메일 인증 테스트
+- [ ] Swagger 문서화
 
 ## UMS - 비밀번호 찾기 (7단계)
 
 - [ ] POST /api/v1/ums/auth/reset-password (이메일로 비밀번호 재설정 링크/임시 비밀번호 발송)
 - [ ] 비밀번호 재설정 처리 로직
 - [ ] 비밀번호 찾기 테스트
+- [ ] Swagger 문서화
 
 ## UMS - Refresh Token (8단계)
 
@@ -87,3 +92,4 @@
 - [ ] POST /api/v1/ums/auth/refresh (refresh token으로 access token 재발급)
 - [ ] refresh token 저장/검증 로직
 - [ ] refresh token 테스트
+- [ ] Swagger 문서화

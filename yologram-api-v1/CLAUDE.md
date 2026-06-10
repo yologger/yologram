@@ -34,6 +34,7 @@
 
 - Swagger UI: /api/v1/docs
 - api-docs: /api/v1/api-docs
+- 신규 API 추가 시 Swagger 문서화 필수 (요청/응답 스키마, 에러 코드, 인증 여부)
 
 ## CORS
 

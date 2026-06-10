@@ -31,6 +31,7 @@
 - 예외: AppException → { "errorMessage", "errorCode" }
 - CORS: 전체 허용 (*)
 - Swagger: /api/v2/docs
+- 신규 API 추가 시 Swagger 문서화 필수 (요청/응답 스키마, 에러 코드, 인증 여부)
 
 ## 인증
 
