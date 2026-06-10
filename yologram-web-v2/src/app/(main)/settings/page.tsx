@@ -14,6 +14,7 @@ import {
 import { useAtomValue } from 'jotai'
 import { authAtom } from '@/stores/auth'
 import useLogoutMutation from '@/queries/useLogoutMutation'
+import useUserQuery from '@/queries/useUserQuery'
 import RequireAuth from '@/components/auth/RequireAuth'
 import styles from './Settings.module.css'
 
@@ -51,6 +52,7 @@ const sections = [
 
 export default function Settings() {
   const auth = useAtomValue(authAtom)
+  const { data: user } = useUserQuery()
   const { mutate: logoutMutate } = useLogoutMutation()
 
   return (
@@ -58,7 +60,7 @@ export default function Settings() {
       <div className={styles.container}>
         <div className={styles.profile}>
           <Avatar size={64} icon={<UserOutlined />} className={styles.avatar} />
-          <Title level={4} className={styles.username}>{auth?.nickname ?? 'yologram'}</Title>
+          <Title level={4} className={styles.username}>{user?.nickname ?? auth?.nickname ?? 'yologram'}</Title>
         </div>
 
         {sections.map((section) => (
