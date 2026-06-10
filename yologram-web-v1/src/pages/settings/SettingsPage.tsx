@@ -29,21 +29,21 @@ const sections = [
   {
     title: '환경 설정',
     items: [
-      { icon: <BellOutlined />, label: '알림 설정', desc: '푸시 알림을 관리해요' },
-      { icon: <BulbOutlined />, label: '다크 모드 설정', desc: '라이트·다크 모드를 선택해요' },
+      { icon: <BellOutlined />, label: '알림 설정', desc: '푸시 알림을 관리해요', path: '' },
+      { icon: <BulbOutlined />, label: '다크 모드 설정', desc: '라이트·다크 모드를 선택해요', path: '' },
     ],
   },
   {
     title: '활동',
     items: [
-      { icon: <EditOutlined />, label: '내가 쓴 글', desc: '내가 작성한 글을 관리해요' },
-      { icon: <BookOutlined />, label: '저장한 글', desc: '북마크한 게시글을 관리해요' },
+      { icon: <EditOutlined />, label: '내가 쓴 글', desc: '내가 작성한 글을 관리해요', path: '' },
+      { icon: <BookOutlined />, label: '저장한 글', desc: '북마크한 게시글을 관리해요', path: '' },
     ],
   },
   {
     title: '기타',
     items: [
-      { icon: <FileTextOutlined />, label: '이용약관', desc: '' },
+      { icon: <FileTextOutlined />, label: '이용약관', desc: '', path: '' },
     ],
   },
 ]
