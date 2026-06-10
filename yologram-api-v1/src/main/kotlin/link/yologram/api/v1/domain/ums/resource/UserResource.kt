@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import link.yologram.api.v1.domain.ums.model.ChangePasswordRequest
 import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.JoinResponse
 import link.yologram.api.v1.domain.ums.model.UserMeResponse
@@ -38,5 +39,21 @@ class UserResource(
     )
     fun getMe(@AuthenticatedUser authData: AuthData): ApiEnvelop<UserMeResponse> {
         return ApiEnvelop(data = userService.getMe(authData.uid))
+    }
+
+    @PatchMapping("/me/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "비밀번호 변경", description = "현재 비밀번호 확인 후 새 비밀번호로 변경")
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "변경 성공"),
+        ApiResponse(responseCode = "400", description = "입력값 검증 실패"),
+        ApiResponse(responseCode = "401", description = "인증 실패 또는 현재 비밀번호 불일치"),
+        ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음"),
+    )
+    fun changePassword(
+        @AuthenticatedUser authData: AuthData,
+        @Valid @RequestBody request: ChangePasswordRequest,
+    ) {
+        userService.changePassword(authData.uid, request)
     }
 }

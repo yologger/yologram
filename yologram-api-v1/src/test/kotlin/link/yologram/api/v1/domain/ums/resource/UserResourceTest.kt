@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.ums.enum.UserType
 import link.yologram.api.v1.domain.ums.exception.UmsExceptionHandler
+import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException
 import link.yologram.api.v1.domain.ums.exception.UserDuplicateException
 import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
+import link.yologram.api.v1.domain.ums.model.ChangePasswordRequest
 import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.JoinResponse
 import link.yologram.api.v1.domain.ums.model.UserMeResponse
@@ -23,8 +25,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.doThrow
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import java.time.LocalDateTime
 
@@ -285,6 +290,121 @@ class UserResourceTest {
                 }.andExpect {
                     status { isNotFound() }
                     jsonPath("$.errorCode") { value("USER_NOT_FOUND") }
+                }
+            }
+        }
+    }
+
+    private fun changePasswordRequest(
+        currentPassword: String = "password123",
+        newPassword: String = "newpass1234",
+    ) = ChangePasswordRequest(currentPassword = currentPassword, newPassword = newPassword)
+
+    @Nested
+    inner class 비밀번호_변경 {
+
+        @Nested
+        inner class 성공 {
+
+            @Test
+            fun `204 반환`() {
+                val request = changePasswordRequest()
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+                doNothing().whenever(userService).changePassword(any(), any())
+
+                mockMvc.patch("/api/v1/ums/user/me/password") {
+                    header("Authorization", "Bearer valid-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(request)
+                }.andExpect {
+                    status { isNoContent() }
+                }
+            }
+        }
+
+        @Nested
+        inner class 실패 {
+
+            @Test
+            fun `Authorization 헤더 없으면 401 반환`() {
+                mockMvc.patch("/api/v1/ums/user/me/password") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(changePasswordRequest())
+                }.andExpect {
+                    status { isUnauthorized() }
+                    jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+                }
+            }
+
+            @Test
+            fun `현재 비밀번호 불일치 시 401 반환`() {
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+                doThrow(AuthWrongPasswordException()).whenever(userService).changePassword(any(), any())
+
+                mockMvc.patch("/api/v1/ums/user/me/password") {
+                    header("Authorization", "Bearer valid-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(changePasswordRequest())
+                }.andExpect {
+                    status { isUnauthorized() }
+                    jsonPath("$.errorCode") { value("AUTH_WRONG_PASSWORD") }
+                }
+            }
+
+            @Test
+            fun `존재하지 않는 유저면 404 반환`() {
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(999L)
+                doThrow(UserNotFoundException()).whenever(userService).changePassword(any(), any())
+
+                mockMvc.patch("/api/v1/ums/user/me/password") {
+                    header("Authorization", "Bearer valid-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(changePasswordRequest())
+                }.andExpect {
+                    status { isNotFound() }
+                    jsonPath("$.errorCode") { value("USER_NOT_FOUND") }
+                }
+            }
+
+            @Test
+            fun `현재 비밀번호 누락 시 400 반환`() {
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+                mockMvc.patch("/api/v1/ums/user/me/password") {
+                    header("Authorization", "Bearer valid-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(mapOf("newPassword" to "newpass1234"))
+                }.andExpect {
+                    status { isBadRequest() }
+                    jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
+                }
+            }
+
+            @Test
+            fun `새 비밀번호 누락 시 400 반환`() {
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+                mockMvc.patch("/api/v1/ums/user/me/password") {
+                    header("Authorization", "Bearer valid-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(mapOf("currentPassword" to "password123"))
+                }.andExpect {
+                    status { isBadRequest() }
+                    jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
+                }
+            }
+
+            @Test
+            fun `새 비밀번호 7자 시 400 반환`() {
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+                mockMvc.patch("/api/v1/ums/user/me/password") {
+                    header("Authorization", "Bearer valid-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(changePasswordRequest(newPassword = "1234567"))
+                }.andExpect {
+                    status { isBadRequest() }
+                    jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
                 }
             }
         }

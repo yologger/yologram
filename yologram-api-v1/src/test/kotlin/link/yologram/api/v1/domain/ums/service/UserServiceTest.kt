@@ -3,8 +3,10 @@ package link.yologram.api.v1.domain.ums.service
 import link.yologram.api.v1.domain.ums.entity.User
 import link.yologram.api.v1.domain.ums.enum.UserStatus
 import link.yologram.api.v1.domain.ums.enum.UserType
+import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException
 import link.yologram.api.v1.domain.ums.exception.UserDuplicateException
 import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
+import link.yologram.api.v1.domain.ums.model.ChangePasswordRequest
 import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.repository.UserRepository
 import org.junit.jupiter.api.Assertions.*
@@ -153,6 +155,54 @@ class UserServiceTest {
             }
 
             assertEquals("USER_NOT_FOUND", exception.errorCode)
+        }
+    }
+
+    @Nested
+    inner class 비밀번호_변경_성공 {
+
+        @Test
+        fun `비밀번호가 변경된다`() {
+            val user = testUser()
+            val request = ChangePasswordRequest(currentPassword = "password123", newPassword = "newpass1234")
+
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("password123", "encoded-password")).thenReturn(true)
+            whenever(passwordEncoder.encode("newpass1234")).thenReturn("new-encoded-password")
+
+            userService.changePassword(1L, request)
+
+            assertEquals("new-encoded-password", user.password)
+        }
+    }
+
+    @Nested
+    inner class 비밀번호_변경_실패 {
+
+        @Test
+        fun `현재 비밀번호 불일치 시 AuthWrongPasswordException 발생`() {
+            val user = testUser()
+            val request = ChangePasswordRequest(currentPassword = "wrongpass", newPassword = "newpass1234")
+
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+            whenever(passwordEncoder.matches("wrongpass", "encoded-password")).thenReturn(false)
+
+            val exception = assertThrows<AuthWrongPasswordException> {
+                userService.changePassword(1L, request)
+            }
+
+            assertEquals("AUTH_WRONG_PASSWORD", exception.errorCode)
+        }
+
+        @Test
+        fun `존재하지 않는 유저 시 UserNotFoundException 발생`() {
+            val request = ChangePasswordRequest(currentPassword = "password123", newPassword = "newpass1234")
+
+            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+
+            assertThrows<UserNotFoundException> {
+                userService.changePassword(999L, request)
+            }
         }
     }
 }

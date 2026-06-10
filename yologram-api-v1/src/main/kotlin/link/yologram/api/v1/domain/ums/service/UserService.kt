@@ -1,8 +1,10 @@
 package link.yologram.api.v1.domain.ums.service
 
 import link.yologram.api.v1.domain.ums.entity.User
+import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException
 import link.yologram.api.v1.domain.ums.exception.UserDuplicateException
 import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
+import link.yologram.api.v1.domain.ums.model.ChangePasswordRequest
 import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.JoinResponse
 import link.yologram.api.v1.domain.ums.model.UserMeResponse
@@ -48,5 +50,17 @@ class UserService(
             type = user.type,
             joinedDate = user.joinedDate,
         )
+    }
+
+    @Transactional
+    fun changePassword(uid: Long, request: ChangePasswordRequest) {
+        val user = userRepository.findById(uid)
+            .orElseThrow { UserNotFoundException() }
+
+        if (!passwordEncoder.matches(request.currentPassword, user.password)) {
+            throw AuthWrongPasswordException()
+        }
+
+        user.password = passwordEncoder.encode(request.newPassword)
     }
 }
