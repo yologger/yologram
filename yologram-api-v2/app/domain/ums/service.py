@@ -1,10 +1,10 @@
 import bcrypt
 from sqlalchemy.orm import Session
 
-from app.core.exception import UserDuplicateException, UserNotFoundException
+from app.core.exception import AuthWrongPasswordException, UserDuplicateException, UserNotFoundException
 from app.domain.ums.model import User
 from app.domain.ums.repository import UserRepository
-from app.domain.ums.schema import JoinRequest, JoinResponse, UserMeResponse
+from app.domain.ums.schema import ChangePasswordRequest, JoinRequest, JoinResponse, UserMeResponse
 
 
 class UserService:
@@ -44,3 +44,16 @@ class UserService:
             type=user.type.value,
             joined_date=user.joined_date,
         )
+
+    def change_password(self, uid: int, request: ChangePasswordRequest) -> None:
+        user = self.repository.find_by_id(uid)
+        if not user:
+            raise UserNotFoundException()
+
+        if not bcrypt.checkpw(request.current_password.encode("utf-8"), user.password.encode("utf-8")):
+            raise AuthWrongPasswordException()
+
+        user.password = bcrypt.hashpw(
+            request.new_password.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
+        self.repository.db.flush()

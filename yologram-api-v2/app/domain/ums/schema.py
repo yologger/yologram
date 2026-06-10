@@ -14,6 +14,13 @@ class JoinResponse(BaseModel):
     uid: int
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(alias="currentPassword")
+    new_password: str = Field(min_length=8, max_length=20, alias="newPassword")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class UserMeResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 

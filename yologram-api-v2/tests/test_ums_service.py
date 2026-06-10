@@ -2,10 +2,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.core.exception import UserDuplicateException, UserNotFoundException
+from app.core.exception import AuthWrongPasswordException, UserDuplicateException, UserNotFoundException
 from app.domain.ums.enum import UserType
 from app.domain.ums.model import User
-from app.domain.ums.schema import JoinRequest
+from app.domain.ums.schema import ChangePasswordRequest, JoinRequest
 from app.domain.ums.service import UserService
 
 
@@ -89,3 +89,43 @@ class TestUserService:
 
             with pytest.raises(UserNotFoundException):
                 self.service.get_me(999)
+
+    class TestChangePassword:
+
+        def setup_method(self):
+            self.db = MagicMock()
+            self.service = UserService(self.db)
+
+        def _make_user(self, password="password123!"):
+            import bcrypt
+            hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+            user = MagicMock()
+            user.id = 1
+            user.password = hashed
+            return user
+
+        def test_비밀번호_변경_성공(self):
+            user = self._make_user()
+            self.service.repository.find_by_id = MagicMock(return_value=user)
+
+            request = ChangePasswordRequest(currentPassword="password123!", newPassword="newpass1234")
+            self.service.change_password(1, request)
+
+            assert user.password != "password123!"
+
+        def test_현재_비밀번호_불일치_시_예외(self):
+            user = self._make_user()
+            self.service.repository.find_by_id = MagicMock(return_value=user)
+
+            request = ChangePasswordRequest(currentPassword="wrongpass", newPassword="newpass1234")
+
+            with pytest.raises(AuthWrongPasswordException):
+                self.service.change_password(1, request)
+
+        def test_존재하지_않는_유저_시_예외(self):
+            self.service.repository.find_by_id = MagicMock(return_value=None)
+
+            request = ChangePasswordRequest(currentPassword="password123!", newPassword="newpass1234")
+
+            with pytest.raises(UserNotFoundException):
+                self.service.change_password(999, request)

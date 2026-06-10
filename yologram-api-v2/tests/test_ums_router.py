@@ -183,3 +183,88 @@ class TestUmsRouter:
 
             assert response.status_code == 404
             assert response.json()["errorCode"] == "USER_NOT_FOUND"
+
+    class TestChangePassword:
+
+        def setup_method(self):
+            self.mock_db = MagicMock()
+            app.dependency_overrides[get_db] = lambda: self.mock_db
+            self.client = TestClient(app)
+            self.token = create_token(1)
+
+        def teardown_method(self):
+            app.dependency_overrides.clear()
+
+        @patch("app.domain.ums.service.UserRepository")
+        def test_비밀번호_변경_성공(self, mock_repo_cls):
+            import bcrypt
+            hashed = bcrypt.hashpw(b"password123!", bcrypt.gensalt()).decode("utf-8")
+            mock_user = MagicMock()
+            mock_user.id = 1
+            mock_user.password = hashed
+
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.return_value = mock_user
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.patch(
+                "/api/v2/ums/user/me/password",
+                json={"currentPassword": "password123!", "newPassword": "newpass1234"},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 204
+
+        @patch("app.domain.ums.service.UserRepository")
+        def test_현재_비밀번호_불일치_시_401(self, mock_repo_cls):
+            import bcrypt
+            hashed = bcrypt.hashpw(b"password123!", bcrypt.gensalt()).decode("utf-8")
+            mock_user = MagicMock()
+            mock_user.id = 1
+            mock_user.password = hashed
+
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.return_value = mock_user
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.patch(
+                "/api/v2/ums/user/me/password",
+                json={"currentPassword": "wrongpass", "newPassword": "newpass1234"},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 401
+            assert response.json()["errorCode"] == "AUTH_WRONG_PASSWORD"
+
+        def test_인증_헤더_없으면_401(self):
+            response = self.client.patch(
+                "/api/v2/ums/user/me/password",
+                json={"currentPassword": "password123!", "newPassword": "newpass1234"},
+            )
+
+            assert response.status_code == 401
+            assert response.json()["errorCode"] == "AUTH_TOKEN_INVALID"
+
+        @patch("app.domain.ums.service.UserRepository")
+        def test_존재하지_않는_유저면_404(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.return_value = None
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.patch(
+                "/api/v2/ums/user/me/password",
+                json={"currentPassword": "password123!", "newPassword": "newpass1234"},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 404
+            assert response.json()["errorCode"] == "USER_NOT_FOUND"
+
+        def test_새_비밀번호_길이_검증(self):
+            response = self.client.patch(
+                "/api/v2/ums/user/me/password",
+                json={"currentPassword": "password123!", "newPassword": "short"},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 422

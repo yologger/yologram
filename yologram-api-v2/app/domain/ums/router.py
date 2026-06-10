@@ -5,7 +5,7 @@ from app.config.database import get_db
 from app.core.response import ApiEnvelop
 from app.domain.ums.auth_dependency import get_authenticated_user
 from app.domain.ums.auth_schema import AuthData
-from app.domain.ums.schema import JoinRequest
+from app.domain.ums.schema import ChangePasswordRequest, JoinRequest
 from app.domain.ums.service import UserService
 
 router = APIRouter(prefix="/api/v2/ums/user", tags=["User"])
@@ -35,3 +35,23 @@ def get_me(
     service = UserService(db)
     result = service.get_me(auth_data.uid)
     return ApiEnvelop(data=result)
+
+
+@router.patch(
+    "/me/password",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="비밀번호 변경",
+    description="현재 비밀번호 확인 후 새 비밀번호로 변경",
+    responses={
+        400: {"description": "입력값 검증 실패"},
+        401: {"description": "인증 실패 또는 현재 비밀번호 불일치"},
+        404: {"description": "사용자를 찾을 수 없음"},
+    },
+)
+def change_password(
+    request: ChangePasswordRequest,
+    auth_data: AuthData = Depends(get_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    service = UserService(db)
+    service.change_password(auth_data.uid, request)
