@@ -74,3 +74,23 @@ jobs:
         run: |
           aws s3 sync build/ s3://${{ env.S3_BUCKET }} --delete --cache-control "max-age=31536000,public"
           aws s3 cp build/index.html s3://${{ env.S3_BUCKET }}/index.html --cache-control "no-cache,no-store,must-revalidate"
+
+      - name: Discord 알림
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            COLOR=3066993
+            EMOJI="✅"
+            STATUS="success"
+          else
+            COLOR=15158332
+            EMOJI="❌"
+            STATUS="failed"
+          fi
+          COMMIT_MSG=$(echo '${{ github.event.head_commit.message }}' | head -1)
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          DESCRIPTION="- result: \`${STATUS}\`\n- branch: \`${{ github.ref_name }}\`\n- commit\n  - id: \`${SHORT_SHA}\`\n  - message: \`${COMMIT_MSG}\`\n- [details](${RUN_URL})"
+          curl -s -H "Content-Type: application/json" \
+            -d "{\"embeds\":[{\"title\":\"${EMOJI} ${{ github.workflow }}\",\"color\":${COLOR},\"description\":\"${DESCRIPTION}\"}]}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}

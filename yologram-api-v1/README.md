@@ -22,3 +22,4 @@ Spring Boot MVC (Kotlin) API 서버.
 
 - JWT 인증은 `Authorization: Bearer {token}` 헤더를 사용합니다.
 - `validate-token`은 로그인 직후 토큰 저장값을 안정적으로 확인하기 위해 master DB 트랜잭션으로 조회합니다.
+

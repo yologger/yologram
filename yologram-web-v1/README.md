@@ -59,3 +59,4 @@ src/
 
 - S3 + CloudFront (정적 파일 호스팅)
 - GitHub Actions: yarn build → S3 sync
+
