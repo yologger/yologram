@@ -51,10 +51,39 @@
 - [x] AuthService 단위 테스트
 - [x] AuthResource 슬라이스 테스트
 
-## UMS - 유저 조회/수정/탈퇴 (3단계)
+## UMS - 회원정보 조회 (3단계)
 
-- [ ] GET /api/v1/ums/user/{uid} (유저 조회)
-- [ ] PUT /api/v1/ums/user (회원정보 수정 - 이름, 닉네임)
-- [ ] PUT /api/v1/ums/user/password (비밀번호 변경)
-- [ ] DELETE /api/v1/ums/user/withdraw (회원 탈퇴)
-- [ ] 유저 조회/수정/탈퇴 테스트
+- [ ] GET /api/v1/ums/user/me (본인 정보 조회)
+- [ ] 회원정보 조회 테스트
+
+## UMS - 회원정보 수정 (4단계)
+
+- [ ] PUT /api/v1/ums/user (이름, 닉네임 변경)
+- [ ] 회원정보 수정 테스트
+
+## UMS - 비밀번호 변경 (5단계)
+
+- [ ] PUT /api/v1/ums/user/password (현재 비밀번호 + 새 비밀번호)
+- [ ] 비밀번호 변경 테스트
+
+## UMS - 이메일 인증 (6단계)
+
+- [ ] AWS SES 연동 (이메일 발송 서비스)
+- [ ] 인증 코드 생성/저장 로직 (email_verification 테이블, 5분 만료)
+- [ ] POST /api/v1/ums/auth/send-verification-code
+- [ ] POST /api/v1/ums/auth/verify-email
+- [ ] 회원가입 시 이메일 인증 필수화
+- [ ] 이메일 인증 테스트
+
+## UMS - 비밀번호 찾기 (7단계)
+
+- [ ] POST /api/v1/ums/auth/reset-password (이메일로 비밀번호 재설정 링크/임시 비밀번호 발송)
+- [ ] 비밀번호 재설정 처리 로직
+- [ ] 비밀번호 찾기 테스트
+
+## UMS - Refresh Token (8단계)
+
+- [ ] refresh token 발급 로직 (login 시 access + refresh 쌍 발급)
+- [ ] POST /api/v1/ums/auth/refresh (refresh token으로 access token 재발급)
+- [ ] refresh token 저장/검증 로직
+- [ ] refresh token 테스트

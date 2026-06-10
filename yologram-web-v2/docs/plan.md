@@ -35,6 +35,38 @@
 - auth.test.ts 로그인/토큰검증/로그아웃 테스트
 - LoginPage.test.tsx 생성
 
+## 회원정보 조회
+
+- 설정 페이지 아바타 하단에 닉네임 표시 (GET /api/v2/ums/user/me 연동)
+- useUserQuery 훅 생성
+
+## 회원정보 수정
+
+- 설정 > 회원정보 수정 페이지
+- 이름, 닉네임 변경 폼 → PUT /api/v2/ums/user 연동
+- 수정 성공 시 설정 페이지로 이동 + 닉네임 갱신
+
+## 비밀번호 변경
+
+- 설정 > 비밀번호 변경 페이지
+- 현재 비밀번호, 새 비밀번호, 비밀번호 확인 3개 입력
+- PUT /api/v2/ums/user/password 연동
+
+## 이메일 인증
+
+- 회원가입 폼에 이메일 인증 단계 추가
+- 인증 코드 발송 → 코드 입력 → 검증 통과 후 가입 진행
+
+## 비밀번호 찾기
+
+- 로그인 페이지에 비밀번호 찾기 링크
+- 이메일 입력 → 비밀번호 재설정 요청
+
+## Refresh Token
+
+- login 응답에서 refresh token 저장
+- 401 시 refresh token으로 access token 재발급 후 재요청
+
 ---
 
 # yologram-web-v2 Observability Plan
