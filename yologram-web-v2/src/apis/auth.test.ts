@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { getDefaultStore } from 'jotai'
 import { server } from '../test/server'
 import { authAtom } from '../stores/auth'
-import { join, login, validateToken, logout, getMe } from './auth'
+import { join, login, validateToken, logout, getMe, changePassword } from './auth'
 
 const store = getDefaultStore()
 
@@ -135,5 +135,41 @@ describe('getMe', () => {
     })
 
     await expect(getMe()).rejects.toThrow()
+  })
+})
+
+describe('changePassword', () => {
+  it('비밀번호 변경 성공 시 에러 없이 완료된다', async () => {
+    store.set(authAtom, {
+      uid: 1,
+      accessToken: 'valid-token',
+      email: 'test@yologram.link',
+      name: '테스트',
+      nickname: 'tester',
+    })
+
+    await expect(
+      changePassword({ currentPassword: 'password123', newPassword: 'newpass1234' }),
+    ).resolves.toBeUndefined()
+  })
+
+  it('현재 비밀번호 불일치 시 에러를 던진다', async () => {
+    store.set(authAtom, {
+      uid: 1,
+      accessToken: 'valid-token',
+      email: 'test@yologram.link',
+      name: '테스트',
+      nickname: 'tester',
+    })
+
+    await expect(
+      changePassword({ currentPassword: 'wrongpassword', newPassword: 'newpass1234' }),
+    ).rejects.toThrow()
+  })
+
+  it('인증되지 않은 상태에서 에러를 던진다', async () => {
+    await expect(
+      changePassword({ currentPassword: 'password123', newPassword: 'newpass1234' }),
+    ).rejects.toThrow()
   })
 })

@@ -11,6 +11,7 @@ import {
   FileTextOutlined,
   RightOutlined,
 } from '@ant-design/icons'
+import { useRouter } from 'next/navigation'
 import { useAtomValue } from 'jotai'
 import { authAtom } from '@/stores/auth'
 import useLogoutMutation from '@/queries/useLogoutMutation'
@@ -24,33 +25,34 @@ const sections = [
   {
     title: '계정',
     items: [
-      { icon: <UserOutlined />, label: '회원정보 수정', desc: '이름, 닉네임 등을 변경해요' },
-      { icon: <LockOutlined />, label: '비밀번호 변경', desc: '비밀번호를 변경해요' },
+      { icon: <UserOutlined />, label: '회원정보 수정', desc: '이름, 닉네임 등을 변경해요', path: '' },
+      { icon: <LockOutlined />, label: '비밀번호 변경', desc: '비밀번호를 변경해요', path: '/settings/change-password' },
     ],
   },
   {
     title: '환경 설정',
     items: [
-      { icon: <BellOutlined />, label: '알림 설정', desc: '푸시 알림을 관리해요' },
-      { icon: <BulbOutlined />, label: '다크 모드 설정', desc: '라이트·다크 모드를 선택해요' },
+      { icon: <BellOutlined />, label: '알림 설정', desc: '푸시 알림을 관리해요', path: '' },
+      { icon: <BulbOutlined />, label: '다크 모드 설정', desc: '라이트·다크 모드를 선택해요', path: '' },
     ],
   },
   {
     title: '활동',
     items: [
-      { icon: <EditOutlined />, label: '내가 쓴 글', desc: '내가 작성한 글을 관리해요' },
-      { icon: <BookOutlined />, label: '저장한 글', desc: '북마크한 게시글을 관리해요' },
+      { icon: <EditOutlined />, label: '내가 쓴 글', desc: '내가 작성한 글을 관리해요', path: '' },
+      { icon: <BookOutlined />, label: '저장한 글', desc: '북마크한 게시글을 관리해요', path: '' },
     ],
   },
   {
     title: '기타',
     items: [
-      { icon: <FileTextOutlined />, label: '이용약관', desc: '' },
+      { icon: <FileTextOutlined />, label: '이용약관', desc: '', path: '' },
     ],
   },
 ]
 
 export default function Settings() {
+  const router = useRouter()
   const auth = useAtomValue(authAtom)
   const { data: user } = useUserQuery()
   const { mutate: logoutMutate } = useLogoutMutation()
@@ -67,7 +69,7 @@ export default function Settings() {
           <div key={section.title} className={styles.section}>
             <Text type="secondary" className={styles.sectionTitle}>{section.title}</Text>
             {section.items.map((item) => (
-              <div key={item.label} className={styles.listItem}>
+              <div key={item.label} className={styles.listItem} onClick={() => item.path && router.push(item.path)}>
                 <span className={styles.itemIcon}>{item.icon}</span>
                 <div className={styles.itemContent}>
                   <Text strong>{item.label}</Text>
