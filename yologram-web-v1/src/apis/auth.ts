@@ -46,3 +46,18 @@ export async function validateToken(): Promise<ValidateTokenResponse> {
 export async function logout(): Promise<void> {
   await api.post('/api/v1/ums/auth/logout')
 }
+
+export interface UserMeResponse {
+  uid: number
+  email: string
+  name: string
+  nickname: string
+  avatar: string | null
+  type: string
+  joinedDate: string
+}
+
+export async function getMe(): Promise<UserMeResponse> {
+  const response = await api.get<{ data: UserMeResponse }>('/api/v1/ums/user/me')
+  return response.data.data
+}
