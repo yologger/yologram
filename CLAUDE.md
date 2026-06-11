@@ -7,6 +7,7 @@
 - yologram-web-v1/: React
 - yologram-api-v2/: FastAPI
 - yologram-web-v2/: Next.js
+- yologram-admin-web/: 어드민 웹 (예정)
 - .github/workflows/: GitHub Actions
 
 ## 인프라

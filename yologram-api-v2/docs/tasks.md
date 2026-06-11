@@ -89,3 +89,21 @@
 - [ ] refresh token 저장/검증 로직
 - [ ] refresh token 테스트
 - [ ] Swagger 문서화
+
+## Admin - 유저 관리
+
+- [ ] GET /api/v2/ums/admin/users (유저 목록 조회)
+- [ ] GET /api/v2/ums/admin/users/{uid} (유저 상세 조회)
+- [ ] PATCH /api/v2/ums/admin/users/{uid} (유저 정보 수정)
+- [ ] DELETE /api/v2/ums/admin/users/{uid} (유저 삭제)
+- [ ] 어드민 권한 검증 (UserType.ADMIN)
+- [ ] 테스트
+- [ ] Swagger 문서화
+
+## Admin - 게시글 관리
+
+- [ ] GET /api/v2/admin/posts (게시글 목록 조회)
+- [ ] GET /api/v2/admin/posts/{id} (게시글 상세 조회)
+- [ ] DELETE /api/v2/admin/posts/{id} (게시글 삭제)
+- [ ] 테스트
+- [ ] Swagger 문서화

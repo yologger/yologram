@@ -59,9 +59,9 @@
 
 ## UMS - 회원정보 수정 (4단계)
 
-- [ ] PATCH /api/v1/ums/user/me (이름, 닉네임 변경)
-- [ ] 회원정보 수정 테스트
-- [ ] Swagger 문서화
+- [x] PATCH /api/v1/ums/user/me (닉네임 변경)
+- [x] 회원정보 수정 테스트
+- [x] Swagger 문서화
 
 ## UMS - 비밀번호 변경 (5단계)
 
@@ -92,4 +92,22 @@
 - [ ] POST /api/v1/ums/auth/refresh (refresh token으로 access token 재발급)
 - [ ] refresh token 저장/검증 로직
 - [ ] refresh token 테스트
+- [ ] Swagger 문서화
+
+## Admin - 유저 관리
+
+- [ ] GET /api/v1/ums/admin/users (유저 목록 조회)
+- [ ] GET /api/v1/ums/admin/users/{uid} (유저 상세 조회)
+- [ ] PATCH /api/v1/ums/admin/users/{uid} (유저 정보 수정)
+- [ ] DELETE /api/v1/ums/admin/users/{uid} (유저 삭제)
+- [ ] 어드민 권한 검증 (UserType.ADMIN)
+- [ ] 테스트
+- [ ] Swagger 문서화
+
+## Admin - 게시글 관리
+
+- [ ] GET /api/v1/admin/posts (게시글 목록 조회)
+- [ ] GET /api/v1/admin/posts/{id} (게시글 상세 조회)
+- [ ] DELETE /api/v1/admin/posts/{id} (게시글 삭제)
+- [ ] 테스트
 - [ ] Swagger 문서화

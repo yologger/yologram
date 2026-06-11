@@ -85,7 +85,7 @@ jobs:
           COMMIT_MSG=$(echo '${{ github.event.head_commit.message }}' | head -1)
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          DESCRIPTION="- result: \`${STATUS}\`\n- branch: \`${{ github.ref_name }}\`\n- commit\n  - id: \`${SHORT_SHA}\`\n  - message: \`${COMMIT_MSG}\`\n- [details](${RUN_URL})"
+          DESCRIPTION="- result: \`${STATUS}\` ([see details](${RUN_URL}))\n- branch: \`${{ github.ref_name }}\`\n- commit: \`${SHORT_SHA}\`\n\`\`\`\n${COMMIT_MSG}\n\`\`\`"
           curl -s -H "Content-Type: application/json" \
             -d "{\"embeds\":[{\"title\":\"${EMOJI} ${{ github.workflow }}\",\"color\":${COLOR},\"description\":\"${DESCRIPTION}\"}]}" \
             ${{ secrets.DISCORD_WEBHOOK_URL }}
