@@ -81,7 +81,7 @@ resource "aws_iam_role_policy" "task_ssm_read" {
           "ssm:GetParameters",
           "ssm:GetParametersByPath",
         ]
-        Resource = "arn:aws:ssm:ap-northeast-2:000000000000:parameter/yologram/service/yologram-api-v1_*"
+        Resource = "arn:aws:ssm:ap-northeast-2:${data.aws_caller_identity.current.account_id}:parameter/yologram/service/yologram-api-v1_*"
       }
     ]
   })
@@ -252,7 +252,7 @@ resource "aws_ecs_task_definition" "this" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = "arn:aws:iam::000000000000:role/ecs-task-execution-role"
+  execution_role_arn       = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecs-task-execution-role"
   task_role_arn            = aws_iam_role.task.arn
 
   container_definitions = jsonencode([
