@@ -2,6 +2,35 @@
 
 yologram AWS 인프라 관리 (Terraform).
 
+## 서비스
+
+- [https://github.com/yologger/yologram](https://github.com/yologger/yologram)
+- API Gateway: https://api.yologram.link
+- web-v1 (CloudFront): https://v1.yologram.link
+- web-v2 (ECS): https://yologram.link
+
+## 아키텍처
+
+```mermaid
+flowchart LR
+    Client([Client])
+
+    Client --> CloudFront
+    Client --> APIGW
+
+    subgraph AWS
+        CloudFront --> S3["S3\nyologram-web-v1"]
+
+        APIGW["API Gateway\napi.yologram.link"]
+        APIGW -- "/api/v1/*" --> ECS_API_V1["ECS Fargate\nyologram-api-v1\n:5000"]
+        APIGW -- "/api/v2/*" --> ECS_API_V2["ECS Fargate\nyologram-api-v2\n:5000"]
+        APIGW -- "/*" --> ECS_WEB_V2["ECS Fargate\nyologram-web-v2\n:3000"]
+
+        ECS_API_V1 --> RDS[(RDS MySQL)]
+        ECS_API_V2 --> RDS
+    end
+```
+
 ## 구조
 
 ```
