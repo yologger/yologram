@@ -6,8 +6,8 @@ yologram AWS 인프라 관리 (Terraform).
 
 - [https://github.com/yologger/yologram](https://github.com/yologger/yologram)
 - API Gateway: https://api.yologram.link
-- web-v1 (CloudFront): https://v1.yologram.link
-- web-v2 (ECS): https://yologram.link
+- web-v1 (CloudFront): https://web.v1.yologram.link
+- web-v2 (ECS): https://web.v2.yologram.link
 
 ## 아키텍처
 
@@ -15,21 +15,24 @@ yologram AWS 인프라 관리 (Terraform).
 flowchart LR
     Client([Client])
 
-    Client --> CloudFront
-    Client --> APIGW
+    Client -- "web.v1.yologram.link" --> CloudFront
+    Client -- "api.yologram.link<br/>web.v2.yologram.link" --> APIGW
 
     subgraph AWS
-        CloudFront --> S3["S3\nyologram-web-v1"]
+        CloudFront --> S3["S3<br/>yologram-web-v1"]
 
-        APIGW["API Gateway\napi.yologram.link"]
-        APIGW -- "/api/v1/*" --> ECS_API_V1["ECS Fargate\nyologram-api-v1\n:5000"]
-        APIGW -- "/api/v2/*" --> ECS_API_V2["ECS Fargate\nyologram-api-v2\n:5000"]
-        APIGW -- "/*" --> ECS_WEB_V2["ECS Fargate\nyologram-web-v2\n:3000"]
+        APIGW["API Gateway<br/>yologram-gateway (HTTP API)"]
+        APIGW -- "/api/v1/*" --> ECS_API_V1["ECS Fargate<br/>yologram-api-v1<br/>:5000"]
+        APIGW -- "/api/v2/*" --> ECS_API_V2["ECS Fargate<br/>yologram-api-v2<br/>:5000"]
+        APIGW -- "/* (catch-all)" --> ECS_WEB_V2["ECS Fargate<br/>yologram-web-v2<br/>:3000"]
 
         ECS_API_V1 --> RDS[(RDS MySQL)]
         ECS_API_V2 --> RDS
     end
 ```
+
+> API Gateway → ECS 연결은 VPC Link + Cloud Map(service discovery) 경유.
+> ElastiCache(Valkey)와 OpenSearch는 프로비저닝되어 있으나 앱 연결은 별도 (다이어그램 생략).
 
 ## 구조
 
