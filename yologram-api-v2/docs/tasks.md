@@ -55,9 +55,9 @@
 
 ## UMS - 회원정보 수정 (4단계)
 
-- [ ] PATCH /api/v2/ums/user/me (이름, 닉네임 변경)
-- [ ] 회원정보 수정 테스트
-- [ ] Swagger 문서화
+- [x] PATCH /api/v2/ums/user/me (닉네임 변경)
+- [x] 회원정보 수정 테스트
+- [x] Swagger 문서화
 
 ## UMS - 비밀번호 변경 (5단계)
 

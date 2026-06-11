@@ -5,7 +5,7 @@ import pytest
 from app.core.exception import AuthWrongPasswordException, UserDuplicateException, UserNotFoundException
 from app.domain.ums.enum import UserType
 from app.domain.ums.model import User
-from app.domain.ums.schema import ChangePasswordRequest, JoinRequest
+from app.domain.ums.schema import ChangePasswordRequest, JoinRequest, UpdateProfileRequest
 from app.domain.ums.service import UserService
 
 
@@ -89,6 +89,52 @@ class TestUserService:
 
             with pytest.raises(UserNotFoundException):
                 self.service.get_me(999)
+
+    class TestUpdateProfile:
+
+        def setup_method(self):
+            self.db = MagicMock()
+            self.service = UserService(self.db)
+
+        def _make_user(self, uid=1):
+            user = MagicMock()
+            user.id = uid
+            user.email = "test@yologram.link"
+            user.name = "테스트"
+            user.nickname = "tester"
+            user.avatar = None
+            user.type = UserType.DEFAULT
+            user.joined_date = "2025-01-01T00:00:00"
+            return user
+
+        def test_닉네임_변경_성공(self):
+            user = self._make_user()
+            self.service.repository.find_by_id = MagicMock(return_value=user)
+
+            request = UpdateProfileRequest(nickname="new-nickname")
+            result = self.service.update_profile(1, request)
+
+            assert user.nickname == "new-nickname"
+            assert result.nickname == "new-nickname"
+
+        def test_변경된_유저_정보를_반환한다(self):
+            user = self._make_user()
+            self.service.repository.find_by_id = MagicMock(return_value=user)
+
+            request = UpdateProfileRequest(nickname="new-nickname")
+            result = self.service.update_profile(1, request)
+
+            assert result.uid == 1
+            assert result.email == "test@yologram.link"
+            assert result.name == "테스트"
+
+        def test_존재하지_않는_유저_시_예외(self):
+            self.service.repository.find_by_id = MagicMock(return_value=None)
+
+            request = UpdateProfileRequest(nickname="new-nickname")
+
+            with pytest.raises(UserNotFoundException):
+                self.service.update_profile(999, request)
 
     class TestChangePassword:
 

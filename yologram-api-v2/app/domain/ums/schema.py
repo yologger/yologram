@@ -14,6 +14,10 @@ class JoinResponse(BaseModel):
     uid: int
 
 
+class UpdateProfileRequest(BaseModel):
+    nickname: str = Field(min_length=2, max_length=20)
+
+
 class ChangePasswordRequest(BaseModel):
     current_password: str = Field(alias="currentPassword")
     new_password: str = Field(min_length=8, max_length=20, alias="newPassword")

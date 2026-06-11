@@ -51,6 +51,7 @@ uv run pytest tests/ -v
 | POST | /api/v2/ums/auth/validate-token | 토큰 검증 |
 | POST | /api/v2/ums/auth/logout | 로그아웃 |
 | GET | /api/v2/ums/user/me | 회원정보 조회 |
+| PATCH | /api/v2/ums/user/me | 회원정보 수정 |
 | PATCH | /api/v2/ums/user/me/password | 비밀번호 변경 |
 
 API 문서: http://localhost:5002/api/v2/docs

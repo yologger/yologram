@@ -184,6 +184,98 @@ class TestUmsRouter:
             assert response.status_code == 404
             assert response.json()["errorCode"] == "USER_NOT_FOUND"
 
+    class TestUpdateProfile:
+
+        def setup_method(self):
+            self.mock_db = MagicMock()
+            app.dependency_overrides[get_db] = lambda: self.mock_db
+            self.client = TestClient(app)
+            self.token = create_token(1)
+
+        def teardown_method(self):
+            app.dependency_overrides.clear()
+
+        @patch("app.domain.ums.service.UserRepository")
+        def test_회원정보_수정_성공(self, mock_repo_cls):
+            from app.domain.ums.enum import UserType
+            from datetime import datetime
+
+            mock_user = MagicMock()
+            mock_user.id = 1
+            mock_user.email = "test@yologram.link"
+            mock_user.name = "테스트"
+            mock_user.nickname = "tester"
+            mock_user.avatar = None
+            mock_user.type = UserType.DEFAULT
+            mock_user.joined_date = datetime(2025, 1, 1)
+
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.return_value = mock_user
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.patch(
+                "/api/v2/ums/user/me",
+                json={"nickname": "new-nickname"},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()["data"]
+            assert data["nickname"] == "new-nickname"
+            assert data["uid"] == 1
+            assert data["email"] == "test@yologram.link"
+
+        def test_인증_헤더_없으면_401(self):
+            response = self.client.patch(
+                "/api/v2/ums/user/me",
+                json={"nickname": "new-nickname"},
+            )
+
+            assert response.status_code == 401
+            assert response.json()["errorCode"] == "AUTH_TOKEN_INVALID"
+
+        @patch("app.domain.ums.service.UserRepository")
+        def test_존재하지_않는_유저면_404(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.return_value = None
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.patch(
+                "/api/v2/ums/user/me",
+                json={"nickname": "new-nickname"},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 404
+            assert response.json()["errorCode"] == "USER_NOT_FOUND"
+
+        def test_닉네임_1자_시_422(self):
+            response = self.client.patch(
+                "/api/v2/ums/user/me",
+                json={"nickname": "a"},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 422
+
+        def test_닉네임_21자_시_422(self):
+            response = self.client.patch(
+                "/api/v2/ums/user/me",
+                json={"nickname": "a" * 21},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 422
+
+        def test_닉네임_누락_시_422(self):
+            response = self.client.patch(
+                "/api/v2/ums/user/me",
+                json={},
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 422
+
     class TestChangePassword:
 
         def setup_method(self):

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.exception import AuthWrongPasswordException, UserDuplicateException, UserNotFoundException
 from app.domain.ums.model import User
 from app.domain.ums.repository import UserRepository
-from app.domain.ums.schema import ChangePasswordRequest, JoinRequest, JoinResponse, UserMeResponse
+from app.domain.ums.schema import ChangePasswordRequest, JoinRequest, JoinResponse, UpdateProfileRequest, UserMeResponse
 
 
 class UserService:
@@ -34,6 +34,24 @@ class UserService:
         user = self.repository.find_by_id(uid)
         if not user:
             raise UserNotFoundException()
+
+        return UserMeResponse(
+            uid=user.id,
+            email=user.email,
+            name=user.name,
+            nickname=user.nickname,
+            avatar=user.avatar,
+            type=user.type.value,
+            joined_date=user.joined_date,
+        )
+
+    def update_profile(self, uid: int, request: UpdateProfileRequest) -> UserMeResponse:
+        user = self.repository.find_by_id(uid)
+        if not user:
+            raise UserNotFoundException()
+
+        user.nickname = request.nickname
+        self.repository.db.flush()
 
         return UserMeResponse(
             uid=user.id,
