@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 개요
 
-yologger AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스를 분리 관리.
+yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스를 분리 관리.
 
 ## 구조
 
