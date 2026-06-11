@@ -67,7 +67,8 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 - ECR: yologram-api-v1
 - API Gateway 경로: api.yologram.link/api/v1/*
 - Cloud Map 서비스 디스커버리로 API Gateway 연결
-- SSM: Grafana OTLP (metrics/traces/logs) + DB 연동 파라미터 (local/prod)
+- SSM(prod): Grafana OTLP (metrics/traces/logs) + DB writer/reader 접속정보 + JWT secret
+- 컨테이너 환경변수는 SPRING_PROFILES_ACTIVE만 주입, 나머지는 앱이 SSM에서 직접 read
 - vpc_link_id 변수 필요
 
 ### yologram-api-v2 (aws/services/yologram-api-v2/)
@@ -76,8 +77,8 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 - ECR: yologram-api-v2
 - API Gateway 경로: api.yologram.link/api/v2/*
 - Cloud Map 서비스 디스커버리로 API Gateway 연결
-- SSM: OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS
-- 환경변수: APP_PROFILE=prod
+- SSM: OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS, DB_URL/DB_USERNAME/DB_PASSWORD, JWT_SECRET
+- 환경변수: APP_PROFILE=prod (DB/JWT/OTEL은 SSM SecureString으로 컨테이너 주입)
 - vpc_link_id 변수 필요
 
 ### yologram-web-v1 (aws/services/yologram-web-v1/)
@@ -112,3 +113,4 @@ VPC 및 서브넷 참조 시 data source 사용:
 - VPC: tag Name=vpc-prod로 필터
 - Subnet: vpc_id 필터 + tag Name으로 필터 (pub-a, pub-b)
 - 서브넷 필터에 반드시 vpc_id를 포함할 것 (동일 이름 서브넷 충돌 방지)
+- 계정 ID는 하드코딩하지 말고 data.aws_caller_identity.current.account_id 사용
