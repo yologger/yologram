@@ -37,10 +37,11 @@ resource "aws_elasticache_replication_group" "valkey_prod" {
   description          = "Valkey prod"
   engine               = "valkey"
   engine_version       = "8.0"
-  node_type            = "cache.t4g.micro"
+  node_type            = "cache.t3.micro"
   num_cache_clusters   = 1
   port                 = 6379
 
+  apply_immediately          = true
   auto_minor_version_upgrade = false
 
   parameter_group_name = aws_elasticache_parameter_group.valkey_prod.name

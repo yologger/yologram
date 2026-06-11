@@ -42,7 +42,7 @@ yologger AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 - apply 시 db_password 입력 필요
 
 ### ElastiCache (aws/global/elasticache/)
-- Valkey 8.0, cache.t4g.micro (프리티어)
+- Valkey 8.0, cache.t3.micro (프리티어)
 
 ### OpenSearch (aws/global/opensearch/)
 - OpenSearch 2.19, t3.small.search (프리티어)
