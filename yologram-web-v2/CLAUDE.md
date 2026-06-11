@@ -22,6 +22,7 @@
 
 ## 테스트
 
+- 신규 기능 구현 시 모든 케이스(정상/예외/엣지)에 대해 테스트코드 작성
 - vitest + jsdom + @testing-library/react + msw
 - 테스트 유틸리티: src/test/ (setup.ts, handlers.ts, server.ts, utils.tsx)
 - 테스트 파일은 소스 파일 옆에 배치 (colocation)

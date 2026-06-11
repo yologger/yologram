@@ -24,6 +24,7 @@
 - yologram-api-v2/ 변경 시 yologram-api-v2 workflow 트리거
 - yologram-web-v2/ 변경 시 yologram-web-v2 workflow 트리거
 - ECR push 시 이미지 태그: {branch}-{commit SHA 8자리}
+- 배포 결과 Discord 웹훅 알림
 
 ## 커밋 메시지 컨벤션
 
@@ -33,8 +34,11 @@
 
 ## 작업 규칙
 
+- 코드 개발/수정 시 관련된 루트 프로젝트와 하위 프로젝트의 문서(README.md, CLAUDE.md, AGENTS.md, docs/ 하위 파일)를 함께 최신화할 것
+- 기능 구현 시에는 코드 작성 전에 docs/ (brainstorm.md, plan.md, tasks.md)를 먼저 업데이트
 - 코드 변경 전 반드시 plan을 먼저 보여주고, 승인 후 적용
-- 코드 변경 시 README.md, CLAUDE.md, AGENTS.md를 함께 업데이트
+- commit은 사용자가 요청하거나 승인한 경우에만 수행
+- 코드 구현 시 모든 케이스(정상/예외/엣지)에 대해 테스트코드 작성
+- 신규 API 추가 시 Swagger 문서화 필수
 - 작업 전 해당 프로젝트의 docs/ (plan.md, tasks.md, brainstorm.md)를 참고할 것
 - observability는 OpenTelemetry 기준으로 구성하고, 가능하면 기존 서비스와 동일하게 Grafana Cloud OTLP direct push 패턴을 우선 검토할 것
-- Next.js 계열 프로젝트에서는 서버 런타임 env와 `NEXT_PUBLIC_*` env를 분리해서 관리할 것

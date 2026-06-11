@@ -26,14 +26,14 @@
 ## 4단계: 회원정보 수정
 
 - 설정 > 회원정보 수정 페이지
-- 이름, 닉네임 변경 폼 → PUT /api/v1/ums/user 연동
+- 이름, 닉네임 변경 폼 → PATCH /api/v1/ums/user/me 연동
 - 수정 성공 시 설정 페이지로 이동 + 닉네임 갱신
 
 ## 5단계: 비밀번호 변경
 
 - 설정 > 비밀번호 변경 페이지
 - 현재 비밀번호, 새 비밀번호, 비밀번호 확인 3개 입력
-- PUT /api/v1/ums/user/password 연동
+- PATCH /api/v1/ums/user/me/password 연동
 
 ## 6단계: 이메일 인증
 

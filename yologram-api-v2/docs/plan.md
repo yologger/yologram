@@ -68,7 +68,7 @@
 ## Phase 9: 회원정보 수정
 
 ### API
-- PUT /api/v2/ums/user (이름, 닉네임 변경, 인증 필요)
+- PATCH /api/v2/ums/user/me (이름, 닉네임 변경, 인증 필요)
 
 ### 테스트
 - user_service 단위 테스트
@@ -77,7 +77,7 @@
 ## Phase 10: 비밀번호 변경
 
 ### API
-- PUT /api/v2/ums/user/password (현재 비밀번호 + 새 비밀번호, 인증 필요)
+- PATCH /api/v2/ums/user/me/password (현재 비밀번호 + 새 비밀번호, 인증 필요)
 
 ### 테스트
 - 비밀번호 변경 서비스 단위 테스트

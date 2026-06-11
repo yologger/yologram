@@ -44,6 +44,7 @@
 
 ## 테스트
 
+- 신규 기능 구현 시 모든 케이스(정상/예외/엣지)에 대해 테스트코드 작성
 - pytest + TestClient
 - mock: unittest.mock (MagicMock, patch)
 - uv run pytest tests/ -v

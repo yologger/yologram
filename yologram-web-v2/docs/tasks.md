@@ -32,19 +32,19 @@
 
 ## 설정 - 회원정보 조회
 
-- [ ] GET /api/v2/ums/user/me 연동 (useUserQuery)
+- [x] GET /api/v2/ums/user/me 연동 (useUserQuery)
 - [ ] 설정 페이지 아바타 하단에 닉네임 표시
 
 ## 설정 - 회원정보 수정
 
 - [ ] 회원정보 수정 페이지 (이름, 닉네임 변경 폼)
-- [ ] PUT /api/v2/ums/user 연동
+- [ ] PATCH /api/v2/ums/user/me 연동
 - [ ] 수정 성공 시 설정 페이지 이동 + 닉네임 갱신
 
 ## 설정 - 비밀번호 변경
 
-- [ ] 비밀번호 변경 페이지 (현재/새/확인 입력)
-- [ ] PUT /api/v2/ums/user/password 연동
+- [x] 비밀번호 변경 페이지 (현재/새/확인 입력)
+- [x] PATCH /api/v2/ums/user/me/password 연동 (useChangePasswordMutation)
 
 ## 이메일 인증
 

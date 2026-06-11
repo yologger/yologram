@@ -30,11 +30,14 @@
 - validate-token: JWT 검증 + DB accessToken 일치 확인
 - validate-token은 로그인 직후 replica lag를 피하기 위해 master DB 트랜잭션으로 조회
 
+## 테스트
+
+- 신규 기능 구현 시 모든 케이스(정상/예외/엣지)에 대해 테스트코드 작성
+
 ## Swagger
 
 - Swagger UI: /api/v1/docs
 - api-docs: /api/v1/api-docs
-- 신규 API 추가 시 Swagger 문서화 필수 (요청/응답 스키마, 에러 코드, 인증 여부)
 
 ## CORS
 
