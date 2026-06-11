@@ -9,7 +9,8 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 ## 구조
 
 - aws/global/ - 환경 공통 리소스 (VPC, ECS 클러스터, API Gateway, Database, ElastiCache, OpenSearch, IAM)
-- aws/services/ - 개별 서비스 인프라 (n8n, yologram-api-v1, yologram-api-v2, yologram-web-v1, yologram-web-v2)
+- aws/services/ - 개별 서비스 인프라 (yologram-api-v1, yologram-api-v2, yologram-web-v1, yologram-web-v2)
+- aws/tools/ - 운영 보조 도구 (n8n)
 - 각 디렉토리가 독립된 terraform state를 가짐
 
 ## 공통
@@ -50,9 +51,9 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 - fine-grained access control 활성화, master 유저
 - apply 시 opensearch_master_password 입력 필요
 
-## Services
+## Tools
 
-### n8n (aws/services/n8n/)
+### n8n (aws/tools/n8n/)
 - AWS Lightsail Instance (Amazon Linux 2023, micro_3_0, $5/mo)
 - Docker Compose로 n8n + Caddy 구성 (user_data로 자동 프로비저닝)
 - 도메인: n8n.yologram.link (Route 53 A 레코드)
@@ -60,6 +61,8 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 - n8n DB: 내장 SQLite (/opt/n8n/data)
 - 방화벽: 80(HTTP), 443(HTTPS)만 개방. SSH는 Lightsail 브라우저 접속
 - Lightsail은 VPC 무관
+
+## Services
 
 ### yologram-api-v1 (aws/services/yologram-api-v1/)
 - ECS Fargate SPOT (0.25 vCPU, 512MB)

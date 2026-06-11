@@ -3,6 +3,7 @@
 - [x] aws/ 디렉토리로 인프라 이전 (global/, services/ 분리)
 - [x] 기존 prod/, global/ 디렉토리 제거
 - [x] n8n을 aws/services/n8n으로 이전
+- [x] n8n을 aws/tools/n8n으로 이동 (운영 도구 분리)
 - [x] 서비스별 독립 state 분리
 
 ## 보안
