@@ -90,6 +90,15 @@ resource "aws_iam_role_policy" "task_ssm_read" {
 ################################
 ## SSM Parameter Store (prod) ##
 ################################
+resource "aws_ssm_parameter" "jwt_secret_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/yologram.auth.jwt.secret"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
 resource "aws_ssm_parameter" "grafana_metrics_url_prod" {
   name  = "/yologram/service/yologram-api-v1_prod/management.otlp.metrics.export.url"
   type  = "String"

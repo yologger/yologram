@@ -108,6 +108,15 @@ resource "aws_iam_role_policy" "execution_ssm_read" {
 ################################
 ## SSM Parameter Store (prod) ##
 ################################
+resource "aws_ssm_parameter" "jwt_secret_prod" {
+  name  = "/yologram/service/yologram-api-v2_prod/yologram.auth.jwt.secret"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
 resource "aws_ssm_parameter" "otel_endpoint_prod" {
   name  = "/yologram/service/yologram-api-v2_prod/OTEL_EXPORTER_OTLP_ENDPOINT"
   type  = "SecureString"
@@ -249,6 +258,22 @@ resource "aws_ecs_task_definition" "this" {
         {
           name      = "OTEL_EXPORTER_OTLP_HEADERS"
           valueFrom = aws_ssm_parameter.otel_headers_prod.arn
+        },
+        {
+          name      = "DB_URL"
+          valueFrom = aws_ssm_parameter.db_writer_url_prod.arn
+        },
+        {
+          name      = "DB_USERNAME"
+          valueFrom = aws_ssm_parameter.db_writer_username_prod.arn
+        },
+        {
+          name      = "DB_PASSWORD"
+          valueFrom = aws_ssm_parameter.db_writer_password_prod.arn
+        },
+        {
+          name      = "JWT_SECRET"
+          valueFrom = aws_ssm_parameter.jwt_secret_prod.arn
         },
       ]
     }
