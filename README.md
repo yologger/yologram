@@ -12,10 +12,31 @@
 
 ## 인프라
 
+- [https://github.com/yologger/yologram-infra](https://github.com/yologger/yologram-infra)
 - IaC: Terraform (yologger-infra 레포에서 관리)
 - ECS Fargate: api-v1(5000), api-v2(5000), web-v2(3000)
 - API Gateway: api.yologram.link → /api/v1/{proxy+}는 api-v1, /api/v2/{proxy+}는 api-v2, /{proxy+}는 web-v2
 - web-v1: S3 + CloudFront
+
+```mermaid
+flowchart LR
+    Client([Client])
+
+    Client --> CloudFront
+    Client --> APIGW
+
+    subgraph AWS
+        CloudFront --> S3["S3\nyologram-web-v1"]
+
+        APIGW["API Gateway\napi.yologram.link"]
+        APIGW -- "/api/v1/*" --> ECS_API_V1["ECS Fargate\nyologram-api-v1\n:5000"]
+        APIGW -- "/api/v2/*" --> ECS_API_V2["ECS Fargate\nyologram-api-v2\n:5000"]
+        APIGW -- "/*" --> ECS_WEB_V2["ECS Fargate\nyologram-web-v2\n:3000"]
+
+        ECS_API_V1 --> RDS[(RDS MySQL)]
+        ECS_API_V2 --> RDS
+    end
+```
 
 ## CI/CD
 
