@@ -10,6 +10,7 @@ import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
 import link.yologram.api.v1.domain.ums.model.ChangePasswordRequest
 import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.JoinResponse
+import link.yologram.api.v1.domain.ums.model.UpdateProfileRequest
 import link.yologram.api.v1.domain.ums.model.UserMeResponse
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.service.UserService
@@ -290,6 +291,115 @@ class UserResourceTest {
                 }.andExpect {
                     status { isNotFound() }
                     jsonPath("$.errorCode") { value("USER_NOT_FOUND") }
+                }
+            }
+        }
+    }
+
+    @Nested
+    inner class 회원정보_수정 {
+
+        private val updatedResponse = UserMeResponse(
+            uid = 1L,
+            email = "test@yologram.link",
+            name = "테스터",
+            nickname = "new-nickname",
+            avatar = null,
+            type = UserType.DEFAULT,
+            joinedDate = LocalDateTime.of(2025, 1, 1, 0, 0),
+        )
+
+        @Nested
+        inner class 성공 {
+
+            @Test
+            fun `200과 수정된 유저 정보를 반환한다`() {
+                val request = UpdateProfileRequest(nickname = "new-nickname")
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+                whenever(userService.updateProfile(any(), any())).thenReturn(updatedResponse)
+
+                mockMvc.patch("/api/v1/ums/user/me") {
+                    header("Authorization", "Bearer valid-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(request)
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.data.uid") { value(1) }
+                    jsonPath("$.data.nickname") { value("new-nickname") }
+                    jsonPath("$.data.email") { value("test@yologram.link") }
+                    jsonPath("$.data.name") { value("테스터") }
+                }
+            }
+        }
+
+        @Nested
+        inner class 실패 {
+
+            @Test
+            fun `Authorization 헤더 없으면 401 반환`() {
+                mockMvc.patch("/api/v1/ums/user/me") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(UpdateProfileRequest(nickname = "new-nickname"))
+                }.andExpect {
+                    status { isUnauthorized() }
+                    jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+                }
+            }
+
+            @Test
+            fun `존재하지 않는 유저면 404 반환`() {
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(999L)
+                doThrow(UserNotFoundException()).whenever(userService).updateProfile(any(), any())
+
+                mockMvc.patch("/api/v1/ums/user/me") {
+                    header("Authorization", "Bearer valid-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(UpdateProfileRequest(nickname = "new-nickname"))
+                }.andExpect {
+                    status { isNotFound() }
+                    jsonPath("$.errorCode") { value("USER_NOT_FOUND") }
+                }
+            }
+
+            @Test
+            fun `닉네임 누락 시 400 반환`() {
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+                mockMvc.patch("/api/v1/ums/user/me") {
+                    header("Authorization", "Bearer valid-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content = "{}"
+                }.andExpect {
+                    status { isBadRequest() }
+                    jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
+                }
+            }
+
+            @Test
+            fun `닉네임 1자 시 400 반환`() {
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+                mockMvc.patch("/api/v1/ums/user/me") {
+                    header("Authorization", "Bearer valid-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(UpdateProfileRequest(nickname = "a"))
+                }.andExpect {
+                    status { isBadRequest() }
+                    jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
+                }
+            }
+
+            @Test
+            fun `닉네임 21자 시 400 반환`() {
+                whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+                mockMvc.patch("/api/v1/ums/user/me") {
+                    header("Authorization", "Bearer valid-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(UpdateProfileRequest(nickname = "a".repeat(21)))
+                }.andExpect {
+                    status { isBadRequest() }
+                    jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
                 }
             }
         }

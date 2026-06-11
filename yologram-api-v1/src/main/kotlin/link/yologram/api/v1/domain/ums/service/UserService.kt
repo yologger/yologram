@@ -7,6 +7,7 @@ import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
 import link.yologram.api.v1.domain.ums.model.ChangePasswordRequest
 import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.JoinResponse
+import link.yologram.api.v1.domain.ums.model.UpdateProfileRequest
 import link.yologram.api.v1.domain.ums.model.UserMeResponse
 import link.yologram.api.v1.domain.ums.repository.UserRepository
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -40,6 +41,24 @@ class UserService(
     fun getMe(uid: Long): UserMeResponse {
         val user = userRepository.findById(uid)
             .orElseThrow { UserNotFoundException() }
+
+        return UserMeResponse(
+            uid = user.id,
+            email = user.email,
+            name = user.name,
+            nickname = user.nickname,
+            avatar = user.avatar,
+            type = user.type,
+            joinedDate = user.joinedDate,
+        )
+    }
+
+    @Transactional
+    fun updateProfile(uid: Long, request: UpdateProfileRequest): UserMeResponse {
+        val user = userRepository.findById(uid)
+            .orElseThrow { UserNotFoundException() }
+
+        user.nickname = request.nickname
 
         return UserMeResponse(
             uid = user.id,

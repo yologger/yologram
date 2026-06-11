@@ -8,6 +8,7 @@ import link.yologram.api.v1.domain.ums.exception.UserDuplicateException
 import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
 import link.yologram.api.v1.domain.ums.model.ChangePasswordRequest
 import link.yologram.api.v1.domain.ums.model.JoinRequest
+import link.yologram.api.v1.domain.ums.model.UpdateProfileRequest
 import link.yologram.api.v1.domain.ums.repository.UserRepository
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
@@ -155,6 +156,53 @@ class UserServiceTest {
             }
 
             assertEquals("USER_NOT_FOUND", exception.errorCode)
+        }
+    }
+
+    @Nested
+    inner class 회원정보_수정_성공 {
+
+        @Test
+        fun `닉네임이 변경된다`() {
+            val user = testUser()
+            val request = UpdateProfileRequest(nickname = "new-nickname")
+
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+
+            val response = userService.updateProfile(1L, request)
+
+            assertEquals("new-nickname", user.nickname)
+            assertEquals("new-nickname", response.nickname)
+        }
+
+        @Test
+        fun `변경된 유저 정보를 반환한다`() {
+            val user = testUser()
+            val request = UpdateProfileRequest(nickname = "new-nickname")
+
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+
+            val response = userService.updateProfile(1L, request)
+
+            assertEquals(1L, response.uid)
+            assertEquals("test@yologram.link", response.email)
+            assertEquals("테스터", response.name)
+            assertEquals("new-nickname", response.nickname)
+        }
+    }
+
+    @Nested
+    inner class 회원정보_수정_실패 {
+
+        @Test
+        fun `존재하지 않는 유저 시 UserNotFoundException 발생`() {
+            val request = UpdateProfileRequest(nickname = "new-nickname")
+
+            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+
+            assertThrows<UserNotFoundException> {
+                userService.updateProfile(999L, request)
+            }
         }
     }
 

@@ -8,6 +8,7 @@ import jakarta.validation.Valid
 import link.yologram.api.v1.domain.ums.model.ChangePasswordRequest
 import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.JoinResponse
+import link.yologram.api.v1.domain.ums.model.UpdateProfileRequest
 import link.yologram.api.v1.domain.ums.model.UserMeResponse
 import link.yologram.api.v1.domain.ums.resolver.AuthData
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUser
@@ -39,6 +40,21 @@ class UserResource(
     )
     fun getMe(@AuthenticatedUser authData: AuthData): ApiEnvelop<UserMeResponse> {
         return ApiEnvelop(data = userService.getMe(authData.uid))
+    }
+
+    @PatchMapping("/me")
+    @Operation(summary = "회원정보 수정", description = "닉네임 변경")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "수정 성공"),
+        ApiResponse(responseCode = "400", description = "입력값 검증 실패"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음"),
+    )
+    fun updateProfile(
+        @AuthenticatedUser authData: AuthData,
+        @Valid @RequestBody request: UpdateProfileRequest,
+    ): ApiEnvelop<UserMeResponse> {
+        return ApiEnvelop(data = userService.updateProfile(authData.uid, request))
     }
 
     @PatchMapping("/me/password")

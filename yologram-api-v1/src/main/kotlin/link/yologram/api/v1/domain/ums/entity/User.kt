@@ -23,7 +23,7 @@ class User(
     val name: String,
 
     @Column(nullable = false, length = 200)
-    val nickname: String,
+    var nickname: String,
 
     @Column(nullable = false, length = 200)
     var password: String,
