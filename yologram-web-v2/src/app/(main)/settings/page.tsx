@@ -25,7 +25,7 @@ const sections = [
   {
     title: '계정',
     items: [
-      { icon: <UserOutlined />, label: '회원정보 수정', desc: '이름, 닉네임 등을 변경해요', path: '' },
+      { icon: <UserOutlined />, label: '회원정보 수정', desc: '이름, 닉네임 등을 변경해요', path: '/settings/edit-profile' },
       { icon: <LockOutlined />, label: '비밀번호 변경', desc: '비밀번호를 변경해요', path: '/settings/change-password' },
     ],
   },
