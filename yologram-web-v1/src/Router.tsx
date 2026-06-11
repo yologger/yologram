@@ -19,6 +19,7 @@ import TechFavoriteNewsPage from './pages/tech/TechFavoriteNewsPage'
 import NotificationsPage from './pages/notifications/NotificationsPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import ChangePasswordPage from './pages/settings/ChangePasswordPage'
+import EditProfilePage from './pages/settings/EditProfilePage'
 
 export default function Router() {
   return (
@@ -51,6 +52,7 @@ export default function Router() {
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/change-password" element={<ChangePasswordPage />} />
+          <Route path="/settings/edit-profile" element={<EditProfilePage />} />
         </Route>
       </Route>
     </Routes>

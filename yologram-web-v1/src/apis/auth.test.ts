@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { server } from '../test/server'
-import { join, login, logout, validateToken, getMe, changePassword } from './auth'
+import { join, login, logout, validateToken, getMe, updateProfile, changePassword } from './auth'
 import { getDefaultStore } from 'jotai'
 import { authAtom } from '../stores/auth'
 
@@ -141,6 +141,46 @@ describe('getMe', () => {
     })
 
     await expect(getMe()).rejects.toThrow()
+  })
+})
+
+describe('updateProfile', () => {
+  it('닉네임 수정 성공 시 수정된 유저 정보를 반환한다', async () => {
+    getDefaultStore().set(authAtom, {
+      uid: 1,
+      accessToken: 'valid-token',
+      email: 'test@yologram.link',
+      name: '테스터',
+      nickname: 'tester',
+    })
+
+    const result = await updateProfile({ nickname: 'new-nickname' })
+
+    expect(result).toEqual({
+      uid: 1,
+      email: 'test@yologram.link',
+      name: '테스터',
+      nickname: 'new-nickname',
+      avatar: null,
+      type: 'DEFAULT',
+      joinedDate: '2025-01-01T00:00:00',
+    })
+  })
+
+  it('인증되지 않은 상태에서 에러를 던진다', async () => {
+    await expect(updateProfile({ nickname: 'new-nickname' })).rejects.toThrow()
+  })
+
+  it('만료된 토큰이면 에러를 던진다', async () => {
+    getDefaultStore().set(authAtom, {
+      uid: 1,
+      accessToken: 'expired-token',
+      email: 'test@yologram.link',
+      name: '테스터',
+      nickname: 'tester',
+    })
+
+    await expect(updateProfile({ nickname: 'new-nickname' })).rejects.toThrow()
   })
 })
 

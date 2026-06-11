@@ -88,6 +88,31 @@ export const handlers = [
     })
   }),
 
+  http.patch('http://localhost:5001/api/v1/ums/user/me', async ({ request }) => {
+    const authHeader = request.headers.get('Authorization')
+
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.substring(7) === 'expired-token') {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_TOKEN_INVALID' },
+        { status: 401 },
+      )
+    }
+
+    const body = await request.json() as { nickname: string }
+
+    return HttpResponse.json({
+      data: {
+        uid: 1,
+        email: 'test@yologram.link',
+        name: '테스터',
+        nickname: body.nickname,
+        avatar: null,
+        type: 'DEFAULT',
+        joinedDate: '2025-01-01T00:00:00',
+      },
+    })
+  }),
+
   http.patch('http://localhost:5001/api/v1/ums/user/me/password', async ({ request }) => {
     const authHeader = request.headers.get('Authorization')
 

@@ -62,6 +62,15 @@ export async function getMe(): Promise<UserMeResponse> {
   return response.data.data
 }
 
+export interface UpdateProfileRequest {
+  nickname: string
+}
+
+export async function updateProfile(request: UpdateProfileRequest): Promise<UserMeResponse> {
+  const response = await api.patch<{ data: UserMeResponse }>('/api/v1/ums/user/me', request)
+  return response.data.data
+}
+
 export interface ChangePasswordRequest {
   currentPassword: string
   newPassword: string
