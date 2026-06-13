@@ -55,6 +55,16 @@ class EmailNotVerifiedException(AppException):
         super().__init__(400, "이메일 인증이 완료되지 않았습니다.", "EMAIL_NOT_VERIFIED")
 
 
+class PasswordResetExpiredException(AppException):
+    def __init__(self):
+        super().__init__(400, "인증 코드가 만료되었습니다.", "PASSWORD_RESET_EXPIRED")
+
+
+class PasswordResetInvalidException(AppException):
+    def __init__(self):
+        super().__init__(400, "인증 코드가 일치하지 않습니다.", "PASSWORD_RESET_INVALID")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:

@@ -52,6 +52,9 @@ uv run pytest tests/ -v
 | POST | /api/v2/ums/auth/logout | 로그아웃 |
 | POST | /api/v2/ums/auth/email-verification/send | 이메일 인증 코드 발송 |
 | POST | /api/v2/ums/auth/email-verification/verify | 이메일 인증 코드 검증 |
+| POST | /api/v2/ums/auth/password-reset/send | 비밀번호 재설정 코드 발송 |
+| POST | /api/v2/ums/auth/password-reset/verify | 비밀번호 재설정 코드 검증 |
+| POST | /api/v2/ums/auth/password-reset/confirm | 비밀번호 재설정 |
 | GET | /api/v2/ums/user/me | 회원정보 조회 |
 | PATCH | /api/v2/ums/user/me | 회원정보 수정 |
 | PATCH | /api/v2/ums/user/me/password | 비밀번호 변경 |

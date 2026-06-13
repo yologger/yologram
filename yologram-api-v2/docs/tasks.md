@@ -84,10 +84,17 @@
 
 ## UMS - 비밀번호 찾기 (7단계)
 
-- [ ] POST /api/v2/ums/auth/reset-password (이메일로 비밀번호 재설정 링크/임시 비밀번호 발송)
-- [ ] 비밀번호 재설정 처리 로직
-- [ ] 비밀번호 찾기 테스트
-- [ ] Swagger 문서화
+- [x] PasswordResetCode 모델 (password_reset_codes 테이블)
+- [x] PasswordResetCodeRepository
+- [x] EmailSender.send_password_reset_code (Stub/Ses 구현)
+- [x] PasswordResetService (send_code, verify_code, confirm)
+- [x] POST /api/v2/ums/auth/password-reset/send (미가입 시 404)
+- [x] POST /api/v2/ums/auth/password-reset/verify
+- [x] POST /api/v2/ums/auth/password-reset/confirm (email, code, newPassword 재검증)
+- [x] 예외 (PasswordResetExpired/Invalid)
+- [x] 비밀번호 찾기 테스트 (service, router)
+- [x] Swagger 문서화
+- [ ] (운영 보강) 코드 해시 저장, 레이트리밋, 시도 횟수 제한
 
 ## UMS - Refresh Token (8단계)
 

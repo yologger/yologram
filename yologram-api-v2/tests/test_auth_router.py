@@ -335,3 +335,159 @@ class TestAuthRouter:
             })
 
             assert response.status_code == 422
+
+    class TestPasswordResetSend:
+
+        def setup_method(self):
+            self.mock_db = MagicMock()
+            self.mock_email_sender = MagicMock()
+            app.dependency_overrides[get_db] = lambda: self.mock_db
+            app.dependency_overrides[get_email_sender] = lambda: self.mock_email_sender
+            self.client = TestClient(app)
+
+        def teardown_method(self):
+            app.dependency_overrides.clear()
+
+        @patch("app.domain.ums.password_reset_service.UserRepository")
+        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        def test_발송_성공_204(self, mock_repo_cls, mock_user_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.save.return_value = MagicMock()
+            mock_repo_cls.return_value = mock_repo
+
+            mock_user_repo = MagicMock()
+            mock_user_repo.find_by_email.return_value = MagicMock()
+            mock_user_repo_cls.return_value = mock_user_repo
+
+            response = self.client.post("/api/v2/ums/auth/password-reset/send", json={
+                "email": "test@yologram.link",
+            })
+
+            assert response.status_code == 204
+            self.mock_email_sender.send_password_reset_code.assert_called_once()
+
+        @patch("app.domain.ums.password_reset_service.UserRepository")
+        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        def test_미가입_이메일_404(self, mock_repo_cls, mock_user_repo_cls):
+            mock_repo_cls.return_value = MagicMock()
+
+            mock_user_repo = MagicMock()
+            mock_user_repo.find_by_email.return_value = None
+            mock_user_repo_cls.return_value = mock_user_repo
+
+            response = self.client.post("/api/v2/ums/auth/password-reset/send", json={
+                "email": "unknown@yologram.link",
+            })
+
+            assert response.status_code == 404
+            assert response.json()["errorCode"] == "USER_NOT_FOUND"
+
+        def test_이메일_형식_오류_422(self):
+            response = self.client.post("/api/v2/ums/auth/password-reset/send", json={
+                "email": "invalid",
+            })
+
+            assert response.status_code == 422
+
+    class TestPasswordResetVerify:
+
+        def setup_method(self):
+            self.mock_db = MagicMock()
+            app.dependency_overrides[get_db] = lambda: self.mock_db
+            self.client = TestClient(app)
+
+        def teardown_method(self):
+            app.dependency_overrides.clear()
+
+        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        def test_검증_성공_204(self, mock_repo_cls):
+            from datetime import datetime, timedelta
+            entity = MagicMock()
+            entity.code = "123456"
+            entity.expired_at = datetime.now() + timedelta(minutes=3)
+            entity.verified = False
+            mock_repo = MagicMock()
+            mock_repo.find_latest_by_email.return_value = entity
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.post("/api/v2/ums/auth/password-reset/verify", json={
+                "email": "test@yologram.link",
+                "code": "123456",
+            })
+
+            assert response.status_code == 204
+
+        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        def test_코드_불일치_400(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.find_latest_by_email.return_value = None
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.post("/api/v2/ums/auth/password-reset/verify", json={
+                "email": "test@yologram.link",
+                "code": "000000",
+            })
+
+            assert response.status_code == 400
+            assert response.json()["errorCode"] == "PASSWORD_RESET_INVALID"
+
+    class TestPasswordResetConfirm:
+
+        def setup_method(self):
+            self.mock_db = MagicMock()
+            app.dependency_overrides[get_db] = lambda: self.mock_db
+            self.client = TestClient(app)
+
+        def teardown_method(self):
+            app.dependency_overrides.clear()
+
+        @patch("app.domain.ums.password_reset_service.UserRepository")
+        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        def test_변경_성공_204(self, mock_repo_cls, mock_user_repo_cls):
+            from datetime import datetime, timedelta
+            entity = MagicMock()
+            entity.code = "123456"
+            entity.expired_at = datetime.now() + timedelta(minutes=3)
+            mock_repo = MagicMock()
+            mock_repo.find_latest_by_email.return_value = entity
+            mock_repo_cls.return_value = mock_repo
+
+            mock_user_repo = MagicMock()
+            mock_user_repo.find_by_email.return_value = MagicMock()
+            mock_user_repo_cls.return_value = mock_user_repo
+
+            response = self.client.post("/api/v2/ums/auth/password-reset/confirm", json={
+                "email": "test@yologram.link",
+                "code": "123456",
+                "newPassword": "newpass1234",
+            })
+
+            assert response.status_code == 204
+
+        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        def test_코드_만료_400(self, mock_repo_cls):
+            from datetime import datetime, timedelta
+            entity = MagicMock()
+            entity.code = "123456"
+            entity.expired_at = datetime.now() - timedelta(minutes=1)
+            mock_repo = MagicMock()
+            mock_repo.find_latest_by_email.return_value = entity
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.post("/api/v2/ums/auth/password-reset/confirm", json={
+                "email": "test@yologram.link",
+                "code": "123456",
+                "newPassword": "newpass1234",
+            })
+
+            assert response.status_code == 400
+            assert response.json()["errorCode"] == "PASSWORD_RESET_EXPIRED"
+
+        def test_새_비밀번호_길이_422(self):
+            response = self.client.post("/api/v2/ums/auth/password-reset/confirm", json={
+                "email": "test@yologram.link",
+                "code": "123456",
+                "newPassword": "short",
+            })
+
+            assert response.status_code == 422

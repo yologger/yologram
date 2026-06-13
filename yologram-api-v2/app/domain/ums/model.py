@@ -31,3 +31,14 @@ class EmailVerificationCode(Base):
     verified = Column(Boolean, nullable=False, default=False)
     expired_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, nullable=False, default=func.now())
+
+
+class PasswordResetCode(Base):
+    __tablename__ = "password_reset_codes"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    email = Column(String(200), nullable=False)
+    code = Column(String(6), nullable=False)
+    verified = Column(Boolean, nullable=False, default=False)
+    expired_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=func.now())

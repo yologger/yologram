@@ -39,6 +39,15 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - 엔드포인트: POST /api/v2/ums/auth/email-verification/send, /verify
 - 회원가입 시 이메일 인증 필수 (UserService.join에서 verified 확인, 가입 후 코드 삭제)
 
+## 비밀번호 찾기
+
+- 방식: 이메일 6자리 코드 발송 → 코드 검증 → 새 비밀번호 설정 (이메일 인증과 동일 패턴/SES 재사용, api-v1과 동일)
+- 저장: 별도 테이블 password_reset_codes (PasswordResetCode 모델: email, code, verified, expired_at 5분, created_at) — api-v1과 공유
+- PasswordResetService: send_code(미가입 시 UserNotFoundException 404, 기존 코드 삭제 후 발송), verify_code(verified=true), confirm(email·code·new_password 재검증 후 변경·코드 삭제)
+- 엔드포인트: POST /api/v2/ums/auth/password-reset/send·verify·confirm (confirm 요청 필드 newPassword)
+- 예외: PasswordResetExpiredException/PasswordResetInvalidException (400)
+- 운영 보강 TODO: 코드 해시 저장, 발송 레이트리밋, 시도 횟수 제한
+
 ## 빌드/배포
 
 - 빌드: uv sync

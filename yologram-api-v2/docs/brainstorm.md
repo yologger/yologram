@@ -127,6 +127,16 @@ FastAPI(및 대부분의 프레임워크)는 인프라(ECS, K8s)에 secret 주�
 - Pydantic + pydantic-settings (설정 관리)
 - uv (패키지 매니저)
 
+## 비밀번호 찾기
+
+- 방식: 이메일 6자리 코드 발송 → 코드 검증 → 새 비밀번호 설정 (회원가입 이메일 인증과 동일 패턴/SES 재사용, api-v1과 동일)
+- 저장: 별도 테이블 password_reset_codes (email, code, verified, expired_at 5분, created_at) — api-v1과 공유 테이블
+- 흐름:
+  - send: 미가입 이메일이면 404 USER_NOT_FOUND, 기존 코드 삭제 후 새 코드 발송
+  - verify: 코드 검증 → verified=true (프론트 단계 게이팅용)
+  - confirm: (email, code, newPassword) 최종 단계에서 코드·만료 재검증 후 비밀번호 변경, 코드 삭제
+- 보강 TODO(운영): 코드 해시 저장, 발송 레이트리밋, 시도 횟수 제한
+
 ## 회원탈퇴 데이터 정리 전략 (구현 시 결정)
 
 탈퇴 요청 처리와 연관 데이터(게시글/댓글/좋아요 등) 삭제를 분리해 요청 부하를 낮춘다.

@@ -97,10 +97,18 @@
 ## Phase 12: 비밀번호 찾기 (AWS SES)
 
 ### 흐름
-- 로그인 페이지에서 이메일 입력 → 비밀번호 재설정 링크/임시 비밀번호 발송
+- 이메일 6자리 코드 발송 → 코드 검증 → 새 비밀번호 설정 (회원가입 이메일 인증과 동일 패턴, api-v1과 동일)
+- 저장: password_reset_codes 테이블 (5분 만료), confirm 시 코드 재검증 후 변경·삭제
 
 ### API
-- POST /api/v2/ums/auth/reset-password
+- POST /api/v2/ums/auth/password-reset/send (미가입 시 404, 코드 발송)
+- POST /api/v2/ums/auth/password-reset/verify (코드 검증 → verified)
+- POST /api/v2/ums/auth/password-reset/confirm (email, code, newPassword → 재검증 후 변경)
+
+### 예외
+- UserNotFoundException (404): 미가입 이메일
+- PasswordResetExpiredException (400): 코드 만료
+- PasswordResetInvalidException (400): 코드 불일치
 
 ## Phase 13: Refresh Token
 
