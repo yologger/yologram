@@ -11,6 +11,10 @@
 - [ ] Grafana Tempo에서 trace 수신 확인
 - [ ] GitHub Actions 빌드 캐시 적용
 
+## 공통 기능
+
+- [x] 입력 폼 유효성 통과 시 제출 버튼 활성화 (로그인/회원가입/비밀번호 변경/회원정보 수정)
+
 ## 인증
 
 - [x] 회원가입 API 연동 (POST /api/v2/ums/user/join)

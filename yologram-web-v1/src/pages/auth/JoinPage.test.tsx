@@ -56,14 +56,21 @@ describe('JoinPage', () => {
   })
 
   describe('이메일 인증', () => {
-    it('이메일 미입력 시 발송하면 에러 메시지를 표시한다', async () => {
+    it('이메일이 비어있거나 형식이 틀리면 발송 버튼이 비활성화된다', async () => {
       const user = userEvent.setup()
       renderWithProviders(<JoinPage />)
 
-      await user.click(screen.getByRole('button', { name: '인증코드 발송' }))
+      expect(screen.getByRole('button', { name: '인증코드 발송' })).toBeDisabled()
 
+      await user.type(screen.getByPlaceholderText('이메일'), 'invalid')
       await waitFor(() => {
-        expect(screen.getByText('이메일을 입력해주세요')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '인증코드 발송' })).toBeDisabled()
+      })
+
+      await user.clear(screen.getByPlaceholderText('이메일'))
+      await user.type(screen.getByPlaceholderText('이메일'), 'new@yologram.link')
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '인증코드 발송' })).toBeEnabled()
       })
     })
 
@@ -105,7 +112,7 @@ describe('JoinPage', () => {
       })
     })
 
-    it('인증 성공 시 가입 폼이 활성화된다', async () => {
+    it('인증 성공 시 가입 폼 입력란이 활성화된다', async () => {
       const user = userEvent.setup()
       renderWithProviders(<JoinPage />)
 
@@ -114,7 +121,15 @@ describe('JoinPage', () => {
       expect(screen.getByPlaceholderText('이름')).toBeEnabled()
       expect(screen.getByPlaceholderText('닉네임')).toBeEnabled()
       expect(screen.getByPlaceholderText('비밀번호')).toBeEnabled()
-      expect(screen.getByRole('button', { name: '회원가입' })).toBeEnabled()
+    })
+
+    it('인증 후에도 입력이 비어있으면 회원가입 버튼이 비활성화된다', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<JoinPage />)
+
+      await verifyEmailStep(user)
+
+      expect(screen.getByRole('button', { name: '회원가입' })).toBeDisabled()
     })
   })
 

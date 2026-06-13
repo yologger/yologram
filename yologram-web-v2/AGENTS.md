@@ -16,6 +16,7 @@ Next.js 16 기반 웹 프론트엔드. ECS Fargate에서 운영.
 - 서버 런타임 env는 APP_ENV, 클라이언트는 NEXT_PUBLIC_APP_ENV
 - 로그는 API Route나 dynamic 페이지에서만 사용 (static 페이지에서는 불가)
 - @vercel/otel 사용하지 않음. NodeSDK 직접 구성.
+- 입력 폼 제출 버튼은 클라이언트 유효성 검증 통과 시에만 활성화 (Ant Form은 useFormSubmittable 훅, 수동 상태 폼은 파생 isValid)
 
 ## 빌드/배포
 

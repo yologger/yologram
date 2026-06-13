@@ -38,6 +38,8 @@ export default function EditProfile() {
     mutate({ nickname: nickname.trim() })
   }
 
+  const isValid = nickname.trim().length >= 2 && nickname.trim().length <= 20
+
   return (
     <RequireAuth>
       <div className={styles.container}>
@@ -71,7 +73,7 @@ export default function EditProfile() {
             {errors.nickname && <div className={styles.error}>{errors.nickname}</div>}
           </div>
 
-          <Button type="primary" size="large" block onClick={handleSubmit} loading={isPending}>
+          <Button type="primary" size="large" block onClick={handleSubmit} loading={isPending} disabled={!isValid}>
             저장
           </Button>
         </div>

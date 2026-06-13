@@ -34,6 +34,13 @@ export default function ChangePasswordPage() {
     mutate({ currentPassword, newPassword })
   }
 
+  const isValid =
+    currentPassword !== '' &&
+    newPassword.length >= 8 &&
+    newPassword.length <= 20 &&
+    confirmPassword !== '' &&
+    newPassword === confirmPassword
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -77,7 +84,7 @@ export default function ChangePasswordPage() {
           {errors.confirmPassword && <div className={styles.error}>{errors.confirmPassword}</div>}
         </div>
 
-        <Button type="primary" size="large" block onClick={handleSubmit} loading={isPending}>
+        <Button type="primary" size="large" block onClick={handleSubmit} loading={isPending} disabled={!isValid}>
           비밀번호 변경
         </Button>
       </div>

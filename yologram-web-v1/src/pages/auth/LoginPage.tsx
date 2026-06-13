@@ -2,11 +2,14 @@ import { Button, Form, Input, Typography } from 'antd'
 import { MailOutlined, LockOutlined } from '@ant-design/icons'
 import { Link } from 'react-router'
 import useLoginMutation from '../../queries/useLoginMutation'
+import useFormSubmittable from '../../hooks/useFormSubmittable'
 import styles from './LoginPage.module.css'
 
 const { Title, Text } = Typography
 
 export default function LoginPage() {
+  const [form] = Form.useForm()
+  const submittable = useFormSubmittable(form)
   const { mutate, isPending } = useLoginMutation()
 
   const onFinish = (values: { email: string; password: string }) => {
@@ -17,7 +20,7 @@ export default function LoginPage() {
     <div className={styles.container}>
       <div className={styles.card}>
         <Title level={3} className={styles.title}>로그인</Title>
-        <Form onFinish={onFinish} layout="vertical" size="large">
+        <Form form={form} onFinish={onFinish} layout="vertical" size="large">
           <Form.Item name="email" rules={[{ required: true, message: '이메일을 입력해주세요' }]}>
             <Input prefix={<MailOutlined />} placeholder="이메일" />
           </Form.Item>
@@ -25,7 +28,7 @@ export default function LoginPage() {
             <Input.Password prefix={<LockOutlined />} placeholder="비밀번호" />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit" block loading={isPending}>
+            <Button type="primary" htmlType="submit" block loading={isPending} disabled={!submittable}>
               로그인
             </Button>
           </Form.Item>

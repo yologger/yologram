@@ -37,6 +37,8 @@ export default function EditProfilePage() {
     mutate({ nickname })
   }
 
+  const isValid = nickname.length >= 2 && nickname.length <= 20
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -68,7 +70,7 @@ export default function EditProfilePage() {
           {errors.nickname && <div className={styles.error}>{errors.nickname}</div>}
         </div>
 
-        <Button type="primary" size="large" block onClick={handleSubmit} loading={isPending}>
+        <Button type="primary" size="large" block onClick={handleSubmit} loading={isPending} disabled={!isValid}>
           저장
         </Button>
       </div>

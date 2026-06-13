@@ -21,6 +21,7 @@ React 기반 하이브리드 웹앱. 투자/정치/기술 서비스를 반응형
 - 스타일링: CSS Modules (.module.css)
 - 상태 관리: Jotai
 - API 통신: axios + TanStack Query
+- 입력 폼 제출 버튼은 클라이언트 유효성 검증 통과 시에만 활성화 (Ant Form은 useFormSubmittable 훅, 수동 상태 폼은 파생 isValid)
 
 ## 로컬 개발
 

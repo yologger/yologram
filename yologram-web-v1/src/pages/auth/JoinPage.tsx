@@ -5,6 +5,7 @@ import { Link } from 'react-router'
 import useJoinMutation from '../../queries/useJoinMutation'
 import useSendVerificationCodeMutation from '../../queries/useSendVerificationCodeMutation'
 import useVerifyEmailMutation from '../../queries/useVerifyEmailMutation'
+import useFormSubmittable from '../../hooks/useFormSubmittable'
 import type { JoinRequest } from '../../apis/auth'
 import styles from './LoginPage.module.css'
 
@@ -14,6 +15,12 @@ export default function JoinPage() {
   const [form] = Form.useForm()
   const [codeSent, setCodeSent] = useState(false)
   const [emailVerified, setEmailVerified] = useState(false)
+  const submittable = useFormSubmittable(form)
+
+  const emailValue = Form.useWatch('email', form)
+  const codeValue = Form.useWatch('code', form)
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue ?? '')
+  const codeValid = /^\d{6}$/.test(codeValue ?? '')
 
   const { mutate: join, isPending: isJoining } = useJoinMutation()
   const { mutate: sendCode, isPending: isSending } = useSendVerificationCodeMutation()
@@ -64,7 +71,7 @@ export default function JoinPage() {
           ]}>
             <Space.Compact block>
               <Input prefix={<MailOutlined />} placeholder="이메일" disabled={emailVerified} />
-              <Button onClick={handleSendCode} loading={isSending} disabled={emailVerified}>
+              <Button onClick={handleSendCode} loading={isSending} disabled={emailVerified || !emailValid}>
                 {codeSent ? '재발송' : '인증코드 발송'}
               </Button>
             </Space.Compact>
@@ -77,7 +84,7 @@ export default function JoinPage() {
             ]}>
               <Space.Compact block>
                 <Input prefix={<SafetyOutlined />} placeholder="인증 코드 6자리" disabled={emailVerified} />
-                <Button onClick={handleVerify} loading={isVerifying} disabled={emailVerified}>
+                <Button onClick={handleVerify} loading={isVerifying} disabled={emailVerified || !codeValid}>
                   {emailVerified ? '인증 완료' : '인증 확인'}
                 </Button>
               </Space.Compact>
@@ -107,7 +114,7 @@ export default function JoinPage() {
             <Input.Password prefix={<LockOutlined />} placeholder="비밀번호" disabled={!emailVerified} />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit" block loading={isJoining} disabled={!emailVerified}>
+            <Button type="primary" htmlType="submit" block loading={isJoining} disabled={!emailVerified || !submittable}>
               회원가입
             </Button>
           </Form.Item>

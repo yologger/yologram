@@ -6,6 +6,10 @@
 - Yarn Berry (non-zero-install)
 - standalone 출력 없이 일반 next start 방식
 
+## 코드 컨벤션
+
+- 입력 폼 제출 버튼은 클라이언트 유효성 검증 통과 시에만 활성화 (Ant Form은 useFormSubmittable 훅, 수동 상태 폼은 파생 isValid)
+
 ## 환경변수
 
 - NEXT_PUBLIC_*: 빌드 시 인라인, 클라이언트용

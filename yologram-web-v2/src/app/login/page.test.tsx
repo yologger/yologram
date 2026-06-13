@@ -36,14 +36,21 @@ describe('LoginPage', () => {
   })
 
   describe('입력값 검증', () => {
-    it('필수 필드가 비어있으면 에러 메시지를 표시한다', async () => {
+    it('필수 필드가 비어있으면 로그인 버튼이 비활성화된다', () => {
+      renderWithProviders(<LoginPage />)
+
+      expect(screen.getByRole('button', { name: '로그인' })).toBeDisabled()
+    })
+
+    it('모든 필드가 채워지면 로그인 버튼이 활성화된다', async () => {
       const user = userEvent.setup()
       renderWithProviders(<LoginPage />)
 
-      await user.click(screen.getByRole('button', { name: '로그인' }))
+      await user.type(screen.getByPlaceholderText('이메일'), 'test@yologram.link')
+      await user.type(screen.getByPlaceholderText('비밀번호'), 'password123!')
 
       await waitFor(() => {
-        expect(screen.getByText('이메일을 입력해주세요')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '로그인' })).toBeEnabled()
       })
     })
   })

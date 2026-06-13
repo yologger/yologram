@@ -15,6 +15,7 @@
 - 페이지별 디렉토리로 관리 (pages/invest/, pages/politics/ 등)
 - CSS 파일은 해당 컴포넌트와 같은 디렉토리에 .module.css로 배치
 - 글로벌 스타일만 styles/ 디렉토리에 분리
+- 입력 폼 제출 버튼은 클라이언트 유효성 검증 통과 시에만 활성화 (Ant Form은 useFormSubmittable 훅, 수동 상태 폼은 파생 isValid)
 
 ## 라우팅
 
