@@ -22,6 +22,7 @@
 - [ ] 다크모드 지원 (Ant Design theme + 사용자 설정 저장)
 - [x] 전역 상태 관리 도입 (Jotai - authAtom)
 - [x] 입력 폼 유효성 통과 시 제출 버튼 활성화 (로그인/회원가입/비밀번호 변경/회원정보 수정)
+- [ ] 코드 발송 버튼 재발송 쿨다운 (localStorage 기반, 새로고침 유지, forgot-password·join 공통)
 
 ## 설정 - 회원정보 조회
 

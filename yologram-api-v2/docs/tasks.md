@@ -95,6 +95,7 @@
 - [x] 비밀번호 찾기 테스트 (service, router)
 - [x] Swagger 문서화
 - [ ] (운영 보강) 코드 해시 저장, 레이트리밋, 시도 횟수 제한
+- [ ] (운영 보강) 코드 발송 재발송 최소 간격 제한 (최근 발송 후 N초 이내 429, email-verification·password-reset 공통)
 
 ## UMS - Refresh Token (8단계)
 
