@@ -31,14 +31,21 @@ class TestUmsRouter:
         def teardown_method(self):
             app.dependency_overrides.clear()
 
+        @patch("app.domain.ums.service.EmailVerificationCodeRepository")
         @patch("app.domain.ums.service.UserRepository")
-        def test_회원가입_성공(self, mock_repo_cls):
+        def test_회원가입_성공(self, mock_repo_cls, mock_evc_repo_cls):
             mock_repo = MagicMock()
             mock_repo.find_by_email.return_value = None
             mock_user = MagicMock()
             mock_user.id = 1
             mock_repo.save.return_value = mock_user
             mock_repo_cls.return_value = mock_repo
+
+            mock_evc_repo = MagicMock()
+            verified = MagicMock()
+            verified.verified = True
+            mock_evc_repo.find_latest_by_email.return_value = verified
+            mock_evc_repo_cls.return_value = mock_evc_repo
 
             response = self.client.post("/api/v2/ums/user/join", json={
                 "email": "test@yologram.link",
@@ -65,6 +72,27 @@ class TestUmsRouter:
 
             assert response.status_code == 409
             assert response.json()["errorCode"] == "USER_DUPLICATE"
+
+        @patch("app.domain.ums.service.EmailVerificationCodeRepository")
+        @patch("app.domain.ums.service.UserRepository")
+        def test_이메일_미인증_시_400(self, mock_repo_cls, mock_evc_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.find_by_email.return_value = None
+            mock_repo_cls.return_value = mock_repo
+
+            mock_evc_repo = MagicMock()
+            mock_evc_repo.find_latest_by_email.return_value = None
+            mock_evc_repo_cls.return_value = mock_evc_repo
+
+            response = self.client.post("/api/v2/ums/user/join", json={
+                "email": "test@yologram.link",
+                "name": "테스트",
+                "nickname": "tester",
+                "password": "password123!",
+            })
+
+            assert response.status_code == 400
+            assert response.json()["errorCode"] == "EMAIL_NOT_VERIFIED"
 
         def test_입력값_검증_이메일_형식(self):
             response = self.client.post("/api/v2/ums/user/join", json={

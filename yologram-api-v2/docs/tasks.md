@@ -67,13 +67,13 @@
 
 ## UMS - 이메일 인증 (6단계)
 
-- [ ] AWS SES 연동 (이메일 발송 서비스)
-- [ ] 인증 코드 생성/저장 로직 (email_verification 테이블, 5분 만료)
-- [ ] POST /api/v2/ums/auth/send-verification-code
-- [ ] POST /api/v2/ums/auth/verify-email
-- [ ] 회원가입 시 이메일 인증 필수화
-- [ ] 이메일 인증 테스트
-- [ ] Swagger 문서화
+- [x] AWS SES 연동 (이메일 발송 서비스, boto3)
+- [x] 인증 코드 생성/저장 로직 (email_verification_codes 테이블, 5분 만료)
+- [x] POST /api/v2/ums/auth/email-verification/send
+- [x] POST /api/v2/ums/auth/email-verification/verify
+- [x] 회원가입 시 이메일 인증 필수화
+- [x] 이메일 인증 테스트
+- [x] Swagger 문서화
 
 ## UMS - 비밀번호 찾기 (7단계)
 

@@ -18,6 +18,19 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - 설정: pydantic-settings (환경변수 자동 매핑)
 - 로깅: Python logging + OpenTelemetry LoggingHandler
 
+## 이메일 인증
+
+- EmailSender 프로토콜로 발송 추상화
+- StubEmailSender: 로그 출력 (app_profile != prod, 개발/테스트용)
+- SesEmailSender: AWS SES 발송 (app_profile == prod, boto3)
+- get_email_sender 의존성으로 프로파일에 따라 주입
+- 발신 주소: no-reply@yologram.link (ses_from_address 설정)
+- 리전: ap-northeast-2
+- 자격증명: ECS Task Role (prod), AWS_PROFILE 환경변수 (로컬, scripts/run-prod.sh)
+- EmailVerificationCode 모델: email, code(6자리), verified, expired_at(5분), created_at / 테이블 email_verification_codes
+- 엔드포인트: POST /api/v2/ums/auth/email-verification/send, /verify
+- 회원가입 시 이메일 인증 필수 (UserService.join에서 verified 확인, 가입 후 코드 삭제)
+
 ## 빌드/배포
 
 - 빌드: uv sync

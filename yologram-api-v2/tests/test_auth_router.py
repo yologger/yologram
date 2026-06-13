@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 os.environ["JWT_SECRET"] = "test-jwt-secret-key-for-testing"
 
 from app.config.database import get_db
+from app.domain.ums.email_dependency import get_email_sender
 from app.domain.ums.jwt_util import create_token
 from app.domain.ums.model import User
 from app.main import app
@@ -186,3 +187,151 @@ class TestAuthRouter:
             response = self.client.post("/api/v2/ums/auth/logout")
 
             assert response.status_code == 401
+
+    class TestSendVerificationCode:
+
+        def setup_method(self):
+            self.mock_db = MagicMock()
+            self.mock_email_sender = MagicMock()
+            app.dependency_overrides[get_db] = lambda: self.mock_db
+            app.dependency_overrides[get_email_sender] = lambda: self.mock_email_sender
+            self.client = TestClient(app)
+
+        def teardown_method(self):
+            app.dependency_overrides.clear()
+
+        @patch("app.domain.ums.email_verification_service.UserRepository")
+        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        def test_인증_코드_발송_성공_204(self, mock_repo_cls, mock_user_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.save.return_value = MagicMock()
+            mock_repo_cls.return_value = mock_repo
+
+            mock_user_repo = MagicMock()
+            mock_user_repo.find_by_email.return_value = None
+            mock_user_repo_cls.return_value = mock_user_repo
+
+            response = self.client.post("/api/v2/ums/auth/email-verification/send", json={
+                "email": "test@yologram.link",
+            })
+
+            assert response.status_code == 204
+            self.mock_email_sender.send_verification_code.assert_called_once()
+
+        @patch("app.domain.ums.email_verification_service.UserRepository")
+        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        def test_이미_가입된_이메일_409(self, mock_repo_cls, mock_user_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo_cls.return_value = mock_repo
+
+            mock_user_repo = MagicMock()
+            mock_user_repo.find_by_email.return_value = MagicMock()
+            mock_user_repo_cls.return_value = mock_user_repo
+
+            response = self.client.post("/api/v2/ums/auth/email-verification/send", json={
+                "email": "duplicate@yologram.link",
+            })
+
+            assert response.status_code == 409
+            assert response.json()["errorCode"] == "USER_DUPLICATE"
+
+        def test_이메일_형식_오류_422(self):
+            response = self.client.post("/api/v2/ums/auth/email-verification/send", json={
+                "email": "invalid",
+            })
+
+            assert response.status_code == 422
+
+    class TestVerifyEmail:
+
+        def setup_method(self):
+            self.mock_db = MagicMock()
+            app.dependency_overrides[get_db] = lambda: self.mock_db
+            self.client = TestClient(app)
+
+        def teardown_method(self):
+            app.dependency_overrides.clear()
+
+        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        def test_인증_코드_확인_성공_204(self, mock_repo_cls):
+            from datetime import datetime, timedelta
+            entity = MagicMock()
+            entity.code = "123456"
+            entity.expired_at = datetime.now() + timedelta(minutes=3)
+            entity.verified = False
+            mock_repo = MagicMock()
+            mock_repo.find_latest_by_email.return_value = entity
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.post("/api/v2/ums/auth/email-verification/verify", json={
+                "email": "test@yologram.link",
+                "code": "123456",
+            })
+
+            assert response.status_code == 204
+
+        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        def test_레코드_없음_400(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.find_latest_by_email.return_value = None
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.post("/api/v2/ums/auth/email-verification/verify", json={
+                "email": "test@yologram.link",
+                "code": "000000",
+            })
+
+            assert response.status_code == 400
+            assert response.json()["errorCode"] == "EMAIL_VERIFICATION_INVALID"
+
+        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        def test_코드_불일치_400(self, mock_repo_cls):
+            from datetime import datetime, timedelta
+            entity = MagicMock()
+            entity.code = "123456"
+            entity.expired_at = datetime.now() + timedelta(minutes=3)
+            mock_repo = MagicMock()
+            mock_repo.find_latest_by_email.return_value = entity
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.post("/api/v2/ums/auth/email-verification/verify", json={
+                "email": "test@yologram.link",
+                "code": "000000",
+            })
+
+            assert response.status_code == 400
+            assert response.json()["errorCode"] == "EMAIL_VERIFICATION_INVALID"
+
+        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        def test_만료된_코드_400(self, mock_repo_cls):
+            from datetime import datetime, timedelta
+            entity = MagicMock()
+            entity.code = "123456"
+            entity.expired_at = datetime.now() - timedelta(minutes=1)
+            mock_repo = MagicMock()
+            mock_repo.find_latest_by_email.return_value = entity
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.post("/api/v2/ums/auth/email-verification/verify", json={
+                "email": "test@yologram.link",
+                "code": "123456",
+            })
+
+            assert response.status_code == 400
+            assert response.json()["errorCode"] == "EMAIL_VERIFICATION_EXPIRED"
+
+        def test_코드_길이_5자리_422(self):
+            response = self.client.post("/api/v2/ums/auth/email-verification/verify", json={
+                "email": "test@yologram.link",
+                "code": "12345",
+            })
+
+            assert response.status_code == 422
+
+        def test_코드_길이_7자리_422(self):
+            response = self.client.post("/api/v2/ums/auth/email-verification/verify", json={
+                "email": "test@yologram.link",
+                "code": "1234567",
+            })
+
+            assert response.status_code == 422

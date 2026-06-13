@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Column, DateTime, Enum, String, func
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Enum, String, func
 
 from app.config.database import Base
 from app.domain.ums.enum import UserStatus, UserType
@@ -20,3 +20,14 @@ class User(Base):
     deleted_date = Column(DateTime, nullable=True)
     joined_date = Column(DateTime, nullable=False, default=func.now())
     modified_date = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
+
+
+class EmailVerificationCode(Base):
+    __tablename__ = "email_verification_codes"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    email = Column(String(200), nullable=False)
+    code = Column(String(6), nullable=False)
+    verified = Column(Boolean, nullable=False, default=False)
+    expired_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=func.now())

@@ -39,6 +39,21 @@ class AuthTokenInvalidException(AppException):
         super().__init__(401, "유효하지 않은 토큰입니다.", "AUTH_TOKEN_INVALID")
 
 
+class EmailVerificationExpiredException(AppException):
+    def __init__(self):
+        super().__init__(400, "인증 코드가 만료되었습니다.", "EMAIL_VERIFICATION_EXPIRED")
+
+
+class EmailVerificationInvalidException(AppException):
+    def __init__(self):
+        super().__init__(400, "인증 코드가 일치하지 않습니다.", "EMAIL_VERIFICATION_INVALID")
+
+
+class EmailNotVerifiedException(AppException):
+    def __init__(self):
+        super().__init__(400, "이메일 인증이 완료되지 않았습니다.", "EMAIL_NOT_VERIFIED")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:

@@ -88,11 +88,11 @@
 ### 흐름
 - 회원가입 시 이메일로 인증 코드 발송 (AWS SES)
 - 사용자가 인증 코드 입력 → 검증 통과 후 가입 완료
-- email_verification 테이블에 코드 저장 (5분 만료)
+- email_verification_codes 테이블에 코드 저장 (5분 만료)
 
 ### API
-- POST /api/v2/ums/auth/send-verification-code
-- POST /api/v2/ums/auth/verify-email
+- POST /api/v2/ums/auth/email-verification/send
+- POST /api/v2/ums/auth/email-verification/verify
 
 ## Phase 12: 비밀번호 찾기 (AWS SES)
 

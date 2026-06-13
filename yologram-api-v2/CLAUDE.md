@@ -8,6 +8,7 @@
 - SQLAlchemy + PyMySQL (ORM + DB)
 - bcrypt (비밀번호 해싱)
 - PyJWT (JWT 토큰)
+- boto3 (AWS SES 이메일 발송)
 - pytest + httpx (테스트)
 
 ## 설정 관리
@@ -17,6 +18,8 @@
 - DB 환경변수: DB_URL, DB_USERNAME, DB_PASSWORD
 - JWT 환경변수: JWT_SECRET (Parameter Store에서 주입)
 - OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS는 OpenTelemetry SDK가 자동으로 읽음
+- SES 발신 주소: ses_from_address (기본 no-reply@yologram.link)
+- AWS 자격증명: prod는 ECS Task Role, 로컬은 AWS_PROFILE 환경변수 (scripts/run-prod.sh에서 export)
 - pydantic-settings: 필드명을 대문자 환경변수로 자동 매핑
 
 ## DB
@@ -41,6 +44,19 @@
 - get_authenticated_user 의존성으로 인증 정보 주입 (FastAPI Depends)
 - 토큰 저장: DB User.access_token (로그아웃 시 None 처리)
 - validate-token: JWT 검증 + DB access_token 일치 확인
+
+## 이메일 인증
+
+- EmailSender 프로토콜로 발송 추상화
+- StubEmailSender: 로그 출력 (app_profile != prod, 개발/테스트용)
+- SesEmailSender: AWS SES 발송 (app_profile == prod, boto3)
+- get_email_sender 의존성으로 프로파일에 따라 주입
+- 발신 주소: no-reply@yologram.link (ses_from_address 설정)
+- 리전: ap-northeast-2
+- 자격증명: ECS Task Role (prod), AWS_PROFILE 환경변수 (로컬, scripts/run-prod.sh)
+- EmailVerificationCode 모델: email, code(6자리), verified, expired_at(5분), created_at / 테이블 email_verification_codes
+- 엔드포인트: POST /api/v2/ums/auth/email-verification/send, /verify
+- 회원가입 시 이메일 인증 필수 (UserService.join에서 verified 확인, 가입 후 코드 삭제)
 
 ## 테스트
 

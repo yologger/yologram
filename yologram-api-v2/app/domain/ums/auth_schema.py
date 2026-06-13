@@ -26,3 +26,12 @@ class ValidateTokenResponse(BaseModel):
 class AuthData(BaseModel):
     uid: int
     access_token: str
+
+
+class EmailVerificationSendRequest(BaseModel):
+    email: EmailStr
+
+
+class EmailVerificationVerifyRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6)

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.core.exception import AuthWrongPasswordException, UserDuplicateException, UserNotFoundException
+from app.core.exception import AuthWrongPasswordException, EmailNotVerifiedException, UserDuplicateException, UserNotFoundException
 from app.domain.ums.enum import UserType
 from app.domain.ums.model import User
 from app.domain.ums.schema import ChangePasswordRequest, JoinRequest, UpdateProfileRequest
@@ -29,6 +29,10 @@ class TestUserService:
 
         def test_회원가입_성공(self):
             self.service.repository.find_by_email = MagicMock(return_value=None)
+            verified = MagicMock()
+            verified.verified = True
+            self.service.email_verification_code_repository.find_latest_by_email = MagicMock(return_value=verified)
+            self.service.email_verification_code_repository.delete_by_email = MagicMock()
             saved_user = User(email=self.request.email, name=self.request.name, nickname=self.request.nickname, password="hashed")
             saved_user.id = 1
             self.service.repository.save = MagicMock(return_value=saved_user)
@@ -38,12 +42,20 @@ class TestUserService:
             assert result.uid == 1
             self.service.repository.find_by_email.assert_called_once_with("test@yologram.link")
             self.service.repository.save.assert_called_once()
+            self.service.email_verification_code_repository.delete_by_email.assert_called_once_with("test@yologram.link")
 
         def test_이메일_중복_시_예외(self):
             existing_user = User(email=self.request.email, name="기존", nickname="existing", password="hashed")
             self.service.repository.find_by_email = MagicMock(return_value=existing_user)
 
             with pytest.raises(UserDuplicateException):
+                self.service.join(self.request)
+
+        def test_이메일_미인증_시_예외(self):
+            self.service.repository.find_by_email = MagicMock(return_value=None)
+            self.service.email_verification_code_repository.find_latest_by_email = MagicMock(return_value=None)
+
+            with pytest.raises(EmailNotVerifiedException):
                 self.service.join(self.request)
 
     class TestGetMe:

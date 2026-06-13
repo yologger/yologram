@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     jwt_issuer: str = "yologram.link"
     jwt_audience: str = "yologram.client"
 
+    # SES
+    ses_from_address: str = "no-reply@yologram.link"
+
     # OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS는
     # OpenTelemetry SDK가 자동으로 읽음 (ECS secrets에서 주입)
 
