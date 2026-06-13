@@ -18,8 +18,10 @@ git diff로 변경사항을 확인하고, 변경된 프로젝트의 문서를 �
    - brainstorm.md: 필요 시 업데이트
 2. 변경된 프로젝트의 CLAUDE.md, AGENTS.md, README.md 확인
    - 기술 스택, 설정, 포트, 경로 등 변경된 내용 반영
+   - CLAUDE.md와 AGENTS.md는 항상 동기화: CLAUDE.md를 수정하면 AGENTS.md에도 동일한 내용을 반영 (반대도 동일)
 3. 루트 CLAUDE.md, AGENTS.md 확인
    - 프로젝트 전체에 영향을 주는 변경사항 반영
+   - 루트도 마찬가지로 CLAUDE.md 수정 시 AGENTS.md를 동일하게 반영
 4. 메모리 파일 확인
    - 변경사항으로 인해 메모리가 outdated 되었으면 업데이트
 
@@ -41,6 +43,7 @@ git diff로 변경사항을 확인하고, 변경된 프로젝트의 문서를 �
 ## 규칙
 
 - 변경사항과 관련 없는 문서는 수정하지 않음
+- CLAUDE.md와 AGENTS.md는 같은 내용을 담는 쌍이므로 한쪽을 수정하면 다른 쪽도 동일하게 수정 (api-v1/api-v2/web-v1/web-v2/루트 모두 적용)
 - 수정 전 계획을 먼저 보여주고 승인 후 적용
 - 실제로 변경된 내용만 문서에 반영 (추측으로 추가하지 않음)
 - commit 메시지에 Co-Authored-By 추가하지 않음
