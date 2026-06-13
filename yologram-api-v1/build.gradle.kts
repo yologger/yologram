@@ -55,10 +55,13 @@ dependencies {
     implementation("io.micrometer:micrometer-tracing-bridge-otel")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
 
-    // AWS
+    // Spring Cloud AWS
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.1.0"))
     implementation("io.awspring.cloud:spring-cloud-aws-starter-parameter-store")
-    implementation("io.awspring.cloud:spring-cloud-aws-starter-ses")
+
+    // AWS SDK v2
+    implementation(platform("software.amazon.awssdk:bom:2.31.62"))
+    implementation("software.amazon.awssdk:ses")
 
     // Dev
     developmentOnly("org.springframework.boot:spring-boot-devtools")

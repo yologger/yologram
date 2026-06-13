@@ -6,7 +6,6 @@ spring:
     import:
       - 'aws-parameterstore:/yologram/service/yologram-api-v1_local/'
       - 'optional:aws-parameterstore:/yologram/service/yologram-api-v1_prod/'
-  cloud.aws.credentials.profile.name: yologram
 
 database:
   main:
