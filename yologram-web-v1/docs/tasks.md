@@ -55,8 +55,10 @@
 
 ## 비밀번호 찾기
 
-- [ ] 로그인 페이지에 비밀번호 찾기 링크
-- [ ] 비밀번호 찾기 페이지 (이메일 입력 → 재설정 요청)
+- [x] 로그인 페이지에 비밀번호 찾기 링크 (/forgot-password)
+- [x] ForgotPasswordPage 단계적 폼 (이메일 → 코드 발송/검증 → 새 비밀번호)
+- [x] apis/auth.ts + 뮤테이션 훅 3개 (send/verify/confirm)
+- [x] MSW 핸들러 + 테스트 (ForgotPasswordPage.test.tsx, auth.test.ts)
 
 ## Refresh Token
 

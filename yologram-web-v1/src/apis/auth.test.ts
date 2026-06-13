@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { server } from '../test/server'
-import { join, login, logout, validateToken, getMe, updateProfile, changePassword, sendVerificationCode, verifyEmail } from './auth'
+import { join, login, logout, validateToken, getMe, updateProfile, changePassword, sendVerificationCode, verifyEmail, sendPasswordResetCode, verifyPasswordResetCode, confirmPasswordReset } from './auth'
 import { getDefaultStore } from 'jotai'
 import { authAtom } from '../stores/auth'
 
@@ -52,6 +52,32 @@ describe('verifyEmail', () => {
 
   it('잘못된 코드면 에러를 던진다', async () => {
     await expect(verifyEmail('new@yologram.link', '000000')).rejects.toThrow()
+  })
+})
+
+describe('sendPasswordResetCode', () => {
+  it('발송 성공 시 에러 없이 완료된다', async () => {
+    await expect(sendPasswordResetCode('test@yologram.link')).resolves.toBeUndefined()
+  })
+
+  it('가입되지 않은 이메일이면 에러를 던진다', async () => {
+    await expect(sendPasswordResetCode('notfound@yologram.link')).rejects.toThrow()
+  })
+})
+
+describe('verifyPasswordResetCode', () => {
+  it('올바른 코드면 에러 없이 완료된다', async () => {
+    await expect(verifyPasswordResetCode('test@yologram.link', '123456')).resolves.toBeUndefined()
+  })
+
+  it('잘못된 코드면 에러를 던진다', async () => {
+    await expect(verifyPasswordResetCode('test@yologram.link', '000000')).rejects.toThrow()
+  })
+})
+
+describe('confirmPasswordReset', () => {
+  it('성공 시 에러 없이 완료된다', async () => {
+    await expect(confirmPasswordReset('test@yologram.link', '123456', 'newpass1234')).resolves.toBeUndefined()
   })
 })
 

@@ -3,6 +3,7 @@ import ResponsiveLayout from './components/layout/ResponsiveLayout'
 import RequireAuth from './components/auth/RequireAuth'
 import LoginPage from './pages/auth/LoginPage'
 import JoinPage from './pages/auth/JoinPage'
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import InvestPage from './pages/invest/InvestPage'
 import InvestNewsPage from './pages/invest/InvestNewsPage'
 import InvestFavoriteNewsPage from './pages/invest/InvestFavoriteNewsPage'
@@ -26,6 +27,7 @@ export default function Router() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/join" element={<JoinPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route element={<ResponsiveLayout />}>
         <Route path="/" element={<Navigate to="/invest" replace />} />
         <Route path="/invest" element={<InvestPage />}>

@@ -36,6 +36,9 @@ export default function LoginPage() {
         <div className={styles.links}>
           <Text type="secondary">계정이 없으신가요? <Link to="/join">회원가입</Link></Text>
         </div>
+        <div className={styles.links}>
+          <Text type="secondary"><Link to="/forgot-password">비밀번호를 잊으셨나요?</Link></Text>
+        </div>
       </div>
     </div>
   )

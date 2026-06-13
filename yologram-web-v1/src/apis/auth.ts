@@ -25,6 +25,18 @@ export async function verifyEmail(email: string, code: string): Promise<void> {
   await api.post('/api/v1/ums/auth/email-verification/verify', { email, code })
 }
 
+export async function sendPasswordResetCode(email: string): Promise<void> {
+  await api.post('/api/v1/ums/auth/password-reset/send', { email })
+}
+
+export async function verifyPasswordResetCode(email: string, code: string): Promise<void> {
+  await api.post('/api/v1/ums/auth/password-reset/verify', { email, code })
+}
+
+export async function confirmPasswordReset(email: string, code: string, newPassword: string): Promise<void> {
+  await api.post('/api/v1/ums/auth/password-reset/confirm', { email, code, newPassword })
+}
+
 export interface LoginResponse {
   uid: number
   accessToken: string
