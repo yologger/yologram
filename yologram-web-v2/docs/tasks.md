@@ -46,6 +46,12 @@
 - [x] 비밀번호 변경 페이지 (현재/새/확인 입력)
 - [x] PATCH /api/v2/ums/user/me/password 연동 (useChangePasswordMutation)
 
+## 설정 - 회원탈퇴
+
+- [ ] 설정 페이지에 회원탈퇴 버튼 + 확인 모달
+- [ ] DELETE /api/v2/ums/user/me 연동 (useWithdrawMutation)
+- [ ] 탈퇴 성공 시 로그아웃 + 로그인 페이지 이동
+
 ## 이메일 인증
 
 - [ ] 회원가입 폼에 이메일 인증 단계 추가

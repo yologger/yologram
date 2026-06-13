@@ -75,6 +75,13 @@
 - [x] 이메일 인증 테스트
 - [x] Swagger 문서화
 
+## UMS - 회원탈퇴
+
+- [ ] DELETE /api/v2/ums/user/me (본인 탈퇴, soft delete: status=DELETED, deleted_date 기록, access_token 무효화)
+- [ ] 관련 데이터 정리 비동기 처리 (게시글 등, 이벤트/큐 기반)
+- [ ] 회원탈퇴 테스트
+- [ ] Swagger 문서화
+
 ## UMS - 비밀번호 찾기 (7단계)
 
 - [ ] POST /api/v2/ums/auth/reset-password (이메일로 비밀번호 재설정 링크/임시 비밀번호 발송)
