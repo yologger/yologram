@@ -9,6 +9,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.NoHandlerFoundException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 
 private val logger = KotlinLogging.logger {}
 
@@ -25,9 +26,16 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(NoHandlerFoundException::class)
     fun handle(e: NoHandlerFoundException): ResponseEntity<ErrorResponse> {
-        logger.error { e.message }
+        logger.warn { e.message }
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(ErrorResponse(errorMessage = e.localizedMessage, errorCode = "NOT_FOUND"))
+            .body(ErrorResponse(errorMessage = "Not Found", errorCode = "NOT_FOUND"))
+    }
+
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handle(e: NoResourceFoundException): ResponseEntity<ErrorResponse> {
+        logger.warn { e.message }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ErrorResponse(errorMessage = "Not Found", errorCode = "NOT_FOUND"))
     }
 
     @ExceptionHandler(Exception::class)

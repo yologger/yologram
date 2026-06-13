@@ -3,6 +3,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,15 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content={"errorMessage": exc.error_message, "errorCode": exc.error_code},
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(_request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        code_map = {404: "NOT_FOUND", 405: "METHOD_NOT_ALLOWED"}
+        error_code = code_map.get(exc.status_code, "HTTP_ERROR")
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"errorMessage": exc.detail, "errorCode": error_code},
         )
 
     @app.exception_handler(RequestValidationError)

@@ -18,6 +18,14 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - 설정: pydantic-settings (환경변수 자동 매핑)
 - 로깅: Python logging + OpenTelemetry LoggingHandler
 
+## API / 예외
+
+- 응답 래퍼: ApiEnvelop ({ "data": T })
+- 예외: AppException → { "errorMessage", "errorCode" }
+- 라우팅 예외도 동일 형식: 404 → NOT_FOUND, 405 → METHOD_NOT_ALLOWED (StarletteHTTPException 핸들러)
+- CORS: 전체 허용 (*)
+- Swagger: /api/v2/docs
+
 ## 이메일 인증
 
 - EmailSender 프로토콜로 발송 추상화

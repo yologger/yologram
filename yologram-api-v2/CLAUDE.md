@@ -32,6 +32,7 @@
 
 - 응답 래퍼: ApiEnvelop ({ "data": T })
 - 예외: AppException → { "errorMessage", "errorCode" }
+- 라우팅 예외도 동일 형식: 404 → NOT_FOUND, 405 → METHOD_NOT_ALLOWED (StarletteHTTPException 핸들러)
 - CORS: 전체 허용 (*)
 - Swagger: /api/v2/docs
 - 신규 API 추가 시 Swagger 문서화 필수 (요청/응답 스키마, 에러 코드, 인증 여부)

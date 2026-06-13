@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 
 @WebMvcTest(AuthResource::class)
@@ -315,6 +316,18 @@ class AuthResourceTest {
                 content = """{"email":"","code":"123456"}"""
             }.andExpect {
                 status { isBadRequest() }
+            }
+        }
+    }
+
+    @Nested
+    inner class 리소스_없음 {
+
+        @Test
+        fun `존재하지 않는 경로는 404와 NOT_FOUND를 반환한다`() {
+            mockMvc.get("/api/v1/ums/auth/not-exists").andExpect {
+                status { isNotFound() }
+                jsonPath("$.errorCode") { value("NOT_FOUND") }
             }
         }
     }
