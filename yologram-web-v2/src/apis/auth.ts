@@ -32,6 +32,14 @@ export async function join(request: JoinRequest): Promise<JoinResponse> {
   return response.data.data
 }
 
+export async function sendVerificationCode(email: string): Promise<void> {
+  await api.post('/api/v2/ums/auth/email-verification/send', { email })
+}
+
+export async function verifyEmail(email: string, code: string): Promise<void> {
+  await api.post('/api/v2/ums/auth/email-verification/verify', { email, code })
+}
+
 export async function login(email: string, password: string): Promise<AuthState> {
   const response = await api.post<{ data: LoginResponse }>('/api/v2/ums/auth/login', { email, password })
   const { uid, accessToken, email: resEmail, name, nickname } = response.data.data

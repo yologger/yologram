@@ -52,10 +52,13 @@
 - 현재 비밀번호, 새 비밀번호, 비밀번호 확인 3개 입력
 - PATCH /api/v2/ums/user/me/password 연동
 
-## 이메일 인증
+## 이메일 인증 (완료)
 
-- 회원가입 폼에 이메일 인증 단계 추가
-- 인증 코드 발송 → 코드 입력 → 검증 통과 후 가입 진행
+- join 단계적 폼: 이메일 입력 → 인증코드 발송 → 코드 입력/검증 → 인증 완료 시 이름·닉네임·비밀번호·회원가입 활성화
+- apis/auth.ts: sendVerificationCode, verifyEmail (POST /api/v2/ums/auth/email-verification/send·verify)
+- useSendVerificationCodeMutation, useVerifyEmailMutation
+- 이메일 변경 시 인증 상태 초기화, 재발송 지원
+- 회원가입 버튼은 인증 완료 전 비활성 (EMAIL_NOT_VERIFIED 사전 차단)
 
 ## 비밀번호 찾기
 
