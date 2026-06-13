@@ -42,3 +42,11 @@
 - 토큰은 User 엔티티에 캐시 (accessToken 필드)
 - 커스텀 헤더: Authorization Bearer 방식
 - 로그아웃 시 accessToken null 처리
+
+## 이메일 인증
+
+- EmailSender 인터페이스로 발송 추상화 (테스트/개발: StubEmailSender, 프로덕션: SesEmailSender)
+- email_verification_codes 테이블: email, code(6자리 숫자), verified, expiredAt
+- 인증 흐름: 코드 발송 → 코드 검증 → verified=true → 회원가입 시 확인
+- 같은 이메일로 재발송 시 기존 레코드 삭제 후 새로 생성
+- 가입 완료 후 인증 레코드 삭제

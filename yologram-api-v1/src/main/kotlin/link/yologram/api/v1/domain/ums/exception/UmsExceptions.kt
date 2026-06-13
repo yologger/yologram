@@ -7,3 +7,6 @@ class UserNotFoundException : UmsException("사용자를 찾을 수 없습니다
 class AuthWrongPasswordException : UmsException("비밀번호가 올바르지 않습니다.", "AUTH_WRONG_PASSWORD")
 class AuthTokenExpiredException : UmsException("토큰이 만료되었습니다.", "AUTH_EXPIRED_TOKEN")
 class AuthTokenInvalidException : UmsException("유효하지 않은 토큰입니다.", "AUTH_INVALID_TOKEN")
+class EmailVerificationExpiredException : UmsException("인증 코드가 만료되었습니다.", "EMAIL_VERIFICATION_EXPIRED")
+class EmailVerificationInvalidException : UmsException("인증 코드가 일치하지 않습니다.", "EMAIL_VERIFICATION_INVALID")
+class EmailNotVerifiedException : UmsException("이메일 인증이 완료되지 않았습니다.", "EMAIL_NOT_VERIFIED")

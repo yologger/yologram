@@ -2,15 +2,15 @@ package link.yologram.api.v1.domain.ums.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import link.yologram.api.v1.config.JwtProperties
-import link.yologram.api.v1.domain.ums.exception.AuthTokenExpiredException
-import link.yologram.api.v1.domain.ums.exception.AuthTokenInvalidException
-import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException
-import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
+import link.yologram.api.v1.domain.ums.exception.*
 import link.yologram.api.v1.domain.ums.model.LoginRequest
 import link.yologram.api.v1.domain.ums.model.LoginResponse
+import link.yologram.api.v1.domain.ums.model.SendVerificationCodeRequest
 import link.yologram.api.v1.domain.ums.model.ValidateTokenResponse
+import link.yologram.api.v1.domain.ums.model.VerifyEmailRequest
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.service.AuthService
+import link.yologram.api.v1.domain.ums.service.EmailVerificationService
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -36,6 +36,9 @@ class AuthResourceTest {
 
     @MockitoBean
     lateinit var authService: AuthService
+
+    @MockitoBean
+    lateinit var emailVerificationService: EmailVerificationService
 
     @MockitoBean
     lateinit var jwtUtil: JwtUtil
@@ -202,6 +205,116 @@ class AuthResourceTest {
             }.andExpect {
                 status { isUnauthorized() }
                 jsonPath("$.errorCode") { value("AUTH_EXPIRED_TOKEN") }
+            }
+        }
+    }
+
+    @Nested
+    inner class 인증_코드_발송 {
+
+        @Test
+        fun `발송 성공 시 204를 반환한다`() {
+            mockMvc.post("/api/v1/ums/auth/send-verification-code") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(SendVerificationCodeRequest("test@yologram.link"))
+            }.andExpect {
+                status { isNoContent() }
+            }
+        }
+
+        @Test
+        fun `이미 가입된 이메일이면 409를 반환한다`() {
+            whenever(emailVerificationService.sendVerificationCode("duplicate@yologram.link"))
+                .thenThrow(UserDuplicateException())
+
+            mockMvc.post("/api/v1/ums/auth/send-verification-code") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(SendVerificationCodeRequest("duplicate@yologram.link"))
+            }.andExpect {
+                status { isConflict() }
+                jsonPath("$.errorCode") { value("USER_DUPLICATE") }
+            }
+        }
+
+        @Test
+        fun `이메일이 비어있으면 400을 반환한다`() {
+            mockMvc.post("/api/v1/ums/auth/send-verification-code") {
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"email":""}"""
+            }.andExpect {
+                status { isBadRequest() }
+            }
+        }
+
+        @Test
+        fun `이메일 형식이 아니면 400을 반환한다`() {
+            mockMvc.post("/api/v1/ums/auth/send-verification-code") {
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"email":"invalid-email"}"""
+            }.andExpect {
+                status { isBadRequest() }
+            }
+        }
+    }
+
+    @Nested
+    inner class 이메일_인증 {
+
+        @Test
+        fun `인증 성공 시 204를 반환한다`() {
+            mockMvc.post("/api/v1/ums/auth/verify-email") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(VerifyEmailRequest("test@yologram.link", "123456"))
+            }.andExpect {
+                status { isNoContent() }
+            }
+        }
+
+        @Test
+        fun `인증 코드가 만료되면 400을 반환한다`() {
+            whenever(emailVerificationService.verifyEmail("test@yologram.link", "123456"))
+                .thenThrow(EmailVerificationExpiredException())
+
+            mockMvc.post("/api/v1/ums/auth/verify-email") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(VerifyEmailRequest("test@yologram.link", "123456"))
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errorCode") { value("EMAIL_VERIFICATION_EXPIRED") }
+            }
+        }
+
+        @Test
+        fun `인증 코드가 일치하지 않으면 400을 반환한다`() {
+            whenever(emailVerificationService.verifyEmail("test@yologram.link", "999999"))
+                .thenThrow(EmailVerificationInvalidException())
+
+            mockMvc.post("/api/v1/ums/auth/verify-email") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(VerifyEmailRequest("test@yologram.link", "999999"))
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errorCode") { value("EMAIL_VERIFICATION_INVALID") }
+            }
+        }
+
+        @Test
+        fun `인증 코드가 6자리가 아니면 400을 반환한다`() {
+            mockMvc.post("/api/v1/ums/auth/verify-email") {
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"email":"test@yologram.link","code":"123"}"""
+            }.andExpect {
+                status { isBadRequest() }
+            }
+        }
+
+        @Test
+        fun `이메일이 비어있으면 400을 반환한다`() {
+            mockMvc.post("/api/v1/ums/auth/verify-email") {
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"email":"","code":"123456"}"""
+            }.andExpect {
+                status { isBadRequest() }
             }
         }
     }

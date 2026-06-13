@@ -73,13 +73,29 @@
 ## 6단계: 이메일 인증 (AWS SES)
 
 ### 흐름
-- 회원가입 시 이메일로 인증 코드 발송 (AWS SES)
-- 사용자가 인증 코드 입력 → 검증 통과 후 가입 완료
-- email_verification 테이블에 코드 저장 (5분 만료)
+- 회원가입 전 이메일로 6자리 인증 코드 발송
+- 사용자가 인증 코드 입력 → 검증 통과 (verified = true)
+- 회원가입 시 해당 이메일의 verified 확인 → 가입 완료 → 인증 레코드 삭제
+- email_verification_codes 테이블에 코드 저장 (5분 만료)
+
+### 구조
+- EmailSender 인터페이스로 발송 추상화
+- StubEmailSender: 로그 출력 (개발/테스트용)
+- SesEmailSender: AWS SES 연동 (HTML 이메일 발송)
 
 ### API
-- POST /api/v1/ums/auth/send-verification-code
-- POST /api/v1/ums/auth/verify-email
+- POST /api/v1/ums/auth/send-verification-code (이메일 중복 확인 → 코드 생성 → 발송)
+- POST /api/v1/ums/auth/verify-email (코드 확인 + 만료 체크 → verified = true)
+
+### 예외
+- EmailVerificationExpiredException (400): 코드 만료
+- EmailVerificationInvalidException (400): 코드 불일치 또는 레코드 없음
+- EmailNotVerifiedException (400): 미인증 상태로 회원가입 시도
+
+### 테스트
+- EmailVerificationService 단위 테스트
+- AuthResource 슬라이스 테스트 (발송/인증 엔드포인트)
+- UserService 이메일 인증 연동 테스트 (미인증 가입 차단)
 
 ## 7단계: 비밀번호 찾기 (AWS SES)
 

@@ -30,6 +30,8 @@ database:
       open-in-view: false
 
 yologram:
+  ses:
+    from-address: no-reply@yologram.link
   auth:
     jwt:
       secret:   # /yologram/service/yologram-api-v1_{ENV}/yologram.auth.jwt.secret

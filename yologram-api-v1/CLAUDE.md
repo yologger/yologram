@@ -4,6 +4,14 @@
 
 - Spring Boot 3.5 (Kotlin), Java 17
 - Gradle (Kotlin DSL)
+- Spring Data JPA + QueryDSL (ORM + 복잡 쿼리)
+- MySQL (RDS) + Testcontainers (테스트)
+- R/W splitting (MasterSlaveRoutingDataSource)
+- BCryptPasswordEncoder (비밀번호 해싱)
+- Auth0 java-jwt (JWT 토큰)
+- kotlin-logging (로깅)
+- springdoc-openapi (Swagger)
+- spring-cloud-aws-ses (AWS SES 이메일 발송)
 
 ## 설정 관리
 
@@ -30,9 +38,22 @@
 - validate-token: JWT 검증 + DB accessToken 일치 확인
 - validate-token은 로그인 직후 replica lag를 피하기 위해 master DB 트랜잭션으로 조회
 
+## 이메일 인증
+
+- EmailSender 인터페이스로 발송 추상화
+- @Profile("!prod") StubEmailSender: 로그 출력 (개발/테스트용)
+- @Profile("prod") SesEmailSender: AWS SES 발송
+- 발신 주소: no-reply@yologram.link (IAM 정책으로 한정, 변경 시 인프라 수정 필요)
+- 리전: ap-northeast-2 (SES 도메인 인증 리전과 동일)
+- 자격증명: ECS Task Role (ses:SendEmail) 자동 사용, 키 주입 불필요
+- EmailVerificationCode 엔티티: email, code(6자리), verified, expiredAt(5분)
+- 회원가입 시 이메일 인증 필수 (UserService.join에서 verified 확인)
+
 ## 테스트
 
 - 신규 기능 구현 시 모든 케이스(정상/예외/엣지)에 대해 테스트코드 작성
+- Testcontainers (MySQL) 통합 테스트
+- Mockito + MockMvc 슬라이스 테스트
 
 ## Swagger
 

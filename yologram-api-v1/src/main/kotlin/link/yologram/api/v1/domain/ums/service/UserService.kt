@@ -2,6 +2,7 @@ package link.yologram.api.v1.domain.ums.service
 
 import link.yologram.api.v1.domain.ums.entity.User
 import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException
+import link.yologram.api.v1.domain.ums.exception.EmailNotVerifiedException
 import link.yologram.api.v1.domain.ums.exception.UserDuplicateException
 import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
 import link.yologram.api.v1.domain.ums.model.ChangePasswordRequest
@@ -9,6 +10,7 @@ import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.JoinResponse
 import link.yologram.api.v1.domain.ums.model.UpdateProfileRequest
 import link.yologram.api.v1.domain.ums.model.UserMeResponse
+import link.yologram.api.v1.domain.ums.repository.EmailVerificationCodeRepository
 import link.yologram.api.v1.domain.ums.repository.UserRepository
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class UserService(
     private val userRepository: UserRepository,
+    private val emailVerificationCodeRepository: EmailVerificationCodeRepository,
     private val passwordEncoder: BCryptPasswordEncoder,
 ) {
 
@@ -24,6 +27,11 @@ class UserService(
     fun join(request: JoinRequest): JoinResponse {
         if (userRepository.existsByEmail(request.email)) {
             throw UserDuplicateException()
+        }
+
+        val verification = emailVerificationCodeRepository.findTopByEmailOrderByCreatedAtDesc(request.email)
+        if (verification.isEmpty || !verification.get().verified) {
+            throw EmailNotVerifiedException()
         }
 
         val user = User(
@@ -34,6 +42,7 @@ class UserService(
         )
 
         val saved = userRepository.save(user)
+        emailVerificationCodeRepository.deleteAllByEmail(request.email)
         return JoinResponse(uid = saved.id)
     }
 

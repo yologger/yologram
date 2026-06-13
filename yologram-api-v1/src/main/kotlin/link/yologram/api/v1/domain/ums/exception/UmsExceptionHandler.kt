@@ -36,4 +36,19 @@ class UmsExceptionHandler {
     fun handleTokenInvalid(e: AuthTokenInvalidException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ErrorResponse(e.message, e.errorCode))
     }
+
+    @ExceptionHandler(EmailVerificationExpiredException::class)
+    fun handleEmailVerificationExpired(e: EmailVerificationExpiredException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
+    }
+
+    @ExceptionHandler(EmailVerificationInvalidException::class)
+    fun handleEmailVerificationInvalid(e: EmailVerificationInvalidException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
+    }
+
+    @ExceptionHandler(EmailNotVerifiedException::class)
+    fun handleEmailNotVerified(e: EmailNotVerifiedException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
+    }
 }

@@ -55,9 +55,10 @@ dependencies {
     implementation("io.micrometer:micrometer-tracing-bridge-otel")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
 
-    // AWS Parameter Store
+    // AWS
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.1.0"))
     implementation("io.awspring.cloud:spring-cloud-aws-starter-parameter-store")
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-ses")
 
     // Dev
     developmentOnly("org.springframework.boot:spring-boot-devtools")
