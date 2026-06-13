@@ -100,6 +100,20 @@ describe('ForgotPasswordPage', () => {
     })
   })
 
+  describe('조기 제출 방지', () => {
+    it('이메일만 입력하고 Enter 시 재설정 요청이 가지 않는다', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<ForgotPasswordPage />)
+
+      const emailInput = screen.getByPlaceholderText('이메일')
+      await user.type(emailInput, 'test@yologram.link{enter}')
+
+      await waitFor(() => {
+        expect(mockNavigate).not.toHaveBeenCalled()
+      })
+    })
+  })
+
   describe('비밀번호 변경', () => {
     it('새 비밀번호 불일치 시 변경 버튼이 비활성화된다', async () => {
       const user = userEvent.setup()

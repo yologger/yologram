@@ -67,6 +67,7 @@ export default function ForgotPasswordPage() {
   }
 
   const onFinish = (values: FormValues) => {
+    if (!codeVerified) return
     confirmReset({ email: values.email, code: values.code, newPassword: values.newPassword })
   }
 
