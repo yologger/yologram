@@ -60,10 +60,13 @@
 - 이메일 변경 시 인증 상태 초기화, 재발송 지원
 - 회원가입 버튼은 인증 완료 전 비활성 (EMAIL_NOT_VERIFIED 사전 차단)
 
-## 비밀번호 찾기
+## 비밀번호 찾기 (완료)
 
-- 로그인 페이지에 비밀번호 찾기 링크
-- 이메일 입력 → 비밀번호 재설정 요청
+- 로그인 페이지에 "비밀번호를 잊으셨나요?" 링크 (/forgot-password)
+- forgot-password 단계적 폼: 이메일 → 코드 발송 → 코드 검증 → 새 비밀번호 설정
+- apis/auth.ts: sendPasswordResetCode, verifyPasswordResetCode, confirmPasswordReset
+- useSendPasswordResetCodeMutation, useVerifyPasswordResetCodeMutation, useConfirmPasswordResetMutation
+- 폼 유효성 게이팅, 이메일 변경 시 단계 초기화, 성공 시 로그인 이동
 
 ## Refresh Token
 

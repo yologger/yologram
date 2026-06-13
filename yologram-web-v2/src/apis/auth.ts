@@ -40,6 +40,18 @@ export async function verifyEmail(email: string, code: string): Promise<void> {
   await api.post('/api/v2/ums/auth/email-verification/verify', { email, code })
 }
 
+export async function sendPasswordResetCode(email: string): Promise<void> {
+  await api.post('/api/v2/ums/auth/password-reset/send', { email })
+}
+
+export async function verifyPasswordResetCode(email: string, code: string): Promise<void> {
+  await api.post('/api/v2/ums/auth/password-reset/verify', { email, code })
+}
+
+export async function confirmPasswordReset(email: string, code: string, newPassword: string): Promise<void> {
+  await api.post('/api/v2/ums/auth/password-reset/confirm', { email, code, newPassword })
+}
+
 export async function login(email: string, password: string): Promise<AuthState> {
   const response = await api.post<{ data: LoginResponse }>('/api/v2/ums/auth/login', { email, password })
   const { uid, accessToken, email: resEmail, name, nickname } = response.data.data

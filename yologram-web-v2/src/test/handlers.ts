@@ -43,6 +43,36 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
+  http.post('http://localhost:5002/api/v2/ums/auth/password-reset/send', async ({ request }) => {
+    const body = await request.json() as { email: string }
+
+    if (body.email === 'notfound@yologram.link') {
+      return HttpResponse.json(
+        { errorMessage: '사용자를 찾을 수 없습니다.', errorCode: 'USER_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.post('http://localhost:5002/api/v2/ums/auth/password-reset/verify', async ({ request }) => {
+    const body = await request.json() as { email: string; code: string }
+
+    if (body.code !== '123456') {
+      return HttpResponse.json(
+        { errorMessage: '인증 코드가 일치하지 않습니다.', errorCode: 'PASSWORD_RESET_INVALID' },
+        { status: 400 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.post('http://localhost:5002/api/v2/ums/auth/password-reset/confirm', async () => {
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.post('http://localhost:5002/api/v2/ums/auth/login', async ({ request }) => {
     const body = await request.json() as { email: string; password: string }
 
