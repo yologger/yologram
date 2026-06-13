@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 
-data class VerifyEmailRequest(
+data class EmailVerificationVerifyRequest(
     @field:NotBlank(message = "이메일을 입력해주세요")
     @field:Email(message = "올바른 이메일 형식이 아닙니다")
     val email: String,

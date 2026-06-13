@@ -5,9 +5,9 @@ import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.ums.exception.*
 import link.yologram.api.v1.domain.ums.model.LoginRequest
 import link.yologram.api.v1.domain.ums.model.LoginResponse
-import link.yologram.api.v1.domain.ums.model.SendVerificationCodeRequest
+import link.yologram.api.v1.domain.ums.model.EmailVerificationSendRequest
 import link.yologram.api.v1.domain.ums.model.ValidateTokenResponse
-import link.yologram.api.v1.domain.ums.model.VerifyEmailRequest
+import link.yologram.api.v1.domain.ums.model.EmailVerificationVerifyRequest
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.service.AuthService
 import link.yologram.api.v1.domain.ums.service.EmailVerificationService
@@ -214,9 +214,9 @@ class AuthResourceTest {
 
         @Test
         fun `발송 성공 시 204를 반환한다`() {
-            mockMvc.post("/api/v1/ums/auth/send-verification-code") {
+            mockMvc.post("/api/v1/ums/auth/email-verification/send") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(SendVerificationCodeRequest("test@yologram.link"))
+                content = objectMapper.writeValueAsString(EmailVerificationSendRequest("test@yologram.link"))
             }.andExpect {
                 status { isNoContent() }
             }
@@ -224,12 +224,12 @@ class AuthResourceTest {
 
         @Test
         fun `이미 가입된 이메일이면 409를 반환한다`() {
-            whenever(emailVerificationService.sendVerificationCode("duplicate@yologram.link"))
+            whenever(emailVerificationService.sendCode("duplicate@yologram.link"))
                 .thenThrow(UserDuplicateException())
 
-            mockMvc.post("/api/v1/ums/auth/send-verification-code") {
+            mockMvc.post("/api/v1/ums/auth/email-verification/send") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(SendVerificationCodeRequest("duplicate@yologram.link"))
+                content = objectMapper.writeValueAsString(EmailVerificationSendRequest("duplicate@yologram.link"))
             }.andExpect {
                 status { isConflict() }
                 jsonPath("$.errorCode") { value("USER_DUPLICATE") }
@@ -238,7 +238,7 @@ class AuthResourceTest {
 
         @Test
         fun `이메일이 비어있으면 400을 반환한다`() {
-            mockMvc.post("/api/v1/ums/auth/send-verification-code") {
+            mockMvc.post("/api/v1/ums/auth/email-verification/send") {
                 contentType = MediaType.APPLICATION_JSON
                 content = """{"email":""}"""
             }.andExpect {
@@ -248,7 +248,7 @@ class AuthResourceTest {
 
         @Test
         fun `이메일 형식이 아니면 400을 반환한다`() {
-            mockMvc.post("/api/v1/ums/auth/send-verification-code") {
+            mockMvc.post("/api/v1/ums/auth/email-verification/send") {
                 contentType = MediaType.APPLICATION_JSON
                 content = """{"email":"invalid-email"}"""
             }.andExpect {
@@ -262,9 +262,9 @@ class AuthResourceTest {
 
         @Test
         fun `인증 성공 시 204를 반환한다`() {
-            mockMvc.post("/api/v1/ums/auth/verify-email") {
+            mockMvc.post("/api/v1/ums/auth/email-verification/verify") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(VerifyEmailRequest("test@yologram.link", "123456"))
+                content = objectMapper.writeValueAsString(EmailVerificationVerifyRequest("test@yologram.link", "123456"))
             }.andExpect {
                 status { isNoContent() }
             }
@@ -272,12 +272,12 @@ class AuthResourceTest {
 
         @Test
         fun `인증 코드가 만료되면 400을 반환한다`() {
-            whenever(emailVerificationService.verifyEmail("test@yologram.link", "123456"))
+            whenever(emailVerificationService.verifyCode("test@yologram.link", "123456"))
                 .thenThrow(EmailVerificationExpiredException())
 
-            mockMvc.post("/api/v1/ums/auth/verify-email") {
+            mockMvc.post("/api/v1/ums/auth/email-verification/verify") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(VerifyEmailRequest("test@yologram.link", "123456"))
+                content = objectMapper.writeValueAsString(EmailVerificationVerifyRequest("test@yologram.link", "123456"))
             }.andExpect {
                 status { isBadRequest() }
                 jsonPath("$.errorCode") { value("EMAIL_VERIFICATION_EXPIRED") }
@@ -286,12 +286,12 @@ class AuthResourceTest {
 
         @Test
         fun `인증 코드가 일치하지 않으면 400을 반환한다`() {
-            whenever(emailVerificationService.verifyEmail("test@yologram.link", "999999"))
+            whenever(emailVerificationService.verifyCode("test@yologram.link", "999999"))
                 .thenThrow(EmailVerificationInvalidException())
 
-            mockMvc.post("/api/v1/ums/auth/verify-email") {
+            mockMvc.post("/api/v1/ums/auth/email-verification/verify") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(VerifyEmailRequest("test@yologram.link", "999999"))
+                content = objectMapper.writeValueAsString(EmailVerificationVerifyRequest("test@yologram.link", "999999"))
             }.andExpect {
                 status { isBadRequest() }
                 jsonPath("$.errorCode") { value("EMAIL_VERIFICATION_INVALID") }
@@ -300,7 +300,7 @@ class AuthResourceTest {
 
         @Test
         fun `인증 코드가 6자리가 아니면 400을 반환한다`() {
-            mockMvc.post("/api/v1/ums/auth/verify-email") {
+            mockMvc.post("/api/v1/ums/auth/email-verification/verify") {
                 contentType = MediaType.APPLICATION_JSON
                 content = """{"email":"test@yologram.link","code":"123"}"""
             }.andExpect {
@@ -310,7 +310,7 @@ class AuthResourceTest {
 
         @Test
         fun `이메일이 비어있으면 400을 반환한다`() {
-            mockMvc.post("/api/v1/ums/auth/verify-email") {
+            mockMvc.post("/api/v1/ums/auth/email-verification/verify") {
                 contentType = MediaType.APPLICATION_JSON
                 content = """{"email":"","code":"123456"}"""
             }.andExpect {

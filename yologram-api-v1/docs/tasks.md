@@ -75,9 +75,9 @@
 - [x] EmailVerificationCode 엔티티 (email, code, verified, expiredAt)
 - [x] EmailVerificationCodeRepository
 - [x] EmailSender 인터페이스 + StubEmailSender (로그 출력)
-- [x] EmailVerificationService (sendVerificationCode, verifyEmail)
-- [x] POST /api/v1/ums/auth/send-verification-code
-- [x] POST /api/v1/ums/auth/verify-email
+- [x] EmailVerificationService (sendCode, verifyCode)
+- [x] POST /api/v1/ums/auth/email-verification/send
+- [x] POST /api/v1/ums/auth/email-verification/verify
 - [x] 회원가입 시 이메일 인증 필수화 (UserService.join)
 - [x] 예외 처리 (EmailVerificationExpired/Invalid, EmailNotVerified)
 - [x] EmailVerificationService 단위 테스트 (7개)

@@ -7,9 +7,9 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import link.yologram.api.v1.domain.ums.model.LoginRequest
 import link.yologram.api.v1.domain.ums.model.LoginResponse
-import link.yologram.api.v1.domain.ums.model.SendVerificationCodeRequest
+import link.yologram.api.v1.domain.ums.model.EmailVerificationSendRequest
 import link.yologram.api.v1.domain.ums.model.ValidateTokenResponse
-import link.yologram.api.v1.domain.ums.model.VerifyEmailRequest
+import link.yologram.api.v1.domain.ums.model.EmailVerificationVerifyRequest
 import link.yologram.api.v1.domain.ums.resolver.AuthData
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUser
 import link.yologram.api.v1.domain.ums.service.AuthService
@@ -45,7 +45,7 @@ class AuthResource(
         authService.logout(authData.uid)
     }
 
-    @PostMapping("/send-verification-code")
+    @PostMapping("/email-verification/send")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "이메일 인증 코드 발송", description = "회원가입 전 이메일 인증 코드를 발송 (5분 유효)")
     @ApiResponses(
@@ -53,18 +53,18 @@ class AuthResource(
         ApiResponse(responseCode = "400", description = "입력값 검증 실패"),
         ApiResponse(responseCode = "409", description = "이미 가입된 이메일"),
     )
-    fun sendVerificationCode(@Valid @RequestBody request: SendVerificationCodeRequest) {
-        emailVerificationService.sendVerificationCode(request.email)
+    fun sendCode(@Valid @RequestBody request: EmailVerificationSendRequest) {
+        emailVerificationService.sendCode(request.email)
     }
 
-    @PostMapping("/verify-email")
+    @PostMapping("/email-verification/verify")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "이메일 인증 코드 검증", description = "발송된 인증 코드를 검증")
     @ApiResponses(
         ApiResponse(responseCode = "204", description = "인증 성공"),
         ApiResponse(responseCode = "400", description = "인증 코드 불일치 또는 만료"),
     )
-    fun verifyEmail(@Valid @RequestBody request: VerifyEmailRequest) {
-        emailVerificationService.verifyEmail(request.email, request.code)
+    fun verifyCode(@Valid @RequestBody request: EmailVerificationVerifyRequest) {
+        emailVerificationService.verifyCode(request.email, request.code)
     }
 }

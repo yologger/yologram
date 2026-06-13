@@ -29,8 +29,8 @@ Spring Boot MVC (Kotlin) API 서버.
 | POST | /api/v1/ums/auth/login | 로그인 |
 | POST | /api/v1/ums/auth/validate-token | 토큰 검증 |
 | POST | /api/v1/ums/auth/logout | 로그아웃 |
-| POST | /api/v1/ums/auth/send-verification-code | 이메일 인증 코드 발송 |
-| POST | /api/v1/ums/auth/verify-email | 이메일 인증 코드 검증 |
+| POST | /api/v1/ums/auth/email-verification/send | 이메일 인증 코드 발송 |
+| POST | /api/v1/ums/auth/email-verification/verify | 이메일 인증 코드 검증 |
 | GET | /api/v1/ums/user/me | 회원정보 조회 |
 | PATCH | /api/v1/ums/user/me | 회원정보 수정 |
 | PATCH | /api/v1/ums/user/me/password | 비밀번호 변경 |

@@ -84,8 +84,8 @@
 - SesEmailSender: AWS SES 연동 (HTML 이메일 발송)
 
 ### API
-- POST /api/v1/ums/auth/send-verification-code (이메일 중복 확인 → 코드 생성 → 발송)
-- POST /api/v1/ums/auth/verify-email (코드 확인 + 만료 체크 → verified = true)
+- POST /api/v1/ums/auth/email-verification/send (이메일 중복 확인 → 코드 생성 → 발송)
+- POST /api/v1/ums/auth/email-verification/verify (코드 확인 + 만료 체크 → verified = true)
 
 ### 예외
 - EmailVerificationExpiredException (400): 코드 만료

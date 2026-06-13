@@ -19,7 +19,7 @@ class EmailVerificationService(
 ) {
 
     @Transactional
-    fun sendVerificationCode(email: String) {
+    fun sendCode(email: String) {
         if (userRepository.existsByEmail(email)) {
             throw UserDuplicateException()
         }
@@ -38,7 +38,7 @@ class EmailVerificationService(
     }
 
     @Transactional
-    fun verifyEmail(email: String, code: String) {
+    fun verifyCode(email: String, code: String) {
         val verification = emailVerificationCodeRepository.findTopByEmailOrderByCreatedAtDesc(email)
             .orElseThrow { EmailVerificationInvalidException() }
 

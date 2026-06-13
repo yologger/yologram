@@ -41,7 +41,7 @@ class EmailVerificationServiceTest {
             whenever(userRepository.existsByEmail("test@yologram.link")).thenReturn(false)
             whenever(emailVerificationCodeRepository.save(any<EmailVerificationCode>())).thenAnswer { it.arguments[0] }
 
-            emailVerificationService.sendVerificationCode("test@yologram.link")
+            emailVerificationService.sendCode("test@yologram.link")
 
             verify(emailVerificationCodeRepository).deleteAllByEmail("test@yologram.link")
             verify(emailVerificationCodeRepository).save(argThat<EmailVerificationCode> {
@@ -55,7 +55,7 @@ class EmailVerificationServiceTest {
             whenever(userRepository.existsByEmail("duplicate@yologram.link")).thenReturn(true)
 
             assertThrows<UserDuplicateException> {
-                emailVerificationService.sendVerificationCode("duplicate@yologram.link")
+                emailVerificationService.sendCode("duplicate@yologram.link")
             }
 
             verify(emailSender, never()).sendVerificationCode(any(), any())
@@ -66,7 +66,7 @@ class EmailVerificationServiceTest {
             whenever(userRepository.existsByEmail("test@yologram.link")).thenReturn(false)
             whenever(emailVerificationCodeRepository.save(any<EmailVerificationCode>())).thenAnswer { it.arguments[0] }
 
-            emailVerificationService.sendVerificationCode("test@yologram.link")
+            emailVerificationService.sendCode("test@yologram.link")
 
             val inOrder = inOrder(emailVerificationCodeRepository)
             inOrder.verify(emailVerificationCodeRepository).deleteAllByEmail("test@yologram.link")
@@ -88,7 +88,7 @@ class EmailVerificationServiceTest {
             whenever(emailVerificationCodeRepository.findTopByEmailOrderByCreatedAtDesc("test@yologram.link"))
                 .thenReturn(Optional.of(verification))
 
-            emailVerificationService.verifyEmail("test@yologram.link", "123456")
+            emailVerificationService.verifyCode("test@yologram.link", "123456")
 
             assertTrue(verification.verified)
         }
@@ -99,7 +99,7 @@ class EmailVerificationServiceTest {
                 .thenReturn(Optional.empty())
 
             assertThrows<EmailVerificationInvalidException> {
-                emailVerificationService.verifyEmail("unknown@yologram.link", "123456")
+                emailVerificationService.verifyCode("unknown@yologram.link", "123456")
             }
         }
 
@@ -115,7 +115,7 @@ class EmailVerificationServiceTest {
                 .thenReturn(Optional.of(verification))
 
             assertThrows<EmailVerificationExpiredException> {
-                emailVerificationService.verifyEmail("test@yologram.link", "123456")
+                emailVerificationService.verifyCode("test@yologram.link", "123456")
             }
         }
 
@@ -131,7 +131,7 @@ class EmailVerificationServiceTest {
                 .thenReturn(Optional.of(verification))
 
             assertThrows<EmailVerificationInvalidException> {
-                emailVerificationService.verifyEmail("test@yologram.link", "999999")
+                emailVerificationService.verifyCode("test@yologram.link", "999999")
             }
         }
     }
