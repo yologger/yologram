@@ -8,9 +8,13 @@ import link.yologram.api.v1.domain.ums.model.LoginResponse
 import link.yologram.api.v1.domain.ums.model.EmailVerificationSendRequest
 import link.yologram.api.v1.domain.ums.model.ValidateTokenResponse
 import link.yologram.api.v1.domain.ums.model.EmailVerificationVerifyRequest
+import link.yologram.api.v1.domain.ums.model.PasswordResetSendRequest
+import link.yologram.api.v1.domain.ums.model.PasswordResetVerifyRequest
+import link.yologram.api.v1.domain.ums.model.PasswordResetConfirmRequest
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.service.AuthService
 import link.yologram.api.v1.domain.ums.service.EmailVerificationService
+import link.yologram.api.v1.domain.ums.service.PasswordResetService
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -40,6 +44,9 @@ class AuthResourceTest {
 
     @MockitoBean
     lateinit var emailVerificationService: EmailVerificationService
+
+    @MockitoBean
+    lateinit var passwordResetService: PasswordResetService
 
     @MockitoBean
     lateinit var jwtUtil: JwtUtil
@@ -314,6 +321,106 @@ class AuthResourceTest {
             mockMvc.post("/api/v1/ums/auth/email-verification/verify") {
                 contentType = MediaType.APPLICATION_JSON
                 content = """{"email":"","code":"123456"}"""
+            }.andExpect {
+                status { isBadRequest() }
+            }
+        }
+    }
+
+    @Nested
+    inner class 비밀번호_재설정 {
+
+        @Test
+        fun `코드 발송 성공 시 204를 반환한다`() {
+            mockMvc.post("/api/v1/ums/auth/password-reset/send") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(PasswordResetSendRequest("test@yologram.link"))
+            }.andExpect {
+                status { isNoContent() }
+            }
+        }
+
+        @Test
+        fun `가입되지 않은 이메일이면 404를 반환한다`() {
+            whenever(passwordResetService.sendCode("unknown@yologram.link"))
+                .thenThrow(UserNotFoundException())
+
+            mockMvc.post("/api/v1/ums/auth/password-reset/send") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(PasswordResetSendRequest("unknown@yologram.link"))
+            }.andExpect {
+                status { isNotFound() }
+                jsonPath("$.errorCode") { value("USER_NOT_FOUND") }
+            }
+        }
+
+        @Test
+        fun `이메일 형식이 틀리면 400을 반환한다`() {
+            mockMvc.post("/api/v1/ums/auth/password-reset/send") {
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"email":"invalid"}"""
+            }.andExpect {
+                status { isBadRequest() }
+            }
+        }
+
+        @Test
+        fun `코드 검증 성공 시 204를 반환한다`() {
+            mockMvc.post("/api/v1/ums/auth/password-reset/verify") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(PasswordResetVerifyRequest("test@yologram.link", "123456"))
+            }.andExpect {
+                status { isNoContent() }
+            }
+        }
+
+        @Test
+        fun `검증 시 코드 불일치면 400을 반환한다`() {
+            whenever(passwordResetService.verifyCode("test@yologram.link", "999999"))
+                .thenThrow(PasswordResetInvalidException())
+
+            mockMvc.post("/api/v1/ums/auth/password-reset/verify") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(PasswordResetVerifyRequest("test@yologram.link", "999999"))
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errorCode") { value("PASSWORD_RESET_INVALID") }
+            }
+        }
+
+        @Test
+        fun `비밀번호 변경 성공 시 204를 반환한다`() {
+            mockMvc.post("/api/v1/ums/auth/password-reset/confirm") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(
+                    PasswordResetConfirmRequest("test@yologram.link", "123456", "newpass1234")
+                )
+            }.andExpect {
+                status { isNoContent() }
+            }
+        }
+
+        @Test
+        fun `변경 시 코드 만료면 400을 반환한다`() {
+            whenever(passwordResetService.confirm("test@yologram.link", "123456", "newpass1234"))
+                .thenThrow(PasswordResetExpiredException())
+
+            mockMvc.post("/api/v1/ums/auth/password-reset/confirm") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(
+                    PasswordResetConfirmRequest("test@yologram.link", "123456", "newpass1234")
+                )
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errorCode") { value("PASSWORD_RESET_EXPIRED") }
+            }
+        }
+
+        @Test
+        fun `새 비밀번호가 8자 미만이면 400을 반환한다`() {
+            mockMvc.post("/api/v1/ums/auth/password-reset/confirm") {
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"email":"test@yologram.link","code":"123456","newPassword":"short"}"""
             }.andExpect {
                 status { isBadRequest() }
             }

@@ -49,6 +49,15 @@
 - EmailVerificationCode 엔티티: email, code(6자리), verified, expiredAt(5분)
 - 회원가입 시 이메일 인증 필수 (UserService.join에서 verified 확인)
 
+## 비밀번호 찾기
+
+- 방식: 이메일 6자리 코드 발송 → 코드 검증 → 새 비밀번호 설정 (이메일 인증과 동일 패턴/SES 재사용)
+- 저장: 별도 테이블 password_reset_codes (PasswordResetCode 엔티티: email, code, verified, expiredAt 5분, createdAt)
+- PasswordResetService: sendCode(미가입 시 UserNotFoundException 404, 기존 코드 삭제 후 발송), verifyCode(verified=true), confirm(email·code·newPassword 재검증 후 변경·코드 삭제)
+- 엔드포인트: POST /api/v1/ums/auth/password-reset/send·verify·confirm
+- 예외: PasswordResetExpiredException/PasswordResetInvalidException (400)
+- 운영 보강 TODO: 코드 해시 저장, 발송 레이트리밋, 시도 횟수 제한
+
 ## 테스트
 
 - 신규 기능 구현 시 모든 케이스(정상/예외/엣지)에 대해 테스트코드 작성

@@ -31,6 +31,9 @@ Spring Boot MVC (Kotlin) API 서버.
 | POST | /api/v1/ums/auth/logout | 로그아웃 |
 | POST | /api/v1/ums/auth/email-verification/send | 이메일 인증 코드 발송 |
 | POST | /api/v1/ums/auth/email-verification/verify | 이메일 인증 코드 검증 |
+| POST | /api/v1/ums/auth/password-reset/send | 비밀번호 재설정 코드 발송 |
+| POST | /api/v1/ums/auth/password-reset/verify | 비밀번호 재설정 코드 검증 |
+| POST | /api/v1/ums/auth/password-reset/confirm | 비밀번호 재설정 |
 | GET | /api/v1/ums/user/me | 회원정보 조회 |
 | PATCH | /api/v1/ums/user/me | 회원정보 수정 |
 | PATCH | /api/v1/ums/user/me/password | 비밀번호 변경 |
@@ -43,6 +46,12 @@ API 문서: http://localhost:5001/api/v1/docs
 - EmailSender 인터페이스로 발송 추상화
 - @Profile("prod") SesEmailSender: AWS SES로 HTML 이메일 발송
 - @Profile("!prod") StubEmailSender: 로그 출력 (개발/테스트용)
+
+## 비밀번호 찾기
+
+- 이메일 6자리 코드 발송 → 코드 검증 → 새 비밀번호 설정 (5분 유효)
+- 미가입 이메일로 발송 시 404, confirm 단계에서 코드·만료 재검증
+- 저장: password_reset_codes 테이블 (재발송 시 기존 코드 삭제 후 새로 생성, 변경 완료 시 삭제)
 
 ## Auth
 

@@ -10,10 +10,14 @@ import link.yologram.api.v1.domain.ums.model.LoginResponse
 import link.yologram.api.v1.domain.ums.model.EmailVerificationSendRequest
 import link.yologram.api.v1.domain.ums.model.ValidateTokenResponse
 import link.yologram.api.v1.domain.ums.model.EmailVerificationVerifyRequest
+import link.yologram.api.v1.domain.ums.model.PasswordResetSendRequest
+import link.yologram.api.v1.domain.ums.model.PasswordResetVerifyRequest
+import link.yologram.api.v1.domain.ums.model.PasswordResetConfirmRequest
 import link.yologram.api.v1.domain.ums.resolver.AuthData
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUser
 import link.yologram.api.v1.domain.ums.service.AuthService
 import link.yologram.api.v1.domain.ums.service.EmailVerificationService
+import link.yologram.api.v1.domain.ums.service.PasswordResetService
 import link.yologram.api.v1.global.model.ApiEnvelop
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
@@ -24,6 +28,7 @@ import org.springframework.web.bind.annotation.*
 class AuthResource(
     private val authService: AuthService,
     private val emailVerificationService: EmailVerificationService,
+    private val passwordResetService: PasswordResetService,
 ) {
 
     @PostMapping("/login")
@@ -66,5 +71,40 @@ class AuthResource(
     )
     fun verifyCode(@Valid @RequestBody request: EmailVerificationVerifyRequest) {
         emailVerificationService.verifyCode(request.email, request.code)
+    }
+
+    @PostMapping("/password-reset/send")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "비밀번호 재설정 코드 발송", description = "가입된 이메일로 재설정 코드를 발송 (5분 유효)")
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "발송 성공"),
+        ApiResponse(responseCode = "400", description = "입력값 검증 실패"),
+        ApiResponse(responseCode = "404", description = "가입되지 않은 이메일"),
+    )
+    fun sendPasswordResetCode(@Valid @RequestBody request: PasswordResetSendRequest) {
+        passwordResetService.sendCode(request.email)
+    }
+
+    @PostMapping("/password-reset/verify")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "비밀번호 재설정 코드 검증", description = "발송된 재설정 코드를 검증")
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "검증 성공"),
+        ApiResponse(responseCode = "400", description = "코드 불일치 또는 만료"),
+    )
+    fun verifyPasswordResetCode(@Valid @RequestBody request: PasswordResetVerifyRequest) {
+        passwordResetService.verifyCode(request.email, request.code)
+    }
+
+    @PostMapping("/password-reset/confirm")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "비밀번호 재설정", description = "코드 재검증 후 새 비밀번호로 변경")
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "변경 성공"),
+        ApiResponse(responseCode = "400", description = "입력값 검증 실패 또는 코드 불일치/만료"),
+        ApiResponse(responseCode = "404", description = "가입되지 않은 이메일"),
+    )
+    fun confirmPasswordReset(@Valid @RequestBody request: PasswordResetConfirmRequest) {
+        passwordResetService.confirm(request.email, request.code, request.newPassword)
     }
 }

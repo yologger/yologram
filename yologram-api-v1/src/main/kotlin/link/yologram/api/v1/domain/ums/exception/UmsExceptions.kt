@@ -10,3 +10,5 @@ class AuthTokenInvalidException : UmsException("유효하지 않은 토큰입니
 class EmailVerificationExpiredException : UmsException("인증 코드가 만료되었습니다.", "EMAIL_VERIFICATION_EXPIRED")
 class EmailVerificationInvalidException : UmsException("인증 코드가 일치하지 않습니다.", "EMAIL_VERIFICATION_INVALID")
 class EmailNotVerifiedException : UmsException("이메일 인증이 완료되지 않았습니다.", "EMAIL_NOT_VERIFIED")
+class PasswordResetExpiredException : UmsException("인증 코드가 만료되었습니다.", "PASSWORD_RESET_EXPIRED")
+class PasswordResetInvalidException : UmsException("인증 코드가 일치하지 않습니다.", "PASSWORD_RESET_INVALID")

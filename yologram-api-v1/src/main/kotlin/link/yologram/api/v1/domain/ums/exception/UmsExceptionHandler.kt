@@ -51,4 +51,14 @@ class UmsExceptionHandler {
     fun handleEmailNotVerified(e: EmailNotVerifiedException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
+
+    @ExceptionHandler(PasswordResetExpiredException::class)
+    fun handlePasswordResetExpired(e: PasswordResetExpiredException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
+    }
+
+    @ExceptionHandler(PasswordResetInvalidException::class)
+    fun handlePasswordResetInvalid(e: PasswordResetInvalidException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
+    }
 }

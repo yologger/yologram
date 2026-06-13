@@ -13,4 +13,8 @@ class StubEmailSender : EmailSender {
     override fun sendVerificationCode(to: String, code: String) {
         logger.info { "[StubEmailSender] to=$to, code=$code" }
     }
+
+    override fun sendPasswordResetCode(to: String, code: String) {
+        logger.info { "[StubEmailSender] 비밀번호 재설정 to=$to, code=$code" }
+    }
 }
