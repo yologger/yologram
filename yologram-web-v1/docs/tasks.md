@@ -38,11 +38,19 @@
 - [x] 비밀번호 변경 페이지 (현재/새/확인 입력)
 - [x] PATCH /api/v1/ums/user/me/password 연동 (useChangePasswordMutation)
 
+## 설정 - 회원탈퇴
+
+- [ ] 설정 페이지에 회원탈퇴 버튼 + 확인 모달
+- [ ] DELETE /api/v1/ums/user/me 연동 (useWithdrawMutation)
+- [ ] 탈퇴 성공 시 로그아웃 + 로그인 페이지 이동
+
 ## 이메일 인증
 
-- [ ] 회원가입 폼에 이메일 인증 단계 추가
-- [ ] 인증 코드 발송 API 연동
-- [ ] 인증 코드 입력/검증 UI
+- [x] 회원가입 폼에 이메일 인증 단계 추가
+- [x] 인증 코드 발송 API 연동 (POST /api/v1/ums/auth/email-verification/send)
+- [x] 인증 코드 입력/검증 UI (POST /api/v1/ums/auth/email-verification/verify)
+- [x] 인증 완료 후 가입 폼 활성화 + 회원가입 진행
+- [x] 이메일 인증 테스트 (JoinPage.test.tsx, auth.test.ts)
 
 ## 비밀번호 찾기
 

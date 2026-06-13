@@ -17,6 +17,32 @@ export const handlers = [
     )
   }),
 
+  http.post('http://localhost:5001/api/v1/ums/auth/email-verification/send', async ({ request }) => {
+    const body = await request.json() as { email: string }
+
+    if (body.email === 'duplicate@yologram.link') {
+      return HttpResponse.json(
+        { errorMessage: '이미 가입된 이메일입니다.', errorCode: 'USER_DUPLICATE' },
+        { status: 409 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.post('http://localhost:5001/api/v1/ums/auth/email-verification/verify', async ({ request }) => {
+    const body = await request.json() as { email: string; code: string }
+
+    if (body.code !== '123456') {
+      return HttpResponse.json(
+        { errorMessage: '인증 코드가 일치하지 않습니다.', errorCode: 'EMAIL_VERIFICATION_INVALID' },
+        { status: 400 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.post('http://localhost:5001/api/v1/ums/auth/login', async ({ request }) => {
     const body = await request.json() as { email: string; password: string }
 

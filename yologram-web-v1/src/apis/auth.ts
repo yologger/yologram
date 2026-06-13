@@ -17,6 +17,14 @@ export async function join(request: JoinRequest): Promise<JoinResponse> {
   return response.data.data
 }
 
+export async function sendVerificationCode(email: string): Promise<void> {
+  await api.post('/api/v1/ums/auth/email-verification/send', { email })
+}
+
+export async function verifyEmail(email: string, code: string): Promise<void> {
+  await api.post('/api/v1/ums/auth/email-verification/verify', { email, code })
+}
+
 export interface LoginResponse {
   uid: number
   accessToken: string
