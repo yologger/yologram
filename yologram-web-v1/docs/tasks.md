@@ -31,9 +31,10 @@
 
 ## 설정 - 회원정보 수정
 
-- [ ] 회원정보 수정 페이지 (이름, 닉네임 변경 폼)
-- [ ] PATCH /api/v1/ums/user/me 연동
-- [ ] 수정 성공 시 설정 페이지 이동 + 닉네임 갱신
+- [x] 회원정보 수정 페이지 (이메일/이름 읽기전용, 닉네임 변경 폼)
+- [x] PATCH /api/v1/ums/user/me 연동 (useUpdateProfileMutation)
+- [x] 수정 성공 시 설정 페이지 이동 + 닉네임 갱신 (user 쿼리 무효화)
+- [x] EditProfilePage 테스트
 
 ## 설정 - 비밀번호 변경
 
