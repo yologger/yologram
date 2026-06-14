@@ -3,15 +3,14 @@
 import { useState } from 'react'
 import { Typography } from 'antd'
 import FilterChips from '@/components/common/FilterChips'
-
-const categories = ['Frontend', 'Backend', 'AI/ML', 'DevOps', 'Cloud']
+import { TECH_FILTER_CATEGORIES, ALL_CATEGORY } from '@/constants/techCategories'
 
 export default function TechNews() {
-  const [category, setCategory] = useState('Frontend')
+  const [category, setCategory] = useState(ALL_CATEGORY)
 
   return (
     <div>
-      <FilterChips items={categories} selected={category} onChange={setCategory} />
+      <FilterChips items={TECH_FILTER_CATEGORIES} selected={category} onChange={setCategory} />
       <Typography.Text type="secondary">{category}</Typography.Text>
     </div>
   )

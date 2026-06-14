@@ -1,0 +1,80 @@
+.container {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.back {
+  border: none;
+  background: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.submit {
+  border: none;
+  background: none;
+  font-size: 16px;
+  font-weight: 600;
+  color: #e7689a;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  color: #c4c4c8;
+  cursor: not-allowed;
+}
+
+.body {
+  flex: 1;
+  padding: 16px;
+}
+
+.titleInput {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 8px 0;
+}
+
+.contentInput {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  padding: 12px 0;
+  resize: none;
+  min-height: 160px;
+}
+
+.categoryLabel {
+  font-size: 13px;
+  color: #71717a;
+  margin: 8px 0;
+}
+
+.toolbar {
+  display: flex;
+  gap: 20px;
+  padding: 14px 16px;
+  border-top: 1px solid #f0f0f0;
+  color: #c4c4c8;
+}
+
+.toolbarItem {
+  font-size: 13px;
+}

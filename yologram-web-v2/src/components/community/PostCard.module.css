@@ -1,0 +1,59 @@
+.card {
+  padding: 16px 4px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.author {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.time {
+  color: #a1a1aa;
+  font-size: 12px;
+}
+
+.title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.content {
+  color: #3f3f46;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.badge {
+  font-size: 11px;
+  color: #e7689a;
+  background: #fff0f4;
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+.meta {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  color: #71717a;
+  font-size: 13px;
+}

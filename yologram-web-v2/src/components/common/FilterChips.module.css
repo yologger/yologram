@@ -1,12 +1,20 @@
 .container {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   margin-bottom: 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.container::-webkit-scrollbar {
+  display: none;
 }
 
 .chip {
   cursor: pointer;
+  flex: 0 0 auto;
   padding: 6px 18px;
   border-radius: 20px;
   font-size: 14px;
@@ -17,12 +25,12 @@
 }
 
 .chip:hover {
-  border-color: #f2a0b5;
-  color: #f2a0b5;
+  border-color: #e7689a;
+  color: #e7689a;
 }
 
 .chip.active {
-  background: #262626;
+  background: #e7689a;
   color: #fff;
-  border-color: #262626;
+  border-color: #e7689a;
 }

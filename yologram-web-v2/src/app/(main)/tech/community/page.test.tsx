@@ -1,0 +1,39 @@
+import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { renderWithProviders } from '../../../../test/utils'
+import TechCommunity from './page'
+
+const mockPush = vi.fn()
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush }),
+}))
+
+beforeAll(() => {
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  )
+})
+
+describe('TechCommunity 피드', () => {
+  it('게시글 목록과 작성바가 렌더링된다', () => {
+    renderWithProviders(<TechCommunity />)
+
+    expect(screen.getAllByText('qld보다 이게 더 좋나요 음의복리도 없고 수익률도 더 높던데').length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: '기술 커뮤니티에 글을 남겨보세요' })).toBeInTheDocument()
+  })
+
+  it('작성바 클릭 시 글 작성 페이지로 이동한다', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<TechCommunity />)
+
+    await user.click(screen.getByRole('button', { name: '기술 커뮤니티에 글을 남겨보세요' }))
+
+    expect(mockPush).toHaveBeenCalledWith('/tech/community/write')
+  })
+})
