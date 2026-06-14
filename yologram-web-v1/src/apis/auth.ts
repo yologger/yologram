@@ -99,3 +99,7 @@ export interface ChangePasswordRequest {
 export async function changePassword(request: ChangePasswordRequest): Promise<void> {
   await api.patch('/api/v1/ums/user/me/password', request)
 }
+
+export async function withdraw(): Promise<void> {
+  await api.delete('/api/v1/ums/user/me')
+}

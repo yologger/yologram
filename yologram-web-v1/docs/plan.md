@@ -56,8 +56,13 @@
 - login 응답에서 refresh token 저장
 - 401 시 refresh token으로 access token 재발급 후 재요청
 
+## 회원탈퇴 (완료)
+
+- 설정 페이지 회원탈퇴 → 확인 모달 → DELETE /api/v1/ums/user/me (useWithdrawMutation)
+- 성공 시 localStorage('auth') 제거 + /login 이동
+- 백엔드가 개발 단계 하드 삭제라 탈퇴 후 같은 이메일 재가입 가능
+
 ## 제외 범위 (이후)
 
 - OAuth (Gmail, Kakao)
 - 프로필 이미지 업로드
-- 회원 탈퇴
