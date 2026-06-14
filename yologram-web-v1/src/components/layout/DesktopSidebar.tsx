@@ -5,9 +5,9 @@ import { FundFilled, GlobalOutlined, CodeFilled, BellFilled, SettingFilled, Doub
 import styles from './DesktopSidebar.module.css'
 
 const menuItems = [
+  { key: '/tech', label: '기술', icon: <CodeFilled /> },
   { key: '/invest', label: '투자', icon: <FundFilled /> },
   { key: '/politics', label: '정치', icon: <GlobalOutlined /> },
-  { key: '/tech', label: '기술', icon: <CodeFilled /> },
   { key: '/notifications', label: '알림', icon: <BellFilled /> },
   { key: '/settings', label: '설정', icon: <SettingFilled /> },
 ]
@@ -17,7 +17,7 @@ export default function DesktopSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const selectedKey = menuItems.find((item) => location.pathname.startsWith(item.key))?.key ?? '/invest'
+  const selectedKey = menuItems.find((item) => location.pathname.startsWith(item.key))?.key ?? '/tech'
 
   return (
     <div className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>

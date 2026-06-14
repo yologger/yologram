@@ -3,9 +3,9 @@ import { FundFilled, GlobalOutlined, CodeFilled, BellFilled, SettingFilled } fro
 import styles from './MobileTabBar.module.css'
 
 const tabs = [
+  { key: '/tech', label: '기술', icon: <CodeFilled /> },
   { key: '/invest', label: '투자', icon: <FundFilled /> },
   { key: '/politics', label: '정치', icon: <GlobalOutlined /> },
-  { key: '/tech', label: '기술', icon: <CodeFilled /> },
   { key: '/notifications', label: '알림', icon: <BellFilled /> },
   { key: '/settings', label: '설정', icon: <SettingFilled /> },
 ]
@@ -14,7 +14,7 @@ export default function MobileTabBar() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const activeKey = tabs.find((t) => location.pathname.startsWith(t.key))?.key ?? '/invest'
+  const activeKey = tabs.find((t) => location.pathname.startsWith(t.key))?.key ?? '/tech'
 
   return (
     <div className={styles.tabBar}>

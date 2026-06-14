@@ -8,3 +8,12 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #fafafa;
 }
+
+a {
+  color: #08979c;
+}
+
+a:hover {
+  color: #08979c;
+  opacity: 0.8;
+}

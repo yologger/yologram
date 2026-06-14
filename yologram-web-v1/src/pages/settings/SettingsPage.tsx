@@ -1,4 +1,4 @@
-import { Avatar, Modal, Typography } from 'antd'
+import { Avatar, App, Typography } from 'antd'
 import {
   UserOutlined,
   BellOutlined,
@@ -53,6 +53,7 @@ export default function SettingsPage() {
   const navigate = useNavigate()
   const auth = useAtomValue(authAtom)
   const { data: user } = useUserQuery()
+  const { modal } = App.useApp()
   const { mutate: logoutMutate } = useLogoutMutation()
   const { mutate: withdrawMutate } = useWithdrawMutation()
 
@@ -81,7 +82,7 @@ export default function SettingsPage() {
 
       <div className={styles.footer}>
         <Text type="secondary" className={styles.footerLink} onClick={() => {
-          Modal.confirm({
+          modal.confirm({
             title: '로그아웃',
             content: '정말 로그아웃 하시겠어요?',
             okText: '로그아웃',
@@ -91,7 +92,7 @@ export default function SettingsPage() {
         }}>로그아웃</Text>
         <Text type="secondary"> | </Text>
         <Text type="secondary" className={styles.footerLink} onClick={() => {
-          Modal.confirm({
+          modal.confirm({
             title: '회원탈퇴',
             content: '정말 탈퇴하시겠어요? 되돌릴 수 없어요.',
             okText: '탈퇴',

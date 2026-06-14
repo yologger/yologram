@@ -17,6 +17,10 @@ import PoliticsInfoPage from './pages/politics/PoliticsInfoPage'
 import TechPage from './pages/tech/TechPage'
 import TechNewsPage from './pages/tech/TechNewsPage'
 import TechFavoriteNewsPage from './pages/tech/TechFavoriteNewsPage'
+import TechCommunityPage from './pages/tech/TechCommunityPage'
+import TechJobsPage from './pages/tech/TechJobsPage'
+import CommunityWritePage from './pages/tech/community/CommunityWritePage'
+import CommunityDetailPage from './pages/tech/community/CommunityDetailPage'
 import NotificationsPage from './pages/notifications/NotificationsPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import ChangePasswordPage from './pages/settings/ChangePasswordPage'
@@ -28,29 +32,39 @@ export default function Router() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/join" element={<JoinPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/tech/community/write" element={<CommunityWritePage />} />
+      <Route path="/tech/community/:postId" element={<CommunityDetailPage />} />
       <Route element={<ResponsiveLayout />}>
-        <Route path="/" element={<Navigate to="/invest" replace />} />
+        <Route path="/" element={<Navigate to="/tech" replace />} />
         <Route path="/invest" element={<InvestPage />}>
           <Route index element={<Navigate to="/invest/news" replace />} />
           <Route path="news" element={<InvestNewsPage />} />
           <Route path="community" element={<InvestCommunityPage />} />
           <Route path="info" element={<InvestInfoPage />} />
+          <Route element={<RequireAuth />}>
+            <Route path="favorite-news" element={<InvestFavoriteNewsPage />} />
+          </Route>
         </Route>
         <Route path="/politics" element={<PoliticsPage />}>
           <Route index element={<Navigate to="/politics/news" replace />} />
           <Route path="news" element={<PoliticsNewsPage />} />
           <Route path="community" element={<PoliticsCommunityPage />} />
           <Route path="info" element={<PoliticsInfoPage />} />
+          <Route element={<RequireAuth />}>
+            <Route path="favorite-news" element={<PoliticsFavoriteNewsPage />} />
+          </Route>
         </Route>
         <Route path="/tech" element={<TechPage />}>
           <Route index element={<Navigate to="/tech/news" replace />} />
           <Route path="news" element={<TechNewsPage />} />
+          <Route path="community" element={<TechCommunityPage />} />
+          <Route path="jobs" element={<TechJobsPage />} />
+          <Route element={<RequireAuth />}>
+            <Route path="favorite-news" element={<TechFavoriteNewsPage />} />
+          </Route>
         </Route>
 
         <Route element={<RequireAuth />}>
-          <Route path="/invest/favorite-news" element={<InvestFavoriteNewsPage />} />
-          <Route path="/politics/favorite-news" element={<PoliticsFavoriteNewsPage />} />
-          <Route path="/tech/favorite-news" element={<TechFavoriteNewsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/change-password" element={<ChangePasswordPage />} />
