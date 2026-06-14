@@ -53,9 +53,9 @@
 
 ## 설정 - 회원탈퇴
 
-- [ ] 설정 페이지에 회원탈퇴 버튼 + 확인 모달
-- [ ] DELETE /api/v2/ums/user/me 연동 (useWithdrawMutation)
-- [ ] 탈퇴 성공 시 로그아웃 + 로그인 페이지 이동
+- [x] 설정 페이지에 회원탈퇴 버튼 + 확인 모달
+- [x] DELETE /api/v2/ums/user/me 연동 (useWithdrawMutation)
+- [x] 탈퇴 성공 시 localStorage 정리 + 로그인 페이지 이동
 
 ## 이메일 인증
 

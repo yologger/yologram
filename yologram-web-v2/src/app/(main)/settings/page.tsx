@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation'
 import { useAtomValue } from 'jotai'
 import { authAtom } from '@/stores/auth'
 import useLogoutMutation from '@/queries/useLogoutMutation'
+import useWithdrawMutation from '@/queries/useWithdrawMutation'
 import useUserQuery from '@/queries/useUserQuery'
 import RequireAuth from '@/components/auth/RequireAuth'
 import styles from './Settings.module.css'
@@ -56,6 +57,7 @@ export default function Settings() {
   const auth = useAtomValue(authAtom)
   const { data: user } = useUserQuery()
   const { mutate: logoutMutate } = useLogoutMutation()
+  const { mutate: withdrawMutate } = useWithdrawMutation()
 
   return (
     <RequireAuth>
@@ -92,7 +94,16 @@ export default function Settings() {
             })
           }}>로그아웃</Text>
           <Text type="secondary"> | </Text>
-          <Text type="secondary" className={styles.footerLink}>회원탈퇴</Text>
+          <Text type="secondary" className={styles.footerLink} onClick={() => {
+            Modal.confirm({
+              title: '회원탈퇴',
+              content: '정말 탈퇴하시겠어요? 되돌릴 수 없어요.',
+              okText: '탈퇴',
+              okButtonProps: { danger: true },
+              cancelText: '취소',
+              onOk: () => withdrawMutate(),
+            })
+          }}>회원탈퇴</Text>
         </div>
       </div>
     </RequireAuth>

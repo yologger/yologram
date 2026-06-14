@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { getDefaultStore } from 'jotai'
 import { server } from '../test/server'
 import { authAtom } from '../stores/auth'
-import { join, login, validateToken, logout, getMe, updateProfile, changePassword, sendVerificationCode, verifyEmail, sendPasswordResetCode, verifyPasswordResetCode, confirmPasswordReset } from './auth'
+import { join, login, validateToken, logout, getMe, updateProfile, changePassword, withdraw, sendVerificationCode, verifyEmail, sendPasswordResetCode, verifyPasswordResetCode, confirmPasswordReset } from './auth'
 
 const store = getDefaultStore()
 
@@ -257,5 +257,23 @@ describe('changePassword', () => {
     await expect(
       changePassword({ currentPassword: 'password123', newPassword: 'newpass1234' }),
     ).rejects.toThrow()
+  })
+})
+
+describe('withdraw', () => {
+  it('인증된 상태에서 탈퇴 성공 시 에러 없이 완료된다', async () => {
+    store.set(authAtom, {
+      uid: 1,
+      accessToken: 'valid-token',
+      email: 'test@yologram.link',
+      name: '테스트',
+      nickname: 'tester',
+    })
+
+    await expect(withdraw()).resolves.toBeUndefined()
+  })
+
+  it('인증되지 않은 상태에서 에러를 던진다', async () => {
+    await expect(withdraw()).rejects.toThrow()
   })
 })

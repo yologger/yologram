@@ -101,6 +101,12 @@
 - 서버 런타임 env(`APP_ENV`)와 public env(`NEXT_PUBLIC_APP_ENV`)를 분리 관리
 - production 장기 권장안은 Alloy지만 현재는 direct push
 
+## 회원탈퇴 (완료)
+
+- 설정 페이지 회원탈퇴 → 확인 모달 → DELETE /api/v2/ums/user/me (useWithdrawMutation)
+- 성공 시 localStorage('auth') 제거 + /login 이동
+- 백엔드가 개발 단계 하드 삭제라 탈퇴 후 같은 이메일 재가입 가능
+
 ## 제외 범위
 
 - browser RUM

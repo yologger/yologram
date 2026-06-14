@@ -203,4 +203,17 @@ export const handlers = [
 
     return new HttpResponse(null, { status: 204 })
   }),
+
+  http.delete('http://localhost:5002/api/v2/ums/user/me', ({ request }) => {
+    const auth = request.headers.get('Authorization')
+
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_TOKEN_INVALID' },
+        { status: 401 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
 ]
