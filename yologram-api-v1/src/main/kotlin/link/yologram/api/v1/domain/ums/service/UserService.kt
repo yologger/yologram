@@ -91,4 +91,14 @@ class UserService(
 
         user.password = passwordEncoder.encode(request.newPassword)
     }
+
+    @Transactional
+    fun withdraw(uid: Long) {
+        // 개발 단계: 탈퇴 시 레코드를 하드 삭제 (email 즉시 해제 → 재가입 가능)
+        // 추후: soft delete(status=DELETED) + 유예 후 정리/익명화 + 탈퇴 유저 차단으로 전환
+        val user = userRepository.findById(uid)
+            .orElseThrow { UserNotFoundException() }
+
+        userRepository.delete(user)
+    }
 }

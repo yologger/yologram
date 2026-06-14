@@ -37,6 +37,7 @@ Spring Boot MVC (Kotlin) API 서버.
 | GET | /api/v1/ums/user/me | 회원정보 조회 |
 | PATCH | /api/v1/ums/user/me | 회원정보 수정 |
 | PATCH | /api/v1/ums/user/me/password | 비밀번호 변경 |
+| DELETE | /api/v1/ums/user/me | 회원탈퇴 (개발 단계: 하드 삭제) |
 
 API 문서: http://localhost:5001/api/v1/docs
 

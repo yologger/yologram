@@ -29,6 +29,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doThrow
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
@@ -516,6 +517,44 @@ class UserResourceTest {
                     status { isBadRequest() }
                     jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
                 }
+            }
+        }
+    }
+
+    @Nested
+    inner class 회원탈퇴 {
+
+        @Test
+        fun `탈퇴 성공 시 204 반환`() {
+            whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+            doNothing().whenever(userService).withdraw(1L)
+
+            mockMvc.delete("/api/v1/ums/user/me") {
+                header("Authorization", "Bearer valid-token")
+            }.andExpect {
+                status { isNoContent() }
+            }
+        }
+
+        @Test
+        fun `Authorization 헤더 없으면 401 반환`() {
+            mockMvc.delete("/api/v1/ums/user/me")
+                .andExpect {
+                    status { isUnauthorized() }
+                    jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+                }
+        }
+
+        @Test
+        fun `존재하지 않는 유저면 404 반환`() {
+            whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(999L)
+            doThrow(UserNotFoundException()).whenever(userService).withdraw(999L)
+
+            mockMvc.delete("/api/v1/ums/user/me") {
+                header("Authorization", "Bearer valid-token")
+            }.andExpect {
+                status { isNotFound() }
+                jsonPath("$.errorCode") { value("USER_NOT_FOUND") }
             }
         }
     }

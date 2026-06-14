@@ -322,4 +322,27 @@ class UserServiceTest {
             }
         }
     }
+
+    @Nested
+    inner class 회원탈퇴 {
+
+        @Test
+        fun `유저 레코드를 하드 삭제한다`() {
+            val user = testUser()
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+
+            userService.withdraw(1L)
+
+            verify(userRepository).delete(user)
+        }
+
+        @Test
+        fun `존재하지 않는 유저 시 UserNotFoundException 발생`() {
+            whenever(userRepository.findById(999L)).thenReturn(Optional.empty())
+
+            assertThrows<UserNotFoundException> {
+                userService.withdraw(999L)
+            }
+        }
+    }
 }

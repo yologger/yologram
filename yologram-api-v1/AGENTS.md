@@ -26,6 +26,11 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - 예외: PasswordResetExpiredException/PasswordResetInvalidException (400)
 - 운영 보강 TODO: 코드 해시 저장, 발송 레이트리밋, 시도 횟수 제한
 
+## 회원탈퇴
+
+- 현재(개발 단계): DELETE /api/v1/ums/user/me → 레코드 하드 삭제 (UserService.withdraw). email 즉시 해제되어 재가입 가능
+- 추후: soft delete(status=DELETED + deletedDate) 전환, 탈퇴 유저 login/validate 차단(USER_WITHDRAWN 403), 유예 후 PII 익명화/하드삭제 배치, 연관 데이터 비동기 정리, 조회 시 DELETED 필터링, email 재가입 정책
+
 ## 빌드/배포
 
 - 빌드: ./gradlew build
