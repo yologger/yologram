@@ -187,3 +187,24 @@ class TestUserService:
 
             with pytest.raises(UserNotFoundException):
                 self.service.change_password(999, request)
+
+    class TestWithdraw:
+
+        def setup_method(self):
+            self.db = MagicMock()
+            self.service = UserService(self.db)
+
+        def test_유저_레코드를_하드_삭제한다(self):
+            user = MagicMock()
+            self.service.repository.find_by_id = MagicMock(return_value=user)
+            self.service.repository.delete = MagicMock()
+
+            self.service.withdraw(1)
+
+            self.service.repository.delete.assert_called_once_with(user)
+
+        def test_존재하지_않는_유저_시_예외(self):
+            self.service.repository.find_by_id = MagicMock(return_value=None)
+
+            with pytest.raises(UserNotFoundException):
+                self.service.withdraw(999)

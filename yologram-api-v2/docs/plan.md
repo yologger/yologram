@@ -110,6 +110,15 @@
 - PasswordResetExpiredException (400): 코드 만료
 - PasswordResetInvalidException (400): 코드 불일치
 
+## 회원탈퇴
+
+### 현재 (개발 단계: 하드 삭제)
+- DELETE /api/v2/ums/user/me: 유저 레코드를 즉시 삭제 → email 해제로 재가입 가능 (api-v1과 동일)
+
+### 추후 (b 방식: soft delete + 유예 후 정리)
+- status=DELETED + deleted_date, 탈퇴 유저 login/validate 차단(USER_WITHDRAWN 403)
+- 유예기간 후 PII 익명화/하드삭제 배치, 연관 데이터 비동기 정리, 조회 시 DELETED 필터링, email 재가입 정책
+
 ## Phase 13: Refresh Token
 
 ### 흐름

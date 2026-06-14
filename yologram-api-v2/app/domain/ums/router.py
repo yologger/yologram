@@ -76,3 +76,22 @@ def change_password(
 ):
     service = UserService(db)
     service.change_password(auth_data.uid, request)
+
+
+@router.delete(
+    "/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="회원탈퇴",
+    description="본인 계정을 탈퇴 처리 (개발 단계: 레코드 하드 삭제)",
+    responses={
+        204: {"description": "탈퇴 성공"},
+        401: {"description": "인증 실패"},
+        404: {"description": "사용자를 찾을 수 없음"},
+    },
+)
+def withdraw(
+    auth_data: AuthData = Depends(get_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    service = UserService(db)
+    service.withdraw(auth_data.uid)

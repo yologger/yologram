@@ -83,3 +83,12 @@ class UserService:
             request.new_password.encode("utf-8"), bcrypt.gensalt()
         ).decode("utf-8")
         self.repository.db.flush()
+
+    def withdraw(self, uid: int) -> None:
+        # 개발 단계: 탈퇴 시 레코드를 하드 삭제 (email 즉시 해제 → 재가입 가능)
+        # 추후: soft delete(status=DELETED) + 유예 후 정리/익명화 + 탈퇴 유저 차단으로 전환
+        user = self.repository.find_by_id(uid)
+        if not user:
+            raise UserNotFoundException()
+
+        self.repository.delete(user)

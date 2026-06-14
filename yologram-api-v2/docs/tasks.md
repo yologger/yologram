@@ -77,10 +77,13 @@
 
 ## UMS - 회원탈퇴
 
-- [ ] DELETE /api/v2/ums/user/me (본인 탈퇴, soft delete: status=DELETED, deleted_date 기록, access_token 무효화)
-- [ ] 관련 데이터 정리 비동기 처리 (게시글 등, 이벤트/큐 기반)
+- [ ] DELETE /api/v2/ums/user/me (본인 탈퇴, 개발 단계: 레코드 하드 삭제 → email 즉시 해제·재가입 가능)
 - [ ] 회원탈퇴 테스트
 - [ ] Swagger 문서화
+- [ ] (추후) soft delete 방식 전환: status=DELETED + deleted_date, 탈퇴 유저 login/validate 차단(USER_WITHDRAWN 403)
+- [ ] (추후) 유예기간 후 PII 익명화/하드삭제 배치, email 재가입 정책
+- [ ] (추후) 연관 데이터 정리 비동기 처리 (게시글 등, 이벤트/큐 기반) — 게시글 도메인 추가 후
+- [ ] (추후) 조회 시 DELETED 유저 데이터 필터링
 
 ## UMS - 비밀번호 찾기 (7단계)
 

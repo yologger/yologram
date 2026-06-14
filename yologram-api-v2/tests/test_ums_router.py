@@ -388,3 +388,48 @@ class TestUmsRouter:
             )
 
             assert response.status_code == 422
+
+    class TestWithdraw:
+
+        def setup_method(self):
+            self.mock_db = MagicMock()
+            app.dependency_overrides[get_db] = lambda: self.mock_db
+            self.client = TestClient(app)
+            self.token = create_token(1)
+
+        def teardown_method(self):
+            app.dependency_overrides.clear()
+
+        @patch("app.domain.ums.service.UserRepository")
+        def test_회원탈퇴_성공_204(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.return_value = MagicMock()
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.delete(
+                "/api/v2/ums/user/me",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 204
+            mock_repo.delete.assert_called_once()
+
+        def test_인증_헤더_없으면_401(self):
+            response = self.client.delete("/api/v2/ums/user/me")
+
+            assert response.status_code == 401
+            assert response.json()["errorCode"] == "AUTH_TOKEN_INVALID"
+
+        @patch("app.domain.ums.service.UserRepository")
+        def test_존재하지_않는_유저면_404(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.return_value = None
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.delete(
+                "/api/v2/ums/user/me",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 404
+            assert response.json()["errorCode"] == "USER_NOT_FOUND"
