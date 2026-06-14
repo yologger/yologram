@@ -77,9 +77,9 @@
 
 ## UMS - 회원탈퇴
 
-- [ ] DELETE /api/v2/ums/user/me (본인 탈퇴, 개발 단계: 레코드 하드 삭제 → email 즉시 해제·재가입 가능)
-- [ ] 회원탈퇴 테스트
-- [ ] Swagger 문서화
+- [x] DELETE /api/v2/ums/user/me (본인 탈퇴, 개발 단계: 레코드 하드 삭제 → email 즉시 해제·재가입 가능)
+- [x] 회원탈퇴 테스트
+- [x] Swagger 문서화
 - [ ] (추후) soft delete 방식 전환: status=DELETED + deleted_date, 탈퇴 유저 login/validate 차단(USER_WITHDRAWN 403)
 - [ ] (추후) 유예기간 후 PII 익명화/하드삭제 배치, email 재가입 정책
 - [ ] (추후) 연관 데이터 정리 비동기 처리 (게시글 등, 이벤트/큐 기반) — 게시글 도메인 추가 후
@@ -105,6 +105,7 @@
 - [ ] refresh token 발급 로직 (login 시 access + refresh 쌍 발급)
 - [ ] POST /api/v2/ums/auth/refresh (refresh token으로 access token 재발급)
 - [ ] refresh token 저장/검증 로직
+- [ ] 로그아웃 시 refresh token 폐기 (서버측 토큰 무효화) — 현재 access token은 stateless라 무효화 불가, refresh 도입과 함께 구현
 - [ ] refresh token 테스트
 - [ ] Swagger 문서화
 

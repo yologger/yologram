@@ -43,8 +43,9 @@
 - 설정: jwt_secret(환경변수), jwt_expire(86400), jwt_issuer(yologram.link), jwt_audience(yologram.client)
 - 인증 헤더: Authorization: Bearer {token}
 - get_authenticated_user 의존성으로 인증 정보 주입 (FastAPI Depends)
-- 토큰 저장: DB User.access_token (로그아웃 시 None 처리)
-- validate-token: JWT 검증 + DB access_token 일치 확인
+- access token은 stateless JWT (서버에 저장하지 않음). 로그아웃은 클라이언트가 토큰을 폐기하는 방식이며, 현재 서버측 강제 무효화는 불가
+- validate-token: JWT 서명/만료 검증 + 사용자 존재 확인
+- (추후) refresh token 도입 시 서버측 토큰 무효화도 함께 구현 (로그아웃 시 refresh token 폐기)
 
 ## 이메일 인증
 

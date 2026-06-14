@@ -115,6 +115,7 @@
 - [ ] refresh token 발급 로직 (login 시 access + refresh 쌍 발급)
 - [ ] POST /api/v1/ums/auth/refresh (refresh token으로 access token 재발급)
 - [ ] refresh token 저장/검증 로직
+- [ ] 로그아웃 시 refresh token 폐기 (서버측 토큰 무효화) — 현재 access token은 stateless라 무효화 불가, refresh 도입과 함께 구현
 - [ ] refresh token 테스트
 - [ ] Swagger 문서화
 
