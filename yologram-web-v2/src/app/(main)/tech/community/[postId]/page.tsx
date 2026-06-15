@@ -27,7 +27,7 @@ export default function CommunityDetail() {
   const id = Number(params.postId)
   const post = posts.find((p) => p.id === id)
 
-  const goBack = () => router.push('/tech/community')
+  const goBack = () => router.back()
 
   if (!post) {
     return (

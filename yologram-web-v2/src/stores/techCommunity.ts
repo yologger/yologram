@@ -25,8 +25,9 @@ function seedCategories(i: number): string[] {
 }
 
 function seedPosts(): CommunityPost[] {
-  return Array.from({ length: 60 }, (_, i) => ({
+  const posts: CommunityPost[] = Array.from({ length: 60 }, (_, i) => ({
     id: 1000 - i,
+    board: 'TECH' as const,
     author: NICKNAMES[i % NICKNAMES.length],
     createdAt: `${(i % 23) + 1}시간 전`,
     content: CONTENTS[i % CONTENTS.length],
@@ -35,6 +36,15 @@ function seedPosts(): CommunityPost[] {
     commentCount: (i * 3) % 12,
     liked: false,
   }))
+
+  // "내가 쓴 글" 데모용 (author='나', 게시판별)
+  const mine: CommunityPost[] = [
+    { id: 2001, board: 'TECH', author: '나', createdAt: '1일 전', content: 'Next.js App Router 전환 후기 공유합니다', categories: ['Frontend'], likeCount: 3, commentCount: 1, liked: false },
+    { id: 2002, board: 'INVEST', author: '나', createdAt: '2일 전', content: '해외주식 분할매수 전략 어떻게들 하시나요', categories: [], likeCount: 5, commentCount: 2, liked: false },
+    { id: 2003, board: 'POLITICS', author: '나', createdAt: '3일 전', content: '이번 정책 토론 정리해봤습니다', categories: [], likeCount: 1, commentCount: 0, liked: false },
+  ]
+
+  return [...posts, ...mine]
 }
 
 function seedComments(): CommunityComment[] {

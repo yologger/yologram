@@ -1,0 +1,43 @@
+.container {
+  background: #fff;
+  min-height: 100vh;
+  /* ResponsiveLayout content 패딩(모바일 16 / 데스크탑 24)을 상쇄해 풀블리드 흰 배경 */
+  margin: -16px;
+  padding-bottom: 64px;
+}
+
+@media (min-width: 768px) {
+  .container {
+    margin: -24px;
+  }
+}
+
+.header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.back {
+  position: absolute;
+  left: 16px;
+  border: none;
+  background: none;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.body {
+  padding: 16px;
+}
+
+.empty {
+  text-align: center;
+  color: #a1a1aa;
+  padding: 48px 0;
+}
