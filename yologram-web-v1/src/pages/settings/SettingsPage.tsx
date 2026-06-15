@@ -37,7 +37,7 @@ const sections = [
   {
     title: '활동',
     items: [
-      { icon: <EditOutlined />, label: '내가 쓴 글', desc: '내가 작성한 글을 관리해요', path: '' },
+      { icon: <EditOutlined />, label: '내가 쓴 글', desc: '내가 작성한 커뮤니티 글을 관리해요', path: '/settings/my-posts' },
       { icon: <BookOutlined />, label: '저장한 글', desc: '북마크한 게시글을 관리해요', path: '' },
     ],
   },

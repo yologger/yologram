@@ -29,7 +29,7 @@ export default function CommunityDetailPage() {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
-          <button className={styles.back} aria-label="뒤로" onClick={() => navigate('/tech/community')}>
+          <button className={styles.back} aria-label="뒤로" onClick={() => navigate(-1)}>
             <ArrowLeftOutlined />
           </button>
         </div>
@@ -68,7 +68,7 @@ export default function CommunityDetailPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <button className={styles.back} aria-label="뒤로" onClick={() => navigate('/tech/community')}>
+        <button className={styles.back} aria-label="뒤로" onClick={() => navigate(-1)}>
           <ArrowLeftOutlined />
         </button>
       </div>

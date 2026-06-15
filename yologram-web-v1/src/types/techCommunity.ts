@@ -1,5 +1,8 @@
+export type CommunityBoard = 'TECH' | 'INVEST' | 'POLITICS'
+
 export interface CommunityPost {
   id: number
+  board: CommunityBoard
   author: string
   createdAt: string
   title?: string

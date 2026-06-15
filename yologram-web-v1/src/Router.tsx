@@ -25,6 +25,7 @@ import NotificationsPage from './pages/notifications/NotificationsPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import ChangePasswordPage from './pages/settings/ChangePasswordPage'
 import EditProfilePage from './pages/settings/EditProfilePage'
+import MyPostsPage from './pages/settings/MyPostsPage'
 
 export default function Router() {
   return (
@@ -69,6 +70,7 @@ export default function Router() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/change-password" element={<ChangePasswordPage />} />
           <Route path="/settings/edit-profile" element={<EditProfilePage />} />
+          <Route path="/settings/my-posts" element={<MyPostsPage />} />
         </Route>
       </Route>
     </Routes>

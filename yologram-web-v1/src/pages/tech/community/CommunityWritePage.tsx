@@ -34,6 +34,7 @@ export default function CommunityWritePage() {
     if (!canSubmit) return
     const newPost: CommunityPost = {
       id: Date.now(),
+      board: 'TECH',
       author: '나',
       createdAt: '방금 전',
       title: title.trim() || undefined,
