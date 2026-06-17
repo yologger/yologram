@@ -119,6 +119,51 @@
 - [ ] refresh token 테스트
 - [ ] Swagger 문서화
 
+## CMS - 커뮤니티 카테고리 (1단계)
+
+- [x] Section enum (TECH / INVEST / POLITICS)
+- [ ] categories 테이블 DDL + section별 시드 데이터 (DB 직접 실행)
+- [x] Category 엔티티 + CategoryRepository
+- [x] CategoryService (section별 활성 카테고리 조회, sort_order 정렬)
+- [x] GET /api/v1/cms/{section}/categories 컨트롤러
+- [x] section 유효성 검증 (잘못된 section → 400)
+- [x] 테스트 (정상/빈 목록/유효하지 않은 section, 7개)
+- [x] Swagger 문서화
+- [ ] 프론트 연동: web-v1·web-v2 techCategories 상수 → API 조회로 대체, section별 필터 동적 렌더
+
+## PMS - 커뮤니티 게시글 작성 (2단계)
+
+- [ ] community_posts 테이블 DDL + 인덱스 (section, created_at)
+- [ ] post_categories 테이블 DDL
+- [ ] Post / PostCategory 엔티티 + 리포지토리
+- [ ] PostService.create (작성자=인증유저, categoryIds section 일치 검증, 최대 3개)
+- [ ] POST /api/v1/pms/{section}/posts 컨트롤러 (인증 필요)
+- [ ] 예외 처리 (카테고리 section 불일치, 내용 누락, 카테고리 개수 초과)
+- [ ] 테스트 (정상/미인증/section 불일치/내용 누락/카테고리 초과)
+- [ ] Swagger 문서화
+
+## PMS - 게시글 조회/상세 (3단계, 예정)
+
+- [ ] GET /api/v1/pms/{section}/posts (cursor 페이지네이션)
+- [ ] GET /api/v1/pms/{section}/posts/{id} (상세)
+- [ ] 카테고리 필터 (categoryId)
+- [ ] 테스트 / Swagger
+
+## Comment - 댓글 (예정)
+
+- [ ] community_comments 테이블 (post_id FK 없음, 인덱스 + app-level 검증)
+- [ ] 댓글 작성/조회/삭제 API (/api/v1/comments/...)
+
+## Count - 좋아요/카운트 (경로 예약, 예정)
+
+- [ ] 좋아요 토글 (/api/v1/count/... 경로 예약, 현재 community_posts 컬럼 동기 보관)
+- [ ] 분리 시 이벤트 기반 카운트 이관
+
+## Admin - 커뮤니티 카테고리 관리 (예정)
+
+- [ ] POST/DELETE/GET /api/v1/cms/admin/{section}/categories (어드민 권한)
+- [ ] 카테고리 삭제 시 기존 글 처리 정책 (is_active vs post_categories 제거)
+
 ## Admin - 유저 관리
 
 - [ ] GET /api/v1/ums/admin/users (유저 목록 조회)

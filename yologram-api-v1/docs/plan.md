@@ -133,6 +133,39 @@
 - 유예기간 후 PII 익명화/하드삭제 배치, 연관 데이터(게시글 등) 비동기 정리
 - 조회 시 DELETED 필터링, email 재가입 정책
 
+## 커뮤니티 (PMS / CMS)
+
+### 데이터 모델 (하이브리드: 단일 + section)
+- community_posts: id, section, user_id, title, content, like_count, comment_count, created_at, modified_date
+  - 인덱스 (section, created_at) — 섹션 피드 cursor 페이지네이션
+  - 섹션 전용 필드는 추후 1:1 확장 테이블(예: invest_post_detail)
+- categories: id, section, name, sort_order, is_active, created_at, UNIQUE(section, name) — 동적 관리(어드민 CRUD)
+- post_categories: post_id, category_id (N:M, 글당 최대 3개)
+- Section enum: TECH / INVEST / POLITICS (VARCHAR 저장)
+
+### 도메인/경로
+- domain/cms (Category, contents), domain/pms (Post + post_categories)
+- 경로 path 변수 방식: 카테고리 /api/v1/cms/{section}/categories, 게시글 /api/v1/pms/{section}/posts
+- 어드민은 도메인 경로 뒤 admin 세그먼트: /api/v1/cms/admin/{section}/categories 등
+- 모듈러 모놀리식 — 도메인 경계 호출은 인터페이스 추상화, 경계 넘는 FK 지양
+
+### 1단계: 카테고리 조회 (cms, 먼저)
+- GET /api/v1/cms/{section}/categories → is_active=true, sort_order 정렬
+- Category 엔티티 + CategoryRepository + CategoryService + CategoryResource(컨트롤러)
+- section 유효성 검증(잘못된 section → 400)
+- 시드: TECH(Frontend/Backend/AI·ML/DevOps/Cloud/Security/기타), INVEST/POLITICS
+- 프론트 연동: techCategories 상수 → API 조회로 대체, section별 필터 칩 동적 렌더
+
+### 2단계: 게시글 작성 (pms)
+- POST /api/v1/pms/{section}/posts (인증 필요) { title?, content, categoryIds[] }
+- 작성자 = JWT 인증 유저, categoryIds가 해당 section 카테고리인지 검증(모놀리식: categories 직접 조회) → community_posts + post_categories insert
+- 응답 { id } (201)
+
+### 3단계 이후 (예정)
+- 게시글 목록(cursor 페이지네이션) / 상세 / 수정 / 삭제
+- 댓글(comment 도메인 /api/v1/comments, post_id FK 없음) / 좋아요·카운트(count 경로 예약)
+- 어드민 카테고리 CRUD(/api/v1/cms/admin/...), 어드민 게시글 관리
+
 ## 제외 범위 (이후)
 
 - OAuth (Gmail, Kakao)
