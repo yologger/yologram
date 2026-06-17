@@ -65,6 +65,11 @@ class PasswordResetInvalidException(AppException):
         super().__init__(400, "인증 코드가 일치하지 않습니다.", "PASSWORD_RESET_INVALID")
 
 
+class InvalidSectionException(AppException):
+    def __init__(self):
+        super().__init__(400, "유효하지 않은 섹션입니다.", "INVALID_SECTION")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:

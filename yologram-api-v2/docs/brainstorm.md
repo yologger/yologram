@@ -149,3 +149,10 @@ FastAPI(및 대부분의 프레임워크)는 인프라(ECS, K8s)에 secret 주�
 - 대량 삭제는 청크(LIMIT N) 단위 반복으로 락/replica 지연 완화
 - 보관 의무 데이터는 삭제 대신 익명화, 유예기간(복구) 정책 검토 (soft delete면 자연스럽게 지원)
 - 권장 조합: soft delete 즉시 응답 + SQS 워커의 도메인별·청크 삭제 (규모 작으면 배치 잡으로 시작)
+
+## 커뮤니티 카테고리 (CMS)
+
+- 도메인 분리(pms/cms/comment/count/news)·하이브리드 스키마 결정은 api-v1 docs/brainstorm.md에 상세. api-v2는 동일 설계 미러링
+- 카테고리는 cms(contents) 소유, categories 단일 테이블 + section 컬럼 (api-v1과 DB 공유)
+- Section enum(TECH/INVEST/POLITICS)은 코드 결합이라 ENUM 유지, 카테고리는 동적 관리(어드민 CRUD 예정)
+- GET /api/v2/cms/{section}/categories — 프론트가 섹션별 필터를 동적 조회

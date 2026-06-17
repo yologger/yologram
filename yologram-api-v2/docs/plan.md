@@ -150,3 +150,17 @@
 - jwt_util 단위 테스트
 - auth_service 단위 테스트 (mock repository)
 - auth_router E2E 테스트 (TestClient)
+
+## CMS: 커뮤니티 카테고리 (api-v1 미러링)
+
+### 도메인/스키마
+- app/domain/cms: Section enum(TECH/INVEST/POLITICS), Category 모델, CategoryRepository, CategoryService, router
+- categories 테이블 api-v1과 DB 공유 (id, section, name, sort_order, is_active, created_at)
+
+### API
+- GET /api/v2/cms/{section}/categories → is_active=true, sort_order 정렬, 응답 { id, name, sortOrder }
+- 잘못된 section → 400 INVALID_SECTION (InvalidSectionException, core/exception.py)
+
+### 테스트
+- CategoryService 단위 테스트 (mock repository)
+- cms_router E2E 테스트 (TestClient)

@@ -74,6 +74,17 @@
 - 현재(개발 단계): DELETE /api/v2/ums/user/me → 레코드 하드 삭제 (UserService.withdraw). email 즉시 해제되어 재가입 가능 (api-v1과 동일)
 - 추후: soft delete(status=DELETED + deleted_date) 전환, 탈퇴 유저 login/validate 차단(USER_WITHDRAWN 403), 유예 후 PII 익명화/하드삭제 배치, 연관 데이터 비동기 정리, 조회 시 DELETED 필터링, email 재가입 정책
 
+## 커뮤니티 카테고리 (CMS)
+
+- 도메인: app/domain/cms (Section enum, Category 모델/조회) — api-v1 미러링
+- Section enum: TECH / INVEST / POLITICS (게시판=섹션, str Enum). 코드 결합이라 ENUM 유지
+- categories 테이블: id, section, name, sort_order, is_active, created_at (api-v1과 DB 공유, UNIQUE(section, name))
+- CategoryService.get_categories(section_path): Section.from_path로 검증(대소문자 무시), is_active=true, sort_order 정렬
+- 응답 CategoryResponse: { id, name, sortOrder } (sort_order serialization_alias)
+- 엔드포인트: GET /api/v2/cms/{section}/categories
+- 예외: InvalidSectionException (400, INVALID_SECTION) — core/exception.py
+- 카테고리는 어드민이 관리하는 콘텐츠(추후 CRUD), 프론트는 이 API로 섹션별 필터를 동적 렌더
+
 ## 테스트
 
 - 신규 기능 구현 시 모든 케이스(정상/예외/엣지)에 대해 테스트코드 작성

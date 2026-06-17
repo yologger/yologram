@@ -109,6 +109,17 @@
 - [ ] refresh token 테스트
 - [ ] Swagger 문서화
 
+## CMS - 커뮤니티 카테고리 (api-v1 미러링)
+
+- [x] Section enum (TECH / INVEST / POLITICS)
+- [x] Category 모델 (categories 테이블, api-v1과 공유)
+- [x] CategoryRepository (section별 활성 카테고리 sort_order 정렬 조회)
+- [x] CategoryService (section_path → Section.from_path 검증)
+- [x] GET /api/v2/cms/{section}/categories
+- [x] InvalidSectionException (400 INVALID_SECTION)
+- [x] 테스트 (service 4 + router 3)
+- [x] Swagger 문서화
+
 ## Admin - 유저 관리
 
 - [ ] GET /api/v2/ums/admin/users (유저 목록 조회)
