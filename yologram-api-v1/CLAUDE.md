@@ -64,6 +64,18 @@
 - 현재(개발 단계): DELETE /api/v1/ums/user/me → 레코드 하드 삭제 (UserService.withdraw). email 즉시 해제되어 재가입 가능
 - 추후: soft delete(status=DELETED + deletedDate) 전환, 탈퇴 유저 login/validate 차단(USER_WITHDRAWN 403), 유예 후 PII 익명화/하드삭제 배치, 연관 데이터 비동기 정리, 조회 시 DELETED 필터링, email 재가입 정책
 
+## 커뮤니티 카테고리 (CMS)
+
+- 도메인: domain/cms (Section enum, Category 엔티티/조회)
+- Section enum: TECH / INVEST / POLITICS (게시판=섹션, @Enumerated(STRING) VARCHAR(20)). 코드 결합이라 ENUM 유지
+- categories 테이블: id, section, name, sort_order, is_active, created_at, UNIQUE(section, name)
+- CategoryService.getCategories(sectionPath): Section.fromPath로 검증(대소문자 무시), isActive=true, sortOrder 정렬
+- 응답 CategoryResponse: { id, name, sortOrder }
+- 엔드포인트: GET /api/v1/cms/{section}/categories
+- 예외: InvalidSectionException (400, INVALID_SECTION) — CmsExceptionHandler
+- 카테고리는 어드민이 관리하는 콘텐츠(추후 CRUD), 프론트는 이 API로 섹션별 필터를 동적 렌더
+- 도메인 분리 전략(pms/cms/comment/count/news)·하이브리드 스키마 결정은 docs/brainstorm.md 참조
+
 ## 테스트
 
 - 신규 기능 구현 시 모든 케이스(정상/예외/엣지)에 대해 테스트코드 작성
