@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAtomValue } from 'jotai'
-import { techPostsAtom } from '../../stores/techCommunity'
+import { communityPostsAtom } from '../../stores/community'
 import PostCard from './community/PostCard'
 import ScrollToTopButton from '../../components/common/ScrollToTopButton'
 import FilterChips, { type ChipItem } from '../../components/common/FilterChips'
@@ -12,7 +12,7 @@ const PAGE_SIZE = 15
 
 export default function TechCommunityPage() {
   const navigate = useNavigate()
-  const posts = useAtomValue(techPostsAtom)
+  const posts = useAtomValue(communityPostsAtom)
   const { data: categories = [] } = useCategoriesQuery('tech')
   const [filter, setFilter] = useState<number | null>(null)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)

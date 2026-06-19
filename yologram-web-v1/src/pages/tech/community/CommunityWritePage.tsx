@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router'
 import { useSetAtom } from 'jotai'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { message } from 'antd'
-import { techPostsAtom } from '../../../stores/techCommunity'
-import type { CommunityPost } from '../../../types/techCommunity'
+import { communityPostsAtom } from '../../../stores/community'
+import type { CommunityPost } from '../../../types/community'
 import { MAX_POST_CATEGORIES } from '../../../constants/community'
 import MultiSelectChips from '../../../components/common/MultiSelectChips'
 import { type ChipItem } from '../../../components/common/FilterChips'
@@ -13,7 +13,7 @@ import styles from './CommunityWritePage.module.css'
 
 export default function CommunityWritePage() {
   const navigate = useNavigate()
-  const setPosts = useSetAtom(techPostsAtom)
+  const setPosts = useSetAtom(communityPostsAtom)
   const { data: categories = [] } = useCategoriesQuery('tech')
 
   const [title, setTitle] = useState('')

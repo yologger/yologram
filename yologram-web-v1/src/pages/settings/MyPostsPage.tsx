@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router'
 import { Typography } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useAtomValue } from 'jotai'
-import { techPostsAtom } from '../../stores/techCommunity'
-import type { CommunitySection } from '../../types/techCommunity'
+import { communityPostsAtom } from '../../stores/community'
+import type { CommunitySection } from '../../types/community'
 import FilterChips from '../../components/common/FilterChips'
 import PostCard from '../tech/community/PostCard'
 import useCategoriesQuery from '../../queries/useCategoriesQuery'
@@ -20,7 +20,7 @@ const SECTION_TABS: { label: string; section: CommunitySection }[] = [
 
 export default function MyPostsPage() {
   const navigate = useNavigate()
-  const posts = useAtomValue(techPostsAtom)
+  const posts = useAtomValue(communityPostsAtom)
   const [label, setLabel] = useState('기술')
 
   const section = SECTION_TABS.find((t) => t.label === label)!.section

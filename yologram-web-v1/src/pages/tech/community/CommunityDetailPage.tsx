@@ -11,15 +11,15 @@ import {
   RetweetOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons'
-import { techPostsAtom, techCommentsAtom } from '../../../stores/techCommunity'
-import type { CommunityComment } from '../../../types/techCommunity'
+import { communityPostsAtom, communityCommentsAtom } from '../../../stores/community'
+import type { CommunityComment } from '../../../types/community'
 import styles from './CommunityDetailPage.module.css'
 
 export default function CommunityDetailPage() {
   const { postId } = useParams()
   const navigate = useNavigate()
-  const [posts, setPosts] = useAtom(techPostsAtom)
-  const [comments, setComments] = useAtom(techCommentsAtom)
+  const [posts, setPosts] = useAtom(communityPostsAtom)
+  const [comments, setComments] = useAtom(communityCommentsAtom)
   const [text, setText] = useState('')
 
   const id = Number(postId)

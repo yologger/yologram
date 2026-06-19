@@ -1,5 +1,5 @@
 import { atom } from 'jotai'
-import type { CommunityPost, CommunityComment } from '../types/techCommunity'
+import type { CommunityPost, CommunityComment } from '../types/community'
 
 // 로컬 시드 기준 TECH 카테고리 id (categories 테이블 1~7)
 const TECH_CATEGORY_IDS = [1, 2, 3, 4, 5, 6, 7]
@@ -64,5 +64,5 @@ function seedComments(): CommunityComment[] {
   ]
 }
 
-export const techPostsAtom = atom<CommunityPost[]>(seedPosts())
-export const techCommentsAtom = atom<CommunityComment[]>(seedComments())
+export const communityPostsAtom = atom<CommunityPost[]>(seedPosts())
+export const communityCommentsAtom = atom<CommunityComment[]>(seedComments())

@@ -1,6 +1,6 @@
 import { Avatar } from 'antd'
 import { UserOutlined, HeartOutlined, MessageOutlined } from '@ant-design/icons'
-import type { CommunityPost } from '../../../types/techCommunity'
+import type { CommunityPost } from '../../../types/community'
 import styles from './PostCard.module.css'
 
 interface Props {
