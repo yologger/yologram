@@ -2,12 +2,14 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { message } from 'antd'
+import { App } from 'antd'
 import { join, type JoinRequest } from '../apis/auth'
 import { getErrorMessage } from '../lib/error'
 
 export default function useJoinMutation() {
   const router = useRouter()
+
+  const { message } = App.useApp()
 
   return useMutation({
     mutationFn: (request: JoinRequest) => join(request),

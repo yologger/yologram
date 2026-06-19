@@ -2,13 +2,15 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { message } from 'antd'
+import { App } from 'antd'
 import { updateProfile, type UpdateProfileRequest } from '@/apis/auth'
 import { getErrorMessage } from '@/lib/error'
 
 export default function useUpdateProfileMutation() {
   const router = useRouter()
   const queryClient = useQueryClient()
+
+  const { message } = App.useApp()
 
   return useMutation({
     mutationFn: (request: UpdateProfileRequest) => updateProfile(request),

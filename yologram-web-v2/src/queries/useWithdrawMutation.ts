@@ -1,11 +1,13 @@
 'use client'
 
 import { useMutation } from '@tanstack/react-query'
-import { message } from 'antd'
+import { App } from 'antd'
 import { withdraw } from '../apis/auth'
 import { getErrorMessage } from '../lib/error'
 
 export default function useWithdrawMutation() {
+  const { message } = App.useApp()
+
   return useMutation({
     mutationFn: () => withdraw(),
     onSuccess: () => {

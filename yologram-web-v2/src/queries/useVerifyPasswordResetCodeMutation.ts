@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation } from '@tanstack/react-query'
-import { message } from 'antd'
+import { App } from 'antd'
 import { verifyPasswordResetCode } from '../apis/auth'
 import { getErrorMessage } from '../lib/error'
 
@@ -11,6 +11,8 @@ interface VerifyVariables {
 }
 
 export default function useVerifyPasswordResetCodeMutation() {
+  const { message } = App.useApp()
+
   return useMutation({
     mutationFn: ({ email, code }: VerifyVariables) => verifyPasswordResetCode(email, code),
     onSuccess: () => {
