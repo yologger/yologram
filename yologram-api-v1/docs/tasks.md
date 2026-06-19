@@ -133,14 +133,16 @@
 
 ## PMS - 커뮤니티 게시글 작성 (2단계)
 
-- [ ] community_posts 테이블 DDL + 인덱스 (section, created_at)
-- [ ] post_categories 테이블 DDL
-- [ ] Post / PostCategory 엔티티 + 리포지토리
-- [ ] PostService.create (작성자=인증유저, categoryIds section 일치 검증, 최대 3개)
-- [ ] POST /api/v1/pms/{section}/posts 컨트롤러 (인증 필요)
-- [ ] 예외 처리 (카테고리 section 불일치, 내용 누락, 카테고리 개수 초과)
-- [ ] 테스트 (정상/미인증/section 불일치/내용 누락/카테고리 초과)
-- [ ] Swagger 문서화
+- [ ] community_posts 테이블 DDL + 인덱스 (section, created_at) (DB 직접 실행)
+- [ ] post_categories 테이블 DDL (DB 직접 실행)
+- [x] Post / PostCategory 엔티티 + 리포지토리 (FK 없는 인덱스 매핑)
+- [x] PostService.create (작성자=인증유저, categoryIds section 일치 검증, 최대 3개, 0개 허용)
+- [x] CategoryQueryClient 인터페이스 + LocalCategoryQueryClient (cms 경계 추상화, MSA 대비)
+- [x] POST /api/v1/pms/{section}/posts 컨트롤러 (인증 필요)
+- [x] 예외 처리 (카테고리 section 불일치 INVALID_CATEGORY, 잘못된 section INVALID_SECTION, 내용 누락/카테고리 초과 VALIDATION_ERROR)
+- [x] 인증 예외 전역 처리 (GlobalExceptionHandler, ums 외 도메인 대응)
+- [x] 테스트 (정상/미인증/section 불일치/내용 누락/카테고리 초과, 10개)
+- [x] Swagger 문서화
 
 ## PMS - 게시글 조회/상세 (3단계, 예정)
 

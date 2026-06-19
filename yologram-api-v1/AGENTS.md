@@ -36,6 +36,14 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - 도메인 domain/cms, GET /api/v1/cms/{section}/categories (section: TECH/INVEST/POLITICS)
 - categories 테이블, 잘못된 section → 400 INVALID_SECTION
 
+## 커뮤니티 게시글 (PMS)
+
+- 도메인 domain/pms, POST /api/v1/pms/{section}/posts (인증 필요, 단일 엔드포인트)
+- community_posts / post_categories(N:M), 경계 넘는 참조는 FK 없이 인덱스
+- CategoryQueryClient로 cms 카테고리 검증 추상화 (MSA 분리 대비)
+- 카테고리 section 불일치 → 400 INVALID_CATEGORY
+- @AuthenticatedUser 인증 예외는 GlobalExceptionHandler에서 전역 처리
+
 ## 빌드/배포
 
 - 빌드: ./gradlew build

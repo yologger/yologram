@@ -34,6 +34,7 @@
 - 설정: yologram.auth.jwt.secret/expire/issuer/audience (Parameter Store + application.yaml)
 - 인증 헤더: Authorization: Bearer {token}
 - @AuthenticatedUser + AuthenticatedUserResolver로 인증 정보 주입
+- @AuthenticatedUser 인증 예외(AuthToken*)는 GlobalExceptionHandler에서 전역 처리 (ums 외 도메인 컨트롤러에서도 401 보장)
 - access token은 stateless JWT (서버에 저장하지 않음). 로그아웃은 클라이언트가 토큰을 폐기하는 방식이며, 현재 서버측 강제 무효화는 불가
 - validate-token: JWT 서명/만료 검증 + 사용자 존재 확인
 - (추후) refresh token 도입 시 서버측 토큰 무효화도 함께 구현 (로그아웃 시 refresh token 폐기)
@@ -75,6 +76,18 @@
 - 예외: InvalidSectionException (400, INVALID_SECTION) — CmsExceptionHandler
 - 카테고리는 어드민이 관리하는 콘텐츠(추후 CRUD), 프론트는 이 API로 섹션별 필터를 동적 렌더
 - 도메인 분리 전략(pms/cms/comment/count/news)·하이브리드 스키마 결정은 docs/brainstorm.md 참조
+
+## 커뮤니티 게시글 (PMS)
+
+- 도메인: domain/pms (Post, PostCategory). 작성은 단일 엔드포인트 POST /api/v1/pms/{section}/posts (인증 필요)
+- community_posts (단일 + section): id, section, user_id, title, content, like_count, comment_count, created_at, modified_date / 인덱스 (section, created_at)
+- post_categories (N:M): post_id, category_id — 카테고리 필터 조회용. FK 제약 없이 인덱스만(경계 분리 대비)
+- 도메인 경계(ums user_id, cms category_id)를 넘는 참조는 FK 없이 컬럼+인덱스
+- PostService.create: 작성자=인증 유저(uid), categoryIds가 해당 section 활성 카테고리인지 검증(최대 3개, 0개 허용)
+- CategoryQueryClient 인터페이스로 cms 카테고리 검증 추상화 → 모놀리식은 LocalCategoryQueryClient(cms 리포지토리 직접), MSA 분리 시 HTTP 호출 구현으로 교체
+- 요청 { title?, content, categoryIds[] }, 응답 { id } (201)
+- 예외: InvalidCategoryException (400, INVALID_CATEGORY), 잘못된 section은 Section.fromPath의 InvalidSectionException (400) — PmsExceptionHandler
+- section별 전용 필드(투자 종목코드 등)는 추후 확장 테이블 + 동일 엔드포인트 body 확장으로 처리(엔드포인트 분리 X)
 
 ## 테스트
 

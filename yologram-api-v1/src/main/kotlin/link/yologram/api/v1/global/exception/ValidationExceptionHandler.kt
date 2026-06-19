@@ -62,6 +62,6 @@ class ValidationExceptionHandler {
     fun handle(e: HttpMessageNotReadableException): ResponseEntity<ErrorResponse> {
         logger.error { e.message }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(ErrorResponse(errorMessage = "Json parse error", errorCode = "VALIDATION_ERROR"))
+            .body(ErrorResponse(errorMessage = "요청 본문 형식이 올바르지 않습니다.", errorCode = "VALIDATION_ERROR"))
     }
 }

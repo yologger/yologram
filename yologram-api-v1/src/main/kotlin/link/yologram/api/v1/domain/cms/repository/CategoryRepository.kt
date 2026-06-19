@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface CategoryRepository : JpaRepository<Category, Long> {
     fun findBySectionAndIsActiveTrueOrderBySortOrderAsc(section: Section): List<Category>
+
+    fun countByIdInAndSectionAndIsActiveTrue(ids: Collection<Long>, section: Section): Long
 }

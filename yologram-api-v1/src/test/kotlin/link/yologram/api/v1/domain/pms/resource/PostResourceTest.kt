@@ -1,0 +1,136 @@
+package link.yologram.api.v1.domain.pms.resource
+
+import com.fasterxml.jackson.databind.ObjectMapper
+import link.yologram.api.v1.config.JwtProperties
+import link.yologram.api.v1.domain.cms.exception.CmsExceptionHandler
+import link.yologram.api.v1.domain.cms.exception.InvalidSectionException
+import link.yologram.api.v1.domain.pms.exception.InvalidCategoryException
+import link.yologram.api.v1.domain.pms.exception.PmsExceptionHandler
+import link.yologram.api.v1.domain.pms.model.CreatePostRequest
+import link.yologram.api.v1.domain.pms.model.CreatePostResponse
+import link.yologram.api.v1.domain.pms.service.PostService
+import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
+import link.yologram.api.v1.domain.ums.util.JwtUtil
+import link.yologram.api.v1.global.exception.GlobalExceptionHandler
+import link.yologram.api.v1.global.exception.ValidationExceptionHandler
+import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.whenever
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.context.annotation.Import
+import org.springframework.http.MediaType
+import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.post
+
+@WebMvcTest(PostResource::class)
+@Import(
+    PmsExceptionHandler::class,
+    CmsExceptionHandler::class,
+    ValidationExceptionHandler::class,
+    GlobalExceptionHandler::class,
+    AuthenticatedUserResolver::class,
+)
+class PostResourceTest {
+
+    @Autowired
+    lateinit var mockMvc: MockMvc
+
+    @Autowired
+    lateinit var objectMapper: ObjectMapper
+
+    @MockitoBean
+    lateinit var postService: PostService
+
+    @MockitoBean
+    lateinit var jwtUtil: JwtUtil
+
+    @MockitoBean
+    lateinit var jwtProperties: JwtProperties
+
+    @Test
+    fun `정상 작성 시 201과 게시글 id를 반환한다`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        whenever(postService.create(any(), any(), any())).thenReturn(CreatePostResponse(id = 10L))
+
+        mockMvc.post("/api/v1/pms/tech/posts") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(CreatePostRequest(content = "내용", categoryIds = listOf(1L)))
+        }.andExpect {
+            status { isCreated() }
+            jsonPath("$.data.id") { value(10) }
+        }
+    }
+
+    @Test
+    fun `Authorization 헤더 없으면 401 반환`() {
+        mockMvc.post("/api/v1/pms/tech/posts") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(CreatePostRequest(content = "내용"))
+        }.andExpect {
+            status { isUnauthorized() }
+            jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+        }
+    }
+
+    @Test
+    fun `내용 누락 시 400 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+        mockMvc.post("/api/v1/pms/tech/posts") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(mapOf("categoryIds" to listOf(1)))
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
+        }
+    }
+
+    @Test
+    fun `카테고리 4개 이상이면 400 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+        mockMvc.post("/api/v1/pms/tech/posts") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(CreatePostRequest(content = "내용", categoryIds = listOf(1L, 2L, 3L, 4L)))
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
+        }
+    }
+
+    @Test
+    fun `카테고리가 해당 section 것이 아니면 400 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        doThrow(InvalidCategoryException()).whenever(postService).create(any(), any(), any())
+
+        mockMvc.post("/api/v1/pms/tech/posts") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(CreatePostRequest(content = "내용", categoryIds = listOf(99L)))
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.errorCode") { value("INVALID_CATEGORY") }
+        }
+    }
+
+    @Test
+    fun `유효하지 않은 section이면 400 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        doThrow(InvalidSectionException()).whenever(postService).create(any(), any(), any())
+
+        mockMvc.post("/api/v1/pms/unknown/posts") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(CreatePostRequest(content = "내용"))
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.errorCode") { value("INVALID_SECTION") }
+        }
+    }
+}
