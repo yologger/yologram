@@ -2,15 +2,16 @@
 
 import { Avatar } from 'antd'
 import { UserOutlined, HeartOutlined, MessageOutlined } from '@ant-design/icons'
-import type { CommunityPost } from '@/types/techCommunity'
+import type { CommunityPost } from '@/types/community'
 import styles from './PostCard.module.css'
 
 interface Props {
   post: CommunityPost
+  categoryNames?: string[]
   onClick?: () => void
 }
 
-export default function PostCard({ post, onClick }: Props) {
+export default function PostCard({ post, categoryNames = [], onClick }: Props) {
   return (
     <div className={styles.card} onClick={onClick}>
       <div className={styles.head}>
@@ -20,9 +21,9 @@ export default function PostCard({ post, onClick }: Props) {
       </div>
       {post.title && <div className={styles.title}>{post.title}</div>}
       <div className={styles.content}>{post.content}</div>
-      {post.categories.length > 0 && (
+      {categoryNames.length > 0 && (
         <div className={styles.badges}>
-          {post.categories.map((c) => (
+          {categoryNames.map((c) => (
             <span key={c} className={styles.badge}>{c}</span>
           ))}
         </div>

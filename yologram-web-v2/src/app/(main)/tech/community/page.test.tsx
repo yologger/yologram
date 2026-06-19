@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterEach, afterAll } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/utils'
+import { server } from '../../../../test/server'
 import TechCommunity from './page'
 
 const mockPush = vi.fn()
@@ -10,6 +11,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 beforeAll(() => {
+  server.listen()
   vi.stubGlobal(
     'IntersectionObserver',
     class {
@@ -19,6 +21,8 @@ beforeAll(() => {
     },
   )
 })
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
 
 describe('TechCommunity 피드', () => {
   it('게시글 목록과 작성바가 렌더링된다', () => {
@@ -26,6 +30,15 @@ describe('TechCommunity 피드', () => {
 
     expect(screen.getAllByText('qld보다 이게 더 좋나요 음의복리도 없고 수익률도 더 높던데').length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: '기술 커뮤니티에 글을 남겨보세요' })).toBeInTheDocument()
+  })
+
+  it('API에서 받은 카테고리가 필터 칩으로 표시된다', async () => {
+    renderWithProviders(<TechCommunity />)
+
+    // Frontend는 필터 칩과 게시글 배지에 모두 나타남 (id→name 매핑) → findAllByText로 대기
+    expect((await screen.findAllByText('Frontend')).length).toBeGreaterThan(0)
+    expect(screen.getByText('전체')).toBeInTheDocument()
+    expect(screen.getAllByText('Backend').length).toBeGreaterThan(0)
   })
 
   it('작성바 클릭 시 글 작성 페이지로 이동한다', async () => {
