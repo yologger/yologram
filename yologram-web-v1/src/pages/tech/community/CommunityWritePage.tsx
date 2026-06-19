@@ -5,28 +5,33 @@ import { ArrowLeftOutlined } from '@ant-design/icons'
 import { message } from 'antd'
 import { techPostsAtom } from '../../../stores/techCommunity'
 import type { CommunityPost } from '../../../types/techCommunity'
-import { TECH_CATEGORIES, MAX_POST_CATEGORIES } from '../../../constants/techCategories'
+import { MAX_POST_CATEGORIES } from '../../../constants/community'
 import MultiSelectChips from '../../../components/common/MultiSelectChips'
+import { type ChipItem } from '../../../components/common/FilterChips'
+import useCategoriesQuery from '../../../queries/useCategoriesQuery'
 import styles from './CommunityWritePage.module.css'
 
 export default function CommunityWritePage() {
   const navigate = useNavigate()
   const setPosts = useSetAtom(techPostsAtom)
+  const { data: categories = [] } = useCategoriesQuery('tech')
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [categories, setCategories] = useState<string[]>([])
+  const [categoryIds, setCategoryIds] = useState<number[]>([])
 
   const canSubmit = content.trim().length > 0
 
-  const toggleCategory = (item: string) => {
-    setCategories((prev) => {
-      if (prev.includes(item)) return prev.filter((c) => c !== item)
+  const categoryItems: Array<ChipItem<number>> = categories.map((c) => ({ label: c.name, value: c.id }))
+
+  const toggleCategory = (id: number) => {
+    setCategoryIds((prev) => {
+      if (prev.includes(id)) return prev.filter((c) => c !== id)
       if (prev.length >= MAX_POST_CATEGORIES) {
         message.warning(`카테고리는 최대 ${MAX_POST_CATEGORIES}개까지 선택할 수 있어요.`)
         return prev
       }
-      return [...prev, item]
+      return [...prev, id]
     })
   }
 
@@ -34,12 +39,12 @@ export default function CommunityWritePage() {
     if (!canSubmit) return
     const newPost: CommunityPost = {
       id: Date.now(),
-      board: 'TECH',
+      section: 'TECH',
       author: '나',
       createdAt: '방금 전',
       title: title.trim() || undefined,
       content: content.trim(),
-      categories,
+      categoryIds,
       likeCount: 0,
       commentCount: 0,
       liked: false,
@@ -74,7 +79,7 @@ export default function CommunityWritePage() {
           onChange={(e) => setContent(e.target.value)}
         />
         <div className={styles.categoryLabel}>카테고리 (최대 {MAX_POST_CATEGORIES}개)</div>
-        <MultiSelectChips items={TECH_CATEGORIES} selected={categories} onToggle={toggleCategory} />
+        <MultiSelectChips items={categoryItems} selected={categoryIds} onToggle={toggleCategory} />
       </div>
 
       <div className={styles.toolbar}>

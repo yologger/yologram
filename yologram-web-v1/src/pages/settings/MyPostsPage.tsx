@@ -1,20 +1,21 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Typography } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useAtomValue } from 'jotai'
 import { techPostsAtom } from '../../stores/techCommunity'
-import type { CommunityBoard } from '../../types/techCommunity'
+import type { CommunitySection } from '../../types/techCommunity'
 import FilterChips from '../../components/common/FilterChips'
 import PostCard from '../tech/community/PostCard'
+import useCategoriesQuery from '../../queries/useCategoriesQuery'
 import styles from './MyPostsPage.module.css'
 
 const { Title } = Typography
 
-const BOARD_TABS: { label: string; board: CommunityBoard }[] = [
-  { label: '기술', board: 'TECH' },
-  { label: '투자', board: 'INVEST' },
-  { label: '정치', board: 'POLITICS' },
+const SECTION_TABS: { label: string; section: CommunitySection }[] = [
+  { label: '기술', section: 'TECH' },
+  { label: '투자', section: 'INVEST' },
+  { label: '정치', section: 'POLITICS' },
 ]
 
 export default function MyPostsPage() {
@@ -22,8 +23,11 @@ export default function MyPostsPage() {
   const posts = useAtomValue(techPostsAtom)
   const [label, setLabel] = useState('기술')
 
-  const board = BOARD_TABS.find((t) => t.label === label)!.board
-  const myPosts = posts.filter((p) => p.author === '나' && p.board === board)
+  const section = SECTION_TABS.find((t) => t.label === label)!.section
+  const myPosts = posts.filter((p) => p.author === '나' && p.section === section)
+
+  const { data: categories = [] } = useCategoriesQuery(section.toLowerCase())
+  const nameById = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories])
 
   return (
     <div className={styles.container}>
@@ -35,7 +39,7 @@ export default function MyPostsPage() {
       </div>
 
       <div className={styles.body}>
-        <FilterChips items={BOARD_TABS.map((t) => t.label)} selected={label} onChange={setLabel} />
+        <FilterChips items={SECTION_TABS.map((t) => t.label)} selected={label} onChange={setLabel} />
         {myPosts.length === 0 ? (
           <div className={styles.empty}>작성한 글이 없어요</div>
         ) : (
@@ -43,7 +47,8 @@ export default function MyPostsPage() {
             <PostCard
               key={post.id}
               post={post}
-              onClick={board === 'TECH' ? () => navigate(`/tech/community/${post.id}`) : undefined}
+              categoryNames={post.categoryIds.map((id) => nameById.get(id)).filter((n): n is string => !!n)}
+              onClick={section === 'TECH' ? () => navigate(`/tech/community/${post.id}`) : undefined}
             />
           ))
         )}

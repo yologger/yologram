@@ -216,4 +216,32 @@ export const handlers = [
 
     return new HttpResponse(null, { status: 204 })
   }),
+
+  http.get('http://localhost:5001/api/v1/cms/:section/categories', ({ params }) => {
+    const section = String(params.section).toUpperCase()
+    const categories: Record<string, { id: number; name: string; sortOrder: number }[]> = {
+      TECH: [
+        { id: 1, name: 'Frontend', sortOrder: 1 },
+        { id: 2, name: 'Backend', sortOrder: 2 },
+        { id: 3, name: 'AI/ML', sortOrder: 3 },
+      ],
+      INVEST: [
+        { id: 8, name: '국내주식', sortOrder: 1 },
+        { id: 9, name: '해외주식', sortOrder: 2 },
+      ],
+      POLITICS: [
+        { id: 14, name: '국내정치', sortOrder: 1 },
+        { id: 16, name: '정책', sortOrder: 3 },
+      ],
+    }
+
+    if (!categories[section]) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 섹션입니다.', errorCode: 'INVALID_SECTION' },
+        { status: 400 },
+      )
+    }
+
+    return HttpResponse.json({ data: categories[section] })
+  }),
 ]

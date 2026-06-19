@@ -1,6 +1,8 @@
 import { atom } from 'jotai'
 import type { CommunityPost, CommunityComment } from '../types/techCommunity'
-import { TECH_CATEGORIES } from '../constants/techCategories'
+
+// 로컬 시드 기준 TECH 카테고리 id (categories 테이블 1~7)
+const TECH_CATEGORY_IDS = [1, 2, 3, 4, 5, 6, 7]
 
 // 더미 닉네임/내용 풀로 시드 게시글 생성 (UI 확인용)
 const NICKNAMES = [
@@ -19,30 +21,31 @@ const CONTENTS = [
   '기술주 조정 올 때마다 줍줍 중입니다',
 ]
 
-function seedCategories(i: number): string[] {
-  const start = i % TECH_CATEGORIES.length
+function seedCategoryIds(i: number): number[] {
+  const start = i % TECH_CATEGORY_IDS.length
   const count = (i % 3) + 1
-  return Array.from({ length: count }, (_, k) => TECH_CATEGORIES[(start + k) % TECH_CATEGORIES.length])
+  return Array.from({ length: count }, (_, k) => TECH_CATEGORY_IDS[(start + k) % TECH_CATEGORY_IDS.length])
 }
 
 function seedPosts(): CommunityPost[] {
   const posts: CommunityPost[] = Array.from({ length: 60 }, (_, i) => ({
     id: 1000 - i,
-    board: 'TECH' as const,
+    section: 'TECH' as const,
     author: NICKNAMES[i % NICKNAMES.length],
     createdAt: `${(i % 23) + 1}시간 전`,
     content: CONTENTS[i % CONTENTS.length],
-    categories: seedCategories(i),
+    categoryIds: seedCategoryIds(i),
     likeCount: (i * 7) % 50,
     commentCount: (i * 3) % 12,
     liked: false,
   }))
 
   // "내가 쓴 커뮤니티 글" 데모용 (author='나', 게시판별)
+  // categoryIds는 로컬 시드 기준 (TECH 1~7, INVEST 8~13, POLITICS 14~18)
   const mine: CommunityPost[] = [
-    { id: 2001, board: 'TECH', author: '나', createdAt: '1일 전', content: 'Next.js App Router 전환 후기 공유합니다', categories: ['Frontend'], likeCount: 3, commentCount: 1, liked: false },
-    { id: 2002, board: 'INVEST', author: '나', createdAt: '2일 전', content: '해외주식 분할매수 전략 어떻게들 하시나요', categories: [], likeCount: 5, commentCount: 2, liked: false },
-    { id: 2003, board: 'POLITICS', author: '나', createdAt: '3일 전', content: '이번 정책 토론 정리해봤습니다', categories: [], likeCount: 1, commentCount: 0, liked: false },
+    { id: 2001, section: 'TECH', author: '나', createdAt: '1일 전', content: 'Next.js App Router 전환 후기 공유합니다', categoryIds: [1], likeCount: 3, commentCount: 1, liked: false },
+    { id: 2002, section: 'INVEST', author: '나', createdAt: '2일 전', content: '해외주식 분할매수 전략 어떻게들 하시나요', categoryIds: [9], likeCount: 5, commentCount: 2, liked: false },
+    { id: 2003, section: 'POLITICS', author: '나', createdAt: '3일 전', content: '이번 정책 토론 정리해봤습니다', categoryIds: [16], likeCount: 1, commentCount: 0, liked: false },
   ]
 
   return [...posts, ...mine]

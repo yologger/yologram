@@ -1,13 +1,13 @@
-export type CommunityBoard = 'TECH' | 'INVEST' | 'POLITICS'
+export type CommunitySection = 'TECH' | 'INVEST' | 'POLITICS'
 
 export interface CommunityPost {
   id: number
-  board: CommunityBoard
+  section: CommunitySection
   author: string
   createdAt: string
   title?: string
   content: string
-  categories: string[]
+  categoryIds: number[]
   likeCount: number
   commentCount: number
   liked: boolean
