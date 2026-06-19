@@ -244,4 +244,23 @@ export const handlers = [
 
     return HttpResponse.json({ data: categories[section] })
   }),
+
+  http.post('http://localhost:5002/api/v2/pms/:section/posts', async ({ request }) => {
+    const body = await request.json() as { content?: string; categoryIds?: number[] }
+
+    if (!body.content || body.content.trim().length === 0) {
+      return HttpResponse.json(
+        { errorMessage: '내용을 입력해주세요.', errorCode: 'VALIDATION_ERROR' },
+        { status: 400 },
+      )
+    }
+    if (!body.categoryIds || body.categoryIds.length < 1 || body.categoryIds.length > 3) {
+      return HttpResponse.json(
+        { errorMessage: '카테고리는 1~3개 선택해주세요.', errorCode: 'VALIDATION_ERROR' },
+        { status: 400 },
+      )
+    }
+
+    return HttpResponse.json({ data: { id: 9999 } }, { status: 201 })
+  }),
 ]

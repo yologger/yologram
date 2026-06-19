@@ -4,13 +4,15 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSetAtom } from 'jotai'
 import { ArrowLeftOutlined } from '@ant-design/icons'
-import { App } from 'antd'
+import { App, Button } from 'antd'
 import { communityPostsAtom } from '@/stores/community'
 import type { CommunityPost } from '@/types/community'
 import { MAX_POST_CATEGORIES } from '@/constants/community'
 import MultiSelectChips from '@/components/common/MultiSelectChips'
 import { type ChipItem } from '@/components/common/FilterChips'
 import useCategoriesQuery from '@/queries/useCategoriesQuery'
+import useCreatePostMutation from '@/queries/useCreatePostMutation'
+import RequireAuth from '@/components/auth/RequireAuth'
 import styles from './CommunityWrite.module.css'
 
 export default function CommunityWrite() {
@@ -18,12 +20,13 @@ export default function CommunityWrite() {
   const { message } = App.useApp()
   const setPosts = useSetAtom(communityPostsAtom)
   const { data: categories = [] } = useCategoriesQuery('tech')
+  const { mutate: createPost, isPending } = useCreatePostMutation()
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [categoryIds, setCategoryIds] = useState<number[]>([])
 
-  const canSubmit = content.trim().length > 0
+  const canSubmit = content.trim().length > 0 && categoryIds.length > 0
 
   const categoryItems: Array<ChipItem<number>> = categories.map((c) => ({ label: c.name, value: c.id }))
 
@@ -40,57 +43,80 @@ export default function CommunityWrite() {
 
   const handleSubmit = () => {
     if (!canSubmit) return
-    const newPost: CommunityPost = {
-      id: Date.now(),
-      section: 'TECH',
-      author: '나',
-      createdAt: '방금 전',
-      title: title.trim() || undefined,
-      content: content.trim(),
-      categoryIds,
-      likeCount: 0,
-      commentCount: 0,
-      liked: false,
-    }
-    setPosts((prev) => [newPost, ...prev])
-    message.success('글이 등록되었습니다.')
-    router.push('/tech/community')
+
+    const trimmedTitle = title.trim() || undefined
+    const trimmedContent = content.trim()
+
+    createPost(
+      { section: 'tech', request: { title: trimmedTitle, content: trimmedContent, categoryIds } },
+      {
+        onSuccess: (res) => {
+          // 작성 직후 피드에 보이도록 낙관적 추가 (조회 API 연동 전까지 임시)
+          const newPost: CommunityPost = {
+            id: res.id,
+            section: 'TECH',
+            author: '나',
+            createdAt: '방금 전',
+            title: trimmedTitle,
+            content: trimmedContent,
+            categoryIds,
+            likeCount: 0,
+            commentCount: 0,
+            liked: false,
+          }
+          setPosts((prev) => [newPost, ...prev])
+          message.success('글이 등록되었습니다.')
+          router.push('/tech/community')
+        },
+        onError: () => {
+          message.error('글 등록에 실패했어요. 잠시 후 다시 시도해주세요.')
+        },
+      },
+    )
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <button className={styles.back} aria-label="뒤로" onClick={() => router.push('/tech/community')}>
-          <ArrowLeftOutlined />
-        </button>
-        <button className={styles.submit} disabled={!canSubmit} onClick={handleSubmit}>
-          남기기
-        </button>
-      </div>
+    <RequireAuth>
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <button className={styles.back} aria-label="뒤로" onClick={() => router.push('/tech/community')}>
+            <ArrowLeftOutlined />
+          </button>
+          <Button
+            type="link"
+            className={styles.submit}
+            loading={isPending}
+            disabled={!canSubmit}
+            onClick={handleSubmit}
+          >
+            남기기
+          </Button>
+        </div>
 
-      <div className={styles.body}>
-        <input
-          className={styles.titleInput}
-          placeholder="제목을 입력해주세요 (선택)"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <textarea
-          className={styles.contentInput}
-          placeholder="광고, 비난, 도배성 글을 남기면 활동이 제한될 수 있어요. 건강한 커뮤니티 문화를 함께 만들어가요."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-        />
-        <div className={styles.categoryLabel}>카테고리 (최대 {MAX_POST_CATEGORIES}개)</div>
-        <MultiSelectChips items={categoryItems} selected={categoryIds} onToggle={toggleCategory} />
-      </div>
+        <div className={styles.body}>
+          <input
+            className={styles.titleInput}
+            placeholder="제목을 입력해주세요 (선택)"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <textarea
+            className={styles.contentInput}
+            placeholder="광고, 비난, 도배성 글을 남기면 활동이 제한될 수 있어요. 건강한 커뮤니티 문화를 함께 만들어가요."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+          />
+          <div className={styles.categoryLabel}>카테고리 (1~{MAX_POST_CATEGORIES}개 선택)</div>
+          <MultiSelectChips items={categoryItems} selected={categoryIds} onToggle={toggleCategory} />
+        </div>
 
-      <div className={styles.toolbar}>
-        <span className={styles.toolbarItem}>GIF</span>
-        <span className={styles.toolbarItem}>사진</span>
-        <span className={styles.toolbarItem}>투표</span>
-        <span className={styles.toolbarItem}>태그</span>
+        <div className={styles.toolbar}>
+          <span className={styles.toolbarItem}>GIF</span>
+          <span className={styles.toolbarItem}>사진</span>
+          <span className={styles.toolbarItem}>투표</span>
+          <span className={styles.toolbarItem}>태그</span>
+        </div>
       </div>
-    </div>
+    </RequireAuth>
   )
 }
