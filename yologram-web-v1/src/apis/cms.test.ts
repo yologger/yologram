@@ -14,6 +14,7 @@ describe('getCategories', () => {
       { id: 1, name: 'Frontend', sortOrder: 1 },
       { id: 2, name: 'Backend', sortOrder: 2 },
       { id: 3, name: 'AI/ML', sortOrder: 3 },
+      { id: 7, name: '기타', sortOrder: 7 },
     ])
   })
 

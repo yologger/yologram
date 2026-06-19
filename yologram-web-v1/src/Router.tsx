@@ -33,7 +33,9 @@ export default function Router() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/join" element={<JoinPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/tech/community/write" element={<CommunityWritePage />} />
+      <Route element={<RequireAuth />}>
+        <Route path="/tech/community/write" element={<CommunityWritePage />} />
+      </Route>
       <Route path="/tech/community/:postId" element={<CommunityDetailPage />} />
       <Route element={<ResponsiveLayout />}>
         <Route path="/" element={<Navigate to="/tech" replace />} />

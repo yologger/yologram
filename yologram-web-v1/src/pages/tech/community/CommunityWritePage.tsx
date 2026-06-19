@@ -2,25 +2,27 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useSetAtom } from 'jotai'
 import { ArrowLeftOutlined } from '@ant-design/icons'
-import { message } from 'antd'
+import { Button, message } from 'antd'
 import { communityPostsAtom } from '../../../stores/community'
 import type { CommunityPost } from '../../../types/community'
 import { MAX_POST_CATEGORIES } from '../../../constants/community'
 import MultiSelectChips from '../../../components/common/MultiSelectChips'
 import { type ChipItem } from '../../../components/common/FilterChips'
 import useCategoriesQuery from '../../../queries/useCategoriesQuery'
+import useCreatePostMutation from '../../../queries/useCreatePostMutation'
 import styles from './CommunityWritePage.module.css'
 
 export default function CommunityWritePage() {
   const navigate = useNavigate()
   const setPosts = useSetAtom(communityPostsAtom)
   const { data: categories = [] } = useCategoriesQuery('tech')
+  const { mutate: createPost, isPending } = useCreatePostMutation()
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [categoryIds, setCategoryIds] = useState<number[]>([])
 
-  const canSubmit = content.trim().length > 0
+  const canSubmit = content.trim().length > 0 && categoryIds.length > 0
 
   const categoryItems: Array<ChipItem<number>> = categories.map((c) => ({ label: c.name, value: c.id }))
 
@@ -37,21 +39,36 @@ export default function CommunityWritePage() {
 
   const handleSubmit = () => {
     if (!canSubmit) return
-    const newPost: CommunityPost = {
-      id: Date.now(),
-      section: 'TECH',
-      author: '나',
-      createdAt: '방금 전',
-      title: title.trim() || undefined,
-      content: content.trim(),
-      categoryIds,
-      likeCount: 0,
-      commentCount: 0,
-      liked: false,
-    }
-    setPosts((prev) => [newPost, ...prev])
-    message.success('글이 등록되었습니다.')
-    navigate('/tech/community')
+
+    const trimmedTitle = title.trim() || undefined
+    const trimmedContent = content.trim()
+
+    createPost(
+      { section: 'tech', request: { title: trimmedTitle, content: trimmedContent, categoryIds } },
+      {
+        onSuccess: (res) => {
+          // 작성 직후 피드에 보이도록 낙관적 추가 (조회 API 연동 전까지 임시)
+          const newPost: CommunityPost = {
+            id: res.id,
+            section: 'TECH',
+            author: '나',
+            createdAt: '방금 전',
+            title: trimmedTitle,
+            content: trimmedContent,
+            categoryIds,
+            likeCount: 0,
+            commentCount: 0,
+            liked: false,
+          }
+          setPosts((prev) => [newPost, ...prev])
+          message.success('글이 등록되었습니다.')
+          navigate('/tech/community')
+        },
+        onError: () => {
+          message.error('글 등록에 실패했어요. 잠시 후 다시 시도해주세요.')
+        },
+      },
+    )
   }
 
   return (
@@ -60,9 +77,15 @@ export default function CommunityWritePage() {
         <button className={styles.back} aria-label="뒤로" onClick={() => navigate('/tech/community')}>
           <ArrowLeftOutlined />
         </button>
-        <button className={styles.submit} disabled={!canSubmit} onClick={handleSubmit}>
+        <Button
+          type="link"
+          className={styles.submit}
+          loading={isPending}
+          disabled={!canSubmit}
+          onClick={handleSubmit}
+        >
           남기기
-        </button>
+        </Button>
       </div>
 
       <div className={styles.body}>
@@ -78,7 +101,7 @@ export default function CommunityWritePage() {
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
-        <div className={styles.categoryLabel}>카테고리 (최대 {MAX_POST_CATEGORIES}개)</div>
+        <div className={styles.categoryLabel}>카테고리 (1~{MAX_POST_CATEGORIES}개 선택)</div>
         <MultiSelectChips items={categoryItems} selected={categoryIds} onToggle={toggleCategory} />
       </div>
 
