@@ -90,7 +90,7 @@
 
 - 도메인: app/domain/pms (Post, PostCategory). 작성은 단일 엔드포인트 POST /api/v2/pms/{section}/posts (인증 필요) — api-v1 미러링
 - community_posts / post_categories(N:M) (api-v1과 DB 공유). 경계 넘는 참조(user_id, category_id)는 FK 없이 인덱스
-- PostService.create: 작성자=인증 유저(uid), categoryIds가 해당 section 활성 카테고리인지 검증 (1~3개 필수, 미선택 시 프론트가 '기타' 자동 지정 예정)
+- PostService.create: 작성자=인증 유저(uid), categoryIds가 해당 section 활성 카테고리인지 검증 (1~3개 필수). 프론트에서도 카테고리 1개 이상 선택해야 작성 가능(미선택 시 버튼 비활성)
 - CategoryQueryClient(Protocol) + LocalCategoryQueryClient로 cms 카테고리 검증 추상화 → 모놀리식은 cms 리포지토리 직접, MSA 분리 시 HTTP 호출 구현으로 교체
 - 요청 { title?, content, categoryIds[] }, 응답 { id } (201)
 - 예외: InvalidCategoryException (400, INVALID_CATEGORY), 잘못된 section은 Section.from_path의 InvalidSectionException (400)
