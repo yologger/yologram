@@ -83,7 +83,7 @@
 - community_posts (단일 + section): id, section, user_id, title, content, like_count, comment_count, created_at, modified_date / 인덱스 (section, created_at)
 - post_categories (N:M): post_id, category_id — 카테고리 필터 조회용. FK 제약 없이 인덱스만(경계 분리 대비)
 - 도메인 경계(ums user_id, cms category_id)를 넘는 참조는 FK 없이 컬럼+인덱스
-- PostService.create: 작성자=인증 유저(uid), categoryIds가 해당 section 활성 카테고리인지 검증(최대 3개, 0개 허용)
+- PostService.create: 작성자=인증 유저(uid), categoryIds가 해당 section 활성 카테고리인지 검증(1~3개 필수, 미선택 시 프론트가 '기타' 자동 지정 예정)
 - CategoryQueryClient 인터페이스로 cms 카테고리 검증 추상화 → 모놀리식은 LocalCategoryQueryClient(cms 리포지토리 직접), MSA 분리 시 HTTP 호출 구현으로 교체
 - 요청 { title?, content, categoryIds[] }, 응답 { id } (201)
 - 예외: InvalidCategoryException (400, INVALID_CATEGORY), 잘못된 section은 Section.fromPath의 InvalidSectionException (400) — PmsExceptionHandler

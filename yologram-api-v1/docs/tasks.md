@@ -136,7 +136,7 @@
 - [ ] community_posts 테이블 DDL + 인덱스 (section, created_at) (DB 직접 실행)
 - [ ] post_categories 테이블 DDL (DB 직접 실행)
 - [x] Post / PostCategory 엔티티 + 리포지토리 (FK 없는 인덱스 매핑)
-- [x] PostService.create (작성자=인증유저, categoryIds section 일치 검증, 최대 3개, 0개 허용)
+- [x] PostService.create (작성자=인증유저, categoryIds section 일치 검증, 1~3개 필수)
 - [x] CategoryQueryClient 인터페이스 + LocalCategoryQueryClient (cms 경계 추상화, MSA 대비)
 - [x] POST /api/v1/pms/{section}/posts 컨트롤러 (인증 필요)
 - [x] 예외 처리 (카테고리 section 불일치 INVALID_CATEGORY, 잘못된 section INVALID_SECTION, 내용 누락/카테고리 초과 VALIDATION_ERROR)

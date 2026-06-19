@@ -91,6 +91,20 @@ class PostResourceTest {
     }
 
     @Test
+    fun `카테고리 미선택(빈 배열) 시 400 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+        mockMvc.post("/api/v1/pms/tech/posts") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(CreatePostRequest(content = "내용", categoryIds = emptyList()))
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
+        }
+    }
+
+    @Test
     fun `카테고리 4개 이상이면 400 반환`() {
         whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
 
@@ -127,7 +141,7 @@ class PostResourceTest {
         mockMvc.post("/api/v1/pms/unknown/posts") {
             header("Authorization", "Bearer valid-token")
             contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(CreatePostRequest(content = "내용"))
+            content = objectMapper.writeValueAsString(CreatePostRequest(content = "내용", categoryIds = listOf(1L)))
         }.andExpect {
             status { isBadRequest() }
             jsonPath("$.errorCode") { value("INVALID_SECTION") }

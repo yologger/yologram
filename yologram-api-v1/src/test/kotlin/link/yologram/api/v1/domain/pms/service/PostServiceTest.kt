@@ -55,17 +55,6 @@ class PostServiceTest {
         }
 
         @Test
-        fun `카테고리가 비어도 작성된다`() {
-            whenever(categoryQueryClient.allActiveInSection(Section.TECH, emptySet())).thenReturn(true)
-            whenever(postRepository.save(any<Post>())).thenReturn(savedPost(11L))
-
-            val result = postService.create("tech", 1L, CreatePostRequest(content = "내용", categoryIds = emptyList()))
-
-            assertEquals(11L, result.id)
-            verify(postCategoryRepository, never()).save(any<PostCategory>())
-        }
-
-        @Test
         fun `카테고리가 해당 section 것이 아니면 InvalidCategoryException을 던진다`() {
             whenever(categoryQueryClient.allActiveInSection(Section.TECH, setOf(99L))).thenReturn(false)
 
