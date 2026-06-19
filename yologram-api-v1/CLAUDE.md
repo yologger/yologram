@@ -4,7 +4,7 @@
 
 - Spring Boot 3.5 (Kotlin), Java 17
 - Gradle (Kotlin DSL)
-- Spring Data JPA + QueryDSL (ORM + 복잡 쿼리)
+- Spring Data JPA + QueryDSL (ORM + 복잡 쿼리). 조금이라도 복잡한 쿼리는 QueryDSL 우선 (스터디 목적)
 - MySQL (RDS) + Testcontainers (테스트)
 - R/W splitting (MasterSlaveRoutingDataSource)
 - BCryptPasswordEncoder (비밀번호 해싱)

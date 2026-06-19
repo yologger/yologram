@@ -15,6 +15,7 @@
 - ECS Fargate: api-v1(5000), api-v2(5000), web-v2(3000)
 - API Gateway: api.yologram.link → /api/v1/{proxy+}는 api-v1, /api/v2/{proxy+}는 api-v2, /{proxy+}는 web-v2
 - web-v1: S3 + CloudFront
+- 검색: OpenSearch (추후 도입 예정)
 
 ## CI/CD
 

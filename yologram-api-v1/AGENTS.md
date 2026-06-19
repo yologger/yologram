@@ -16,6 +16,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - Kotlin 코드 스타일
 - 로깅: kotlin-logging-jvm (io.github.oshai)
 - 설정값: AWS Parameter Store에서 Spring property로 주입
+- 조금이라도 복잡한 쿼리는 QueryDSL 우선 (스터디 목적)
 
 ## 비밀번호 찾기
 
