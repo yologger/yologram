@@ -126,3 +126,43 @@
 
 - like_count, comment_count는 현재 community_posts 컬럼으로 동기 보관. /api/v1/count 경로는 예약만, 추후 count 서비스로 이관
 - 댓글은 comment 도메인 예정(/api/v1/comments). community_comments.post_id는 FK 없이 인덱스 컬럼 + app-level 검증(분리 대비)
+
+## 검색 시스템 (search, 추후 도입)
+
+번개장터 구조(bun-search-api-v2: OpenSearch 검색 API, bun-search-indexer: 인덱싱 워커) 참고. search api 구현 시 이 내용을 다시 검토.
+
+### 프론트의 pms vs search 호출 기준 (번개장터 관찰 규칙)
+- pms 호출: 단건 정확 조회(id로 1건), 쓰기(작성/수정/삭제/상태변경), "내 것"(개인화+권한 필요) 목록(예: 내 글/찜)
+- search 호출: 공개 다건 탐색(키워드 검색, 카테고리/섹션별 목록), 필터·정렬·집계, 자동완성·인기검색어
+- 한 문장: "특정 1건을 정확히 보거나 / 쓰거나 / 내 것" → pms, "여러 건을 검색·필터·정렬해서 발견" → search
+- 같은 화면 패턴: 검색 결과 목록 = search, 항목 클릭 후 상세 = pms (출처가 다름)
+- 구분 방식: 단일 게이트웨이 + 경로 prefix (/api/.../pms vs /api/.../search)
+
+### 구조: CQRS (쓰기 모델 / 읽기 모델 분리)
+- pms = 쓰기 원본(Source of Truth, MySQL). 권한 검증·개인화 담당
+- search = 읽기 최적화(OpenSearch 인덱스). 검색·필터·정렬·집계 전용(읽기 전용)
+- 동기화: pms 쓰기 → 변경 이벤트(SQS/Kinesis 등) → indexer가 받아 MySQL에서 상세 읽어 문서 변환 → OpenSearch 인덱싱 → search-api가 읽음. 실시간이되 최종 일관성(약간 지연)
+- count 이벤트화(좋아요/조회수)와 같은 결의 이벤트 파이프라인
+
+### yologram 적용 방향
+- 현재 pms 유지: 게시글 작성/수정/삭제·단건 상세, 내 글 목록(개인화+권한)
+- 추후 search로 이관: 섹션 피드(공개 목록), 카테고리 필터, 키워드 검색 — 번개장터처럼 "공개 다건 탐색"은 search로 모음
+- 개인화+권한 다건(내 글/저장한 글)은 pms 유지(번개 my-shop 방식)
+- 단계 전략: 초기엔 pms 목록 API(cursor 페이지네이션)로 시작 → 검색·복잡 필터·대량 트래픽이 실제로 필요해질 때 OpenSearch + indexer 도입(YAGNI). 단일 테이블 + (section, created_at) 인덱스로 충분한 단계는 pms가 처리
+- 별도 서비스 예정(yologram-search-api, yologram-search-indexer), 경로 /api/v1/search/... 또는 게이트웨이 분기
+
+### QueryDSL vs search 역할 구분 (혼동 주의)
+- 둘 다 "복잡 조회"지만 복잡함의 축이 다름:
+  - QueryDSL(pms, RDB): 관계형 복잡성 — 동적 조건(WHERE 조합), 다중 조인, projection(필요 필드만), 조건부 정렬, 페이지네이션, 벌크 update. uid·권한으로 한정된 "내 것/정확" 조회.
+  - search(OpenSearch): 탐색 복잡성 — 풀텍스트(형태소·유사어), 연관도 점수 정렬, 패싯 집계. 공개 카탈로그를 "발견".
+- 같은 다건·필터라도: 공개 카탈로그 탐색은 search, uid/권한으로 한정된 내 데이터 정밀 조회는 pms+QueryDSL (번개장터: 내 상품/내 찜은 QueryDSL, 공개 상품 검색은 search)
+
+### api-v1에서 QueryDSL을 쓰는 기준
+- 단순 단건·고정 조건(findBy/existsBy)·기본 CRUD → Spring Data JpaRepository로 충분
+- 다음 중 하나라도 해당하면 QueryDSL custom repository 사용:
+  1. 동적 조건 — 선택적 필터(있을 수도 없을 수도)를 런타임에 조합 (BooleanBuilder/BooleanExpression)
+  2. 다중 조인 — 2개 이상 엔티티 조인
+  3. projection — 엔티티 전체가 아니라 필요한 컬럼만 DTO로 select
+  4. 조건부 정렬 / cursor·offset 페이지네이션
+  5. 벌크 update·delete (조건부 여러 행 변경)
+- yologram 예: "내 글 목록"(section·작성자 필터 + 카테고리 조인 + cursor 페이지네이션) = pms + QueryDSL / 공개 섹션 피드·키워드 검색 = search

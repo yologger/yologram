@@ -164,6 +164,15 @@
 - [ ] 좋아요 토글 (/api/v1/count/... 경로 예약, 현재 community_posts 컬럼 동기 보관)
 - [ ] 분리 시 이벤트 기반 카운트 이관
 
+## Search - 검색 시스템 (추후 도입, 번개장터 구조 참고)
+
+- [ ] 도입 시점 판단: 단순 목록은 pms cursor 페이지네이션으로 시작, 검색·복잡 필터·대량 트래픽 필요 시 도입 (YAGNI)
+- [ ] OpenSearch 인덱스 설계 (게시글 문서 매핑: section, 카테고리, 작성자, 본문, 카운트 등)
+- [ ] 검색 인덱서(yologram-search-indexer): pms 게시글 변경 이벤트(SQS/Kinesis) → OpenSearch 동기화 (최종 일관성)
+- [ ] 검색 API(yologram-search-api): 키워드/카테고리/섹션 검색·필터·정렬·집계 (읽기 전용)
+- [ ] 프론트 이관: 공개 다건 탐색(섹션 피드/검색/필터)을 search로 (단건 상세·쓰기·내 글은 pms 유지)
+- [ ] 호출 기준·CQRS 파이프라인은 docs/brainstorm.md "검색 시스템" 참조
+
 ## Admin - 커뮤니티 카테고리 관리 (예정)
 
 - [ ] POST/DELETE/GET /api/v1/cms/admin/{section}/categories (어드민 권한)
