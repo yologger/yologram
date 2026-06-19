@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import { message } from 'antd'
+import { App } from 'antd'
 import { confirmPasswordReset } from '../apis/auth'
 import { getErrorMessage } from '../lib/error'
 
@@ -12,6 +12,8 @@ interface ConfirmVariables {
 
 export default function useConfirmPasswordResetMutation() {
   const navigate = useNavigate()
+
+  const { message } = App.useApp()
 
   return useMutation({
     mutationFn: ({ email, code, newPassword }: ConfirmVariables) =>

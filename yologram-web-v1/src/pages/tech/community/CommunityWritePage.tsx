@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useSetAtom } from 'jotai'
 import { ArrowLeftOutlined } from '@ant-design/icons'
-import { Button, message } from 'antd'
+import { App, Button } from 'antd'
 import { communityPostsAtom } from '../../../stores/community'
 import type { CommunityPost } from '../../../types/community'
 import { MAX_POST_CATEGORIES } from '../../../constants/community'
@@ -14,6 +14,7 @@ import styles from './CommunityWritePage.module.css'
 
 export default function CommunityWritePage() {
   const navigate = useNavigate()
+  const { message } = App.useApp()
   const setPosts = useSetAtom(communityPostsAtom)
   const { data: categories = [] } = useCategoriesQuery('tech')
   const { mutate: createPost, isPending } = useCreatePostMutation()

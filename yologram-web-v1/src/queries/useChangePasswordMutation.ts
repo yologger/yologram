@@ -1,11 +1,13 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import { message } from 'antd'
+import { App } from 'antd'
 import { changePassword, type ChangePasswordRequest } from '../apis/auth'
 import { getErrorMessage } from '../lib/error'
 
 export default function useChangePasswordMutation() {
   const navigate = useNavigate()
+
+  const { message } = App.useApp()
 
   return useMutation({
     mutationFn: (request: ChangePasswordRequest) => changePassword(request),

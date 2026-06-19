@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { message } from 'antd'
+import { App } from 'antd'
 import { verifyEmail } from '../apis/auth'
 import { getErrorMessage } from '../lib/error'
 
@@ -9,6 +9,8 @@ interface VerifyEmailVariables {
 }
 
 export default function useVerifyEmailMutation() {
+  const { message } = App.useApp()
+
   return useMutation({
     mutationFn: ({ email, code }: VerifyEmailVariables) => verifyEmail(email, code),
     onSuccess: () => {

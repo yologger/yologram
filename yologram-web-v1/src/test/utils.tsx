@@ -1,6 +1,7 @@
 import { render, type RenderOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, type MemoryRouterProps } from 'react-router'
+import { App as AntdApp } from 'antd'
 import type { ReactElement } from 'react'
 
 interface WrapperOptions {
@@ -18,9 +19,11 @@ function createWrapper(options: WrapperOptions = {}) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter {...options.routerProps}>
-          {children}
-        </MemoryRouter>
+        <AntdApp>
+          <MemoryRouter {...options.routerProps}>
+            {children}
+          </MemoryRouter>
+        </AntdApp>
       </QueryClientProvider>
     )
   }

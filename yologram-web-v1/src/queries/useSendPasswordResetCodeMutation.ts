@@ -1,9 +1,11 @@
 import { useMutation } from '@tanstack/react-query'
-import { message } from 'antd'
+import { App } from 'antd'
 import { sendPasswordResetCode } from '../apis/auth'
 import { getErrorMessage } from '../lib/error'
 
 export default function useSendPasswordResetCodeMutation() {
+  const { message } = App.useApp()
+
   return useMutation({
     mutationFn: (email: string) => sendPasswordResetCode(email),
     onSuccess: () => {
