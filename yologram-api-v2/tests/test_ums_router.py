@@ -102,7 +102,7 @@ class TestUmsRouter:
                 "password": "password123!",
             })
 
-            assert response.status_code == 422
+            assert response.status_code == 400
 
         def test_입력값_검증_비밀번호_길이(self):
             response = self.client.post("/api/v2/ums/user/join", json={
@@ -112,7 +112,7 @@ class TestUmsRouter:
                 "password": "short",
             })
 
-            assert response.status_code == 422
+            assert response.status_code == 400
 
     class TestGetMe:
 
@@ -277,32 +277,32 @@ class TestUmsRouter:
             assert response.status_code == 404
             assert response.json()["errorCode"] == "USER_NOT_FOUND"
 
-        def test_닉네임_1자_시_422(self):
+        def test_닉네임_1자_시_400(self):
             response = self.client.patch(
                 "/api/v2/ums/user/me",
                 json={"nickname": "a"},
                 headers={"Authorization": f"Bearer {self.token}"},
             )
 
-            assert response.status_code == 422
+            assert response.status_code == 400
 
-        def test_닉네임_21자_시_422(self):
+        def test_닉네임_21자_시_400(self):
             response = self.client.patch(
                 "/api/v2/ums/user/me",
                 json={"nickname": "a" * 21},
                 headers={"Authorization": f"Bearer {self.token}"},
             )
 
-            assert response.status_code == 422
+            assert response.status_code == 400
 
-        def test_닉네임_누락_시_422(self):
+        def test_닉네임_누락_시_400(self):
             response = self.client.patch(
                 "/api/v2/ums/user/me",
                 json={},
                 headers={"Authorization": f"Bearer {self.token}"},
             )
 
-            assert response.status_code == 422
+            assert response.status_code == 400
 
     class TestChangePassword:
 
@@ -387,7 +387,7 @@ class TestUmsRouter:
                 headers={"Authorization": f"Bearer {self.token}"},
             )
 
-            assert response.status_code == 422
+            assert response.status_code == 400
 
     class TestWithdraw:
 

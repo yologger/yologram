@@ -78,13 +78,13 @@ class TestAuthRouter:
             assert response.status_code == 401
             assert response.json()["errorCode"] == "AUTH_WRONG_PASSWORD"
 
-        def test_이메일_형식_오류_422(self):
+        def test_이메일_형식_오류_400(self):
             response = self.client.post("/api/v2/ums/auth/login", json={
                 "email": "invalid",
                 "password": "password123!",
             })
 
-            assert response.status_code == 422
+            assert response.status_code == 400
 
     class TestValidateToken:
 
@@ -235,12 +235,12 @@ class TestAuthRouter:
             assert response.status_code == 409
             assert response.json()["errorCode"] == "USER_DUPLICATE"
 
-        def test_이메일_형식_오류_422(self):
+        def test_이메일_형식_오류_400(self):
             response = self.client.post("/api/v2/ums/auth/email-verification/send", json={
                 "email": "invalid",
             })
 
-            assert response.status_code == 422
+            assert response.status_code == 400
 
     class TestVerifyEmail:
 
@@ -320,21 +320,21 @@ class TestAuthRouter:
             assert response.status_code == 400
             assert response.json()["errorCode"] == "EMAIL_VERIFICATION_EXPIRED"
 
-        def test_코드_길이_5자리_422(self):
+        def test_코드_길이_5자리_400(self):
             response = self.client.post("/api/v2/ums/auth/email-verification/verify", json={
                 "email": "test@yologram.link",
                 "code": "12345",
             })
 
-            assert response.status_code == 422
+            assert response.status_code == 400
 
-        def test_코드_길이_7자리_422(self):
+        def test_코드_길이_7자리_400(self):
             response = self.client.post("/api/v2/ums/auth/email-verification/verify", json={
                 "email": "test@yologram.link",
                 "code": "1234567",
             })
 
-            assert response.status_code == 422
+            assert response.status_code == 400
 
     class TestPasswordResetSend:
 
@@ -382,12 +382,12 @@ class TestAuthRouter:
             assert response.status_code == 404
             assert response.json()["errorCode"] == "USER_NOT_FOUND"
 
-        def test_이메일_형식_오류_422(self):
+        def test_이메일_형식_오류_400(self):
             response = self.client.post("/api/v2/ums/auth/password-reset/send", json={
                 "email": "invalid",
             })
 
-            assert response.status_code == 422
+            assert response.status_code == 400
 
     class TestPasswordResetVerify:
 
@@ -483,11 +483,11 @@ class TestAuthRouter:
             assert response.status_code == 400
             assert response.json()["errorCode"] == "PASSWORD_RESET_EXPIRED"
 
-        def test_새_비밀번호_길이_422(self):
+        def test_새_비밀번호_길이_400(self):
             response = self.client.post("/api/v2/ums/auth/password-reset/confirm", json={
                 "email": "test@yologram.link",
                 "code": "123456",
                 "newPassword": "short",
             })
 
-            assert response.status_code == 422
+            assert response.status_code == 400

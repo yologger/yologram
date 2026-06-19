@@ -57,7 +57,7 @@ def logout(
     responses={
         204: {"description": "발송 성공"},
         409: {"description": "이미 가입된 이메일"},
-        422: {"description": "입력값 검증 실패"},
+        400: {"description": "입력값 검증 실패"},
     },
 )
 def send_code(
@@ -77,8 +77,7 @@ def send_code(
     description="발송된 인증 코드를 검증",
     responses={
         204: {"description": "인증 성공"},
-        400: {"description": "인증 코드 불일치 또는 만료"},
-        422: {"description": "입력값 검증 실패"},
+        400: {"description": "인증 코드 불일치 또는 만료 / 입력값 검증 실패"},
     },
 )
 def verify_code(
@@ -98,7 +97,7 @@ def verify_code(
     responses={
         204: {"description": "발송 성공"},
         404: {"description": "가입되지 않은 이메일"},
-        422: {"description": "입력값 검증 실패"},
+        400: {"description": "입력값 검증 실패"},
     },
 )
 def send_password_reset_code(
@@ -118,8 +117,7 @@ def send_password_reset_code(
     description="발송된 재설정 코드를 검증",
     responses={
         204: {"description": "검증 성공"},
-        400: {"description": "코드 불일치 또는 만료"},
-        422: {"description": "입력값 검증 실패"},
+        400: {"description": "코드 불일치 또는 만료 / 입력값 검증 실패"},
     },
 )
 def verify_password_reset_code(
@@ -138,9 +136,8 @@ def verify_password_reset_code(
     description="코드 재검증 후 새 비밀번호로 변경",
     responses={
         204: {"description": "변경 성공"},
-        400: {"description": "코드 불일치 또는 만료"},
+        400: {"description": "코드 불일치 또는 만료 / 입력값 검증 실패"},
         404: {"description": "가입되지 않은 이메일"},
-        422: {"description": "입력값 검증 실패"},
     },
 )
 def confirm_password_reset(

@@ -70,6 +70,11 @@ class InvalidSectionException(AppException):
         super().__init__(400, "유효하지 않은 섹션입니다.", "INVALID_SECTION")
 
 
+class InvalidCategoryException(AppException):
+    def __init__(self):
+        super().__init__(400, "해당 게시판의 카테고리가 아닙니다.", "INVALID_CATEGORY")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:
@@ -89,9 +94,15 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(_request: Request, exc: RequestValidationError) -> JSONResponse:
+        errors = exc.errors()
+        message = errors[0].get("msg") if errors else "잘못된 요청입니다."
+        # Pydantic field_validator의 ValueError는 "Value error, " 접두가 붙음 → 제거
+        prefix = "Value error, "
+        if isinstance(message, str) and message.startswith(prefix):
+            message = message[len(prefix):]
         return JSONResponse(
-            status_code=422,
-            content={"errorMessage": str(exc.errors()), "errorCode": "VALIDATION_ERROR"},
+            status_code=400,
+            content={"errorMessage": message, "errorCode": "VALIDATION_ERROR"},
         )
 
     @app.exception_handler(Exception)

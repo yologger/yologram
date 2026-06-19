@@ -32,6 +32,7 @@
 
 - 응답 래퍼: ApiEnvelop ({ "data": T })
 - 예외: AppException → { "errorMessage", "errorCode" }
+- 입력값 검증 실패(RequestValidationError): 400 VALIDATION_ERROR, 메시지는 첫 에러를 사람이 읽을 단일 문자열로(Pydantic "Value error, " 접두 제거). status·errorCode를 api-v1과 정합(400)
 - 라우팅 예외도 동일 형식: 404 → NOT_FOUND, 405 → METHOD_NOT_ALLOWED (StarletteHTTPException 핸들러)
 - CORS: 전체 허용 (*)
 - Swagger: /api/v2/docs
@@ -84,6 +85,16 @@
 - 엔드포인트: GET /api/v2/cms/{section}/categories
 - 예외: InvalidSectionException (400, INVALID_SECTION) — core/exception.py
 - 카테고리는 어드민이 관리하는 콘텐츠(추후 CRUD), 프론트는 이 API로 섹션별 필터를 동적 렌더
+
+## 커뮤니티 게시글 (PMS)
+
+- 도메인: app/domain/pms (Post, PostCategory). 작성은 단일 엔드포인트 POST /api/v2/pms/{section}/posts (인증 필요) — api-v1 미러링
+- community_posts / post_categories(N:M) (api-v1과 DB 공유). 경계 넘는 참조(user_id, category_id)는 FK 없이 인덱스
+- PostService.create: 작성자=인증 유저(uid), categoryIds가 해당 section 활성 카테고리인지 검증 (1~3개 필수, 미선택 시 프론트가 '기타' 자동 지정 예정)
+- CategoryQueryClient(Protocol) + LocalCategoryQueryClient로 cms 카테고리 검증 추상화 → 모놀리식은 cms 리포지토리 직접, MSA 분리 시 HTTP 호출 구현으로 교체
+- 요청 { title?, content, categoryIds[] }, 응답 { id } (201)
+- 예외: InvalidCategoryException (400, INVALID_CATEGORY), 잘못된 section은 Section.from_path의 InvalidSectionException (400)
+- 검증 메시지는 api-v1과 동일 문구 ("내용을 입력해주세요.", "카테고리는 1~3개 선택해주세요.")
 
 ## 테스트
 

@@ -164,3 +164,23 @@
 ### 테스트
 - CategoryService 단위 테스트 (mock repository)
 - cms_router E2E 테스트 (TestClient)
+
+## PMS: 커뮤니티 게시글 작성 (api-v1 미러링)
+
+### 도메인/스키마
+- app/domain/pms: Post / PostCategory 모델, PostRepository / PostCategoryRepository, PostService, router
+- CategoryQueryClient(Protocol) + LocalCategoryQueryClient: cms 카테고리 검증 경계 추상화 (MSA 분리 대비)
+- community_posts / post_categories 테이블 api-v1과 DB 공유, 경계 넘는 참조는 FK 없이 인덱스
+
+### API
+- POST /api/v2/pms/{section}/posts (인증 필요), 요청 { title?, content, categoryIds[] }, 응답 { id } (201)
+- 작성자=인증 유저, categoryIds 1~3개 필수 + section 일치 검증
+- 예외: 400 INVALID_CATEGORY / INVALID_SECTION / VALIDATION_ERROR
+
+### 검증 응답 통일 (api-v1 정합)
+- RequestValidationError 핸들러: status 422 → 400, errorCode VALIDATION_ERROR, 메시지 단일 문자열화
+- 기존 ums/auth 검증 응답도 400으로 통일
+
+### 테스트
+- PostService 단위 테스트 (mock repository/client)
+- pms_router E2E 테스트 (TestClient)

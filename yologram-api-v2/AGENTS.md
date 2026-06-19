@@ -22,6 +22,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 
 - 응답 래퍼: ApiEnvelop ({ "data": T })
 - 예외: AppException → { "errorMessage", "errorCode" }
+- 입력값 검증 실패: 400 VALIDATION_ERROR, 메시지는 단일 문자열 (status·errorCode api-v1 정합)
 - 라우팅 예외도 동일 형식: 404 → NOT_FOUND, 405 → METHOD_NOT_ALLOWED (StarletteHTTPException 핸들러)
 - CORS: 전체 허용 (*)
 - Swagger: /api/v2/docs
@@ -57,6 +58,13 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 
 - 도메인 app/domain/cms, GET /api/v2/cms/{section}/categories (section: TECH/INVEST/POLITICS) — api-v1 미러링
 - categories 테이블 api-v1과 DB 공유, 잘못된 section → 400 INVALID_SECTION
+
+## 커뮤니티 게시글 (PMS)
+
+- 도메인 app/domain/pms, POST /api/v2/pms/{section}/posts (인증 필요, 단일 엔드포인트) — api-v1 미러링
+- community_posts / post_categories(N:M), 경계 넘는 참조는 FK 없이 인덱스
+- CategoryQueryClient(Protocol)로 cms 카테고리 검증 추상화 (MSA 분리 대비)
+- categoryIds 1~3개 필수, section 불일치 → 400 INVALID_CATEGORY
 
 ## 빌드/배포
 

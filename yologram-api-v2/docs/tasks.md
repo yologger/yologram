@@ -120,6 +120,18 @@
 - [x] 테스트 (service 4 + router 3)
 - [x] Swagger 문서화
 
+## PMS - 커뮤니티 게시글 작성 (api-v1 미러링)
+
+- [ ] community_posts / post_categories 테이블 (api-v1과 공유, DB 직접 실행)
+- [x] Post / PostCategory 모델 (FK 없는 인덱스 매핑)
+- [x] PostRepository / PostCategoryRepository
+- [x] CategoryQueryClient(Protocol) + LocalCategoryQueryClient (cms 경계 추상화, MSA 대비)
+- [x] PostService.create (작성자=인증유저, categoryIds section 일치 검증, 1~3개 필수)
+- [x] POST /api/v2/pms/{section}/posts (인증 필요)
+- [x] InvalidCategoryException (400 INVALID_CATEGORY)
+- [x] 검증 실패 응답 400 VALIDATION_ERROR로 통일 (api-v1 정합, 메시지 단일 문자열화)
+- [x] 테스트 (service 3 + router 7)
+
 ## Admin - 유저 관리
 
 - [ ] GET /api/v2/ums/admin/users (유저 목록 조회)
