@@ -144,12 +144,15 @@
 - [x] 테스트 (정상/미인증/section 불일치/내용 누락/카테고리 초과, 10개)
 - [x] Swagger 문서화
 
-## PMS - 게시글 조회/상세 (3단계, 예정)
+## PMS - 게시글 조회/상세 (3단계)
 
-- [ ] GET /api/v1/pms/{section}/posts (cursor 페이지네이션)
-- [ ] GET /api/v1/pms/{section}/posts/{id} (상세)
-- [ ] 카테고리 필터 (categoryId)
-- [ ] 테스트 / Swagger
+- [x] GET /api/v1/pms/{section}/posts/{id} (상세, 공개)
+- [x] PostDetailResponse (author{uid,nickname} 포함, categoryIds는 프론트 매핑)
+- [x] UserQueryClient + LocalUserQueryClient (작성자 닉네임, ums 경계 추상화 MSA 대비)
+- [x] PostNotFoundException (404, POST_NOT_FOUND), id가 해당 section 글 아니면 404
+- [x] 테스트 (서비스 3 + 리소스 2) / Swagger
+- [ ] GET /api/v1/pms/{section}/posts (목록, cursor 페이지네이션)
+- [ ] 목록 카테고리 필터 (categoryId)
 
 ## Comment - 댓글 (예정)
 

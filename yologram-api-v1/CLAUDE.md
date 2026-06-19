@@ -88,6 +88,8 @@
 - 요청 { title?, content, categoryIds[] }, 응답 { id } (201)
 - 예외: InvalidCategoryException (400, INVALID_CATEGORY), 잘못된 section은 Section.fromPath의 InvalidSectionException (400) — PmsExceptionHandler
 - section별 전용 필드(투자 종목코드 등)는 추후 확장 테이블 + 동일 엔드포인트 body 확장으로 처리(엔드포인트 분리 X)
+- 상세 조회: GET /api/v1/pms/{section}/posts/{id} (공개). PostDetailResponse에 author{uid,nickname} 포함(UserQueryClient로 ums 조회, MSA 대비), categoryIds는 프론트가 매핑. 없거나 다른 section의 id면 404 POST_NOT_FOUND
+- 목록 조회(cursor 페이지네이션)는 추후
 
 ## 테스트
 

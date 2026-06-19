@@ -5,10 +5,12 @@ import link.yologram.api.v1.domain.cms.exception.InvalidSectionException
 import link.yologram.api.v1.domain.pms.entity.Post
 import link.yologram.api.v1.domain.pms.entity.PostCategory
 import link.yologram.api.v1.domain.pms.exception.InvalidCategoryException
+import link.yologram.api.v1.domain.pms.exception.PostNotFoundException
 import link.yologram.api.v1.domain.pms.model.CreatePostRequest
 import link.yologram.api.v1.domain.pms.repository.PostCategoryRepository
 import link.yologram.api.v1.domain.pms.repository.PostRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import java.util.Optional
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -33,6 +35,9 @@ class PostServiceTest {
 
     @Mock
     lateinit var categoryQueryClient: CategoryQueryClient
+
+    @Mock
+    lateinit var userQueryClient: UserQueryClient
 
     @InjectMocks
     lateinit var postService: PostService
@@ -72,6 +77,48 @@ class PostServiceTest {
             }
 
             verify(postRepository, never()).save(any<Post>())
+        }
+    }
+
+    @Nested
+    inner class 게시글_상세_조회 {
+
+        @Test
+        fun `게시글과 카테고리·작성자 닉네임을 반환한다`() {
+            val post = Post(id = 1L, section = Section.TECH, userId = 12L, title = "제목", content = "내용", likeCount = 3, commentCount = 2)
+            whenever(postRepository.findById(1L)).thenReturn(Optional.of(post))
+            whenever(postCategoryRepository.findByPostId(1L)).thenReturn(
+                listOf(PostCategory(id = 1L, postId = 1L, categoryId = 1L), PostCategory(id = 2L, postId = 1L, categoryId = 2L)),
+            )
+            whenever(userQueryClient.findNickname(12L)).thenReturn("tester")
+
+            val result = postService.getPost("tech", 1L)
+
+            assertEquals(1L, result.id)
+            assertEquals(12L, result.author.uid)
+            assertEquals("tester", result.author.nickname)
+            assertEquals(listOf(1L, 2L), result.categoryIds)
+            assertEquals("내용", result.content)
+            assertEquals(2, result.commentCount)
+        }
+
+        @Test
+        fun `존재하지 않는 게시글이면 PostNotFoundException을 던진다`() {
+            whenever(postRepository.findById(99L)).thenReturn(Optional.empty())
+
+            assertThrows<PostNotFoundException> {
+                postService.getPost("tech", 99L)
+            }
+        }
+
+        @Test
+        fun `id가 해당 section 글이 아니면 PostNotFoundException을 던진다`() {
+            val post = Post(id = 1L, section = Section.INVEST, userId = 12L, content = "내용")
+            whenever(postRepository.findById(1L)).thenReturn(Optional.of(post))
+
+            assertThrows<PostNotFoundException> {
+                postService.getPost("tech", 1L)
+            }
         }
     }
 }

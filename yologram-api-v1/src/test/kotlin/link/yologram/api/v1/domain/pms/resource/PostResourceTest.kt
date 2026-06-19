@@ -6,8 +6,11 @@ import link.yologram.api.v1.domain.cms.exception.CmsExceptionHandler
 import link.yologram.api.v1.domain.cms.exception.InvalidSectionException
 import link.yologram.api.v1.domain.pms.exception.InvalidCategoryException
 import link.yologram.api.v1.domain.pms.exception.PmsExceptionHandler
+import link.yologram.api.v1.domain.cms.enum.Section
+import link.yologram.api.v1.domain.pms.exception.PostNotFoundException
 import link.yologram.api.v1.domain.pms.model.CreatePostRequest
 import link.yologram.api.v1.domain.pms.model.CreatePostResponse
+import link.yologram.api.v1.domain.pms.model.PostDetailResponse
 import link.yologram.api.v1.domain.pms.service.PostService
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.util.JwtUtil
@@ -23,7 +26,9 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import java.time.LocalDateTime
 
 @WebMvcTest(PostResource::class)
 @Import(
@@ -146,5 +151,42 @@ class PostResourceTest {
             status { isBadRequest() }
             jsonPath("$.errorCode") { value("INVALID_SECTION") }
         }
+    }
+
+    @Test
+    fun `게시글 상세 조회 시 200과 게시글을 반환한다`() {
+        whenever(postService.getPost("tech", 1L)).thenReturn(
+            PostDetailResponse(
+                id = 1L,
+                section = Section.TECH,
+                author = PostDetailResponse.Author(uid = 12L, nickname = "tester"),
+                title = "제목",
+                content = "내용",
+                categoryIds = listOf(1L, 2L),
+                likeCount = 0,
+                commentCount = 0,
+                createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
+            ),
+        )
+
+        mockMvc.get("/api/v1/pms/tech/posts/1")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.data.id") { value(1) }
+                jsonPath("$.data.author.nickname") { value("tester") }
+                jsonPath("$.data.content") { value("내용") }
+                jsonPath("$.data.categoryIds[0]") { value(1) }
+            }
+    }
+
+    @Test
+    fun `존재하지 않는 게시글이면 404 반환`() {
+        whenever(postService.getPost("tech", 99L)).thenThrow(PostNotFoundException())
+
+        mockMvc.get("/api/v1/pms/tech/posts/99")
+            .andExpect {
+                status { isNotFound() }
+                jsonPath("$.errorCode") { value("POST_NOT_FOUND") }
+            }
     }
 }

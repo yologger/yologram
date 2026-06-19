@@ -44,6 +44,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - CategoryQueryClient로 cms 카테고리 검증 추상화 (MSA 분리 대비)
 - 카테고리 section 불일치 → 400 INVALID_CATEGORY
 - @AuthenticatedUser 인증 예외는 GlobalExceptionHandler에서 전역 처리
+- 상세 조회 GET /api/v1/pms/{section}/posts/{id} (공개), 작성자 닉네임은 UserQueryClient로 ums 조회, 없으면 404 POST_NOT_FOUND
 
 ## 빌드/배포
 
