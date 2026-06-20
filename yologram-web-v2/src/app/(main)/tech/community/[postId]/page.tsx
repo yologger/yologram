@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAtom } from 'jotai'
 import { Avatar } from 'antd'
@@ -13,23 +13,46 @@ import {
   RetweetOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons'
-import { communityPostsAtom, communityCommentsAtom } from '@/stores/community'
+import { communityCommentsAtom } from '@/stores/community'
 import type { CommunityComment } from '@/types/community'
+import usePostQuery from '@/queries/usePostQuery'
 import styles from './CommunityDetail.module.css'
 
 export default function CommunityDetail() {
   const params = useParams<{ postId: string }>()
   const router = useRouter()
-  const [posts, setPosts] = useAtom(communityPostsAtom)
+  const id = Number(params.postId)
+
+  const { data: post, isLoading, isError } = usePostQuery('tech', id)
   const [comments, setComments] = useAtom(communityCommentsAtom)
   const [text, setText] = useState('')
 
-  const id = Number(params.postId)
-  const post = posts.find((p) => p.id === id)
+  // 좋아요는 서버 API(count 도메인) 도입 전까지 로컬 임시 상태
+  const [liked, setLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
+  useEffect(() => {
+    if (post) {
+      setLiked(false)
+      setLikeCount(post.likeCount)
+    }
+  }, [post])
 
   const goBack = () => router.back()
 
-  if (!post) {
+  if (isLoading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <button className={styles.back} aria-label="뒤로" onClick={goBack}>
+            <ArrowLeftOutlined />
+          </button>
+        </div>
+        <div style={{ padding: 16 }}>불러오는 중…</div>
+      </div>
+    )
+  }
+
+  if (isError || !post) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -43,15 +66,12 @@ export default function CommunityDetail() {
   }
 
   const postComments = comments.filter((c) => c.postId === id)
+  const authorName = post.author.nickname ?? '알 수 없음'
+  const createdAtText = new Date(post.createdAt).toLocaleString('ko-KR')
 
   const toggleLike = () => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, liked: !p.liked, likeCount: p.liked ? p.likeCount - 1 : p.likeCount + 1 }
-          : p,
-      ),
-    )
+    setLiked((prev) => !prev)
+    setLikeCount((prev) => (liked ? prev - 1 : prev + 1))
   }
 
   const submitComment = () => {
@@ -65,7 +85,6 @@ export default function CommunityDetail() {
       likeCount: 0,
     }
     setComments((prev) => [...prev, newComment])
-    setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, commentCount: p.commentCount + 1 } : p)))
     setText('')
   }
 
@@ -81,15 +100,15 @@ export default function CommunityDetail() {
         <div className={styles.authorRow}>
           <Avatar size={40} icon={<UserOutlined />} />
           <div>
-            <div className={styles.author}>{post.author}</div>
-            <div className={styles.time}>{post.createdAt}</div>
+            <div className={styles.author}>{authorName}</div>
+            <div className={styles.time}>{createdAtText}</div>
           </div>
         </div>
         {post.title && <div className={styles.title}>{post.title}</div>}
         <div className={styles.content}>{post.content}</div>
         <div className={styles.actions}>
-          <span className={`${styles.action} ${post.liked ? styles.liked : ''}`} onClick={toggleLike}>
-            {post.liked ? <HeartFilled /> : <HeartOutlined />} {post.likeCount}
+          <span className={`${styles.action} ${liked ? styles.liked : ''}`} onClick={toggleLike}>
+            {liked ? <HeartFilled /> : <HeartOutlined />} {likeCount}
           </span>
           <span className={styles.action}><MessageOutlined /> {post.commentCount}</span>
           <span className={styles.action}><RetweetOutlined /></span>

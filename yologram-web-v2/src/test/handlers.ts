@@ -263,4 +263,29 @@ export const handlers = [
 
     return HttpResponse.json({ data: { id: 9999 } }, { status: 201 })
   }),
+
+  http.get('http://localhost:5002/api/v2/pms/:section/posts/:id', ({ params }) => {
+    const id = Number(params.id)
+
+    if (id === 99999) {
+      return HttpResponse.json(
+        { errorMessage: '게시글을 찾을 수 없습니다.', errorCode: 'POST_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+
+    return HttpResponse.json({
+      data: {
+        id,
+        section: 'TECH',
+        author: { uid: 12, nickname: '테스터' },
+        title: 'API 제목',
+        content: 'API 본문 내용',
+        categoryIds: [1],
+        likeCount: 5,
+        commentCount: 0,
+        createdAt: '2026-01-01T00:00:00',
+      },
+    })
+  }),
 ]
