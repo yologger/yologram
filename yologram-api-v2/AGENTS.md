@@ -65,6 +65,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - community_posts / post_categories(N:M), 경계 넘는 참조는 FK 없이 인덱스
 - CategoryQueryClient(Protocol)로 cms 카테고리 검증 추상화 (MSA 분리 대비)
 - categoryIds 1~3개 필수, section 불일치 → 400 INVALID_CATEGORY
+- 상세 조회 GET /api/v2/pms/{section}/posts/{id} (공개), 작성자 닉네임은 UserQueryClient로 ums 조회, 없으면 404 POST_NOT_FOUND
 
 ## 빌드/배포
 

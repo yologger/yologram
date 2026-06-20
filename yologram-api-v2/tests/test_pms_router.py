@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("JWT_SECRET", "test-jwt-secret-key-for-testing")
@@ -6,7 +7,7 @@ os.environ.setdefault("JWT_SECRET", "test-jwt-secret-key-for-testing")
 from fastapi.testclient import TestClient
 
 from app.config.database import get_db
-from app.domain.pms.model import Post
+from app.domain.pms.model import Post, PostCategory
 from app.domain.cms.enum import Section
 from app.domain.ums.auth_dependency import get_authenticated_user
 from app.domain.ums.auth_schema import AuthData
@@ -112,3 +113,45 @@ class TestPmsRouter:
 
         assert response.status_code == 400
         assert response.json()["errorCode"] == "VALIDATION_ERROR"
+
+    @patch("app.domain.pms.service.LocalUserQueryClient")
+    @patch("app.domain.pms.service.PostCategoryRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_상세_조회_시_200(self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls):
+        post = _saved_post(1)
+        post.user_id = 12
+        post.title = "제목"
+        post.like_count = 0
+        post.comment_count = 0
+        post.created_at = datetime(2026, 1, 1, 0, 0)
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_by_id.return_value = post
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo.find_by_post_id.return_value = [PostCategory(post_id=1, category_id=1)]
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_user = MagicMock()
+        mock_user.find_nickname.return_value = "tester"
+        mock_user_cls.return_value = mock_user
+
+        response = self.client.get("/api/v2/pms/tech/posts/1")
+
+        assert response.status_code == 200
+        body = response.json()["data"]
+        assert body["id"] == 1
+        assert body["author"]["nickname"] == "tester"
+        assert body["content"] == "내용"
+        assert body["categoryIds"] == [1]
+
+    @patch("app.domain.pms.service.LocalUserQueryClient")
+    @patch("app.domain.pms.service.PostCategoryRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_존재하지_않는_게시글이면_404(self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls):
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_by_id.return_value = None
+        mock_post_repo_cls.return_value = mock_post_repo
+
+        response = self.client.get("/api/v2/pms/tech/posts/99")
+
+        assert response.status_code == 404
+        assert response.json()["errorCode"] == "POST_NOT_FOUND"

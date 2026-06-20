@@ -75,6 +75,11 @@ class InvalidCategoryException(AppException):
         super().__init__(400, "해당 게시판의 카테고리가 아닙니다.", "INVALID_CATEGORY")
 
 
+class PostNotFoundException(AppException):
+    def __init__(self):
+        super().__init__(404, "게시글을 찾을 수 없습니다.", "POST_NOT_FOUND")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:

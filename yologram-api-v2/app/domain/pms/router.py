@@ -32,3 +32,24 @@ def create_post(
     service = PostService(db)
     result = service.create(section, auth_data.uid, request)
     return ApiEnvelop(data=result)
+
+
+@router.get(
+    "/{section}/posts/{id}",
+    response_model=ApiEnvelop,
+    summary="게시글 상세 조회",
+    description="섹션(section)의 게시글 단건 조회 (공개)",
+    responses={
+        200: {"description": "조회 성공"},
+        400: {"description": "유효하지 않은 섹션"},
+        404: {"description": "게시글을 찾을 수 없음"},
+    },
+)
+def get_post(
+    section: str,
+    id: int,
+    db: Session = Depends(get_db),
+):
+    service = PostService(db)
+    result = service.get_post(section, id)
+    return ApiEnvelop(data=result)

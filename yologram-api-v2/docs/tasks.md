@@ -132,6 +132,16 @@
 - [x] 검증 실패 응답 400 VALIDATION_ERROR로 통일 (api-v1 정합, 메시지 단일 문자열화)
 - [x] 테스트 (service 3 + router 7)
 
+## PMS - 게시글 상세 조회 (api-v1 미러링)
+
+- [x] GET /api/v2/pms/{section}/posts/{id} (공개)
+- [x] PostDetailResponse (author{uid,nickname} 포함, categoryIds는 프론트 매핑)
+- [x] UserQueryClient(Protocol) + LocalUserQueryClient (작성자 닉네임, ums 경계 추상화 MSA 대비)
+- [x] PostRepository.find_by_id, PostCategoryRepository.find_by_post_id 추가
+- [x] PostNotFoundException (404, POST_NOT_FOUND), id가 해당 section 글 아니면 404
+- [x] 테스트 (service 3 + router 2)
+- [ ] GET /api/v2/pms/{section}/posts (목록, cursor 페이지네이션)
+
 ## Admin - 유저 관리
 
 - [ ] GET /api/v2/ums/admin/users (유저 목록 조회)

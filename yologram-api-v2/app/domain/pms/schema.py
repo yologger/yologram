@@ -1,4 +1,8 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.domain.cms.enum import Section
 
 
 class CreatePostRequest(BaseModel):
@@ -25,3 +29,22 @@ class CreatePostRequest(BaseModel):
 
 class CreatePostResponse(BaseModel):
     id: int
+
+
+class PostAuthor(BaseModel):
+    uid: int
+    nickname: str | None
+
+
+class PostDetailResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+
+    id: int
+    section: Section
+    author: PostAuthor
+    title: str | None
+    content: str
+    category_ids: list[int] = Field(serialization_alias="categoryIds")
+    like_count: int = Field(serialization_alias="likeCount")
+    comment_count: int = Field(serialization_alias="commentCount")
+    created_at: datetime = Field(serialization_alias="createdAt")
