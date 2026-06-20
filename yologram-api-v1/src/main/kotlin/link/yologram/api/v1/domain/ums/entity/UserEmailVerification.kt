@@ -6,9 +6,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "email_verification_codes")
+@Table(name = "user_email_verification")
 @EntityListeners(AuditingEntityListener::class)
-class EmailVerificationCode(
+class UserEmailVerification(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,

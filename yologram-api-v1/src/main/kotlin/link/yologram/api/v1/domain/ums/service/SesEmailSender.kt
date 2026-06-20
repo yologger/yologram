@@ -88,7 +88,7 @@ class SesEmailSender(
         }
     }
 
-    override fun sendPasswordResetCode(to: String, code: String) {
+    override fun sendUserPasswordResetCode(to: String, code: String) {
         val html = """
             <!DOCTYPE html>
             <html>

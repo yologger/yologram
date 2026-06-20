@@ -37,28 +37,28 @@ class UmsExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ErrorResponse(e.message, e.errorCode))
     }
 
-    @ExceptionHandler(EmailVerificationExpiredException::class)
-    fun handleEmailVerificationExpired(e: EmailVerificationExpiredException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(UserEmailVerificationExpiredException::class)
+    fun handleEmailVerificationExpired(e: UserEmailVerificationExpiredException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
 
-    @ExceptionHandler(EmailVerificationInvalidException::class)
-    fun handleEmailVerificationInvalid(e: EmailVerificationInvalidException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(UserEmailVerificationInvalidException::class)
+    fun handleEmailVerificationInvalid(e: UserEmailVerificationInvalidException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
 
-    @ExceptionHandler(EmailNotVerifiedException::class)
-    fun handleEmailNotVerified(e: EmailNotVerifiedException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(UserEmailNotVerifiedException::class)
+    fun handleEmailNotVerified(e: UserEmailNotVerifiedException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
 
-    @ExceptionHandler(PasswordResetExpiredException::class)
-    fun handlePasswordResetExpired(e: PasswordResetExpiredException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(UserPasswordResetExpiredException::class)
+    fun handleUserPasswordResetExpired(e: UserPasswordResetExpiredException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
 
-    @ExceptionHandler(PasswordResetInvalidException::class)
-    fun handlePasswordResetInvalid(e: PasswordResetInvalidException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(UserPasswordResetInvalidException::class)
+    fun handleUserPasswordResetInvalid(e: UserPasswordResetInvalidException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
 }

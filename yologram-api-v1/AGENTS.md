@@ -21,10 +21,10 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 ## 비밀번호 찾기
 
 - 방식: 이메일 6자리 코드 발송 → 코드 검증 → 새 비밀번호 설정 (이메일 인증과 동일 패턴/SES 재사용)
-- 저장: 별도 테이블 password_reset_codes (PasswordResetCode 엔티티: email, code, verified, expiredAt 5분, createdAt)
-- PasswordResetService: sendCode(미가입 시 UserNotFoundException 404, 기존 코드 삭제 후 발송), verifyCode(verified=true), confirm(email·code·newPassword 재검증 후 변경·코드 삭제)
+- 저장: 별도 테이블 user_password_reset_code (UserPasswordResetCode 엔티티: email, code, verified, expiredAt 5분, createdAt)
+- UserPasswordResetService: sendCode(미가입 시 UserNotFoundException 404, 기존 코드 삭제 후 발송), verifyCode(verified=true), confirm(email·code·newPassword 재검증 후 변경·코드 삭제)
 - 엔드포인트: POST /api/v1/ums/auth/password-reset/send·verify·confirm
-- 예외: PasswordResetExpiredException/PasswordResetInvalidException (400)
+- 예외: UserPasswordResetExpiredException/UserPasswordResetInvalidException (400)
 - 운영 보강 TODO: 코드 해시 저장, 발송 레이트리밋, 시도 횟수 제한
 
 ## 회원탈퇴

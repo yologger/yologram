@@ -1,17 +1,17 @@
 package link.yologram.api.v1.domain.ums.service
 
-import link.yologram.api.v1.domain.ums.entity.EmailVerificationCode
+import link.yologram.api.v1.domain.ums.entity.UserEmailVerification
 import link.yologram.api.v1.domain.ums.entity.User
 import link.yologram.api.v1.domain.ums.enum.UserStatus
 import link.yologram.api.v1.domain.ums.enum.UserType
 import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException
-import link.yologram.api.v1.domain.ums.exception.EmailNotVerifiedException
+import link.yologram.api.v1.domain.ums.exception.UserEmailNotVerifiedException
 import link.yologram.api.v1.domain.ums.exception.UserDuplicateException
 import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
 import link.yologram.api.v1.domain.ums.model.ChangePasswordRequest
 import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.UpdateProfileRequest
-import link.yologram.api.v1.domain.ums.repository.EmailVerificationCodeRepository
+import link.yologram.api.v1.domain.ums.repository.UserEmailVerificationRepository
 import link.yologram.api.v1.domain.ums.repository.UserRepository
 import java.time.LocalDateTime
 import org.junit.jupiter.api.Assertions.*
@@ -35,7 +35,7 @@ class UserServiceTest {
     lateinit var userRepository: UserRepository
 
     @Mock
-    lateinit var emailVerificationCodeRepository: EmailVerificationCodeRepository
+    lateinit var emailVerificationCodeRepository: UserEmailVerificationRepository
 
     @Mock
     lateinit var passwordEncoder: BCryptPasswordEncoder
@@ -50,7 +50,7 @@ class UserServiceTest {
         password: String = "password123",
     ) = JoinRequest(email = email, name = name, nickname = nickname, password = password)
 
-    private fun verifiedEmailVerificationCode(email: String) = EmailVerificationCode(
+    private fun verifiedUserEmailVerification(email: String) = UserEmailVerification(
         id = 1L,
         email = email,
         code = "123456",
@@ -67,7 +67,7 @@ class UserServiceTest {
 
             whenever(userRepository.existsByEmail(request.email)).thenReturn(false)
             whenever(emailVerificationCodeRepository.findTopByEmailOrderByCreatedAtDesc(request.email))
-                .thenReturn(Optional.of(verifiedEmailVerificationCode(request.email)))
+                .thenReturn(Optional.of(verifiedUserEmailVerification(request.email)))
             whenever(passwordEncoder.encode(request.password)).thenReturn("encoded-password")
             whenever(userRepository.save(any<User>())).thenReturn(
                 User(id = 1, email = request.email, name = request.name, nickname = request.nickname, password = "encoded-password")
@@ -84,7 +84,7 @@ class UserServiceTest {
 
             whenever(userRepository.existsByEmail(request.email)).thenReturn(false)
             whenever(emailVerificationCodeRepository.findTopByEmailOrderByCreatedAtDesc(request.email))
-                .thenReturn(Optional.of(verifiedEmailVerificationCode(request.email)))
+                .thenReturn(Optional.of(verifiedUserEmailVerification(request.email)))
             whenever(passwordEncoder.encode(request.password)).thenReturn("encoded-password")
             whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] as User }
 
@@ -99,7 +99,7 @@ class UserServiceTest {
 
             whenever(userRepository.existsByEmail(request.email)).thenReturn(false)
             whenever(emailVerificationCodeRepository.findTopByEmailOrderByCreatedAtDesc(request.email))
-                .thenReturn(Optional.of(verifiedEmailVerificationCode(request.email)))
+                .thenReturn(Optional.of(verifiedUserEmailVerification(request.email)))
             whenever(passwordEncoder.encode(request.password)).thenReturn("encoded-password")
             whenever(userRepository.save(any<User>())).thenAnswer {
                 val user = it.arguments[0] as User
@@ -117,7 +117,7 @@ class UserServiceTest {
 
             whenever(userRepository.existsByEmail(request.email)).thenReturn(false)
             whenever(emailVerificationCodeRepository.findTopByEmailOrderByCreatedAtDesc(request.email))
-                .thenReturn(Optional.of(verifiedEmailVerificationCode(request.email)))
+                .thenReturn(Optional.of(verifiedUserEmailVerification(request.email)))
             whenever(passwordEncoder.encode(request.password)).thenReturn("encoded-password")
             whenever(userRepository.save(any<User>())).thenAnswer { it.arguments[0] as User }
 
@@ -144,22 +144,22 @@ class UserServiceTest {
         }
 
         @Test
-        fun `이메일 인증 레코드가 없으면 EmailNotVerifiedException 발생`() {
+        fun `이메일 인증 레코드가 없으면 UserEmailNotVerifiedException 발생`() {
             val request = joinRequest()
 
             whenever(userRepository.existsByEmail(request.email)).thenReturn(false)
             whenever(emailVerificationCodeRepository.findTopByEmailOrderByCreatedAtDesc(request.email))
                 .thenReturn(Optional.empty())
 
-            assertThrows<EmailNotVerifiedException> {
+            assertThrows<UserEmailNotVerifiedException> {
                 userService.join(request)
             }
         }
 
         @Test
-        fun `이메일 인증이 미완료면 EmailNotVerifiedException 발생`() {
+        fun `이메일 인증이 미완료면 UserEmailNotVerifiedException 발생`() {
             val request = joinRequest()
-            val unverified = EmailVerificationCode(
+            val unverified = UserEmailVerification(
                 id = 1L,
                 email = request.email,
                 code = "123456",
@@ -171,7 +171,7 @@ class UserServiceTest {
             whenever(emailVerificationCodeRepository.findTopByEmailOrderByCreatedAtDesc(request.email))
                 .thenReturn(Optional.of(unverified))
 
-            assertThrows<EmailNotVerifiedException> {
+            assertThrows<UserEmailNotVerifiedException> {
                 userService.join(request)
             }
         }

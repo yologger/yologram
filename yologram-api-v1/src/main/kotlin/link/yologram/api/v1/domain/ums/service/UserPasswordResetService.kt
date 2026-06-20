@@ -1,10 +1,10 @@
 package link.yologram.api.v1.domain.ums.service
 
-import link.yologram.api.v1.domain.ums.entity.PasswordResetCode
-import link.yologram.api.v1.domain.ums.exception.PasswordResetExpiredException
-import link.yologram.api.v1.domain.ums.exception.PasswordResetInvalidException
+import link.yologram.api.v1.domain.ums.entity.UserPasswordResetCode
+import link.yologram.api.v1.domain.ums.exception.UserPasswordResetExpiredException
+import link.yologram.api.v1.domain.ums.exception.UserPasswordResetInvalidException
 import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
-import link.yologram.api.v1.domain.ums.repository.PasswordResetCodeRepository
+import link.yologram.api.v1.domain.ums.repository.UserPasswordResetCodeRepository
 import link.yologram.api.v1.domain.ums.repository.UserRepository
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
@@ -13,8 +13,8 @@ import java.time.LocalDateTime
 import kotlin.random.Random
 
 @Service
-class PasswordResetService(
-    private val passwordResetCodeRepository: PasswordResetCodeRepository,
+class UserPasswordResetService(
+    private val passwordResetCodeRepository: UserPasswordResetCodeRepository,
     private val userRepository: UserRepository,
     private val emailSender: EmailSender,
     private val passwordEncoder: BCryptPasswordEncoder,
@@ -29,14 +29,14 @@ class PasswordResetService(
         passwordResetCodeRepository.deleteAllByEmail(email)
 
         val code = generateCode()
-        val resetCode = PasswordResetCode(
+        val resetCode = UserPasswordResetCode(
             email = email,
             code = code,
             expiredAt = LocalDateTime.now().plusMinutes(5),
         )
         passwordResetCodeRepository.save(resetCode)
 
-        emailSender.sendPasswordResetCode(email, code)
+        emailSender.sendUserPasswordResetCode(email, code)
     }
 
     @Transactional
@@ -56,16 +56,16 @@ class PasswordResetService(
         passwordResetCodeRepository.deleteAllByEmail(email)
     }
 
-    private fun findValidCode(email: String, code: String): PasswordResetCode {
+    private fun findValidCode(email: String, code: String): UserPasswordResetCode {
         val resetCode = passwordResetCodeRepository.findTopByEmailOrderByCreatedAtDesc(email)
-            .orElseThrow { PasswordResetInvalidException() }
+            .orElseThrow { UserPasswordResetInvalidException() }
 
         if (resetCode.expiredAt.isBefore(LocalDateTime.now())) {
-            throw PasswordResetExpiredException()
+            throw UserPasswordResetExpiredException()
         }
 
         if (resetCode.code != code) {
-            throw PasswordResetInvalidException()
+            throw UserPasswordResetInvalidException()
         }
 
         return resetCode

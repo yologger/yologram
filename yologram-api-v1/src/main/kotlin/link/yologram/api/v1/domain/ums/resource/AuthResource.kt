@@ -7,17 +7,17 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import link.yologram.api.v1.domain.ums.model.LoginRequest
 import link.yologram.api.v1.domain.ums.model.LoginResponse
-import link.yologram.api.v1.domain.ums.model.EmailVerificationSendRequest
+import link.yologram.api.v1.domain.ums.model.UserEmailVerificationSendRequest
 import link.yologram.api.v1.domain.ums.model.ValidateTokenResponse
-import link.yologram.api.v1.domain.ums.model.EmailVerificationVerifyRequest
-import link.yologram.api.v1.domain.ums.model.PasswordResetSendRequest
-import link.yologram.api.v1.domain.ums.model.PasswordResetVerifyRequest
-import link.yologram.api.v1.domain.ums.model.PasswordResetConfirmRequest
+import link.yologram.api.v1.domain.ums.model.UserEmailVerificationVerifyRequest
+import link.yologram.api.v1.domain.ums.model.UserPasswordResetSendRequest
+import link.yologram.api.v1.domain.ums.model.UserPasswordResetVerifyRequest
+import link.yologram.api.v1.domain.ums.model.UserPasswordResetConfirmRequest
 import link.yologram.api.v1.domain.ums.resolver.AuthData
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUser
 import link.yologram.api.v1.domain.ums.service.AuthService
-import link.yologram.api.v1.domain.ums.service.EmailVerificationService
-import link.yologram.api.v1.domain.ums.service.PasswordResetService
+import link.yologram.api.v1.domain.ums.service.UserEmailVerificationService
+import link.yologram.api.v1.domain.ums.service.UserPasswordResetService
 import link.yologram.api.v1.global.model.ApiEnvelop
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
@@ -27,8 +27,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/ums/auth")
 class AuthResource(
     private val authService: AuthService,
-    private val emailVerificationService: EmailVerificationService,
-    private val passwordResetService: PasswordResetService,
+    private val emailVerificationService: UserEmailVerificationService,
+    private val passwordResetService: UserPasswordResetService,
 ) {
 
     @PostMapping("/login")
@@ -58,7 +58,7 @@ class AuthResource(
         ApiResponse(responseCode = "400", description = "입력값 검증 실패"),
         ApiResponse(responseCode = "409", description = "이미 가입된 이메일"),
     )
-    fun sendCode(@Valid @RequestBody request: EmailVerificationSendRequest) {
+    fun sendCode(@Valid @RequestBody request: UserEmailVerificationSendRequest) {
         emailVerificationService.sendCode(request.email)
     }
 
@@ -69,7 +69,7 @@ class AuthResource(
         ApiResponse(responseCode = "204", description = "인증 성공"),
         ApiResponse(responseCode = "400", description = "인증 코드 불일치 또는 만료"),
     )
-    fun verifyCode(@Valid @RequestBody request: EmailVerificationVerifyRequest) {
+    fun verifyCode(@Valid @RequestBody request: UserEmailVerificationVerifyRequest) {
         emailVerificationService.verifyCode(request.email, request.code)
     }
 
@@ -81,7 +81,7 @@ class AuthResource(
         ApiResponse(responseCode = "400", description = "입력값 검증 실패"),
         ApiResponse(responseCode = "404", description = "가입되지 않은 이메일"),
     )
-    fun sendPasswordResetCode(@Valid @RequestBody request: PasswordResetSendRequest) {
+    fun sendUserPasswordResetCode(@Valid @RequestBody request: UserPasswordResetSendRequest) {
         passwordResetService.sendCode(request.email)
     }
 
@@ -92,7 +92,7 @@ class AuthResource(
         ApiResponse(responseCode = "204", description = "검증 성공"),
         ApiResponse(responseCode = "400", description = "코드 불일치 또는 만료"),
     )
-    fun verifyPasswordResetCode(@Valid @RequestBody request: PasswordResetVerifyRequest) {
+    fun verifyUserPasswordResetCode(@Valid @RequestBody request: UserPasswordResetVerifyRequest) {
         passwordResetService.verifyCode(request.email, request.code)
     }
 
@@ -104,7 +104,7 @@ class AuthResource(
         ApiResponse(responseCode = "400", description = "입력값 검증 실패 또는 코드 불일치/만료"),
         ApiResponse(responseCode = "404", description = "가입되지 않은 이메일"),
     )
-    fun confirmPasswordReset(@Valid @RequestBody request: PasswordResetConfirmRequest) {
+    fun confirmUserPasswordReset(@Valid @RequestBody request: UserPasswordResetConfirmRequest) {
         passwordResetService.confirm(request.email, request.code, request.newPassword)
     }
 }

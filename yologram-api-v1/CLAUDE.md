@@ -48,16 +48,16 @@
 - 발신 주소: no-reply@yologram.link (IAM 정책으로 한정, 변경 시 인프라 수정 필요)
 - 리전: ap-northeast-2 (SES 도메인 인증 리전과 동일)
 - 자격증명: ECS Task Role (prod), AWS_PROFILE 환경변수 (로컬)
-- EmailVerificationCode 엔티티: email, code(6자리), verified, expiredAt(5분)
+- UserEmailVerification 엔티티(테이블 user_email_verification): email, code(6자리), verified, expiredAt(5분). 서비스 UserEmailVerificationService
 - 회원가입 시 이메일 인증 필수 (UserService.join에서 verified 확인)
 
 ## 비밀번호 찾기
 
 - 방식: 이메일 6자리 코드 발송 → 코드 검증 → 새 비밀번호 설정 (이메일 인증과 동일 패턴/SES 재사용)
-- 저장: 별도 테이블 password_reset_codes (PasswordResetCode 엔티티: email, code, verified, expiredAt 5분, createdAt)
-- PasswordResetService: sendCode(미가입 시 UserNotFoundException 404, 기존 코드 삭제 후 발송), verifyCode(verified=true), confirm(email·code·newPassword 재검증 후 변경·코드 삭제)
+- 저장: 별도 테이블 user_password_reset_code (UserPasswordResetCode 엔티티: email, code, verified, expiredAt 5분, createdAt)
+- UserPasswordResetService: sendCode(미가입 시 UserNotFoundException 404, 기존 코드 삭제 후 발송), verifyCode(verified=true), confirm(email·code·newPassword 재검증 후 변경·코드 삭제)
 - 엔드포인트: POST /api/v1/ums/auth/password-reset/send·verify·confirm
-- 예외: PasswordResetExpiredException/PasswordResetInvalidException (400)
+- 예외: UserPasswordResetExpiredException/UserPasswordResetInvalidException (400)
 - 운영 보강 TODO: 코드 해시 저장, 발송 레이트리밋, 시도 횟수 제한
 
 ## 회원탈퇴

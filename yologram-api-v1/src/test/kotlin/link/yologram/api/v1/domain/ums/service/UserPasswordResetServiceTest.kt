@@ -1,11 +1,11 @@
 package link.yologram.api.v1.domain.ums.service
 
-import link.yologram.api.v1.domain.ums.entity.PasswordResetCode
+import link.yologram.api.v1.domain.ums.entity.UserPasswordResetCode
 import link.yologram.api.v1.domain.ums.entity.User
-import link.yologram.api.v1.domain.ums.exception.PasswordResetExpiredException
-import link.yologram.api.v1.domain.ums.exception.PasswordResetInvalidException
+import link.yologram.api.v1.domain.ums.exception.UserPasswordResetExpiredException
+import link.yologram.api.v1.domain.ums.exception.UserPasswordResetInvalidException
 import link.yologram.api.v1.domain.ums.exception.UserNotFoundException
-import link.yologram.api.v1.domain.ums.repository.PasswordResetCodeRepository
+import link.yologram.api.v1.domain.ums.repository.UserPasswordResetCodeRepository
 import link.yologram.api.v1.domain.ums.repository.UserRepository
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
@@ -21,10 +21,10 @@ import java.time.LocalDateTime
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
-class PasswordResetServiceTest {
+class UserPasswordResetServiceTest {
 
     @Mock
-    lateinit var passwordResetCodeRepository: PasswordResetCodeRepository
+    lateinit var passwordResetCodeRepository: UserPasswordResetCodeRepository
 
     @Mock
     lateinit var userRepository: UserRepository
@@ -36,10 +36,10 @@ class PasswordResetServiceTest {
     lateinit var passwordEncoder: BCryptPasswordEncoder
 
     @InjectMocks
-    lateinit var passwordResetService: PasswordResetService
+    lateinit var passwordResetService: UserPasswordResetService
 
     private fun resetCode(code: String = "123456", expiredAt: LocalDateTime = LocalDateTime.now().plusMinutes(5)) =
-        PasswordResetCode(id = 1L, email = "test@yologram.link", code = code, expiredAt = expiredAt)
+        UserPasswordResetCode(id = 1L, email = "test@yologram.link", code = code, expiredAt = expiredAt)
 
     @Nested
     inner class 코드_발송 {
@@ -47,15 +47,15 @@ class PasswordResetServiceTest {
         @Test
         fun `가입된 이메일이면 코드를 발송한다`() {
             whenever(userRepository.existsByEmail("test@yologram.link")).thenReturn(true)
-            whenever(passwordResetCodeRepository.save(any<PasswordResetCode>())).thenAnswer { it.arguments[0] }
+            whenever(passwordResetCodeRepository.save(any<UserPasswordResetCode>())).thenAnswer { it.arguments[0] }
 
             passwordResetService.sendCode("test@yologram.link")
 
             verify(passwordResetCodeRepository).deleteAllByEmail("test@yologram.link")
-            verify(passwordResetCodeRepository).save(argThat<PasswordResetCode> {
+            verify(passwordResetCodeRepository).save(argThat<UserPasswordResetCode> {
                 email == "test@yologram.link" && code.length == 6
             })
-            verify(emailSender).sendPasswordResetCode(eq("test@yologram.link"), any())
+            verify(emailSender).sendUserPasswordResetCode(eq("test@yologram.link"), any())
         }
 
         @Test
@@ -66,7 +66,7 @@ class PasswordResetServiceTest {
                 passwordResetService.sendCode("unknown@yologram.link")
             }
 
-            verify(emailSender, never()).sendPasswordResetCode(any(), any())
+            verify(emailSender, never()).sendUserPasswordResetCode(any(), any())
         }
     }
 
@@ -85,31 +85,31 @@ class PasswordResetServiceTest {
         }
 
         @Test
-        fun `코드 레코드가 없으면 PasswordResetInvalidException을 던진다`() {
+        fun `코드 레코드가 없으면 UserPasswordResetInvalidException을 던진다`() {
             whenever(passwordResetCodeRepository.findTopByEmailOrderByCreatedAtDesc("test@yologram.link"))
                 .thenReturn(Optional.empty())
 
-            assertThrows<PasswordResetInvalidException> {
+            assertThrows<UserPasswordResetInvalidException> {
                 passwordResetService.verifyCode("test@yologram.link", "123456")
             }
         }
 
         @Test
-        fun `코드가 만료되면 PasswordResetExpiredException을 던진다`() {
+        fun `코드가 만료되면 UserPasswordResetExpiredException을 던진다`() {
             whenever(passwordResetCodeRepository.findTopByEmailOrderByCreatedAtDesc("test@yologram.link"))
                 .thenReturn(Optional.of(resetCode(expiredAt = LocalDateTime.now().minusMinutes(1))))
 
-            assertThrows<PasswordResetExpiredException> {
+            assertThrows<UserPasswordResetExpiredException> {
                 passwordResetService.verifyCode("test@yologram.link", "123456")
             }
         }
 
         @Test
-        fun `코드가 일치하지 않으면 PasswordResetInvalidException을 던진다`() {
+        fun `코드가 일치하지 않으면 UserPasswordResetInvalidException을 던진다`() {
             whenever(passwordResetCodeRepository.findTopByEmailOrderByCreatedAtDesc("test@yologram.link"))
                 .thenReturn(Optional.of(resetCode()))
 
-            assertThrows<PasswordResetInvalidException> {
+            assertThrows<UserPasswordResetInvalidException> {
                 passwordResetService.verifyCode("test@yologram.link", "999999")
             }
         }
@@ -133,11 +133,11 @@ class PasswordResetServiceTest {
         }
 
         @Test
-        fun `코드가 일치하지 않으면 PasswordResetInvalidException을 던진다`() {
+        fun `코드가 일치하지 않으면 UserPasswordResetInvalidException을 던진다`() {
             whenever(passwordResetCodeRepository.findTopByEmailOrderByCreatedAtDesc("test@yologram.link"))
                 .thenReturn(Optional.of(resetCode()))
 
-            assertThrows<PasswordResetInvalidException> {
+            assertThrows<UserPasswordResetInvalidException> {
                 passwordResetService.confirm("test@yologram.link", "999999", "newpass1234")
             }
 
@@ -145,11 +145,11 @@ class PasswordResetServiceTest {
         }
 
         @Test
-        fun `코드가 만료되면 PasswordResetExpiredException을 던진다`() {
+        fun `코드가 만료되면 UserPasswordResetExpiredException을 던진다`() {
             whenever(passwordResetCodeRepository.findTopByEmailOrderByCreatedAtDesc("test@yologram.link"))
                 .thenReturn(Optional.of(resetCode(expiredAt = LocalDateTime.now().minusMinutes(1))))
 
-            assertThrows<PasswordResetExpiredException> {
+            assertThrows<UserPasswordResetExpiredException> {
                 passwordResetService.confirm("test@yologram.link", "123456", "newpass1234")
             }
         }

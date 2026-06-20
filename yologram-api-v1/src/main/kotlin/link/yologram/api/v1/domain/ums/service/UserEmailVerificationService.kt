@@ -1,10 +1,10 @@
 package link.yologram.api.v1.domain.ums.service
 
-import link.yologram.api.v1.domain.ums.entity.EmailVerificationCode
-import link.yologram.api.v1.domain.ums.exception.EmailVerificationExpiredException
-import link.yologram.api.v1.domain.ums.exception.EmailVerificationInvalidException
+import link.yologram.api.v1.domain.ums.entity.UserEmailVerification
+import link.yologram.api.v1.domain.ums.exception.UserEmailVerificationExpiredException
+import link.yologram.api.v1.domain.ums.exception.UserEmailVerificationInvalidException
 import link.yologram.api.v1.domain.ums.exception.UserDuplicateException
-import link.yologram.api.v1.domain.ums.repository.EmailVerificationCodeRepository
+import link.yologram.api.v1.domain.ums.repository.UserEmailVerificationRepository
 import link.yologram.api.v1.domain.ums.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -12,8 +12,8 @@ import java.time.LocalDateTime
 import kotlin.random.Random
 
 @Service
-class EmailVerificationService(
-    private val emailVerificationCodeRepository: EmailVerificationCodeRepository,
+class UserEmailVerificationService(
+    private val emailVerificationCodeRepository: UserEmailVerificationRepository,
     private val userRepository: UserRepository,
     private val emailSender: EmailSender,
 ) {
@@ -27,7 +27,7 @@ class EmailVerificationService(
         emailVerificationCodeRepository.deleteAllByEmail(email)
 
         val code = generateCode()
-        val verification = EmailVerificationCode(
+        val verification = UserEmailVerification(
             email = email,
             code = code,
             expiredAt = LocalDateTime.now().plusMinutes(5),
@@ -40,14 +40,14 @@ class EmailVerificationService(
     @Transactional
     fun verifyCode(email: String, code: String) {
         val verification = emailVerificationCodeRepository.findTopByEmailOrderByCreatedAtDesc(email)
-            .orElseThrow { EmailVerificationInvalidException() }
+            .orElseThrow { UserEmailVerificationInvalidException() }
 
         if (verification.expiredAt.isBefore(LocalDateTime.now())) {
-            throw EmailVerificationExpiredException()
+            throw UserEmailVerificationExpiredException()
         }
 
         if (verification.code != code) {
-            throw EmailVerificationInvalidException()
+            throw UserEmailVerificationInvalidException()
         }
 
         verification.verified = true

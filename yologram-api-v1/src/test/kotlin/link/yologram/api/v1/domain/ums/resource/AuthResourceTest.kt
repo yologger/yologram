@@ -5,16 +5,16 @@ import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.ums.exception.*
 import link.yologram.api.v1.domain.ums.model.LoginRequest
 import link.yologram.api.v1.domain.ums.model.LoginResponse
-import link.yologram.api.v1.domain.ums.model.EmailVerificationSendRequest
+import link.yologram.api.v1.domain.ums.model.UserEmailVerificationSendRequest
 import link.yologram.api.v1.domain.ums.model.ValidateTokenResponse
-import link.yologram.api.v1.domain.ums.model.EmailVerificationVerifyRequest
-import link.yologram.api.v1.domain.ums.model.PasswordResetSendRequest
-import link.yologram.api.v1.domain.ums.model.PasswordResetVerifyRequest
-import link.yologram.api.v1.domain.ums.model.PasswordResetConfirmRequest
+import link.yologram.api.v1.domain.ums.model.UserEmailVerificationVerifyRequest
+import link.yologram.api.v1.domain.ums.model.UserPasswordResetSendRequest
+import link.yologram.api.v1.domain.ums.model.UserPasswordResetVerifyRequest
+import link.yologram.api.v1.domain.ums.model.UserPasswordResetConfirmRequest
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.service.AuthService
-import link.yologram.api.v1.domain.ums.service.EmailVerificationService
-import link.yologram.api.v1.domain.ums.service.PasswordResetService
+import link.yologram.api.v1.domain.ums.service.UserEmailVerificationService
+import link.yologram.api.v1.domain.ums.service.UserPasswordResetService
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -43,10 +43,10 @@ class AuthResourceTest {
     lateinit var authService: AuthService
 
     @MockitoBean
-    lateinit var emailVerificationService: EmailVerificationService
+    lateinit var emailVerificationService: UserEmailVerificationService
 
     @MockitoBean
-    lateinit var passwordResetService: PasswordResetService
+    lateinit var passwordResetService: UserPasswordResetService
 
     @MockitoBean
     lateinit var jwtUtil: JwtUtil
@@ -224,7 +224,7 @@ class AuthResourceTest {
         fun `발송 성공 시 204를 반환한다`() {
             mockMvc.post("/api/v1/ums/auth/email-verification/send") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(EmailVerificationSendRequest("test@yologram.link"))
+                content = objectMapper.writeValueAsString(UserEmailVerificationSendRequest("test@yologram.link"))
             }.andExpect {
                 status { isNoContent() }
             }
@@ -237,7 +237,7 @@ class AuthResourceTest {
 
             mockMvc.post("/api/v1/ums/auth/email-verification/send") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(EmailVerificationSendRequest("duplicate@yologram.link"))
+                content = objectMapper.writeValueAsString(UserEmailVerificationSendRequest("duplicate@yologram.link"))
             }.andExpect {
                 status { isConflict() }
                 jsonPath("$.errorCode") { value("USER_DUPLICATE") }
@@ -272,7 +272,7 @@ class AuthResourceTest {
         fun `인증 성공 시 204를 반환한다`() {
             mockMvc.post("/api/v1/ums/auth/email-verification/verify") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(EmailVerificationVerifyRequest("test@yologram.link", "123456"))
+                content = objectMapper.writeValueAsString(UserEmailVerificationVerifyRequest("test@yologram.link", "123456"))
             }.andExpect {
                 status { isNoContent() }
             }
@@ -281,28 +281,28 @@ class AuthResourceTest {
         @Test
         fun `인증 코드가 만료되면 400을 반환한다`() {
             whenever(emailVerificationService.verifyCode("test@yologram.link", "123456"))
-                .thenThrow(EmailVerificationExpiredException())
+                .thenThrow(UserEmailVerificationExpiredException())
 
             mockMvc.post("/api/v1/ums/auth/email-verification/verify") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(EmailVerificationVerifyRequest("test@yologram.link", "123456"))
+                content = objectMapper.writeValueAsString(UserEmailVerificationVerifyRequest("test@yologram.link", "123456"))
             }.andExpect {
                 status { isBadRequest() }
-                jsonPath("$.errorCode") { value("EMAIL_VERIFICATION_EXPIRED") }
+                jsonPath("$.errorCode") { value("USER_EMAIL_VERIFICATION_EXPIRED") }
             }
         }
 
         @Test
         fun `인증 코드가 일치하지 않으면 400을 반환한다`() {
             whenever(emailVerificationService.verifyCode("test@yologram.link", "999999"))
-                .thenThrow(EmailVerificationInvalidException())
+                .thenThrow(UserEmailVerificationInvalidException())
 
             mockMvc.post("/api/v1/ums/auth/email-verification/verify") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(EmailVerificationVerifyRequest("test@yologram.link", "999999"))
+                content = objectMapper.writeValueAsString(UserEmailVerificationVerifyRequest("test@yologram.link", "999999"))
             }.andExpect {
                 status { isBadRequest() }
-                jsonPath("$.errorCode") { value("EMAIL_VERIFICATION_INVALID") }
+                jsonPath("$.errorCode") { value("USER_EMAIL_VERIFICATION_INVALID") }
             }
         }
 
@@ -334,7 +334,7 @@ class AuthResourceTest {
         fun `코드 발송 성공 시 204를 반환한다`() {
             mockMvc.post("/api/v1/ums/auth/password-reset/send") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(PasswordResetSendRequest("test@yologram.link"))
+                content = objectMapper.writeValueAsString(UserPasswordResetSendRequest("test@yologram.link"))
             }.andExpect {
                 status { isNoContent() }
             }
@@ -347,7 +347,7 @@ class AuthResourceTest {
 
             mockMvc.post("/api/v1/ums/auth/password-reset/send") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(PasswordResetSendRequest("unknown@yologram.link"))
+                content = objectMapper.writeValueAsString(UserPasswordResetSendRequest("unknown@yologram.link"))
             }.andExpect {
                 status { isNotFound() }
                 jsonPath("$.errorCode") { value("USER_NOT_FOUND") }
@@ -368,7 +368,7 @@ class AuthResourceTest {
         fun `코드 검증 성공 시 204를 반환한다`() {
             mockMvc.post("/api/v1/ums/auth/password-reset/verify") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(PasswordResetVerifyRequest("test@yologram.link", "123456"))
+                content = objectMapper.writeValueAsString(UserPasswordResetVerifyRequest("test@yologram.link", "123456"))
             }.andExpect {
                 status { isNoContent() }
             }
@@ -377,14 +377,14 @@ class AuthResourceTest {
         @Test
         fun `검증 시 코드 불일치면 400을 반환한다`() {
             whenever(passwordResetService.verifyCode("test@yologram.link", "999999"))
-                .thenThrow(PasswordResetInvalidException())
+                .thenThrow(UserPasswordResetInvalidException())
 
             mockMvc.post("/api/v1/ums/auth/password-reset/verify") {
                 contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(PasswordResetVerifyRequest("test@yologram.link", "999999"))
+                content = objectMapper.writeValueAsString(UserPasswordResetVerifyRequest("test@yologram.link", "999999"))
             }.andExpect {
                 status { isBadRequest() }
-                jsonPath("$.errorCode") { value("PASSWORD_RESET_INVALID") }
+                jsonPath("$.errorCode") { value("USER_PASSWORD_RESET_INVALID") }
             }
         }
 
@@ -393,7 +393,7 @@ class AuthResourceTest {
             mockMvc.post("/api/v1/ums/auth/password-reset/confirm") {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    PasswordResetConfirmRequest("test@yologram.link", "123456", "newpass1234")
+                    UserPasswordResetConfirmRequest("test@yologram.link", "123456", "newpass1234")
                 )
             }.andExpect {
                 status { isNoContent() }
@@ -403,16 +403,16 @@ class AuthResourceTest {
         @Test
         fun `변경 시 코드 만료면 400을 반환한다`() {
             whenever(passwordResetService.confirm("test@yologram.link", "123456", "newpass1234"))
-                .thenThrow(PasswordResetExpiredException())
+                .thenThrow(UserPasswordResetExpiredException())
 
             mockMvc.post("/api/v1/ums/auth/password-reset/confirm") {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(
-                    PasswordResetConfirmRequest("test@yologram.link", "123456", "newpass1234")
+                    UserPasswordResetConfirmRequest("test@yologram.link", "123456", "newpass1234")
                 )
             }.andExpect {
                 status { isBadRequest() }
-                jsonPath("$.errorCode") { value("PASSWORD_RESET_EXPIRED") }
+                jsonPath("$.errorCode") { value("USER_PASSWORD_RESET_EXPIRED") }
             }
         }
 

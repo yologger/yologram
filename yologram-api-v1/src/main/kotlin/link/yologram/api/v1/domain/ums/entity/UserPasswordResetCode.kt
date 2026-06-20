@@ -6,9 +6,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "password_reset_codes")
+@Table(name = "user_password_reset_code")
 @EntityListeners(AuditingEntityListener::class)
-class PasswordResetCode(
+class UserPasswordResetCode(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
