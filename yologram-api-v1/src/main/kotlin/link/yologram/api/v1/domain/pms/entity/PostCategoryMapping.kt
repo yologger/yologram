@@ -3,8 +3,8 @@ package link.yologram.api.v1.domain.pms.entity
 import jakarta.persistence.*
 
 @Entity
-@Table(name = "post_categories")
-class PostCategory(
+@Table(name = "post_category_mapping")
+class PostCategoryMapping(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,

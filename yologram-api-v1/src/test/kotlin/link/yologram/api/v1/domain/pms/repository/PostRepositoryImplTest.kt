@@ -3,7 +3,7 @@ package link.yologram.api.v1.domain.pms.repository
 import jakarta.persistence.EntityManager
 import link.yologram.api.v1.domain.cms.enums.Section
 import link.yologram.api.v1.domain.pms.entity.Post
-import link.yologram.api.v1.domain.pms.entity.PostCategory
+import link.yologram.api.v1.domain.pms.entity.PostCategoryMapping
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -23,14 +23,14 @@ class PostRepositoryImplTest {
     lateinit var postRepository: PostRepository
 
     @Autowired
-    lateinit var postCategoryRepository: PostCategoryRepository
+    lateinit var postCategoryMappingRepository: PostCategoryMappingRepository
 
     @Autowired
     lateinit var entityManager: EntityManager
 
     @BeforeEach
     fun setUp() {
-        postCategoryRepository.deleteAll()
+        postCategoryMappingRepository.deleteAll()
         postRepository.deleteAll()
         entityManager.flush()
     }
@@ -95,8 +95,8 @@ class PostRepositoryImplTest {
         fun `categoryId가 매핑된 글만 반환한다`() {
             val p1 = savePost(Section.TECH)
             val p2 = savePost(Section.TECH)
-            postCategoryRepository.save(PostCategory(postId = p1.id, categoryId = 10L))
-            postCategoryRepository.save(PostCategory(postId = p2.id, categoryId = 20L))
+            postCategoryMappingRepository.save(PostCategoryMapping(postId = p1.id, categoryId = 10L))
+            postCategoryMappingRepository.save(PostCategoryMapping(postId = p2.id, categoryId = 20L))
             entityManager.flush()
 
             val result = postRepository.findPostsBySection(Section.TECH, 10L, null, 10)

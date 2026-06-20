@@ -5,7 +5,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory
 import link.yologram.api.v1.domain.cms.enums.Section
 import link.yologram.api.v1.domain.pms.entity.Post
 import link.yologram.api.v1.domain.pms.entity.QPost
-import link.yologram.api.v1.domain.pms.entity.QPostCategory
+import link.yologram.api.v1.domain.pms.entity.QPostCategoryMapping
 
 class PostRepositoryImpl(
     private val queryFactory: JPAQueryFactory,
@@ -13,14 +13,14 @@ class PostRepositoryImpl(
 
     override fun findPostsBySection(section: Section, categoryId: Long?, cursorId: Long?, limit: Int): List<Post> {
         val post = QPost.post
-        val postCategory = QPostCategory.postCategory
+        val postCategory = QPostCategoryMapping.postCategoryMapping
 
-        // 기본 조건: 해당 섹션 글만 (인덱스 idx_posts_section_id의 선두 컬럼)
+        // 기본 조건: 해당 섹션 글만 (인덱스 idx_post_section_id의 선두 컬럼)
         val query = queryFactory
             .selectFrom(post)
             .where(post.section.eq(section))
 
-        // 카테고리 필터(선택): post_categories에 (post_id, categoryId) 매핑이 있는 글만.
+        // 카테고리 필터(선택): post_category_mapping에 (post_id, categoryId) 매핑이 있는 글만.
         // EXISTS는 매칭 1건에 단축 → join처럼 행이 불어나지 않아 글:카테고리 1:N에서도 안전
         if (categoryId != null) {
             query.where(
@@ -38,7 +38,7 @@ class PostRepositoryImpl(
             query.where(post.id.lt(cursorId))
         }
 
-        // 최신순(id desc) 정렬 후 limit개. 커서+정렬이 idx_posts_section_id를 그대로 탐
+        // 최신순(id desc) 정렬 후 limit개. 커서+정렬이 idx_post_section_id를 그대로 탐
         return query
             .orderBy(post.id.desc())
             .limit(limit.toLong())

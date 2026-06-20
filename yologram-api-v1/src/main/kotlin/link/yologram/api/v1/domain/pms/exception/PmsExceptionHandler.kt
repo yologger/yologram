@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class PmsExceptionHandler {
 
-    @ExceptionHandler(InvalidCategoryException::class)
-    fun handleInvalidCategory(e: InvalidCategoryException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(InvalidPostCategoryException::class)
+    fun handleInvalidCategory(e: InvalidPostCategoryException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
 

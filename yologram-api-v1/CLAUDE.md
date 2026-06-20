@@ -67,11 +67,11 @@
 
 ## 커뮤니티 카테고리 (CMS)
 
-- 도메인: domain/cms (Section enum, Category 엔티티/조회)
+- 도메인: domain/cms (Section enum, PostCategory 엔티티/조회)
 - Section enum: domain/cms/enums 패키지 (패키지명 `enum`은 Java 예약어 → QueryDSL Q클래스 생성 시 enum 필드 누락되므로 `enums` 사용). TECH / INVEST / POLITICS (게시판=섹션, @Enumerated(STRING) VARCHAR(20)). 코드 결합이라 ENUM 유지
-- categories 테이블: id, section, name, sort_order, is_active, created_at, UNIQUE(section, name)
-- CategoryService.getCategories(sectionPath): Section.fromPath로 검증(대소문자 무시), isActive=true, sortOrder 정렬
-- 응답 CategoryResponse: { id, name, sortOrder }
+- post_category 테이블: id, section, name, sort_order, is_active, created_at, UNIQUE(section, name)
+- PostCategoryService.getPostCategories(sectionPath): Section.fromPath로 검증(대소문자 무시), isActive=true, sortOrder 정렬
+- 응답 PostCategoryResponse: { id, name, sortOrder }
 - 엔드포인트: GET /api/v1/cms/{section}/categories
 - 예외: InvalidSectionException (400, INVALID_SECTION) — CmsExceptionHandler
 - 카테고리는 어드민이 관리하는 콘텐츠(추후 CRUD), 프론트는 이 API로 섹션별 필터를 동적 렌더
@@ -79,20 +79,20 @@
 
 ## 커뮤니티 게시글 (PMS)
 
-- 도메인: domain/pms (Post, PostCategory). 작성은 단일 엔드포인트 POST /api/v1/pms/{section}/posts (인증 필요)
-- community_posts (단일 + section): id, section, user_id, title, content, like_count, comment_count, created_at, modified_date / 인덱스 (section, id) = idx_posts_section_id
-- post_categories (N:M): post_id, category_id — 카테고리 필터 조회용. FK 제약 없이 인덱스만(경계 분리 대비)
+- 도메인: domain/pms (Post, PostCategoryMapping). 작성은 단일 엔드포인트 POST /api/v1/pms/{section}/posts (인증 필요)
+- post (단일 + section): id, section, user_id, title, content, like_count, comment_count, created_at, modified_date / 인덱스 (section, id) = idx_post_section_id
+- post_category_mapping (N:M): post_id, category_id — 카테고리 필터 조회용. FK 제약 없이 인덱스만(경계 분리 대비)
 - 도메인 경계(ums user_id, cms category_id)를 넘는 참조는 FK 없이 컬럼+인덱스
 - PostService.create: 작성자=인증 유저(uid), categoryIds가 해당 section 활성 카테고리인지 검증(1~3개 필수). 프론트에서도 카테고리 1개 이상 선택해야 작성 가능(미선택 시 버튼 비활성)
-- CategoryQueryClient 인터페이스로 cms 카테고리 검증 추상화 → 모놀리식은 LocalCategoryQueryClient(cms 리포지토리 직접), MSA 분리 시 HTTP 호출 구현으로 교체
+- PostCategoryQueryClient 인터페이스로 cms 카테고리 검증 추상화 → 모놀리식은 LocalPostCategoryQueryClient(cms 리포지토리 직접), MSA 분리 시 HTTP 호출 구현으로 교체
 - 요청 { title?, content, categoryIds[] }, 응답 { id } (201)
-- 예외: InvalidCategoryException (400, INVALID_CATEGORY), 잘못된 section은 Section.fromPath의 InvalidSectionException (400) — PmsExceptionHandler
+- 예외: InvalidPostCategoryException (400, INVALID_POST_CATEGORY), 잘못된 section은 Section.fromPath의 InvalidSectionException (400) — PmsExceptionHandler
 - section별 전용 필드(투자 종목코드 등)는 추후 확장 테이블 + 동일 엔드포인트 body 확장으로 처리(엔드포인트 분리 X)
 - 상세 조회: GET /api/v1/pms/{section}/posts/{id} (공개). PostDetailResponse에 author{uid,nickname} 포함(UserQueryClient로 ums 조회, MSA 대비), categoryIds는 프론트가 매핑. 없거나 다른 section의 id면 404 POST_NOT_FOUND
 - 목록 조회: GET /api/v1/pms/{section}/posts (공개). 최신순(id desc) + cursor(keyset) 페이지네이션, categoryId 필터(옵션), size 기본 20·최대 50. 응답 ApiEnvelopCursorPage{data, nextCursor}, PostSummaryResponse(content 전체 포함)
 - 커서/종료 판정은 legacy(yologram-legacy) 방식: id-only 커서(id가 작성순=시간순) + 마지막 글 id를 항상 nextCursor로(빈 결과면 null). +1/hasNext/count 미사용. 잘못된 커서 → 400 INVALID_CURSOR
 - PostRepositoryImpl(QueryDSL)이 프로젝트 첫 QueryDSL 사용처 — QuerydslConfig에 JPAQueryFactory 빈. N+1 회피 위해 닉네임(findNicknames)·카테고리(findByPostIdIn) 배치 조회. 닉네임은 ums 경계 추상화(UserQueryClient) 위해 join 대신 별도 조회, 카테고리는 1:N이라 IN
-- 인덱스: community_posts (section, id) = idx_posts_section_id (id desc 정렬·커서 커버)
+- 인덱스: post (section, id) = idx_post_section_id (id desc 정렬·커서 커버)
 
 ## 테스트
 

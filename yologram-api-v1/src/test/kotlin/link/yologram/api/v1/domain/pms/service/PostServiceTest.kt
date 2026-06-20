@@ -3,12 +3,12 @@ package link.yologram.api.v1.domain.pms.service
 import link.yologram.api.v1.domain.cms.enums.Section
 import link.yologram.api.v1.domain.cms.exception.InvalidSectionException
 import link.yologram.api.v1.domain.pms.entity.Post
-import link.yologram.api.v1.domain.pms.entity.PostCategory
-import link.yologram.api.v1.domain.pms.exception.InvalidCategoryException
+import link.yologram.api.v1.domain.pms.entity.PostCategoryMapping
+import link.yologram.api.v1.domain.pms.exception.InvalidPostCategoryException
 import link.yologram.api.v1.domain.pms.exception.PostNotFoundException
 import link.yologram.api.v1.domain.pms.model.CreatePostRequest
 import link.yologram.api.v1.domain.pms.model.PostCursor
-import link.yologram.api.v1.domain.pms.repository.PostCategoryRepository
+import link.yologram.api.v1.domain.pms.repository.PostCategoryMappingRepository
 import link.yologram.api.v1.domain.pms.repository.PostRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -35,10 +35,10 @@ class PostServiceTest {
     lateinit var postRepository: PostRepository
 
     @Mock
-    lateinit var postCategoryRepository: PostCategoryRepository
+    lateinit var postCategoryMappingRepository: PostCategoryMappingRepository
 
     @Mock
-    lateinit var categoryQueryClient: CategoryQueryClient
+    lateinit var categoryQueryClient: PostCategoryQueryClient
 
     @Mock
     lateinit var userQueryClient: UserQueryClient
@@ -60,14 +60,14 @@ class PostServiceTest {
             val result = postService.create("tech", 1L, CreatePostRequest(content = "내용", categoryIds = listOf(1L, 2L)))
 
             assertEquals(10L, result.id)
-            verify(postCategoryRepository, times(2)).save(any<PostCategory>())
+            verify(postCategoryMappingRepository, times(2)).save(any<PostCategoryMapping>())
         }
 
         @Test
-        fun `카테고리가 해당 section 것이 아니면 InvalidCategoryException을 던진다`() {
+        fun `카테고리가 해당 section 것이 아니면 InvalidPostCategoryException을 던진다`() {
             whenever(categoryQueryClient.allActiveInSection(Section.TECH, setOf(99L))).thenReturn(false)
 
-            assertThrows<InvalidCategoryException> {
+            assertThrows<InvalidPostCategoryException> {
                 postService.create("tech", 1L, CreatePostRequest(content = "내용", categoryIds = listOf(99L)))
             }
 
@@ -91,8 +91,8 @@ class PostServiceTest {
         fun `게시글과 카테고리·작성자 닉네임을 반환한다`() {
             val post = Post(id = 1L, section = Section.TECH, userId = 12L, title = "제목", content = "내용", likeCount = 3, commentCount = 2)
             whenever(postRepository.findById(1L)).thenReturn(Optional.of(post))
-            whenever(postCategoryRepository.findByPostId(1L)).thenReturn(
-                listOf(PostCategory(id = 1L, postId = 1L, categoryId = 1L), PostCategory(id = 2L, postId = 1L, categoryId = 2L)),
+            whenever(postCategoryMappingRepository.findByPostId(1L)).thenReturn(
+                listOf(PostCategoryMapping(id = 1L, postId = 1L, categoryId = 1L), PostCategoryMapping(id = 2L, postId = 1L, categoryId = 2L)),
             )
             whenever(userQueryClient.findNickname(12L)).thenReturn("tester")
 
@@ -137,8 +137,8 @@ class PostServiceTest {
             val fetched = listOf(post(3), post(2))
             whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), anyOrNull(), eq(2))).thenReturn(fetched)
             whenever(userQueryClient.findNicknames(any())).thenReturn(mapOf(3L to "u3", 2L to "u2"))
-            whenever(postCategoryRepository.findByPostIdIn(any())).thenReturn(
-                listOf(PostCategory(id = 1L, postId = 3L, categoryId = 10L)),
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(
+                listOf(PostCategoryMapping(id = 1L, postId = 3L, categoryId = 10L)),
             )
 
             val result = postService.getPosts("tech", null, null, 2)
@@ -155,7 +155,7 @@ class PostServiceTest {
         fun `결과가 없으면 빈 목록과 null nextCursor를 반환한다`() {
             whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), anyOrNull(), eq(20))).thenReturn(emptyList())
             whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
-            whenever(postCategoryRepository.findByPostIdIn(any())).thenReturn(emptyList())
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
             val result = postService.getPosts("tech", null, null, 20)
 
@@ -167,7 +167,7 @@ class PostServiceTest {
         fun `cursor가 주어지면 디코딩한 id로 조회한다`() {
             whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), eq(5L), eq(20))).thenReturn(emptyList())
             whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
-            whenever(postCategoryRepository.findByPostIdIn(any())).thenReturn(emptyList())
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
             postService.getPosts("tech", null, PostCursor.encode(5L), 20)
 
@@ -178,7 +178,7 @@ class PostServiceTest {
         fun `size가 최대치를 넘으면 50으로 제한된다`() {
             whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), anyOrNull(), eq(50))).thenReturn(emptyList())
             whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
-            whenever(postCategoryRepository.findByPostIdIn(any())).thenReturn(emptyList())
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
             postService.getPosts("tech", null, null, 100)
 

@@ -2,15 +2,15 @@ package link.yologram.api.v1.domain.pms.service
 
 import link.yologram.api.v1.domain.cms.enums.Section
 import link.yologram.api.v1.domain.pms.entity.Post
-import link.yologram.api.v1.domain.pms.entity.PostCategory
-import link.yologram.api.v1.domain.pms.exception.InvalidCategoryException
+import link.yologram.api.v1.domain.pms.entity.PostCategoryMapping
+import link.yologram.api.v1.domain.pms.exception.InvalidPostCategoryException
 import link.yologram.api.v1.domain.pms.exception.PostNotFoundException
 import link.yologram.api.v1.domain.pms.model.CreatePostRequest
 import link.yologram.api.v1.domain.pms.model.CreatePostResponse
 import link.yologram.api.v1.domain.pms.model.PostCursor
 import link.yologram.api.v1.domain.pms.model.PostDetailResponse
 import link.yologram.api.v1.domain.pms.model.PostSummaryResponse
-import link.yologram.api.v1.domain.pms.repository.PostCategoryRepository
+import link.yologram.api.v1.domain.pms.repository.PostCategoryMappingRepository
 import link.yologram.api.v1.domain.pms.repository.PostRepository
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import org.springframework.data.repository.findByIdOrNull
@@ -20,8 +20,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class PostService(
     private val postRepository: PostRepository,
-    private val postCategoryRepository: PostCategoryRepository,
-    private val categoryQueryClient: CategoryQueryClient,
+    private val postCategoryMappingRepository: PostCategoryMappingRepository,
+    private val categoryQueryClient: PostCategoryQueryClient,
     private val userQueryClient: UserQueryClient,
 ) {
 
@@ -31,7 +31,7 @@ class PostService(
         val categoryIds = request.categoryIds.toSet()
 
         if (!categoryQueryClient.allActiveInSection(section, categoryIds)) {
-            throw InvalidCategoryException()
+            throw InvalidPostCategoryException()
         }
 
         val post = postRepository.save(
@@ -44,7 +44,7 @@ class PostService(
         )
 
         categoryIds.forEach { categoryId ->
-            postCategoryRepository.save(PostCategory(postId = post.id, categoryId = categoryId))
+            postCategoryMappingRepository.save(PostCategoryMapping(postId = post.id, categoryId = categoryId))
         }
 
         return CreatePostResponse(id = post.id)
@@ -56,7 +56,7 @@ class PostService(
         val post = postRepository.findByIdOrNull(id) ?: throw PostNotFoundException()
         if (post.section != section) throw PostNotFoundException()
 
-        val categoryIds = postCategoryRepository.findByPostId(post.id).map { it.categoryId }
+        val categoryIds = postCategoryMappingRepository.findByPostId(post.id).map { it.categoryId }
         val nickname = userQueryClient.findNickname(post.userId)
 
         return PostDetailResponse(
@@ -101,7 +101,7 @@ class PostService(
 
         // 6) 카테고리 배치 조회 (N+1 회피): postId들을 모아 1번 질의 후 postId→categoryId 리스트로 그룹핑
         //    글:카테고리는 1:N이라 목록 join 시 row가 불어나 limit이 깨짐 → 별도 IN 조회
-        val categoryIdsByPost = postCategoryRepository.findByPostIdIn(posts.map { it.id })
+        val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.id })
             .groupBy({ it.postId }, { it.categoryId })
 
         // 7) DTO 매핑: 5·6에서 만든 Map에서 닉네임·카테고리를 꺼내 PostSummaryResponse로 변환

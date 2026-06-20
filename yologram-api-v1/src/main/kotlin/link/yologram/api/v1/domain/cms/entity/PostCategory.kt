@@ -7,9 +7,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "categories")
+@Table(name = "post_category")
 @EntityListeners(AuditingEntityListener::class)
-class Category(
+class PostCategory(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,

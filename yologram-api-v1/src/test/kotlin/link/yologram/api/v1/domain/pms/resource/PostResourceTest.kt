@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.cms.exception.CmsExceptionHandler
 import link.yologram.api.v1.domain.cms.exception.InvalidSectionException
-import link.yologram.api.v1.domain.pms.exception.InvalidCategoryException
+import link.yologram.api.v1.domain.pms.exception.InvalidPostCategoryException
 import link.yologram.api.v1.domain.pms.exception.PmsExceptionHandler
 import link.yologram.api.v1.domain.cms.enums.Section
 import link.yologram.api.v1.domain.pms.exception.PostNotFoundException
@@ -130,7 +130,7 @@ class PostResourceTest {
     @Test
     fun `카테고리가 해당 section 것이 아니면 400 반환`() {
         whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
-        doThrow(InvalidCategoryException()).whenever(postService).create(any(), any(), any())
+        doThrow(InvalidPostCategoryException()).whenever(postService).create(any(), any(), any())
 
         mockMvc.post("/api/v1/pms/tech/posts") {
             header("Authorization", "Bearer valid-token")
@@ -138,7 +138,7 @@ class PostResourceTest {
             content = objectMapper.writeValueAsString(CreatePostRequest(content = "내용", categoryIds = listOf(99L)))
         }.andExpect {
             status { isBadRequest() }
-            jsonPath("$.errorCode") { value("INVALID_CATEGORY") }
+            jsonPath("$.errorCode") { value("INVALID_POST_CATEGORY") }
         }
     }
 

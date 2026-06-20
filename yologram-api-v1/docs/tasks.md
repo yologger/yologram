@@ -133,8 +133,8 @@
 
 ## PMS - 커뮤니티 게시글 작성 (2단계)
 
-- [ ] community_posts 테이블 DDL + 인덱스 (section, created_at) (DB 직접 실행)
-- [ ] post_categories 테이블 DDL (DB 직접 실행)
+- [ ] post 테이블 DDL + 인덱스 (section, id) (DB 직접 실행)
+- [ ] post_category_mapping 테이블 DDL (DB 직접 실행)
 - [x] Post / PostCategory 엔티티 + 리포지토리 (FK 없는 인덱스 매핑)
 - [x] PostService.create (작성자=인증유저, categoryIds section 일치 검증, 1~3개 필수)
 - [x] CategoryQueryClient 인터페이스 + LocalCategoryQueryClient (cms 경계 추상화, MSA 대비)
@@ -155,7 +155,7 @@
 - [x] 목록 카테고리 필터 (categoryId) — EXISTS 서브쿼리
 - [x] 커서/종료 판정은 legacy(yologram-legacy) 방식: id-only 커서 + 마지막 글 id를 항상 nextCursor로(빈 결과면 null), +1/hasNext 미사용. 잘못된 커서 → 400 INVALID_CURSOR
 - [x] QuerydslConfig(JPAQueryFactory 빈, 프로젝트 첫 QueryDSL 사용처) / PostRepositoryImpl.findPostsBySection · PostCursor(object) · PostSummaryResponse(content 전체 포함)
-- [x] 인덱스 교체: (section, created_at) → (section, id) (idx_posts_section_id). id desc 정렬·커서 커버
+- [x] 인덱스 교체: (section, created_at) → (section, id) (idx_post_section_id). id desc 정렬·커서 커버
 - [x] N+1 회피: findNicknames · findByPostIdIn 배치 조회 (닉네임은 ums 경계 추상화 위해 join 대신 별도 조회, 카테고리는 1:N이라 IN)
 - [x] cms.enum → cms.enums 리네임 (패키지명 enum이 Java 예약어 → QueryDSL Q클래스에서 enum 필드 누락 해결)
 - [x] 테스트 (서비스 5 + 리소스 2 + 리포지토리 통합 5)
@@ -165,8 +165,8 @@
 - legacy(yologram-legacy) BoardCustomRepository 기법: 멀티 leftJoin+on, Projections.constructor 중첩 DTO, coalesce, cursor/offset 페이지네이션, count, id 범위
 - 원칙: cross-domain join(작성자 닉네임/카운트)은 yologram 경계(QueryClient)로 회피. C는 학습 의도로 의식적 예외
 - [ ] A. 내 글 목록(마이페이지): offset 페이지네이션 + count + 동적조건(섹션/카테고리/기간, BooleanBuilder) + projection. 피드의 cursor와 대비 학습. pms 단일 도메인 (legacy findBoardsWithMetricsByUid/countBoardsByUid 대응)
-- [ ] B. 카테고리별 글 수 집계: post ↔ post_categories join + groupBy(category_id) + count. 필터 칩 개수 뱃지/어드민 통계
-- [ ] C. 목록에 카테고리명 포함: post_categories ↔ categories join + Projections 중첩 → categories[{id,name}]. 멀티 join + 중첩 projection 학습 + 응답 직관성. 단 pms→cms 경계 결합(학습용, 본 원칙은 경계 분리)
+- [ ] B. 카테고리별 글 수 집계: post ↔ post_category_mapping join + groupBy(category_id) + count. 필터 칩 개수 뱃지/어드민 통계
+- [ ] C. 목록에 카테고리명 포함: post_category_mapping ↔ categories join + Projections 중첩 → categories[{id,name}]. 멀티 join + 중첩 projection 학습 + 응답 직관성. 단 pms→cms 경계 결합(학습용, 본 원칙은 경계 분리)
 - [ ] D. 벌크 update: 좋아요/조회수 증가 QueryDSL update (count 도메인 도입 시)
 - [ ] E. 기간별 글 조회: between/goe/loe 범위 조건 (legacy findBoardsWithMetrics(from,to) 대응)
 
@@ -177,7 +177,7 @@
 
 ## Count - 좋아요/카운트 (경로 예약, 예정)
 
-- [ ] 좋아요 토글 (/api/v1/count/... 경로 예약, 현재 community_posts 컬럼 동기 보관)
+- [ ] 좋아요 토글 (/api/v1/count/... 경로 예약, 현재 post 컬럼 동기 보관)
 - [ ] 분리 시 이벤트 기반 카운트 이관
 
 ## Search - 검색 시스템 (추후 도입, 번개장터 구조 참고)
@@ -192,7 +192,7 @@
 ## Admin - 커뮤니티 카테고리 관리 (예정)
 
 - [ ] POST/DELETE/GET /api/v1/cms/admin/{section}/categories (어드민 권한)
-- [ ] 카테고리 삭제 시 기존 글 처리 정책 (is_active vs post_categories 제거)
+- [ ] 카테고리 삭제 시 기존 글 처리 정책 (is_active vs post_category_mapping 제거)
 
 ## Admin - 유저 관리
 

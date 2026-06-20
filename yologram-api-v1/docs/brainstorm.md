@@ -22,7 +22,7 @@
 - 현재는 api-v1 단일 서버(모듈러 모놀리식)에서 도메인별 패키지로 분리해 처리
 - 도메인 경계 = 미래 마이크로서비스 경계 = API Gateway path prefix. 나중에 prefix별로 다른 서비스로 포워딩해 물리 분리
   - UMS (User Management System): 회원/인증 — yologram-api-v1(현재) → yologram-user-api
-  - PMS (Post Management System): 커뮤니티 게시글 + post_categories(연결) → yologram-post-api
+  - PMS (Post Management System): 커뮤니티 게시글 + post_category_mapping(연결) → yologram-post-api
   - CMS (Contents Management System): 카테고리 마스터, (추후 기획전/배너/팝업 등 콘텐츠·메타데이터) → yologram-cms-api
   - Comment: 댓글 → yologram-comment-api
   - Count: 좋아요·댓글 수 등 카운트 → yologram-count-api
@@ -96,7 +96,7 @@
 
 섹션(기술/투자/정치)을 표현하는 방식으로 단일 테이블 / 섹션별 분리 테이블 / 하이브리드를 검토 → 하이브리드 채택.
 
-- community_posts (단일 + section 컬럼): 공통 필드(id, section, user_id, title, content, like_count, comment_count, created_at)
+- post (단일 + section 컬럼): 공통 필드(id, section, user_id, title, content, like_count, comment_count, created_at)
   - 섹션별 전용 필수 필드(투자: 종목코드/수익률 등)는 1:1 확장 테이블로 분리 (예: invest_post_detail). 추후 해당 섹션 구현 시 추가
 - 분리 테이블 대신 단일을 택한 이유:
   - 댓글/좋아요/저장/신고 등 상호작용은 섹션 무관하게 동일 → 자식 테이블·로직을 section마다 3벌로 복제하지 않음
@@ -114,9 +114,9 @@
   - 갈리는 컬럼이 없으므로 section별 분리 테이블 X. section 컬럼으로만 구분
 - 조회: GET /api/v1/cms/{section}/categories → 어드민 CRUD는 /api/v1/cms/admin/{section}/categories
 - 어드민이 추가/삭제/조회 → 프론트는 API로 카테고리를 조회해 section별 필터 칩을 동적 렌더
-- post_categories (N:M): post_id, category_id. pms(게시글) 소유. 글당 최대 3개는 앱에서 검증
+- post_category_mapping (N:M): post_id, category_id. pms(게시글) 소유. 글당 최대 3개는 앱에서 검증
 - 게시글 작성 시 categoryIds 검증은 pms 책임 → 모놀리식은 categories 직접 조회, 분리 후엔 CategoryQueryClient 인터페이스를 cms HTTP 호출 구현으로 교체. 카테고리는 거의 정적이라 캐시로 비용 낮음
-- 어드민 카테고리 삭제 시 기존 글 처리(is_active 비활성 vs post_categories 제거)는 어드민 기능 구현 시 결정
+- 어드민 카테고리 삭제 시 기존 글 처리(is_active 비활성 vs post_category_mapping 제거)는 어드민 기능 구현 시 결정
 
 ### section은 ENUM (테이블화 보류)
 
@@ -126,7 +126,7 @@
 
 ### count / comment 경계
 
-- like_count, comment_count는 현재 community_posts 컬럼으로 동기 보관. /api/v1/count 경로는 예약만, 추후 count 서비스로 이관
+- like_count, comment_count는 현재 post 컬럼으로 동기 보관. /api/v1/count 경로는 예약만, 추후 count 서비스로 이관
 - 댓글은 comment 도메인 예정(/api/v1/comments). community_comments.post_id는 FK 없이 인덱스 컬럼 + app-level 검증(분리 대비)
 
 ## 검색 시스템 (search, 추후 도입)
@@ -150,7 +150,7 @@
 - 현재 pms 유지: 게시글 작성/수정/삭제·단건 상세, 내 글 목록(개인화+권한)
 - 추후 search로 이관: 섹션 피드(공개 목록), 카테고리 필터, 키워드 검색 — 번개장터처럼 "공개 다건 탐색"은 search로 모음
 - 개인화+권한 다건(내 글/저장한 글)은 pms 유지(번개 my-shop 방식)
-- 단계 전략: 초기엔 pms 목록 API(cursor 페이지네이션)로 시작 → 검색·복잡 필터·대량 트래픽이 실제로 필요해질 때 OpenSearch + indexer 도입(YAGNI). 단일 테이블 + (section, created_at) 인덱스로 충분한 단계는 pms가 처리
+- 단계 전략: 초기엔 pms 목록 API(cursor 페이지네이션)로 시작 → 검색·복잡 필터·대량 트래픽이 실제로 필요해질 때 OpenSearch + indexer 도입(YAGNI). 단일 테이블 + (section, id) 인덱스로 충분한 단계는 pms가 처리
 - 별도 서비스 예정(yologram-search-api, yologram-search-indexer), 경로 /api/v1/search/... 또는 게이트웨이 분기
 
 ### QueryDSL vs search 역할 구분 (혼동 주의)

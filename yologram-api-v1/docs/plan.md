@@ -136,15 +136,15 @@
 ## 커뮤니티 (PMS / CMS)
 
 ### 데이터 모델 (하이브리드: 단일 + section)
-- community_posts: id, section, user_id, title, content, like_count, comment_count, created_at, modified_date
-  - 인덱스 (section, created_at) — 섹션 피드 cursor 페이지네이션
+- post: id, section, user_id, title, content, like_count, comment_count, created_at, modified_date
+  - 인덱스 (section, id) — 섹션 피드 cursor 페이지네이션
   - 섹션 전용 필드는 추후 1:1 확장 테이블(예: invest_post_detail)
 - categories: id, section, name, sort_order, is_active, created_at, UNIQUE(section, name) — 동적 관리(어드민 CRUD)
-- post_categories: post_id, category_id (N:M, 글당 최대 3개)
+- post_category_mapping: post_id, category_id (N:M, 글당 최대 3개)
 - Section enum: TECH / INVEST / POLITICS (VARCHAR 저장)
 
 ### 도메인/경로
-- domain/cms (Category, contents), domain/pms (Post + post_categories)
+- domain/cms (Category, contents), domain/pms (Post + post_category_mapping)
 - 경로 path 변수 방식: 카테고리 /api/v1/cms/{section}/categories, 게시글 /api/v1/pms/{section}/posts
 - 어드민은 도메인 경로 뒤 admin 세그먼트: /api/v1/cms/admin/{section}/categories 등
 - 모듈러 모놀리식 — 도메인 경계 호출은 인터페이스 추상화, 경계 넘는 FK 지양
@@ -158,7 +158,7 @@
 
 ### 2단계: 게시글 작성 (pms)
 - POST /api/v1/pms/{section}/posts (인증 필요) { title?, content, categoryIds[] }
-- 작성자 = JWT 인증 유저, categoryIds가 해당 section 카테고리인지 검증(모놀리식: categories 직접 조회) → community_posts + post_categories insert
+- 작성자 = JWT 인증 유저, categoryIds가 해당 section 카테고리인지 검증(모놀리식: categories 직접 조회) → post + post_category_mapping insert
 - 응답 { id } (201)
 
 ### 3단계: 게시글 조회 (구현됨)

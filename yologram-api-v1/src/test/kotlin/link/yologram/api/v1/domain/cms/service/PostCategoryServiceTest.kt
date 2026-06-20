@@ -1,9 +1,9 @@
 package link.yologram.api.v1.domain.cms.service
 
-import link.yologram.api.v1.domain.cms.entity.Category
+import link.yologram.api.v1.domain.cms.entity.PostCategory
 import link.yologram.api.v1.domain.cms.enums.Section
 import link.yologram.api.v1.domain.cms.exception.InvalidSectionException
-import link.yologram.api.v1.domain.cms.repository.CategoryRepository
+import link.yologram.api.v1.domain.cms.repository.PostCategoryRepository
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -17,16 +17,16 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @ExtendWith(MockitoExtension::class)
-class CategoryServiceTest {
+class PostCategoryServiceTest {
 
     @Mock
-    lateinit var categoryRepository: CategoryRepository
+    lateinit var categoryRepository: PostCategoryRepository
 
     @InjectMocks
-    lateinit var categoryService: CategoryService
+    lateinit var categoryService: PostCategoryService
 
     private fun category(id: Long, name: String, sortOrder: Int, section: Section = Section.TECH) =
-        Category(id = id, section = section, name = name, sortOrder = sortOrder)
+        PostCategory(id = id, section = section, name = name, sortOrder = sortOrder)
 
     @Nested
     inner class 카테고리_조회 {
@@ -41,7 +41,7 @@ class CategoryServiceTest {
                     )
                 )
 
-            val result = categoryService.getCategories("tech")
+            val result = categoryService.getPostCategories("tech")
 
             assertEquals(2, result.size)
             assertEquals(1L, result[0].id)
@@ -55,7 +55,7 @@ class CategoryServiceTest {
             whenever(categoryRepository.findBySectionAndIsActiveTrueOrderBySortOrderAsc(Section.INVEST))
                 .thenReturn(listOf(category(10L, "국내주식", 1, Section.INVEST)))
 
-            val result = categoryService.getCategories("INVEST")
+            val result = categoryService.getPostCategories("INVEST")
 
             assertEquals(1, result.size)
             assertEquals("국내주식", result[0].name)
@@ -66,7 +66,7 @@ class CategoryServiceTest {
             whenever(categoryRepository.findBySectionAndIsActiveTrueOrderBySortOrderAsc(Section.POLITICS))
                 .thenReturn(emptyList())
 
-            val result = categoryService.getCategories("politics")
+            val result = categoryService.getPostCategories("politics")
 
             assertTrue(result.isEmpty())
         }
@@ -74,7 +74,7 @@ class CategoryServiceTest {
         @Test
         fun `유효하지 않은 section이면 InvalidSectionException을 던진다`() {
             assertThrows<InvalidSectionException> {
-                categoryService.getCategories("unknown")
+                categoryService.getPostCategories("unknown")
             }
 
             verify(categoryRepository, never()).findBySectionAndIsActiveTrueOrderBySortOrderAsc(org.mockito.kotlin.any())
