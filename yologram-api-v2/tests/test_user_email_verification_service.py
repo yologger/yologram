@@ -4,26 +4,26 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.core.exception import (
-    EmailVerificationExpiredException,
-    EmailVerificationInvalidException,
+    UserEmailVerificationExpiredException,
+    UserEmailVerificationInvalidException,
     UserDuplicateException,
 )
-from app.domain.ums.email_verification_service import EmailVerificationService
+from app.domain.ums.user_email_verification_service import UserEmailVerificationService
 
 
-class TestEmailVerificationService:
+class TestUserEmailVerificationService:
 
     def setup_method(self):
         self.db = MagicMock()
         self.email_sender = MagicMock()
-        self.service = EmailVerificationService(self.db, self.email_sender)
+        self.service = UserEmailVerificationService(self.db, self.email_sender)
 
     class TestSendVerificationCode:
 
         def setup_method(self):
             self.db = MagicMock()
             self.email_sender = MagicMock()
-            self.service = EmailVerificationService(self.db, self.email_sender)
+            self.service = UserEmailVerificationService(self.db, self.email_sender)
             self.service.user_repository.find_by_email = MagicMock(return_value=None)
             self.service.repository.delete_by_email = MagicMock()
             self.service.repository.save = MagicMock(return_value=MagicMock())
@@ -74,7 +74,7 @@ class TestEmailVerificationService:
         def setup_method(self):
             self.db = MagicMock()
             self.email_sender = MagicMock()
-            self.service = EmailVerificationService(self.db, self.email_sender)
+            self.service = UserEmailVerificationService(self.db, self.email_sender)
 
         def test_인증_성공(self):
             entity = MagicMock()
@@ -90,7 +90,7 @@ class TestEmailVerificationService:
         def test_인증_레코드가_없으면_예외(self):
             self.service.repository.find_latest_by_email = MagicMock(return_value=None)
 
-            with pytest.raises(EmailVerificationInvalidException):
+            with pytest.raises(UserEmailVerificationInvalidException):
                 self.service.verify_code("test@yologram.link", "123456")
 
         def test_코드_불일치_시_예외(self):
@@ -99,7 +99,7 @@ class TestEmailVerificationService:
             entity.expired_at = datetime.now() + timedelta(minutes=3)
             self.service.repository.find_latest_by_email = MagicMock(return_value=entity)
 
-            with pytest.raises(EmailVerificationInvalidException):
+            with pytest.raises(UserEmailVerificationInvalidException):
                 self.service.verify_code("test@yologram.link", "000000")
 
         def test_만료된_코드_시_예외(self):
@@ -108,5 +108,5 @@ class TestEmailVerificationService:
             entity.expired_at = datetime.now() - timedelta(minutes=1)
             self.service.repository.find_latest_by_email = MagicMock(return_value=entity)
 
-            with pytest.raises(EmailVerificationExpiredException):
+            with pytest.raises(UserEmailVerificationExpiredException):
                 self.service.verify_code("test@yologram.link", "123456")

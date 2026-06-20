@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.config.database import get_db
 from app.domain.cms.enum import Section
-from app.domain.cms.model import Category
+from app.domain.cms.model import PostCategory
 from app.main import app
 
 
@@ -21,12 +21,12 @@ class TestCmsRouter:
     def teardown_method(self):
         app.dependency_overrides.clear()
 
-    @patch("app.domain.cms.service.CategoryRepository")
+    @patch("app.domain.cms.service.PostCategoryRepository")
     def test_카테고리_목록_조회_200(self, mock_repo_cls):
         mock_repo = MagicMock()
         mock_repo.find_active_by_section.return_value = [
-            Category(id=1, section=Section.TECH, name="Frontend", sort_order=1, is_active=True),
-            Category(id=2, section=Section.TECH, name="Backend", sort_order=2, is_active=True),
+            PostCategory(id=1, section=Section.TECH, name="Frontend", sort_order=1, is_active=True),
+            PostCategory(id=2, section=Section.TECH, name="Backend", sort_order=2, is_active=True),
         ]
         mock_repo_cls.return_value = mock_repo
 
@@ -39,7 +39,7 @@ class TestCmsRouter:
         assert body["data"][0]["sortOrder"] == 1
         assert body["data"][1]["name"] == "Backend"
 
-    @patch("app.domain.cms.service.CategoryRepository")
+    @patch("app.domain.cms.service.PostCategoryRepository")
     def test_카테고리가_없으면_빈_배열_반환(self, mock_repo_cls):
         mock_repo = MagicMock()
         mock_repo.find_active_by_section.return_value = []

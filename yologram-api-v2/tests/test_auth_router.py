@@ -119,7 +119,7 @@ class TestAuthRouter:
             response = self.client.post("/api/v2/ums/auth/validate-token")
 
             assert response.status_code == 401
-            assert response.json()["errorCode"] == "AUTH_TOKEN_INVALID"
+            assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
 
         def test_빈_Bearer_401(self):
             response = self.client.post(
@@ -158,7 +158,7 @@ class TestAuthRouter:
             )
 
             assert response.status_code == 401
-            assert response.json()["errorCode"] == "AUTH_TOKEN_EXPIRED"
+            assert response.json()["errorCode"] == "AUTH_EXPIRED_TOKEN"
 
     class TestLogout:
 
@@ -200,8 +200,8 @@ class TestAuthRouter:
         def teardown_method(self):
             app.dependency_overrides.clear()
 
-        @patch("app.domain.ums.email_verification_service.UserRepository")
-        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        @patch("app.domain.ums.user_email_verification_service.UserRepository")
+        @patch("app.domain.ums.user_email_verification_service.UserEmailVerificationRepository")
         def test_인증_코드_발송_성공_204(self, mock_repo_cls, mock_user_repo_cls):
             mock_repo = MagicMock()
             mock_repo.save.return_value = MagicMock()
@@ -218,8 +218,8 @@ class TestAuthRouter:
             assert response.status_code == 204
             self.mock_email_sender.send_verification_code.assert_called_once()
 
-        @patch("app.domain.ums.email_verification_service.UserRepository")
-        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        @patch("app.domain.ums.user_email_verification_service.UserRepository")
+        @patch("app.domain.ums.user_email_verification_service.UserEmailVerificationRepository")
         def test_이미_가입된_이메일_409(self, mock_repo_cls, mock_user_repo_cls):
             mock_repo = MagicMock()
             mock_repo_cls.return_value = mock_repo
@@ -252,7 +252,7 @@ class TestAuthRouter:
         def teardown_method(self):
             app.dependency_overrides.clear()
 
-        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        @patch("app.domain.ums.user_email_verification_service.UserEmailVerificationRepository")
         def test_인증_코드_확인_성공_204(self, mock_repo_cls):
             from datetime import datetime, timedelta
             entity = MagicMock()
@@ -270,7 +270,7 @@ class TestAuthRouter:
 
             assert response.status_code == 204
 
-        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        @patch("app.domain.ums.user_email_verification_service.UserEmailVerificationRepository")
         def test_레코드_없음_400(self, mock_repo_cls):
             mock_repo = MagicMock()
             mock_repo.find_latest_by_email.return_value = None
@@ -282,9 +282,9 @@ class TestAuthRouter:
             })
 
             assert response.status_code == 400
-            assert response.json()["errorCode"] == "EMAIL_VERIFICATION_INVALID"
+            assert response.json()["errorCode"] == "USER_EMAIL_VERIFICATION_INVALID"
 
-        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        @patch("app.domain.ums.user_email_verification_service.UserEmailVerificationRepository")
         def test_코드_불일치_400(self, mock_repo_cls):
             from datetime import datetime, timedelta
             entity = MagicMock()
@@ -300,9 +300,9 @@ class TestAuthRouter:
             })
 
             assert response.status_code == 400
-            assert response.json()["errorCode"] == "EMAIL_VERIFICATION_INVALID"
+            assert response.json()["errorCode"] == "USER_EMAIL_VERIFICATION_INVALID"
 
-        @patch("app.domain.ums.email_verification_service.EmailVerificationCodeRepository")
+        @patch("app.domain.ums.user_email_verification_service.UserEmailVerificationRepository")
         def test_만료된_코드_400(self, mock_repo_cls):
             from datetime import datetime, timedelta
             entity = MagicMock()
@@ -318,7 +318,7 @@ class TestAuthRouter:
             })
 
             assert response.status_code == 400
-            assert response.json()["errorCode"] == "EMAIL_VERIFICATION_EXPIRED"
+            assert response.json()["errorCode"] == "USER_EMAIL_VERIFICATION_EXPIRED"
 
         def test_코드_길이_5자리_400(self):
             response = self.client.post("/api/v2/ums/auth/email-verification/verify", json={
@@ -336,7 +336,7 @@ class TestAuthRouter:
 
             assert response.status_code == 400
 
-    class TestPasswordResetSend:
+    class TestUserPasswordResetSend:
 
         def setup_method(self):
             self.mock_db = MagicMock()
@@ -348,8 +348,8 @@ class TestAuthRouter:
         def teardown_method(self):
             app.dependency_overrides.clear()
 
-        @patch("app.domain.ums.password_reset_service.UserRepository")
-        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        @patch("app.domain.ums.user_password_reset_service.UserRepository")
+        @patch("app.domain.ums.user_password_reset_service.UserPasswordResetCodeRepository")
         def test_발송_성공_204(self, mock_repo_cls, mock_user_repo_cls):
             mock_repo = MagicMock()
             mock_repo.save.return_value = MagicMock()
@@ -366,8 +366,8 @@ class TestAuthRouter:
             assert response.status_code == 204
             self.mock_email_sender.send_password_reset_code.assert_called_once()
 
-        @patch("app.domain.ums.password_reset_service.UserRepository")
-        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        @patch("app.domain.ums.user_password_reset_service.UserRepository")
+        @patch("app.domain.ums.user_password_reset_service.UserPasswordResetCodeRepository")
         def test_미가입_이메일_404(self, mock_repo_cls, mock_user_repo_cls):
             mock_repo_cls.return_value = MagicMock()
 
@@ -389,7 +389,7 @@ class TestAuthRouter:
 
             assert response.status_code == 400
 
-    class TestPasswordResetVerify:
+    class TestUserPasswordResetVerify:
 
         def setup_method(self):
             self.mock_db = MagicMock()
@@ -399,7 +399,7 @@ class TestAuthRouter:
         def teardown_method(self):
             app.dependency_overrides.clear()
 
-        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        @patch("app.domain.ums.user_password_reset_service.UserPasswordResetCodeRepository")
         def test_검증_성공_204(self, mock_repo_cls):
             from datetime import datetime, timedelta
             entity = MagicMock()
@@ -417,7 +417,7 @@ class TestAuthRouter:
 
             assert response.status_code == 204
 
-        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        @patch("app.domain.ums.user_password_reset_service.UserPasswordResetCodeRepository")
         def test_코드_불일치_400(self, mock_repo_cls):
             mock_repo = MagicMock()
             mock_repo.find_latest_by_email.return_value = None
@@ -429,9 +429,9 @@ class TestAuthRouter:
             })
 
             assert response.status_code == 400
-            assert response.json()["errorCode"] == "PASSWORD_RESET_INVALID"
+            assert response.json()["errorCode"] == "USER_PASSWORD_RESET_INVALID"
 
-    class TestPasswordResetConfirm:
+    class TestUserPasswordResetConfirm:
 
         def setup_method(self):
             self.mock_db = MagicMock()
@@ -441,8 +441,8 @@ class TestAuthRouter:
         def teardown_method(self):
             app.dependency_overrides.clear()
 
-        @patch("app.domain.ums.password_reset_service.UserRepository")
-        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        @patch("app.domain.ums.user_password_reset_service.UserRepository")
+        @patch("app.domain.ums.user_password_reset_service.UserPasswordResetCodeRepository")
         def test_변경_성공_204(self, mock_repo_cls, mock_user_repo_cls):
             from datetime import datetime, timedelta
             entity = MagicMock()
@@ -464,7 +464,7 @@ class TestAuthRouter:
 
             assert response.status_code == 204
 
-        @patch("app.domain.ums.password_reset_service.PasswordResetCodeRepository")
+        @patch("app.domain.ums.user_password_reset_service.UserPasswordResetCodeRepository")
         def test_코드_만료_400(self, mock_repo_cls):
             from datetime import datetime, timedelta
             entity = MagicMock()
@@ -481,7 +481,7 @@ class TestAuthRouter:
             })
 
             assert response.status_code == 400
-            assert response.json()["errorCode"] == "PASSWORD_RESET_EXPIRED"
+            assert response.json()["errorCode"] == "USER_PASSWORD_RESET_EXPIRED"
 
         def test_새_비밀번호_길이_400(self):
             response = self.client.post("/api/v2/ums/auth/password-reset/confirm", json={

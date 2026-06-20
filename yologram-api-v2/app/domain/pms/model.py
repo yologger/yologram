@@ -5,7 +5,7 @@ from app.domain.cms.enum import Section
 
 
 class Post(Base):
-    __tablename__ = "community_posts"
+    __tablename__ = "post"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     section = Column(Enum(Section), nullable=False)
@@ -18,8 +18,8 @@ class Post(Base):
     modified_date = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
 
-class PostCategory(Base):
-    __tablename__ = "post_categories"
+class PostCategoryMapping(Base):
+    __tablename__ = "post_category_mapping"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     post_id = Column(BigInteger, nullable=False)  # pms 내부

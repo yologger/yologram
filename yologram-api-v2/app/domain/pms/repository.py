@@ -2,7 +2,7 @@ from sqlalchemy import exists
 from sqlalchemy.orm import Session
 
 from app.domain.cms.enum import Section
-from app.domain.pms.model import Post, PostCategory
+from app.domain.pms.model import Post, PostCategoryMapping
 
 
 class PostRepository:
@@ -29,7 +29,7 @@ class PostRepository:
         if category_id is not None:
             query = query.filter(
                 exists().where(
-                    (PostCategory.post_id == Post.id) & (PostCategory.category_id == category_id)
+                    (PostCategoryMapping.post_id == Post.id) & (PostCategoryMapping.category_id == category_id)
                 )
             )
 
@@ -40,20 +40,20 @@ class PostRepository:
         return query.order_by(Post.id.desc()).limit(limit).all()
 
 
-class PostCategoryRepository:
+class PostCategoryMappingRepository:
 
     def __init__(self, db: Session):
         self.db = db
 
-    def save(self, post_category: PostCategory) -> PostCategory:
+    def save(self, post_category: PostCategoryMapping) -> PostCategoryMapping:
         self.db.add(post_category)
         self.db.flush()
         return post_category
 
-    def find_by_post_id(self, post_id: int) -> list[PostCategory]:
-        return self.db.query(PostCategory).filter(PostCategory.post_id == post_id).all()
+    def find_by_post_id(self, post_id: int) -> list[PostCategoryMapping]:
+        return self.db.query(PostCategoryMapping).filter(PostCategoryMapping.post_id == post_id).all()
 
-    def find_by_post_ids(self, post_ids: list[int]) -> list[PostCategory]:
+    def find_by_post_ids(self, post_ids: list[int]) -> list[PostCategoryMapping]:
         if not post_ids:
             return []
-        return self.db.query(PostCategory).filter(PostCategory.post_id.in_(post_ids)).all()
+        return self.db.query(PostCategoryMapping).filter(PostCategoryMapping.post_id.in_(post_ids)).all()

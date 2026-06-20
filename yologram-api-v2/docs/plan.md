@@ -88,7 +88,7 @@
 ### 흐름
 - 회원가입 시 이메일로 인증 코드 발송 (AWS SES)
 - 사용자가 인증 코드 입력 → 검증 통과 후 가입 완료
-- email_verification_codes 테이블에 코드 저장 (5분 만료)
+- user_email_verification 테이블에 코드 저장 (5분 만료)
 
 ### API
 - POST /api/v2/ums/auth/email-verification/send
@@ -98,7 +98,7 @@
 
 ### 흐름
 - 이메일 6자리 코드 발송 → 코드 검증 → 새 비밀번호 설정 (회원가입 이메일 인증과 동일 패턴, api-v1과 동일)
-- 저장: password_reset_codes 테이블 (5분 만료), confirm 시 코드 재검증 후 변경·삭제
+- 저장: user_password_reset_code 테이블 (5분 만료), confirm 시 코드 재검증 후 변경·삭제
 
 ### API
 - POST /api/v2/ums/auth/password-reset/send (미가입 시 404, 코드 발송)
@@ -107,8 +107,8 @@
 
 ### 예외
 - UserNotFoundException (404): 미가입 이메일
-- PasswordResetExpiredException (400): 코드 만료
-- PasswordResetInvalidException (400): 코드 불일치
+- UserPasswordResetExpiredException (400): 코드 만료
+- UserPasswordResetInvalidException (400): 코드 불일치
 
 ## 회원탈퇴
 
@@ -154,28 +154,28 @@
 ## CMS: 커뮤니티 카테고리 (api-v1 미러링)
 
 ### 도메인/스키마
-- app/domain/cms: Section enum(TECH/INVEST/POLITICS), Category 모델, CategoryRepository, CategoryService, router
-- categories 테이블 api-v1과 DB 공유 (id, section, name, sort_order, is_active, created_at)
+- app/domain/cms: Section enum(TECH/INVEST/POLITICS), PostCategory 모델, CategoryRepository, PostCategoryService, router
+- post_category 테이블 api-v1과 DB 공유 (id, section, name, sort_order, is_active, created_at)
 
 ### API
 - GET /api/v2/cms/{section}/categories → is_active=true, sort_order 정렬, 응답 { id, name, sortOrder }
 - 잘못된 section → 400 INVALID_SECTION (InvalidSectionException, core/exception.py)
 
 ### 테스트
-- CategoryService 단위 테스트 (mock repository)
+- PostCategoryService 단위 테스트 (mock repository)
 - cms_router E2E 테스트 (TestClient)
 
 ## PMS: 커뮤니티 게시글 작성 (api-v1 미러링)
 
 ### 도메인/스키마
-- app/domain/pms: Post / PostCategory 모델, PostRepository / PostCategoryRepository, PostService, router
-- CategoryQueryClient(Protocol) + LocalCategoryQueryClient: cms 카테고리 검증 경계 추상화 (MSA 분리 대비)
-- community_posts / post_categories 테이블 api-v1과 DB 공유, 경계 넘는 참조는 FK 없이 인덱스
+- app/domain/pms: Post / PostCategoryMapping 모델, PostRepository / PostCategoryMappingRepository, PostService, router
+- PostCategoryQueryClient(Protocol) + LocalPostCategoryQueryClient: cms 카테고리 검증 경계 추상화 (MSA 분리 대비)
+- post / post_category_mapping 테이블 api-v1과 DB 공유, 경계 넘는 참조는 FK 없이 인덱스
 
 ### API
 - POST /api/v2/pms/{section}/posts (인증 필요), 요청 { title?, content, categoryIds[] }, 응답 { id } (201)
 - 작성자=인증 유저, categoryIds 1~3개 필수 + section 일치 검증
-- 예외: 400 INVALID_CATEGORY / INVALID_SECTION / VALIDATION_ERROR
+- 예외: 400 INVALID_POST_CATEGORY / INVALID_SECTION / VALIDATION_ERROR
 
 ### 검증 응답 통일 (api-v1 정합)
 - RequestValidationError 핸들러: status 422 → 400, errorCode VALIDATION_ERROR, 메시지 단일 문자열화

@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 
 from app.config.database import get_db
 from app.core.response import ApiEnvelop
-from app.domain.cms.service import CategoryService
+from app.domain.cms.service import PostCategoryService
 
-router = APIRouter(prefix="/api/v2/cms", tags=["Category"])
+router = APIRouter(prefix="/api/v2/cms", tags=["PostCategory"])
 
 
 @router.get(
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/v2/cms", tags=["Category"])
         400: {"description": "유효하지 않은 섹션"},
     },
 )
-def get_categories(section: str, db: Session = Depends(get_db)):
-    service = CategoryService(db)
-    result = service.get_categories(section)
+def get_post_categories(section: str, db: Session = Depends(get_db)):
+    service = PostCategoryService(db)
+    result = service.get_post_categories(section)
     return ApiEnvelop(data=result)

@@ -28,25 +28,25 @@ class AuthData(BaseModel):
     access_token: str
 
 
-class EmailVerificationSendRequest(BaseModel):
+class UserEmailVerificationSendRequest(BaseModel):
     email: EmailStr
 
 
-class EmailVerificationVerifyRequest(BaseModel):
-    email: EmailStr
-    code: str = Field(min_length=6, max_length=6)
-
-
-class PasswordResetSendRequest(BaseModel):
-    email: EmailStr
-
-
-class PasswordResetVerifyRequest(BaseModel):
+class UserEmailVerificationVerifyRequest(BaseModel):
     email: EmailStr
     code: str = Field(min_length=6, max_length=6)
 
 
-class PasswordResetConfirmRequest(BaseModel):
+class UserPasswordResetSendRequest(BaseModel):
+    email: EmailStr
+
+
+class UserPasswordResetVerifyRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6)
+
+
+class UserPasswordResetConfirmRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     email: EmailStr

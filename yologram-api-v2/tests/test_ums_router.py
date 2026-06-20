@@ -31,7 +31,7 @@ class TestUmsRouter:
         def teardown_method(self):
             app.dependency_overrides.clear()
 
-        @patch("app.domain.ums.service.EmailVerificationCodeRepository")
+        @patch("app.domain.ums.service.UserEmailVerificationRepository")
         @patch("app.domain.ums.service.UserRepository")
         def test_회원가입_성공(self, mock_repo_cls, mock_evc_repo_cls):
             mock_repo = MagicMock()
@@ -73,7 +73,7 @@ class TestUmsRouter:
             assert response.status_code == 409
             assert response.json()["errorCode"] == "USER_DUPLICATE"
 
-        @patch("app.domain.ums.service.EmailVerificationCodeRepository")
+        @patch("app.domain.ums.service.UserEmailVerificationRepository")
         @patch("app.domain.ums.service.UserRepository")
         def test_이메일_미인증_시_400(self, mock_repo_cls, mock_evc_repo_cls):
             mock_repo = MagicMock()
@@ -92,7 +92,7 @@ class TestUmsRouter:
             })
 
             assert response.status_code == 400
-            assert response.json()["errorCode"] == "EMAIL_NOT_VERIFIED"
+            assert response.json()["errorCode"] == "USER_EMAIL_NOT_VERIFIED"
 
         def test_입력값_검증_이메일_형식(self):
             response = self.client.post("/api/v2/ums/user/join", json={
@@ -188,7 +188,7 @@ class TestUmsRouter:
             response = self.client.get("/api/v2/ums/user/me")
 
             assert response.status_code == 401
-            assert response.json()["errorCode"] == "AUTH_TOKEN_INVALID"
+            assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
 
         def test_유효하지_않은_토큰이면_401(self):
             response = self.client.get(
@@ -260,7 +260,7 @@ class TestUmsRouter:
             )
 
             assert response.status_code == 401
-            assert response.json()["errorCode"] == "AUTH_TOKEN_INVALID"
+            assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
 
         @patch("app.domain.ums.service.UserRepository")
         def test_존재하지_않는_유저면_404(self, mock_repo_cls):
@@ -363,7 +363,7 @@ class TestUmsRouter:
             )
 
             assert response.status_code == 401
-            assert response.json()["errorCode"] == "AUTH_TOKEN_INVALID"
+            assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
 
         @patch("app.domain.ums.service.UserRepository")
         def test_존재하지_않는_유저면_404(self, mock_repo_cls):
@@ -418,7 +418,7 @@ class TestUmsRouter:
             response = self.client.delete("/api/v2/ums/user/me")
 
             assert response.status_code == 401
-            assert response.json()["errorCode"] == "AUTH_TOKEN_INVALID"
+            assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
 
         @patch("app.domain.ums.service.UserRepository")
         def test_존재하지_않는_유저면_404(self, mock_repo_cls):

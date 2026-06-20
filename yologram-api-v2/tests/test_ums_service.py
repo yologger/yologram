@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.core.exception import AuthWrongPasswordException, EmailNotVerifiedException, UserDuplicateException, UserNotFoundException
+from app.core.exception import AuthWrongPasswordException, UserEmailNotVerifiedException, UserDuplicateException, UserNotFoundException
 from app.domain.ums.enum import UserType
 from app.domain.ums.model import User
 from app.domain.ums.schema import ChangePasswordRequest, JoinRequest, UpdateProfileRequest
@@ -55,7 +55,7 @@ class TestUserService:
             self.service.repository.find_by_email = MagicMock(return_value=None)
             self.service.email_verification_code_repository.find_latest_by_email = MagicMock(return_value=None)
 
-            with pytest.raises(EmailNotVerifiedException):
+            with pytest.raises(UserEmailNotVerifiedException):
                 self.service.join(self.request)
 
     class TestGetMe:

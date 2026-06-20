@@ -4,19 +4,19 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.exception import (
-    EmailVerificationExpiredException,
-    EmailVerificationInvalidException,
+    UserEmailVerificationExpiredException,
+    UserEmailVerificationInvalidException,
     UserDuplicateException,
 )
 from app.domain.ums.email_sender import EmailSender
-from app.domain.ums.model import EmailVerificationCode
-from app.domain.ums.repository import EmailVerificationCodeRepository, UserRepository
+from app.domain.ums.model import UserEmailVerification
+from app.domain.ums.repository import UserEmailVerificationRepository, UserRepository
 
 
-class EmailVerificationService:
+class UserEmailVerificationService:
 
     def __init__(self, db: Session, email_sender: EmailSender):
-        self.repository = EmailVerificationCodeRepository(db)
+        self.repository = UserEmailVerificationRepository(db)
         self.user_repository = UserRepository(db)
         self.email_sender = email_sender
 
@@ -27,7 +27,7 @@ class EmailVerificationService:
         self.repository.delete_by_email(email)
 
         code = f"{random.randint(0, 999999):06d}"
-        entity = EmailVerificationCode(
+        entity = UserEmailVerification(
             email=email,
             code=code,
             expired_at=datetime.now() + timedelta(minutes=5),
@@ -38,9 +38,9 @@ class EmailVerificationService:
     def verify_code(self, email: str, code: str) -> None:
         entity = self.repository.find_latest_by_email(email)
         if not entity:
-            raise EmailVerificationInvalidException()
+            raise UserEmailVerificationInvalidException()
         if entity.expired_at < datetime.now():
-            raise EmailVerificationExpiredException()
+            raise UserEmailVerificationExpiredException()
         if entity.code != code:
-            raise EmailVerificationInvalidException()
+            raise UserEmailVerificationInvalidException()
         entity.verified = True

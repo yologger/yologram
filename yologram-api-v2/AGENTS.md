@@ -36,17 +36,17 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - 발신 주소: no-reply@yologram.link (ses_from_address 설정)
 - 리전: ap-northeast-2
 - 자격증명: ECS Task Role (prod), AWS_PROFILE 환경변수 (로컬, scripts/run-prod.sh)
-- EmailVerificationCode 모델: email, code(6자리), verified, expired_at(5분), created_at / 테이블 email_verification_codes
+- UserEmailVerification 모델: email, code(6자리), verified, expired_at(5분), created_at / 테이블 user_email_verification
 - 엔드포인트: POST /api/v2/ums/auth/email-verification/send, /verify
 - 회원가입 시 이메일 인증 필수 (UserService.join에서 verified 확인, 가입 후 코드 삭제)
 
 ## 비밀번호 찾기
 
 - 방식: 이메일 6자리 코드 발송 → 코드 검증 → 새 비밀번호 설정 (이메일 인증과 동일 패턴/SES 재사용, api-v1과 동일)
-- 저장: 별도 테이블 password_reset_codes (PasswordResetCode 모델: email, code, verified, expired_at 5분, created_at) — api-v1과 공유
-- PasswordResetService: send_code(미가입 시 UserNotFoundException 404, 기존 코드 삭제 후 발송), verify_code(verified=true), confirm(email·code·new_password 재검증 후 변경·코드 삭제)
+- 저장: 별도 테이블 user_password_reset_code (UserPasswordResetCode 모델: email, code, verified, expired_at 5분, created_at) — api-v1과 공유
+- UserPasswordResetService: send_code(미가입 시 UserNotFoundException 404, 기존 코드 삭제 후 발송), verify_code(verified=true), confirm(email·code·new_password 재검증 후 변경·코드 삭제)
 - 엔드포인트: POST /api/v2/ums/auth/password-reset/send·verify·confirm (confirm 요청 필드 newPassword)
-- 예외: PasswordResetExpiredException/PasswordResetInvalidException (400)
+- 예외: UserPasswordResetExpiredException/UserPasswordResetInvalidException (400)
 - 운영 보강 TODO: 코드 해시 저장, 발송 레이트리밋, 시도 횟수 제한
 
 ## 회원탈퇴
@@ -57,14 +57,14 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 ## 커뮤니티 카테고리 (CMS)
 
 - 도메인 app/domain/cms, GET /api/v2/cms/{section}/categories (section: TECH/INVEST/POLITICS) — api-v1 미러링
-- categories 테이블 api-v1과 DB 공유, 잘못된 section → 400 INVALID_SECTION
+- post_category 테이블 api-v1과 DB 공유, 잘못된 section → 400 INVALID_SECTION
 
 ## 커뮤니티 게시글 (PMS)
 
 - 도메인 app/domain/pms, POST /api/v2/pms/{section}/posts (인증 필요, 단일 엔드포인트) — api-v1 미러링
-- community_posts / post_categories(N:M), 경계 넘는 참조는 FK 없이 인덱스
-- CategoryQueryClient(Protocol)로 cms 카테고리 검증 추상화 (MSA 분리 대비)
-- categoryIds 1~3개 필수, section 불일치 → 400 INVALID_CATEGORY
+- post / post_category_mapping(N:M), 경계 넘는 참조는 FK 없이 인덱스
+- PostCategoryQueryClient(Protocol)로 cms 카테고리 검증 추상화 (MSA 분리 대비)
+- categoryIds 1~3개 필수, section 불일치 → 400 INVALID_POST_CATEGORY
 - 상세 조회 GET /api/v2/pms/{section}/posts/{id} (공개), 작성자 닉네임은 UserQueryClient로 ums 조회, 없으면 404 POST_NOT_FOUND
 - 목록 조회 GET /api/v2/pms/{section}/posts (공개), 최신순(id desc) + cursor(keyset) 페이지네이션 + categoryId 필터, size 기본 20·최대 50 — api-v1과 동일
 - 커서/종료는 legacy 방식: id-only 커서 + 마지막 글 id를 nextCursor로(빈 결과면 null), 잘못된 커서 → 400 INVALID_CURSOR. N+1 회피 배치 조회. DB·인덱스 api-v1과 공유

@@ -57,17 +57,17 @@
 - 발신 주소: no-reply@yologram.link (ses_from_address 설정)
 - 리전: ap-northeast-2
 - 자격증명: ECS Task Role (prod), AWS_PROFILE 환경변수 (로컬, scripts/run-prod.sh)
-- EmailVerificationCode 모델: email, code(6자리), verified, expired_at(5분), created_at / 테이블 email_verification_codes
+- UserEmailVerification 모델: email, code(6자리), verified, expired_at(5분), created_at / 테이블 user_email_verification
 - 엔드포인트: POST /api/v2/ums/auth/email-verification/send, /verify
 - 회원가입 시 이메일 인증 필수 (UserService.join에서 verified 확인, 가입 후 코드 삭제)
 
 ## 비밀번호 찾기
 
 - 방식: 이메일 6자리 코드 발송 → 코드 검증 → 새 비밀번호 설정 (이메일 인증과 동일 패턴/SES 재사용, api-v1과 동일)
-- 저장: 별도 테이블 password_reset_codes (PasswordResetCode 모델: email, code, verified, expired_at 5분, created_at) — api-v1과 공유
-- PasswordResetService: send_code(미가입 시 UserNotFoundException 404, 기존 코드 삭제 후 발송), verify_code(verified=true), confirm(email·code·new_password 재검증 후 변경·코드 삭제)
+- 저장: 별도 테이블 user_password_reset_code (UserPasswordResetCode 모델: email, code, verified, expired_at 5분, created_at) — api-v1과 공유
+- UserPasswordResetService: send_code(미가입 시 UserNotFoundException 404, 기존 코드 삭제 후 발송), verify_code(verified=true), confirm(email·code·new_password 재검증 후 변경·코드 삭제)
 - 엔드포인트: POST /api/v2/ums/auth/password-reset/send·verify·confirm (confirm 요청 필드 newPassword)
-- 예외: PasswordResetExpiredException/PasswordResetInvalidException (400)
+- 예외: UserPasswordResetExpiredException/UserPasswordResetInvalidException (400)
 - 운영 보강 TODO: 코드 해시 저장, 발송 레이트리밋, 시도 횟수 제한
 
 ## 회원탈퇴
@@ -77,11 +77,11 @@
 
 ## 커뮤니티 카테고리 (CMS)
 
-- 도메인: app/domain/cms (Section enum, Category 모델/조회) — api-v1 미러링
+- 도메인: app/domain/cms (Section enum, PostCategory 모델/조회) — api-v1 미러링
 - Section enum: TECH / INVEST / POLITICS (게시판=섹션, str Enum). 코드 결합이라 ENUM 유지
-- categories 테이블: id, section, name, sort_order, is_active, created_at (api-v1과 DB 공유, UNIQUE(section, name))
-- CategoryService.get_categories(section_path): Section.from_path로 검증(대소문자 무시), is_active=true, sort_order 정렬
-- 응답 CategoryResponse: { id, name, sortOrder } (sort_order serialization_alias)
+- post_category 테이블: id, section, name, sort_order, is_active, created_at (api-v1과 DB 공유, UNIQUE(section, name))
+- PostCategoryService.get_post_categories(section_path): Section.from_path로 검증(대소문자 무시), is_active=true, sort_order 정렬
+- 응답 PostCategoryResponse: { id, name, sortOrder } (sort_order serialization_alias)
 - 엔드포인트: GET /api/v2/cms/{section}/categories
 - 예외: InvalidSectionException (400, INVALID_SECTION) — core/exception.py
 - 카테고리는 어드민이 관리하는 콘텐츠(추후 CRUD), 프론트는 이 API로 섹션별 필터를 동적 렌더
@@ -89,17 +89,17 @@
 ## 커뮤니티 게시글 (PMS)
 
 - 도메인: app/domain/pms (Post, PostCategory). 작성은 단일 엔드포인트 POST /api/v2/pms/{section}/posts (인증 필요) — api-v1 미러링
-- community_posts / post_categories(N:M) (api-v1과 DB 공유). 경계 넘는 참조(user_id, category_id)는 FK 없이 인덱스
+- post / post_category_mapping(N:M) (api-v1과 DB 공유). 경계 넘는 참조(user_id, category_id)는 FK 없이 인덱스
 - PostService.create: 작성자=인증 유저(uid), categoryIds가 해당 section 활성 카테고리인지 검증 (1~3개 필수). 프론트에서도 카테고리 1개 이상 선택해야 작성 가능(미선택 시 버튼 비활성)
-- CategoryQueryClient(Protocol) + LocalCategoryQueryClient로 cms 카테고리 검증 추상화 → 모놀리식은 cms 리포지토리 직접, MSA 분리 시 HTTP 호출 구현으로 교체
+- PostCategoryQueryClient(Protocol) + LocalPostCategoryQueryClient로 cms 카테고리 검증 추상화 → 모놀리식은 cms 리포지토리 직접, MSA 분리 시 HTTP 호출 구현으로 교체
 - 요청 { title?, content, categoryIds[] }, 응답 { id } (201)
-- 예외: InvalidCategoryException (400, INVALID_CATEGORY), 잘못된 section은 Section.from_path의 InvalidSectionException (400)
+- 예외: InvalidPostCategoryException (400, INVALID_POST_CATEGORY), 잘못된 section은 Section.from_path의 InvalidSectionException (400)
 - 검증 메시지는 api-v1과 동일 문구 ("내용을 입력해주세요.", "카테고리는 1~3개 선택해주세요.")
 - 상세 조회: GET /api/v2/pms/{section}/posts/{id} (공개). PostDetailResponse에 author{uid,nickname} 포함(UserQueryClient로 ums 조회, MSA 대비), categoryIds는 프론트가 매핑. 없거나 다른 section의 id면 404 POST_NOT_FOUND
 - 목록 조회: GET /api/v2/pms/{section}/posts (공개). 최신순(id desc) + cursor(keyset) 페이지네이션, categoryId 필터(옵션), size 기본 20·최대 50. 응답 ApiEnvelopCursorPage{data, nextCursor}, PostSummaryResponse(content 전체 포함) — api-v1과 동일
 - 커서/종료 판정은 api-v1과 동일(legacy 방식): id-only 커서(Base64) + 마지막 글 id를 nextCursor로(빈 결과면 null). 잘못된 커서 → 400 INVALID_CURSOR
 - N+1 회피: find_nicknames(ums 경계 추상화)·find_by_post_ids 배치 조회. 카테고리는 1:N이라 join 대신 IN, EXISTS로 categoryId 필터
-- DB·인덱스(community_posts (section, id))는 api-v1과 공유
+- DB·인덱스(post (section, id))는 api-v1과 공유
 
 ## 테스트
 

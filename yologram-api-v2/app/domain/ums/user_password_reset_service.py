@@ -5,19 +5,19 @@ import bcrypt
 from sqlalchemy.orm import Session
 
 from app.core.exception import (
-    PasswordResetExpiredException,
-    PasswordResetInvalidException,
+    UserPasswordResetExpiredException,
+    UserPasswordResetInvalidException,
     UserNotFoundException,
 )
 from app.domain.ums.email_sender import EmailSender
-from app.domain.ums.model import PasswordResetCode
-from app.domain.ums.repository import PasswordResetCodeRepository, UserRepository
+from app.domain.ums.model import UserPasswordResetCode
+from app.domain.ums.repository import UserPasswordResetCodeRepository, UserRepository
 
 
-class PasswordResetService:
+class UserPasswordResetService:
 
     def __init__(self, db: Session, email_sender: EmailSender):
-        self.repository = PasswordResetCodeRepository(db)
+        self.repository = UserPasswordResetCodeRepository(db)
         self.user_repository = UserRepository(db)
         self.email_sender = email_sender
 
@@ -28,7 +28,7 @@ class PasswordResetService:
         self.repository.delete_by_email(email)
 
         code = f"{random.randint(0, 999999):06d}"
-        entity = PasswordResetCode(
+        entity = UserPasswordResetCode(
             email=email,
             code=code,
             expired_at=datetime.now() + timedelta(minutes=5),
@@ -53,12 +53,12 @@ class PasswordResetService:
 
         self.repository.delete_by_email(email)
 
-    def _find_valid_code(self, email: str, code: str) -> PasswordResetCode:
+    def _find_valid_code(self, email: str, code: str) -> UserPasswordResetCode:
         entity = self.repository.find_latest_by_email(email)
         if not entity:
-            raise PasswordResetInvalidException()
+            raise UserPasswordResetInvalidException()
         if entity.expired_at < datetime.now():
-            raise PasswordResetExpiredException()
+            raise UserPasswordResetExpiredException()
         if entity.code != code:
-            raise PasswordResetInvalidException()
+            raise UserPasswordResetInvalidException()
         return entity

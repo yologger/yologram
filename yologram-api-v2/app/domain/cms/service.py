@@ -1,16 +1,16 @@
 from sqlalchemy.orm import Session
 
 from app.domain.cms.enum import Section
-from app.domain.cms.repository import CategoryRepository
-from app.domain.cms.schema import CategoryResponse
+from app.domain.cms.repository import PostCategoryRepository
+from app.domain.cms.schema import PostCategoryResponse
 
 
-class CategoryService:
+class PostCategoryService:
 
     def __init__(self, db: Session):
-        self.repository = CategoryRepository(db)
+        self.repository = PostCategoryRepository(db)
 
-    def get_categories(self, section_path: str) -> list[CategoryResponse]:
+    def get_post_categories(self, section_path: str) -> list[PostCategoryResponse]:
         section = Section.from_path(section_path)
         categories = self.repository.find_active_by_section(section)
-        return [CategoryResponse.model_validate(category) for category in categories]
+        return [PostCategoryResponse.model_validate(category) for category in categories]

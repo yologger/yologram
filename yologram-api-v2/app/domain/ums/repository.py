@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.domain.ums.model import EmailVerificationCode, PasswordResetCode, User
+from app.domain.ums.model import UserEmailVerification, UserPasswordResetCode, User
 
 
 class UserRepository:
@@ -30,45 +30,45 @@ class UserRepository:
         self.db.flush()
 
 
-class EmailVerificationCodeRepository:
+class UserEmailVerificationRepository:
 
     def __init__(self, db: Session):
         self.db = db
 
-    def find_latest_by_email(self, email: str) -> EmailVerificationCode | None:
-        return self.db.query(EmailVerificationCode).filter(
-            EmailVerificationCode.email == email,
-        ).order_by(EmailVerificationCode.created_at.desc()).first()
+    def find_latest_by_email(self, email: str) -> UserEmailVerification | None:
+        return self.db.query(UserEmailVerification).filter(
+            UserEmailVerification.email == email,
+        ).order_by(UserEmailVerification.created_at.desc()).first()
 
-    def save(self, entity: EmailVerificationCode) -> EmailVerificationCode:
+    def save(self, entity: UserEmailVerification) -> UserEmailVerification:
         self.db.add(entity)
         self.db.flush()
         self.db.refresh(entity)
         return entity
 
     def delete_by_email(self, email: str) -> None:
-        self.db.query(EmailVerificationCode).filter(
-            EmailVerificationCode.email == email,
+        self.db.query(UserEmailVerification).filter(
+            UserEmailVerification.email == email,
         ).delete()
 
 
-class PasswordResetCodeRepository:
+class UserPasswordResetCodeRepository:
 
     def __init__(self, db: Session):
         self.db = db
 
-    def find_latest_by_email(self, email: str) -> PasswordResetCode | None:
-        return self.db.query(PasswordResetCode).filter(
-            PasswordResetCode.email == email,
-        ).order_by(PasswordResetCode.created_at.desc()).first()
+    def find_latest_by_email(self, email: str) -> UserPasswordResetCode | None:
+        return self.db.query(UserPasswordResetCode).filter(
+            UserPasswordResetCode.email == email,
+        ).order_by(UserPasswordResetCode.created_at.desc()).first()
 
-    def save(self, entity: PasswordResetCode) -> PasswordResetCode:
+    def save(self, entity: UserPasswordResetCode) -> UserPasswordResetCode:
         self.db.add(entity)
         self.db.flush()
         self.db.refresh(entity)
         return entity
 
     def delete_by_email(self, email: str) -> None:
-        self.db.query(PasswordResetCode).filter(
-            PasswordResetCode.email == email,
+        self.db.query(UserPasswordResetCode).filter(
+            UserPasswordResetCode.email == email,
         ).delete()

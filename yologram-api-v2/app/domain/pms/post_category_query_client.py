@@ -4,13 +4,13 @@ from typing import Protocol
 from sqlalchemy.orm import Session
 
 from app.domain.cms.enum import Section
-from app.domain.cms.repository import CategoryRepository
+from app.domain.cms.repository import PostCategoryRepository
 
 
-class CategoryQueryClient(Protocol):
+class PostCategoryQueryClient(Protocol):
     """
     pms → cms 도메인 경계 호출 추상화.
-    모놀리식에서는 cms 리포지토리를 직접 호출(LocalCategoryQueryClient),
+    모놀리식에서는 cms 리포지토리를 직접 호출(LocalPostCategoryQueryClient),
     MSA 분리 시 cms-api HTTP 호출 구현으로 교체한다.
     """
 
@@ -19,10 +19,10 @@ class CategoryQueryClient(Protocol):
         ...
 
 
-class LocalCategoryQueryClient:
+class LocalPostCategoryQueryClient:
 
     def __init__(self, db: Session):
-        self.repository = CategoryRepository(db)
+        self.repository = PostCategoryRepository(db)
 
     def all_active_in_section(self, section: Section, category_ids: Collection[int]) -> bool:
         distinct_ids = list(set(category_ids))

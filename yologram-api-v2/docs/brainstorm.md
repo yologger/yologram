@@ -130,7 +130,7 @@ FastAPI(및 대부분의 프레임워크)는 인프라(ECS, K8s)에 secret 주�
 ## 비밀번호 찾기
 
 - 방식: 이메일 6자리 코드 발송 → 코드 검증 → 새 비밀번호 설정 (회원가입 이메일 인증과 동일 패턴/SES 재사용, api-v1과 동일)
-- 저장: 별도 테이블 password_reset_codes (email, code, verified, expired_at 5분, created_at) — api-v1과 공유 테이블
+- 저장: 별도 테이블 user_password_reset_code (email, code, verified, expired_at 5분, created_at) — api-v1과 공유 테이블
 - 흐름:
   - send: 미가입 이메일이면 404 USER_NOT_FOUND, 기존 코드 삭제 후 새 코드 발송
   - verify: 코드 검증 → verified=true (프론트 단계 게이팅용)

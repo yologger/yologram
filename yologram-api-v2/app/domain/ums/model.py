@@ -7,7 +7,7 @@ from app.domain.ums.enum import UserStatus, UserType
 
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "user"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     email = Column(String(200), nullable=False, unique=True)
@@ -22,8 +22,8 @@ class User(Base):
     modified_date = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
 
-class EmailVerificationCode(Base):
-    __tablename__ = "email_verification_codes"
+class UserEmailVerification(Base):
+    __tablename__ = "user_email_verification"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     email = Column(String(200), nullable=False)
@@ -33,8 +33,8 @@ class EmailVerificationCode(Base):
     created_at = Column(DateTime, nullable=False, default=func.now())
 
 
-class PasswordResetCode(Base):
-    __tablename__ = "password_reset_codes"
+class UserPasswordResetCode(Base):
+    __tablename__ = "user_password_reset_code"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     email = Column(String(200), nullable=False)

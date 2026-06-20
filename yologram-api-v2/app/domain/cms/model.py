@@ -4,8 +4,8 @@ from app.config.database import Base
 from app.domain.cms.enum import Section
 
 
-class Category(Base):
-    __tablename__ = "categories"
+class PostCategory(Base):
+    __tablename__ = "post_category"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     section = Column(Enum(Section), nullable=False)

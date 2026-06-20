@@ -68,7 +68,7 @@
 ## UMS - 이메일 인증 (6단계)
 
 - [x] AWS SES 연동 (이메일 발송 서비스, boto3)
-- [x] 인증 코드 생성/저장 로직 (email_verification_codes 테이블, 5분 만료)
+- [x] 인증 코드 생성/저장 로직 (user_email_verification 테이블, 5분 만료)
 - [x] POST /api/v2/ums/auth/email-verification/send
 - [x] POST /api/v2/ums/auth/email-verification/verify
 - [x] 회원가입 시 이메일 인증 필수화
@@ -87,10 +87,10 @@
 
 ## UMS - 비밀번호 찾기 (7단계)
 
-- [x] PasswordResetCode 모델 (password_reset_codes 테이블)
-- [x] PasswordResetCodeRepository
+- [x] UserPasswordResetCode 모델 (user_password_reset_code 테이블)
+- [x] UserPasswordResetCodeRepository
 - [x] EmailSender.send_password_reset_code (Stub/Ses 구현)
-- [x] PasswordResetService (send_code, verify_code, confirm)
+- [x] UserPasswordResetService (send_code, verify_code, confirm)
 - [x] POST /api/v2/ums/auth/password-reset/send (미가입 시 404)
 - [x] POST /api/v2/ums/auth/password-reset/verify
 - [x] POST /api/v2/ums/auth/password-reset/confirm (email, code, newPassword 재검증)
@@ -112,9 +112,9 @@
 ## CMS - 커뮤니티 카테고리 (api-v1 미러링)
 
 - [x] Section enum (TECH / INVEST / POLITICS)
-- [x] Category 모델 (categories 테이블, api-v1과 공유)
+- [x] PostCategory 모델 (post_category 테이블, api-v1과 공유)
 - [x] CategoryRepository (section별 활성 카테고리 sort_order 정렬 조회)
-- [x] CategoryService (section_path → Section.from_path 검증)
+- [x] PostCategoryService (section_path → Section.from_path 검증)
 - [x] GET /api/v2/cms/{section}/categories
 - [x] InvalidSectionException (400 INVALID_SECTION)
 - [x] 테스트 (service 4 + router 3)
@@ -122,13 +122,13 @@
 
 ## PMS - 커뮤니티 게시글 작성 (api-v1 미러링)
 
-- [ ] community_posts / post_categories 테이블 (api-v1과 공유, DB 직접 실행)
-- [x] Post / PostCategory 모델 (FK 없는 인덱스 매핑)
-- [x] PostRepository / PostCategoryRepository
-- [x] CategoryQueryClient(Protocol) + LocalCategoryQueryClient (cms 경계 추상화, MSA 대비)
+- [ ] post / post_category_mapping 테이블 (api-v1과 공유, DB 직접 실행)
+- [x] Post / PostCategoryMapping 모델 (FK 없는 인덱스 매핑)
+- [x] PostRepository / PostCategoryMappingRepository
+- [x] PostCategoryQueryClient(Protocol) + LocalPostCategoryQueryClient (cms 경계 추상화, MSA 대비)
 - [x] PostService.create (작성자=인증유저, categoryIds section 일치 검증, 1~3개 필수)
 - [x] POST /api/v2/pms/{section}/posts (인증 필요)
-- [x] InvalidCategoryException (400 INVALID_CATEGORY)
+- [x] InvalidPostCategoryException (400 INVALID_POST_CATEGORY)
 - [x] 검증 실패 응답 400 VALIDATION_ERROR로 통일 (api-v1 정합, 메시지 단일 문자열화)
 - [x] 테스트 (service 3 + router 7)
 

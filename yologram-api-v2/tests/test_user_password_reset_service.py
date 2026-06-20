@@ -4,26 +4,26 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.core.exception import (
-    PasswordResetExpiredException,
-    PasswordResetInvalidException,
+    UserPasswordResetExpiredException,
+    UserPasswordResetInvalidException,
     UserNotFoundException,
 )
-from app.domain.ums.password_reset_service import PasswordResetService
+from app.domain.ums.user_password_reset_service import UserPasswordResetService
 
 
-class TestPasswordResetService:
+class TestUserPasswordResetService:
 
     def setup_method(self):
         self.db = MagicMock()
         self.email_sender = MagicMock()
-        self.service = PasswordResetService(self.db, self.email_sender)
+        self.service = UserPasswordResetService(self.db, self.email_sender)
 
     class TestSendCode:
 
         def setup_method(self):
             self.db = MagicMock()
             self.email_sender = MagicMock()
-            self.service = PasswordResetService(self.db, self.email_sender)
+            self.service = UserPasswordResetService(self.db, self.email_sender)
             self.service.user_repository.find_by_email = MagicMock(return_value=MagicMock())
             self.service.repository.delete_by_email = MagicMock()
             self.service.repository.save = MagicMock(return_value=MagicMock())
@@ -50,7 +50,7 @@ class TestPasswordResetService:
 
         def setup_method(self):
             self.db = MagicMock()
-            self.service = PasswordResetService(self.db, MagicMock())
+            self.service = UserPasswordResetService(self.db, MagicMock())
 
         def test_올바른_코드면_verified(self):
             entity = MagicMock()
@@ -66,7 +66,7 @@ class TestPasswordResetService:
         def test_레코드_없으면_예외(self):
             self.service.repository.find_latest_by_email = MagicMock(return_value=None)
 
-            with pytest.raises(PasswordResetInvalidException):
+            with pytest.raises(UserPasswordResetInvalidException):
                 self.service.verify_code("test@yologram.link", "123456")
 
         def test_만료면_예외(self):
@@ -75,7 +75,7 @@ class TestPasswordResetService:
             entity.expired_at = datetime.now() - timedelta(minutes=1)
             self.service.repository.find_latest_by_email = MagicMock(return_value=entity)
 
-            with pytest.raises(PasswordResetExpiredException):
+            with pytest.raises(UserPasswordResetExpiredException):
                 self.service.verify_code("test@yologram.link", "123456")
 
         def test_코드_불일치면_예외(self):
@@ -84,14 +84,14 @@ class TestPasswordResetService:
             entity.expired_at = datetime.now() + timedelta(minutes=3)
             self.service.repository.find_latest_by_email = MagicMock(return_value=entity)
 
-            with pytest.raises(PasswordResetInvalidException):
+            with pytest.raises(UserPasswordResetInvalidException):
                 self.service.verify_code("test@yologram.link", "999999")
 
     class TestConfirm:
 
         def setup_method(self):
             self.db = MagicMock()
-            self.service = PasswordResetService(self.db, MagicMock())
+            self.service = UserPasswordResetService(self.db, MagicMock())
             self.service.repository.delete_by_email = MagicMock()
 
         def _valid_code(self):
@@ -114,7 +114,7 @@ class TestPasswordResetService:
         def test_코드_불일치면_예외(self):
             self.service.repository.find_latest_by_email = MagicMock(return_value=self._valid_code())
 
-            with pytest.raises(PasswordResetInvalidException):
+            with pytest.raises(UserPasswordResetInvalidException):
                 self.service.confirm("test@yologram.link", "999999", "newpass1234")
 
         def test_만료면_예외(self):
@@ -123,5 +123,5 @@ class TestPasswordResetService:
             entity.expired_at = datetime.now() - timedelta(minutes=1)
             self.service.repository.find_latest_by_email = MagicMock(return_value=entity)
 
-            with pytest.raises(PasswordResetExpiredException):
+            with pytest.raises(UserPasswordResetExpiredException):
                 self.service.confirm("test@yologram.link", "123456", "newpass1234")

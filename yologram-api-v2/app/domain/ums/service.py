@@ -1,9 +1,9 @@
 import bcrypt
 from sqlalchemy.orm import Session
 
-from app.core.exception import AuthWrongPasswordException, EmailNotVerifiedException, UserDuplicateException, UserNotFoundException
+from app.core.exception import AuthWrongPasswordException, UserEmailNotVerifiedException, UserDuplicateException, UserNotFoundException
 from app.domain.ums.model import User
-from app.domain.ums.repository import EmailVerificationCodeRepository, UserRepository
+from app.domain.ums.repository import UserEmailVerificationRepository, UserRepository
 from app.domain.ums.schema import ChangePasswordRequest, JoinRequest, JoinResponse, UpdateProfileRequest, UserMeResponse
 
 
@@ -11,7 +11,7 @@ class UserService:
 
     def __init__(self, db: Session):
         self.repository = UserRepository(db)
-        self.email_verification_code_repository = EmailVerificationCodeRepository(db)
+        self.email_verification_code_repository = UserEmailVerificationRepository(db)
 
     def join(self, request: JoinRequest) -> JoinResponse:
         existing = self.repository.find_by_email(request.email)
@@ -20,7 +20,7 @@ class UserService:
 
         verification = self.email_verification_code_repository.find_latest_by_email(request.email)
         if not verification or not verification.verified:
-            raise EmailNotVerifiedException()
+            raise UserEmailNotVerifiedException()
 
         hashed_password = bcrypt.hashpw(
             request.password.encode("utf-8"), bcrypt.gensalt()

@@ -32,37 +32,37 @@ class AuthWrongPasswordException(AppException):
 
 class AuthTokenExpiredException(AppException):
     def __init__(self):
-        super().__init__(401, "토큰이 만료되었습니다.", "AUTH_TOKEN_EXPIRED")
+        super().__init__(401, "토큰이 만료되었습니다.", "AUTH_EXPIRED_TOKEN")
 
 
 class AuthTokenInvalidException(AppException):
     def __init__(self):
-        super().__init__(401, "유효하지 않은 토큰입니다.", "AUTH_TOKEN_INVALID")
+        super().__init__(401, "유효하지 않은 토큰입니다.", "AUTH_INVALID_TOKEN")
 
 
-class EmailVerificationExpiredException(AppException):
+class UserEmailVerificationExpiredException(AppException):
     def __init__(self):
-        super().__init__(400, "인증 코드가 만료되었습니다.", "EMAIL_VERIFICATION_EXPIRED")
+        super().__init__(400, "인증 코드가 만료되었습니다.", "USER_EMAIL_VERIFICATION_EXPIRED")
 
 
-class EmailVerificationInvalidException(AppException):
+class UserEmailVerificationInvalidException(AppException):
     def __init__(self):
-        super().__init__(400, "인증 코드가 일치하지 않습니다.", "EMAIL_VERIFICATION_INVALID")
+        super().__init__(400, "인증 코드가 일치하지 않습니다.", "USER_EMAIL_VERIFICATION_INVALID")
 
 
-class EmailNotVerifiedException(AppException):
+class UserEmailNotVerifiedException(AppException):
     def __init__(self):
-        super().__init__(400, "이메일 인증이 완료되지 않았습니다.", "EMAIL_NOT_VERIFIED")
+        super().__init__(400, "이메일 인증이 완료되지 않았습니다.", "USER_EMAIL_NOT_VERIFIED")
 
 
-class PasswordResetExpiredException(AppException):
+class UserPasswordResetExpiredException(AppException):
     def __init__(self):
-        super().__init__(400, "인증 코드가 만료되었습니다.", "PASSWORD_RESET_EXPIRED")
+        super().__init__(400, "인증 코드가 만료되었습니다.", "USER_PASSWORD_RESET_EXPIRED")
 
 
-class PasswordResetInvalidException(AppException):
+class UserPasswordResetInvalidException(AppException):
     def __init__(self):
-        super().__init__(400, "인증 코드가 일치하지 않습니다.", "PASSWORD_RESET_INVALID")
+        super().__init__(400, "인증 코드가 일치하지 않습니다.", "USER_PASSWORD_RESET_INVALID")
 
 
 class InvalidSectionException(AppException):
@@ -70,9 +70,9 @@ class InvalidSectionException(AppException):
         super().__init__(400, "유효하지 않은 섹션입니다.", "INVALID_SECTION")
 
 
-class InvalidCategoryException(AppException):
+class InvalidPostCategoryException(AppException):
     def __init__(self):
-        super().__init__(400, "해당 게시판의 카테고리가 아닙니다.", "INVALID_CATEGORY")
+        super().__init__(400, "해당 게시판의 카테고리가 아닙니다.", "INVALID_POST_CATEGORY")
 
 
 class PostNotFoundException(AppException):
