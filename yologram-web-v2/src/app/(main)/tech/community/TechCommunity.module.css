@@ -34,9 +34,12 @@
 }
 
 @media (min-width: 768px) {
+  /* 본문(760px 중앙)과 같은 폭·중앙선에 정렬 */
   .composeBar {
     left: 200px;
     bottom: 0;
+    max-width: 760px;
+    margin-inline: auto;
   }
 }
 

@@ -14,7 +14,9 @@ export default function ResponsiveLayout({ children }: { children: React.ReactNo
     <div className={styles.layout}>
       {!isMobile && <DesktopSidebar />}
       <main className={`${styles.content} ${isMobile ? styles.mobile : styles.desktop}`}>
-        {children}
+        <div className={styles.inner}>
+          {children}
+        </div>
       </main>
       {isMobile && <MobileTabBar />}
     </div>

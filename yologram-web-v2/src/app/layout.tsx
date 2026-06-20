@@ -1,6 +1,11 @@
+import type { Metadata } from 'next'
 import '@/styles/global.css'
 import { AntdRegistry } from '@ant-design/nextjs-registry'
 import Providers from './providers'
+
+export const metadata: Metadata = {
+  title: 'yologram (v2)',
+}
 
 // 모든 페이지를 감싸는 최상위 레이아웃 (서버 컴포넌트)
 // children: Next.js가 URL에 맞는 페이지를 자동으로 주입

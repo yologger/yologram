@@ -15,3 +15,13 @@
   margin-left: 200px;
   padding: 24px;
 }
+
+.inner {
+  width: 100%;
+}
+
+/* 데스크탑: 사이드바 제외 본문 영역 중앙에 콘텐츠 폭 760px 유지 */
+.content.desktop .inner {
+  max-width: 760px;
+  margin: 0 auto;
+}

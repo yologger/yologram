@@ -94,6 +94,15 @@
   border-top: 1px solid #f0f0f0;
 }
 
+@media (min-width: 768px) {
+  /* 본문(760px 중앙)과 같은 폭·중앙선에 정렬 */
+  .commentBar {
+    left: 200px;
+    max-width: 760px;
+    margin-inline: auto;
+  }
+}
+
 .commentInput {
   flex: 1;
   padding: 10px 14px;
