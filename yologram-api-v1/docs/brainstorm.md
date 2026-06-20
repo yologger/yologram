@@ -102,7 +102,9 @@
   - 댓글/좋아요/저장/신고 등 상호작용은 섹션 무관하게 동일 → 자식 테이블·로직을 section마다 3벌로 복제하지 않음
   - 섹션별 페이지(/tech 등)와 내 글/저장한 글/어드민 서브페이지는 모두 WHERE section=? 로 처리 가능
   - "전용 필드만" 갈리므로 그 부분만 확장 테이블로 분리(하이브리드)
-- 성능: WHERE section=? 무차별 스캔 우려 → 복합 인덱스 (section, created_at)로 인덱스 범위 스캔. 섹션 피드 쿼리는 전체 행수와 무관하게 빠름. 페이지네이션은 cursor(keyset) 사용, OFFSET 지양. 더 커지면 section/시간 파티셔닝 검토
+- 성능: WHERE section=? 무차별 스캔 우려 → 복합 인덱스 (section, id)로 인덱스 범위 스캔. 섹션 피드 쿼리는 전체 행수와 무관하게 빠름. 페이지네이션은 cursor(keyset) 사용, OFFSET 지양. 더 커지면 section/시간 파티셔닝 검토
+  - 커서는 id-only(legacy 방식과 일치): id가 auto_increment라 작성순=시간순 → id desc만으로 최신순. (section, id) 인덱스로 필터+정렬+커서를 한 번에 커버. created_at 복합 커서는 정렬 기준이 id와 어긋날 때(인기순 등)나 정렬 키가 비유니크일 때만 필요 — 단순 최신순 피드엔 과함
+  - 종료 판정도 legacy 방식: +1/hasNext/count 없이 "마지막 글 id를 항상 nextCursor로, 빈 결과면 null". 클라이언트(TanStack useInfiniteQuery)는 nextCursor 유무로만 판단
 
 ### 카테고리: 동적 관리 (DB + 어드민 CRUD) — cms(contents) 소유
 
@@ -166,3 +168,5 @@
   4. 조건부 정렬 / cursor·offset 페이지네이션
   5. 벌크 update·delete (조건부 여러 행 변경)
 - yologram 예: "내 글 목록"(section·작성자 필터 + 카테고리 조인 + cursor 페이지네이션) = pms + QueryDSL / 공개 섹션 피드·키워드 검색 = search
+- 구현 메모: 게시글 목록 API(PostRepositoryImpl.findPostsBySection)가 프로젝트 첫 QueryDSL 사용처 — 동적 조건(categoryId/cursor) + EXISTS 서브쿼리 + keyset. JPAQueryFactory 빈은 QuerydslConfig
+- 주의(QueryDSL 함정): enum을 담는 패키지명에 `enum`(Java 예약어) 사용 금지. QueryDSL APT는 Java 코드를 생성하는데 `import ...enum.Xxx`를 만들지 못해 해당 enum 필드가 Q클래스에서 통째로 누락됨(다른 타입 필드는 정상). cms.enum → cms.enums로 변경해 해결. ums.enum도 동일 잠재 이슈(현재 QueryDSL 미사용이라 보류)

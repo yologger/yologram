@@ -23,6 +23,11 @@ class PmsExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(e.message, e.errorCode))
     }
 
+    @ExceptionHandler(InvalidCursorException::class)
+    fun handleInvalidCursor(e: InvalidCursorException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
+    }
+
     // 게시글 작성 경로(/pms/{section})에서 잘못된 section path 처리 (Section.fromPath)
     @ExceptionHandler(InvalidSectionException::class)
     fun handleInvalidSection(e: InvalidSectionException): ResponseEntity<ErrorResponse> {

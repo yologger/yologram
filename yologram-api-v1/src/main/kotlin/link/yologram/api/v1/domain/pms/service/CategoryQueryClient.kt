@@ -1,6 +1,6 @@
 package link.yologram.api.v1.domain.pms.service
 
-import link.yologram.api.v1.domain.cms.enum.Section
+import link.yologram.api.v1.domain.cms.enums.Section
 
 /**
  * pms → cms 도메인 경계 호출 추상화.

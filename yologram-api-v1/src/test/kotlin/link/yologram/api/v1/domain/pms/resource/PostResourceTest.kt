@@ -6,19 +6,23 @@ import link.yologram.api.v1.domain.cms.exception.CmsExceptionHandler
 import link.yologram.api.v1.domain.cms.exception.InvalidSectionException
 import link.yologram.api.v1.domain.pms.exception.InvalidCategoryException
 import link.yologram.api.v1.domain.pms.exception.PmsExceptionHandler
-import link.yologram.api.v1.domain.cms.enum.Section
+import link.yologram.api.v1.domain.cms.enums.Section
 import link.yologram.api.v1.domain.pms.exception.PostNotFoundException
 import link.yologram.api.v1.domain.pms.model.CreatePostRequest
 import link.yologram.api.v1.domain.pms.model.CreatePostResponse
 import link.yologram.api.v1.domain.pms.model.PostDetailResponse
+import link.yologram.api.v1.domain.pms.model.PostSummaryResponse
 import link.yologram.api.v1.domain.pms.service.PostService
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import link.yologram.api.v1.global.exception.GlobalExceptionHandler
 import link.yologram.api.v1.global.exception.ValidationExceptionHandler
+import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -187,6 +191,47 @@ class PostResourceTest {
             .andExpect {
                 status { isNotFound() }
                 jsonPath("$.errorCode") { value("POST_NOT_FOUND") }
+            }
+    }
+
+    @Test
+    fun `게시글 목록 조회 시 200과 data·nextCursor를 반환한다`() {
+        whenever(postService.getPosts(eq("tech"), anyOrNull(), anyOrNull(), any())).thenReturn(
+            ApiEnvelopCursorPage(
+                data = listOf(
+                    PostSummaryResponse(
+                        id = 2L,
+                        section = Section.TECH,
+                        author = PostDetailResponse.Author(uid = 12L, nickname = "tester"),
+                        title = "제목",
+                        content = "내용",
+                        categoryIds = listOf(1L),
+                        likeCount = 0,
+                        commentCount = 0,
+                        createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
+                    ),
+                ),
+                nextCursor = "next-cursor",
+            ),
+        )
+
+        mockMvc.get("/api/v1/pms/tech/posts")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.data[0].id") { value(2) }
+                jsonPath("$.data[0].author.nickname") { value("tester") }
+                jsonPath("$.nextCursor") { value("next-cursor") }
+            }
+    }
+
+    @Test
+    fun `목록 조회 시 유효하지 않은 section이면 400 반환`() {
+        doThrow(InvalidSectionException()).whenever(postService).getPosts(eq("unknown"), anyOrNull(), anyOrNull(), any())
+
+        mockMvc.get("/api/v1/pms/unknown/posts")
+            .andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errorCode") { value("INVALID_SECTION") }
             }
     }
 }

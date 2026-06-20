@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface PostCategoryRepository : JpaRepository<PostCategory, Long> {
     fun findByPostId(postId: Long): List<PostCategory>
+
+    fun findByPostIdIn(postIds: Collection<Long>): List<PostCategory>
 }

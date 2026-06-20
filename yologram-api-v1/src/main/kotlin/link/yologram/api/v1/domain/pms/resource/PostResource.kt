@@ -8,16 +8,19 @@ import jakarta.validation.Valid
 import link.yologram.api.v1.domain.pms.model.CreatePostRequest
 import link.yologram.api.v1.domain.pms.model.CreatePostResponse
 import link.yologram.api.v1.domain.pms.model.PostDetailResponse
+import link.yologram.api.v1.domain.pms.model.PostSummaryResponse
 import link.yologram.api.v1.domain.pms.service.PostService
 import link.yologram.api.v1.domain.ums.resolver.AuthData
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUser
 import link.yologram.api.v1.global.model.ApiEnvelop
+import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -42,6 +45,21 @@ class PostResource(
         @Valid @RequestBody request: CreatePostRequest,
     ): ApiEnvelop<CreatePostResponse> {
         return ApiEnvelop(data = postService.create(section, authData.uid, request))
+    }
+
+    @GetMapping("/{section}/posts")
+    @Operation(summary = "게시글 목록 조회", description = "섹션(section) 피드. 최신순 cursor 페이지네이션 (공개)")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "조회 성공"),
+        ApiResponse(responseCode = "400", description = "유효하지 않은 섹션"),
+    )
+    fun getPosts(
+        @PathVariable section: String,
+        @RequestParam(required = false) cursor: String?,
+        @RequestParam(required = false, defaultValue = "20") size: Int,
+        @RequestParam(required = false) categoryId: Long?,
+    ): ApiEnvelopCursorPage<PostSummaryResponse> {
+        return postService.getPosts(section, categoryId, cursor, size)
     }
 
     @GetMapping("/{section}/posts/{id}")

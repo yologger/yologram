@@ -161,8 +161,14 @@
 - 작성자 = JWT 인증 유저, categoryIds가 해당 section 카테고리인지 검증(모놀리식: categories 직접 조회) → community_posts + post_categories insert
 - 응답 { id } (201)
 
-### 3단계 이후 (예정)
-- 게시글 목록(cursor 페이지네이션) / 상세 / 수정 / 삭제
+### 3단계: 게시글 조회 (구현됨)
+- GET /api/v1/pms/{section}/posts/{id} (상세, 공개)
+- GET /api/v1/pms/{section}/posts (목록, 공개) — 최신순(id desc) + cursor(keyset) 페이지네이션, categoryId 필터(옵션), size 기본 20·최대 50
+- 커서는 id-only(legacy yologram-legacy 방식): 마지막 글 id를 nextCursor로, 빈 결과면 null. ApiEnvelopCursorPage{data, nextCursor}
+- QuerydslConfig(JPAQueryFactory) 도입 — 프로젝트 첫 QueryDSL. 인덱스 (section, id)
+
+### 4단계 이후 (예정)
+- 게시글 수정 / 삭제
 - 댓글(comment 도메인 /api/v1/comments, post_id FK 없음) / 좋아요·카운트(count 경로 예약)
 - 어드민 카테고리 CRUD(/api/v1/cms/admin/...), 어드민 게시글 관리
 

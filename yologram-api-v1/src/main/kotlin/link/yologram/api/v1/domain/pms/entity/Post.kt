@@ -1,7 +1,7 @@
 package link.yologram.api.v1.domain.pms.entity
 
 import jakarta.persistence.*
-import link.yologram.api.v1.domain.cms.enum.Section
+import link.yologram.api.v1.domain.cms.enums.Section
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener

@@ -151,8 +151,14 @@
 - [x] UserQueryClient + LocalUserQueryClient (작성자 닉네임, ums 경계 추상화 MSA 대비)
 - [x] PostNotFoundException (404, POST_NOT_FOUND), id가 해당 section 글 아니면 404
 - [x] 테스트 (서비스 3 + 리소스 2) / Swagger
-- [ ] GET /api/v1/pms/{section}/posts (목록, cursor 페이지네이션)
-- [ ] 목록 카테고리 필터 (categoryId)
+- [x] GET /api/v1/pms/{section}/posts (목록, cursor 페이지네이션) — QueryDSL keyset(id desc, id-only 커서), ApiEnvelopCursorPage{data, nextCursor}
+- [x] 목록 카테고리 필터 (categoryId) — EXISTS 서브쿼리
+- [x] 커서/종료 판정은 legacy(yologram-legacy) 방식: id-only 커서 + 마지막 글 id를 항상 nextCursor로(빈 결과면 null), +1/hasNext 미사용. 잘못된 커서 → 400 INVALID_CURSOR
+- [x] QuerydslConfig(JPAQueryFactory 빈, 프로젝트 첫 QueryDSL 사용처) / PostRepositoryImpl.findPostsBySection · PostCursor(object) · PostSummaryResponse(content 전체 포함)
+- [x] 인덱스 교체: (section, created_at) → (section, id) (idx_posts_section_id). id desc 정렬·커서 커버
+- [x] N+1 회피: findNicknames · findByPostIdIn 배치 조회 (닉네임은 ums 경계 추상화 위해 join 대신 별도 조회, 카테고리는 1:N이라 IN)
+- [x] cms.enum → cms.enums 리네임 (패키지명 enum이 Java 예약어 → QueryDSL Q클래스에서 enum 필드 누락 해결)
+- [x] 테스트 (서비스 5 + 리소스 2 + 리포지토리 통합 5)
 
 ## Comment - 댓글 (예정)
 

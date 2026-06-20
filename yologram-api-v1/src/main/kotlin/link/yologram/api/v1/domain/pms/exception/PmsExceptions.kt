@@ -5,3 +5,5 @@ open class PmsException(override val message: String, val errorCode: String) : R
 class InvalidCategoryException : PmsException("해당 게시판의 카테고리가 아닙니다.", "INVALID_CATEGORY")
 
 class PostNotFoundException : PmsException("게시글을 찾을 수 없습니다.", "POST_NOT_FOUND")
+
+class InvalidCursorException : PmsException("유효하지 않은 커서입니다.", "INVALID_CURSOR")

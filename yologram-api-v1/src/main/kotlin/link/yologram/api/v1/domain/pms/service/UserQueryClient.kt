@@ -8,4 +8,7 @@ package link.yologram.api.v1.domain.pms.service
 interface UserQueryClient {
     /** uid의 닉네임. 없으면 null. */
     fun findNickname(uid: Long): String?
+
+    /** 여러 uid의 닉네임을 한 번에 조회 (목록 N+1 방지). 없는 uid는 맵에서 제외. */
+    fun findNicknames(uids: Collection<Long>): Map<Long, String>
 }

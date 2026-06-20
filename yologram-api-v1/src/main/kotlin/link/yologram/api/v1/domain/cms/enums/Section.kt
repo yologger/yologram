@@ -1,4 +1,4 @@
-package link.yologram.api.v1.domain.cms.enum
+package link.yologram.api.v1.domain.cms.enums
 
 import link.yologram.api.v1.domain.cms.exception.InvalidSectionException
 

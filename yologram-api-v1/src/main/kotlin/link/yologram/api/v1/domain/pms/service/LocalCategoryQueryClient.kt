@@ -1,6 +1,6 @@
 package link.yologram.api.v1.domain.pms.service
 
-import link.yologram.api.v1.domain.cms.enum.Section
+import link.yologram.api.v1.domain.cms.enums.Section
 import link.yologram.api.v1.domain.cms.repository.CategoryRepository
 import org.springframework.stereotype.Component
 

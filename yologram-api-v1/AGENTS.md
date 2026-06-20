@@ -35,6 +35,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 ## 커뮤니티 카테고리 (CMS)
 
 - 도메인 domain/cms, GET /api/v1/cms/{section}/categories (section: TECH/INVEST/POLITICS)
+- Section enum은 domain/cms/enums (패키지명 `enum`은 Java 예약어라 QueryDSL Q클래스에서 enum 필드 누락 → enums 사용)
 - categories 테이블, 잘못된 section → 400 INVALID_SECTION
 
 ## 커뮤니티 게시글 (PMS)
@@ -45,6 +46,9 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - 카테고리 section 불일치 → 400 INVALID_CATEGORY
 - @AuthenticatedUser 인증 예외는 GlobalExceptionHandler에서 전역 처리
 - 상세 조회 GET /api/v1/pms/{section}/posts/{id} (공개), 작성자 닉네임은 UserQueryClient로 ums 조회, 없으면 404 POST_NOT_FOUND
+- 목록 조회 GET /api/v1/pms/{section}/posts (공개), 최신순(id desc) + cursor(keyset) 페이지네이션 + categoryId 필터, size 기본 20·최대 50
+- 커서/종료는 legacy 방식: id-only 커서 + 마지막 글 id를 nextCursor로(빈 결과면 null), 잘못된 커서 → 400 INVALID_CURSOR
+- PostRepositoryImpl이 첫 QueryDSL 사용처(QuerydslConfig의 JPAQueryFactory), N+1 회피 배치 조회, 인덱스 (section, id)
 
 ## 빌드/배포
 
