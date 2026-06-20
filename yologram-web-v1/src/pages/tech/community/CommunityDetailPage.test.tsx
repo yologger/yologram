@@ -1,19 +1,27 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterEach, afterAll, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/utils'
+import { server } from '../../../test/server'
 import CommunityDetailPage from './CommunityDetailPage'
 
+const mockUseParams = vi.fn()
 vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router')
-  return { ...actual, useNavigate: () => vi.fn(), useParams: () => ({ postId: '1000' }) }
+  return { ...actual, useNavigate: () => vi.fn(), useParams: () => mockUseParams() }
 })
 
+beforeAll(() => server.listen())
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
+beforeEach(() => mockUseParams.mockReturnValue({ postId: '1' }))
+
 describe('CommunityDetailPage', () => {
-  it('게시글 본문과 댓글 영역을 표시한다', () => {
+  it('API로 조회한 게시글 본문과 댓글 영역을 표시한다', async () => {
     renderWithProviders(<CommunityDetailPage />)
 
-    expect(screen.getByText('qld보다 이게 더 좋나요 음의복리도 없고 수익률도 더 높던데')).toBeInTheDocument()
+    expect(await screen.findByText('API 본문 내용')).toBeInTheDocument()
+    expect(screen.getByText('테스터')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('댓글로 의견을 남겨보세요')).toBeInTheDocument()
   })
 
@@ -21,11 +29,21 @@ describe('CommunityDetailPage', () => {
     const user = userEvent.setup()
     renderWithProviders(<CommunityDetailPage />)
 
+    // 게시글 로드 대기
+    await screen.findByText('API 본문 내용')
+
     await user.type(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), '좋은 글이네요')
     await user.click(screen.getByRole('button', { name: '등록' }))
 
     await waitFor(() => {
       expect(screen.getByText('좋은 글이네요')).toBeInTheDocument()
     })
+  })
+
+  it('존재하지 않는 글이면 안내 문구를 표시한다', async () => {
+    mockUseParams.mockReturnValue({ postId: '99999' })
+    renderWithProviders(<CommunityDetailPage />)
+
+    expect(await screen.findByText('존재하지 않는 글입니다.')).toBeInTheDocument()
   })
 })
