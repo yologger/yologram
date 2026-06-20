@@ -11,7 +11,9 @@ export default function ResponsiveLayout() {
     <div className={styles.layout}>
       {!isMobile && <DesktopSidebar />}
       <main className={`${styles.content} ${isMobile ? styles.mobile : styles.desktop}`}>
-        <Outlet />
+        <div className={styles.inner}>
+          <Outlet />
+        </div>
       </main>
       {isMobile && <MobileTabBar />}
     </div>
