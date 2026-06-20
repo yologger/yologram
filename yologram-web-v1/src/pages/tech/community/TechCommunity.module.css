@@ -6,6 +6,22 @@
   height: 1px;
 }
 
+.status {
+  padding: 24px 16px;
+  text-align: center;
+  color: #71717a;
+  font-size: 14px;
+}
+
+.status button {
+  margin-top: 8px;
+  padding: 6px 16px;
+  border: 1px solid #d4d4d8;
+  border-radius: 16px;
+  background: #fff;
+  cursor: pointer;
+}
+
 .composeBar {
   position: fixed;
   left: 0;

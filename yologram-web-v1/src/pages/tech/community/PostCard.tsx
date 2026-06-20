@@ -1,10 +1,11 @@
 import { Avatar } from 'antd'
 import { UserOutlined, HeartOutlined, MessageOutlined } from '@ant-design/icons'
-import type { CommunityPost } from '../../../types/community'
+import type { PostSummary } from '../../../apis/pms'
+import { formatRelativeTime } from '../../../lib/date'
 import styles from './PostCard.module.css'
 
 interface Props {
-  post: CommunityPost
+  post: PostSummary
   categoryNames?: string[]
   onClick?: () => void
 }
@@ -14,8 +15,8 @@ export default function PostCard({ post, categoryNames = [], onClick }: Props) {
     <div className={styles.card} onClick={onClick}>
       <div className={styles.head}>
         <Avatar size={32} icon={<UserOutlined />} />
-        <span className={styles.author}>{post.author}</span>
-        <span className={styles.time}>{post.createdAt}</span>
+        <span className={styles.author}>{post.author.nickname ?? '알 수 없음'}</span>
+        <span className={styles.time}>{formatRelativeTime(post.createdAt)}</span>
       </div>
       {post.title && <div className={styles.title}>{post.title}</div>}
       <div className={styles.content}>{post.content}</div>

@@ -15,7 +15,8 @@
 - [ ] 기술 서브탭 헤더 스크롤 시 숨김/표시 (SubTabLayout collapseOnScroll, useScrollDirection)
 - [ ] 우하단 맨 위로 가기 FAB (ScrollToTopButton)
 - [ ] 테스트
-- [ ] (추후) 백엔드 연동, 인증 게이팅, 팔로우/리포스트/공유/이모지/정렬/작성 툴바 동작, 댓글 무한스크롤
+- [x] 피드 백엔드 연동: 목록 API(GET /api/v1/pms/{section}/posts) cursor 무한스크롤(useInfiniteQuery, nextCursor 기준), categoryId 서버 필터, PostCard를 PostSummary 기반·상대시간(lib/date.formatRelativeTime)으로 전환, 작성 후 invalidate, 피드 더미 atom 제거(내 글 더미만 유지)
+- [ ] (추후) invest/politics 피드 연동, 내 글 목록 API, 인증 게이팅, 팔로우/리포스트/공유/이모지/정렬/작성 툴바 동작, 댓글 무한스크롤
 
 ## 인증
 
