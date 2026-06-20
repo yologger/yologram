@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation'
 import PostCard from '@/components/community/PostCard'
 import ScrollToTopButton from '@/components/common/ScrollToTopButton'
 import FilterChips, { type ChipItem } from '@/components/common/FilterChips'
-import useCategoriesQuery from '@/queries/useCategoriesQuery'
+import usePostCategoriesQuery from '@/queries/usePostCategoriesQuery'
 import usePostsQuery from '@/queries/usePostsQuery'
 import styles from './TechCommunity.module.css'
 
 export default function TechCommunity() {
   const router = useRouter()
-  const { data: categories = [] } = useCategoriesQuery('tech')
+  const { data: categories = [] } = usePostCategoriesQuery('tech')
   const [filter, setFilter] = useState<number | null>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
 

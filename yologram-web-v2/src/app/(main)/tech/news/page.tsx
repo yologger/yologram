@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import { Typography } from 'antd'
 import FilterChips, { type ChipItem } from '@/components/common/FilterChips'
-import useCategoriesQuery from '@/queries/useCategoriesQuery'
+import usePostCategoriesQuery from '@/queries/usePostCategoriesQuery'
 
 export default function TechNews() {
-  const { data: categories = [] } = useCategoriesQuery('tech')
+  const { data: categories = [] } = usePostCategoriesQuery('tech')
   const [category, setCategory] = useState<number | null>(null)
 
   const items: Array<ChipItem<number | null>> = [
