@@ -16,6 +16,10 @@ class UserQueryClient(Protocol):
         """uid의 닉네임. 없으면 None."""
         ...
 
+    def find_nicknames(self, uids: list[int]) -> dict[int, str]:
+        """uid 목록의 닉네임 일괄 조회 (N+1 회피). uid→nickname."""
+        ...
+
 
 class LocalUserQueryClient:
 
@@ -25,3 +29,6 @@ class LocalUserQueryClient:
     def find_nickname(self, uid: int) -> str | None:
         user = self.repository.find_by_id(uid)
         return user.nickname if user else None
+
+    def find_nicknames(self, uids: list[int]) -> dict[int, str]:
+        return {user.id: user.nickname for user in self.repository.find_by_ids(uids)}

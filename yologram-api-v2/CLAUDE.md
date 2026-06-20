@@ -96,7 +96,10 @@
 - 예외: InvalidCategoryException (400, INVALID_CATEGORY), 잘못된 section은 Section.from_path의 InvalidSectionException (400)
 - 검증 메시지는 api-v1과 동일 문구 ("내용을 입력해주세요.", "카테고리는 1~3개 선택해주세요.")
 - 상세 조회: GET /api/v2/pms/{section}/posts/{id} (공개). PostDetailResponse에 author{uid,nickname} 포함(UserQueryClient로 ums 조회, MSA 대비), categoryIds는 프론트가 매핑. 없거나 다른 section의 id면 404 POST_NOT_FOUND
-- 목록 조회(cursor 페이지네이션)는 추후
+- 목록 조회: GET /api/v2/pms/{section}/posts (공개). 최신순(id desc) + cursor(keyset) 페이지네이션, categoryId 필터(옵션), size 기본 20·최대 50. 응답 ApiEnvelopCursorPage{data, nextCursor}, PostSummaryResponse(content 전체 포함) — api-v1과 동일
+- 커서/종료 판정은 api-v1과 동일(legacy 방식): id-only 커서(Base64) + 마지막 글 id를 nextCursor로(빈 결과면 null). 잘못된 커서 → 400 INVALID_CURSOR
+- N+1 회피: find_nicknames(ums 경계 추상화)·find_by_post_ids 배치 조회. 카테고리는 1:N이라 join 대신 IN, EXISTS로 categoryId 필터
+- DB·인덱스(community_posts (section, id))는 api-v1과 공유
 
 ## 테스트
 

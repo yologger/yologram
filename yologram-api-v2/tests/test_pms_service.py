@@ -5,6 +5,7 @@ import pytest
 
 from app.core.exception import InvalidCategoryException, InvalidSectionException, PostNotFoundException
 from app.domain.cms.enum import Section
+from app.domain.pms.cursor import PostCursor
 from app.domain.pms.model import Post, PostCategory
 from app.domain.pms.schema import CreatePostRequest
 from app.domain.pms.service import PostService
@@ -13,6 +14,15 @@ from app.domain.pms.service import PostService
 def _saved_post(post_id: int = 10) -> Post:
     post = Post(section=Section.TECH, user_id=1, content="내용")
     post.id = post_id
+    return post
+
+
+def _post(post_id: int, user_id: int | None = None) -> Post:
+    post = Post(section=Section.TECH, user_id=user_id or post_id, content=f"내용{post_id}")
+    post.id = post_id
+    post.like_count = 0
+    post.comment_count = 0
+    post.created_at = datetime(2026, 1, 1, 0, 0)
     return post
 
 
@@ -133,3 +143,105 @@ class TestPostServiceGetPost:
 
         with pytest.raises(PostNotFoundException):
             service.get_post("tech", 1)
+
+
+class TestPostServiceGetPosts:
+
+    @patch("app.domain.pms.service.LocalUserQueryClient")
+    @patch("app.domain.pms.service.LocalCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_결과가_있으면_마지막_글_id를_nextCursor로_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_posts_by_section.return_value = [_post(3), _post(2)]
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo.find_by_post_ids.return_value = [PostCategory(post_id=3, category_id=10)]
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_user = MagicMock()
+        mock_user.find_nicknames.return_value = {3: "u3", 2: "u2"}
+        mock_user_cls.return_value = mock_user
+
+        service = PostService(MagicMock())
+        result = service.get_posts("tech", None, None, 2)
+
+        assert [p.id for p in result.data] == [3, 2]
+        assert result.data[0].category_ids == [10]
+        assert result.data[0].author.nickname == "u3"
+        assert result.next_cursor == PostCursor.encode(2)
+
+    @patch("app.domain.pms.service.LocalUserQueryClient")
+    @patch("app.domain.pms.service.LocalCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_결과가_없으면_빈_목록과_None_nextCursor(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_posts_by_section.return_value = []
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo.find_by_post_ids.return_value = []
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_user = MagicMock()
+        mock_user.find_nicknames.return_value = {}
+        mock_user_cls.return_value = mock_user
+
+        service = PostService(MagicMock())
+        result = service.get_posts("tech", None, None, 20)
+
+        assert result.data == []
+        assert result.next_cursor is None
+
+    @patch("app.domain.pms.service.LocalUserQueryClient")
+    @patch("app.domain.pms.service.LocalCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_cursor가_주어지면_디코딩한_id로_조회(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_posts_by_section.return_value = []
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo.find_by_post_ids.return_value = []
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_user = MagicMock()
+        mock_user.find_nicknames.return_value = {}
+        mock_user_cls.return_value = mock_user
+
+        service = PostService(MagicMock())
+        service.get_posts("tech", None, PostCursor.encode(5), 20)
+
+        mock_post_repo.find_posts_by_section.assert_called_once_with(Section.TECH, None, 5, 20)
+
+    @patch("app.domain.pms.service.LocalUserQueryClient")
+    @patch("app.domain.pms.service.LocalCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_size가_최대치를_넘으면_50으로_제한(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_posts_by_section.return_value = []
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo.find_by_post_ids.return_value = []
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_user = MagicMock()
+        mock_user.find_nicknames.return_value = {}
+        mock_user_cls.return_value = mock_user
+
+        service = PostService(MagicMock())
+        service.get_posts("tech", None, None, 100)
+
+        mock_post_repo.find_posts_by_section.assert_called_once_with(Section.TECH, None, None, 50)
+
+    @patch("app.domain.pms.service.LocalUserQueryClient")
+    @patch("app.domain.pms.service.LocalCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_유효하지_않은_section이면_예외(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
+        mock_post_repo = MagicMock()
+        mock_post_repo_cls.return_value = mock_post_repo
+
+        service = PostService(MagicMock())
+
+        with pytest.raises(InvalidSectionException):
+            service.get_posts("unknown", None, None, 20)
+
+        mock_post_repo.find_posts_by_section.assert_not_called()

@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.core.response import ApiEnvelop
-from app.domain.pms.schema import CreatePostRequest
+from app.core.response import ApiEnvelop, ApiEnvelopCursorPage
+from app.domain.pms.schema import CreatePostRequest, PostSummaryResponse
 from app.domain.pms.service import PostService
 from app.domain.ums.auth_dependency import get_authenticated_user
 from app.domain.ums.auth_schema import AuthData
@@ -32,6 +32,27 @@ def create_post(
     service = PostService(db)
     result = service.create(section, auth_data.uid, request)
     return ApiEnvelop(data=result)
+
+
+@router.get(
+    "/{section}/posts",
+    response_model=ApiEnvelopCursorPage[PostSummaryResponse],
+    summary="게시글 목록 조회",
+    description="섹션(section) 피드. 최신순(id desc) cursor 페이지네이션 (공개)",
+    responses={
+        200: {"description": "조회 성공"},
+        400: {"description": "유효하지 않은 섹션 / 커서"},
+    },
+)
+def get_posts(
+    section: str,
+    cursor: str | None = Query(default=None),
+    size: int = Query(default=20),
+    category_id: int | None = Query(default=None, alias="categoryId"),
+    db: Session = Depends(get_db),
+):
+    service = PostService(db)
+    return service.get_posts(section, category_id, cursor, size)
 
 
 @router.get(

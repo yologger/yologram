@@ -11,6 +11,11 @@ class UserRepository:
     def find_by_id(self, uid: int) -> User | None:
         return self.db.query(User).filter(User.id == uid).first()
 
+    def find_by_ids(self, uids: list[int]) -> list[User]:
+        if not uids:
+            return []
+        return self.db.query(User).filter(User.id.in_(uids)).all()
+
     def find_by_email(self, email: str) -> User | None:
         return self.db.query(User).filter(User.email == email).first()
 

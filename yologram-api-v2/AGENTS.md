@@ -66,6 +66,8 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - CategoryQueryClient(Protocol)로 cms 카테고리 검증 추상화 (MSA 분리 대비)
 - categoryIds 1~3개 필수, section 불일치 → 400 INVALID_CATEGORY
 - 상세 조회 GET /api/v2/pms/{section}/posts/{id} (공개), 작성자 닉네임은 UserQueryClient로 ums 조회, 없으면 404 POST_NOT_FOUND
+- 목록 조회 GET /api/v2/pms/{section}/posts (공개), 최신순(id desc) + cursor(keyset) 페이지네이션 + categoryId 필터, size 기본 20·최대 50 — api-v1과 동일
+- 커서/종료는 legacy 방식: id-only 커서 + 마지막 글 id를 nextCursor로(빈 결과면 null), 잘못된 커서 → 400 INVALID_CURSOR. N+1 회피 배치 조회. DB·인덱스 api-v1과 공유
 
 ## 빌드/배포
 

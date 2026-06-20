@@ -140,7 +140,11 @@
 - [x] PostRepository.find_by_id, PostCategoryRepository.find_by_post_id 추가
 - [x] PostNotFoundException (404, POST_NOT_FOUND), id가 해당 section 글 아니면 404
 - [x] 테스트 (service 3 + router 2)
-- [ ] GET /api/v2/pms/{section}/posts (목록, cursor 페이지네이션)
+- [x] GET /api/v2/pms/{section}/posts (목록, cursor 페이지네이션) — api-v1 미러링, 최신순(id desc) + id-only 커서 + categoryId 필터(EXISTS), size 1~50
+- [x] ApiEnvelopCursorPage[T]{data, nextCursor} / PostSummaryResponse(content 포함) / PostCursor(id-only Base64)
+- [x] 커서/종료 legacy 방식: 마지막 글 id를 nextCursor로(빈 결과면 null), 잘못된 커서 400 INVALID_CURSOR
+- [x] N+1 회피: find_nicknames(UserRepository.find_by_ids) · find_by_post_ids 배치 조회
+- [x] 테스트 (service 5 + router 2)
 
 ## Admin - 유저 관리
 

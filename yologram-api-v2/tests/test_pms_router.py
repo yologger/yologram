@@ -155,3 +155,38 @@ class TestPmsRouter:
 
         assert response.status_code == 404
         assert response.json()["errorCode"] == "POST_NOT_FOUND"
+
+    @patch("app.domain.pms.service.LocalUserQueryClient")
+    @patch("app.domain.pms.service.PostCategoryRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_목록_조회_시_200과_data_nextCursor(self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls):
+        post = _saved_post(2)
+        post.user_id = 12
+        post.title = "제목"
+        post.like_count = 0
+        post.comment_count = 0
+        post.created_at = datetime(2026, 1, 1, 0, 0)
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_posts_by_section.return_value = [post]
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo.find_by_post_ids.return_value = [PostCategory(post_id=2, category_id=1)]
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_user = MagicMock()
+        mock_user.find_nicknames.return_value = {12: "tester"}
+        mock_user_cls.return_value = mock_user
+
+        response = self.client.get("/api/v2/pms/tech/posts?size=5")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data"][0]["id"] == 2
+        assert body["data"][0]["author"]["nickname"] == "tester"
+        assert body["data"][0]["categoryIds"] == [1]
+        assert body["nextCursor"] is not None
+
+    def test_목록_조회_시_유효하지_않은_section이면_400(self):
+        response = self.client.get("/api/v2/pms/unknown/posts")
+
+        assert response.status_code == 400
+        assert response.json()["errorCode"] == "INVALID_SECTION"

@@ -48,3 +48,19 @@ class PostDetailResponse(BaseModel):
     like_count: int = Field(serialization_alias="likeCount")
     comment_count: int = Field(serialization_alias="commentCount")
     created_at: datetime = Field(serialization_alias="createdAt")
+
+
+class PostSummaryResponse(BaseModel):
+    """목록 항목. 피드에서 본문 노출을 위해 content 전체 포함 (상세와 동일 필드)."""
+
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+
+    id: int
+    section: Section
+    author: PostAuthor
+    title: str | None
+    content: str
+    category_ids: list[int] = Field(serialization_alias="categoryIds")
+    like_count: int = Field(serialization_alias="likeCount")
+    comment_count: int = Field(serialization_alias="commentCount")
+    created_at: datetime = Field(serialization_alias="createdAt")

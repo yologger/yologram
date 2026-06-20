@@ -80,6 +80,11 @@ class PostNotFoundException(AppException):
         super().__init__(404, "게시글을 찾을 수 없습니다.", "POST_NOT_FOUND")
 
 
+class InvalidCursorException(AppException):
+    def __init__(self):
+        super().__init__(400, "유효하지 않은 커서입니다.", "INVALID_CURSOR")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:
