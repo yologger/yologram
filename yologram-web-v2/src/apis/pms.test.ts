@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/server'
-import { createPost } from './pms'
+import { createPost, getPosts } from './pms'
 
 beforeAll(() => server.listen())
 afterEach(() => server.resetHandlers())
@@ -24,5 +24,28 @@ describe('createPost', () => {
     )
 
     await expect(createPost('tech', { content: '내용', categoryIds: [8] })).rejects.toThrow()
+  })
+})
+
+describe('getPosts', () => {
+  it('목록과 nextCursor를 반환한다', async () => {
+    const page = await getPosts('tech', { size: 15 })
+
+    expect(page.data.length).toBeGreaterThan(0)
+    expect(page.data[0].author.nickname).toBe('테스터')
+    expect(page.nextCursor).toBe('next-cursor')
+  })
+
+  it('categoryId로 필터링한다', async () => {
+    const page = await getPosts('tech', { categoryId: 2 })
+
+    expect(page.data.every((p) => p.categoryIds.includes(2))).toBe(true)
+  })
+
+  it('cursor가 있으면 다음 페이지(빈 결과)를 반환한다', async () => {
+    const page = await getPosts('tech', { cursor: 'next-cursor' })
+
+    expect(page.data).toEqual([])
+    expect(page.nextCursor).toBeNull()
   })
 })

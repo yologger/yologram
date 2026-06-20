@@ -2,23 +2,28 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAtomValue } from 'jotai'
-import { communityPostsAtom } from '@/stores/community'
 import PostCard from '@/components/community/PostCard'
 import ScrollToTopButton from '@/components/common/ScrollToTopButton'
 import FilterChips, { type ChipItem } from '@/components/common/FilterChips'
 import useCategoriesQuery from '@/queries/useCategoriesQuery'
+import usePostsQuery from '@/queries/usePostsQuery'
 import styles from './TechCommunity.module.css'
-
-const PAGE_SIZE = 15
 
 export default function TechCommunity() {
   const router = useRouter()
-  const posts = useAtomValue(communityPostsAtom)
   const { data: categories = [] } = useCategoriesQuery('tech')
   const [filter, setFilter] = useState<number | null>(null)
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const sentinelRef = useRef<HTMLDivElement>(null)
+
+  const {
+    data: posts = [],
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    refetch,
+  } = usePostsQuery('tech', filter)
 
   const nameById = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories])
 
@@ -27,35 +32,38 @@ export default function TechCommunity() {
     ...categories.map((c) => ({ label: c.name, value: c.id as number | null })),
   ]
 
-  const filteredPosts = filter === null
-    ? posts
-    : posts.filter((p) => p.categoryIds.includes(filter))
-
-  const hasMore = visibleCount < filteredPosts.length
-
-  const handleFilterChange = (value: number | null) => {
-    setFilter(value)
-    setVisibleCount(PAGE_SIZE)
-  }
-
   useEffect(() => {
-    if (!hasMore) return
+    if (!hasNextPage) return
     const el = sentinelRef.current
     if (!el) return
 
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        setVisibleCount((c) => Math.min(c + PAGE_SIZE, filteredPosts.length))
+      if (entries[0].isIntersecting && !isFetchingNextPage) {
+        fetchNextPage()
       }
     })
     observer.observe(el)
     return () => observer.disconnect()
-  }, [hasMore, filteredPosts.length])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
     <div className={styles.feed}>
-      <FilterChips items={filterItems} selected={filter} onChange={handleFilterChange} />
-      {filteredPosts.slice(0, visibleCount).map((post) => (
+      <FilterChips items={filterItems} selected={filter} onChange={setFilter} />
+
+      {isLoading && <div className={styles.status}>불러오는 중…</div>}
+
+      {isError && (
+        <div className={styles.status}>
+          <p>글을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
+          <button onClick={() => refetch()}>다시 시도</button>
+        </div>
+      )}
+
+      {!isLoading && !isError && posts.length === 0 && (
+        <div className={styles.status}>아직 게시글이 없어요.</div>
+      )}
+
+      {posts.map((post) => (
         <PostCard
           key={post.id}
           post={post}
@@ -63,7 +71,7 @@ export default function TechCommunity() {
           onClick={() => router.push(`/tech/community/${post.id}`)}
         />
       ))}
-      {hasMore && <div ref={sentinelRef} className={styles.sentinel} />}
+      {hasNextPage && <div ref={sentinelRef} className={styles.sentinel} />}
 
       <div className={styles.composeBar}>
         <button className={styles.composeInput} onClick={() => router.push('/tech/community/write')}>

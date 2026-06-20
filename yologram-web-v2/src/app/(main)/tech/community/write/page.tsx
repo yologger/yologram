@@ -2,11 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSetAtom } from 'jotai'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { App, Button } from 'antd'
-import { communityPostsAtom } from '@/stores/community'
-import type { CommunityPost } from '@/types/community'
 import { MAX_POST_CATEGORIES } from '@/constants/community'
 import MultiSelectChips from '@/components/common/MultiSelectChips'
 import { type ChipItem } from '@/components/common/FilterChips'
@@ -18,7 +16,7 @@ import styles from './CommunityWrite.module.css'
 export default function CommunityWrite() {
   const router = useRouter()
   const { message } = App.useApp()
-  const setPosts = useSetAtom(communityPostsAtom)
+  const queryClient = useQueryClient()
   const { data: categories = [] } = useCategoriesQuery('tech')
   const { mutate: createPost, isPending } = useCreatePostMutation()
 
@@ -50,21 +48,9 @@ export default function CommunityWrite() {
     createPost(
       { section: 'tech', request: { title: trimmedTitle, content: trimmedContent, categoryIds } },
       {
-        onSuccess: (res) => {
-          // 작성 직후 피드에 보이도록 낙관적 추가 (조회 API 연동 전까지 임시)
-          const newPost: CommunityPost = {
-            id: res.id,
-            section: 'TECH',
-            author: '나',
-            createdAt: '방금 전',
-            title: trimmedTitle,
-            content: trimmedContent,
-            categoryIds,
-            likeCount: 0,
-            commentCount: 0,
-            liked: false,
-          }
-          setPosts((prev) => [newPost, ...prev])
+        onSuccess: () => {
+          // 피드 목록 무효화 → 최신순 재조회 시 새 글이 맨 위에 노출
+          queryClient.invalidateQueries({ queryKey: ['posts', 'tech'] })
           message.success('글이 등록되었습니다.')
           router.push('/tech/community')
         },

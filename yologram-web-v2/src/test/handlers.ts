@@ -264,6 +264,33 @@ export const handlers = [
     return HttpResponse.json({ data: { id: 9999 } }, { status: 201 })
   }),
 
+  http.get('http://localhost:5002/api/v2/pms/:section/posts', ({ request, params }) => {
+    const section = String(params.section).toUpperCase()
+    if (!['TECH', 'INVEST', 'POLITICS'].includes(section)) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 섹션입니다.', errorCode: 'INVALID_SECTION' },
+        { status: 400 },
+      )
+    }
+
+    const url = new URL(request.url)
+    const cursor = url.searchParams.get('cursor')
+    const categoryId = url.searchParams.get('categoryId')
+
+    // 커서가 있으면 마지막 페이지(빈 결과)로 무한스크롤 종료
+    if (cursor) {
+      return HttpResponse.json({ data: [], nextCursor: null })
+    }
+
+    const all = [
+      { id: 1050, section: 'TECH', author: { uid: 1, nickname: '테스터' }, title: '피드 첫 글', content: 'API 피드 본문 1', categoryIds: [1], likeCount: 3, commentCount: 1, createdAt: '2026-06-10T00:00:00' },
+      { id: 1049, section: 'TECH', author: { uid: 2, nickname: '다른유저' }, content: 'API 피드 본문 2', categoryIds: [2], likeCount: 0, commentCount: 0, createdAt: '2026-06-09T00:00:00' },
+    ]
+    const data = categoryId ? all.filter((p) => p.categoryIds.includes(Number(categoryId))) : all
+
+    return HttpResponse.json({ data, nextCursor: 'next-cursor' })
+  }),
+
   http.get('http://localhost:5002/api/v2/pms/:section/posts/:id', ({ params }) => {
     const id = Number(params.id)
 
