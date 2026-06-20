@@ -160,6 +160,16 @@
 - [x] cms.enum → cms.enums 리네임 (패키지명 enum이 Java 예약어 → QueryDSL Q클래스에서 enum 필드 누락 해결)
 - [x] 테스트 (서비스 5 + 리소스 2 + 리포지토리 통합 5)
 
+## QueryDSL 학습 예제 (legacy 이식, 토이/공부용)
+
+- legacy(yologram-legacy) BoardCustomRepository 기법: 멀티 leftJoin+on, Projections.constructor 중첩 DTO, coalesce, cursor/offset 페이지네이션, count, id 범위
+- 원칙: cross-domain join(작성자 닉네임/카운트)은 yologram 경계(QueryClient)로 회피. C는 학습 의도로 의식적 예외
+- [ ] A. 내 글 목록(마이페이지): offset 페이지네이션 + count + 동적조건(섹션/카테고리/기간, BooleanBuilder) + projection. 피드의 cursor와 대비 학습. pms 단일 도메인 (legacy findBoardsWithMetricsByUid/countBoardsByUid 대응)
+- [ ] B. 카테고리별 글 수 집계: post ↔ post_categories join + groupBy(category_id) + count. 필터 칩 개수 뱃지/어드민 통계
+- [ ] C. 목록에 카테고리명 포함: post_categories ↔ categories join + Projections 중첩 → categories[{id,name}]. 멀티 join + 중첩 projection 학습 + 응답 직관성. 단 pms→cms 경계 결합(학습용, 본 원칙은 경계 분리)
+- [ ] D. 벌크 update: 좋아요/조회수 증가 QueryDSL update (count 도메인 도입 시)
+- [ ] E. 기간별 글 조회: between/goe/loe 범위 조건 (legacy findBoardsWithMetrics(from,to) 대응)
+
 ## Comment - 댓글 (예정)
 
 - [ ] community_comments 테이블 (post_id FK 없음, 인덱스 + app-level 검증)
