@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeAll, afterEach, afterAll, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
 import { renderWithProviders } from '../../../../../test/utils'
 import { server } from '../../../../../test/server'
 import CommunityDetail from './page'
@@ -44,5 +45,20 @@ describe('CommunityDetail', () => {
     renderWithProviders(<CommunityDetail />)
 
     expect(await screen.findByText('존재하지 않는 글입니다.')).toBeInTheDocument()
+  })
+
+  it('서버 오류 시 다시 시도 안내를 표시한다', async () => {
+    server.use(
+      http.get('http://localhost:5002/api/v2/pms/:section/posts/:id', () =>
+        HttpResponse.json(
+          { errorMessage: '서버 오류가 발생했습니다.', errorCode: 'INTERNAL_SERVER_ERROR' },
+          { status: 500 },
+        ),
+      ),
+    )
+    renderWithProviders(<CommunityDetail />)
+
+    expect(await screen.findByText(/다시 시도해주세요/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument()
   })
 })

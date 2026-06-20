@@ -16,6 +16,7 @@ import {
 import { communityCommentsAtom } from '@/stores/community'
 import type { CommunityComment } from '@/types/community'
 import usePostQuery from '@/queries/usePostQuery'
+import { getErrorStatus } from '@/lib/error'
 import styles from './CommunityDetail.module.css'
 
 export default function CommunityDetail() {
@@ -23,7 +24,7 @@ export default function CommunityDetail() {
   const router = useRouter()
   const id = Number(params.postId)
 
-  const { data: post, isLoading, isError } = usePostQuery('tech', id)
+  const { data: post, isLoading, isError, error, refetch } = usePostQuery('tech', id)
   const [comments, setComments] = useAtom(communityCommentsAtom)
   const [text, setText] = useState('')
 
@@ -52,7 +53,25 @@ export default function CommunityDetail() {
     )
   }
 
-  if (isError || !post) {
+  // 404가 아닌 에러(네트워크/서버 오류)는 다시 시도 안내
+  if (isError && getErrorStatus(error) !== 404) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <button className={styles.back} aria-label="뒤로" onClick={goBack}>
+            <ArrowLeftOutlined />
+          </button>
+        </div>
+        <div style={{ padding: 16 }}>
+          <p>글을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
+          <button className={styles.sendButton} onClick={() => refetch()}>다시 시도</button>
+        </div>
+      </div>
+    )
+  }
+
+  // 404 또는 글 없음
+  if (!post) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>

@@ -1,5 +1,9 @@
 import axios from 'axios'
 
+export function getErrorStatus(error: unknown): number | undefined {
+  return axios.isAxiosError(error) ? error.response?.status : undefined
+}
+
 export function getErrorMessage(error: unknown): string {
   if (!axios.isAxiosError(error)) return '알 수 없는 오류가 발생했습니다.'
   if (!error.response) return '서버에 연결할 수 없습니다.'
