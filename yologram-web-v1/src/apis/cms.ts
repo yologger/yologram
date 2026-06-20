@@ -1,12 +1,12 @@
 import api from '../lib/api'
 
-export interface Category {
+export interface PostCategory {
   id: number
   name: string
   sortOrder: number
 }
 
-export async function getCategories(section: string): Promise<Category[]> {
-  const response = await api.get<{ data: Category[] }>(`/api/v1/cms/${section}/categories`)
+export async function getPostCategories(section: string): Promise<PostCategory[]> {
+  const response = await api.get<{ data: PostCategory[] }>(`/api/v1/cms/${section}/categories`)
   return response.data.data
 }

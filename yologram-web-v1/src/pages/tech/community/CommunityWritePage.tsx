@@ -6,7 +6,7 @@ import { App, Button } from 'antd'
 import { MAX_POST_CATEGORIES } from '../../../constants/community'
 import MultiSelectChips from '../../../components/common/MultiSelectChips'
 import { type ChipItem } from '../../../components/common/FilterChips'
-import useCategoriesQuery from '../../../queries/useCategoriesQuery'
+import usePostCategoriesQuery from '../../../queries/usePostCategoriesQuery'
 import useCreatePostMutation from '../../../queries/useCreatePostMutation'
 import styles from './CommunityWritePage.module.css'
 
@@ -14,7 +14,7 @@ export default function CommunityWritePage() {
   const navigate = useNavigate()
   const { message } = App.useApp()
   const queryClient = useQueryClient()
-  const { data: categories = [] } = useCategoriesQuery('tech')
+  const { data: categories = [] } = usePostCategoriesQuery('tech')
   const { mutate: createPost, isPending } = useCreatePostMutation()
 
   const [title, setTitle] = useState('')

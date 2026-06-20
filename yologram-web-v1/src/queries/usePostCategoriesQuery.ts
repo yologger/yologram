@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { getCategories } from '../apis/cms'
+import { getPostCategories } from '../apis/cms'
 
-export default function useCategoriesQuery(section: string) {
+export default function usePostCategoriesQuery(section: string) {
   return useQuery({
     queryKey: ['categories', section],
-    queryFn: () => getCategories(section),
+    queryFn: () => getPostCategories(section),
     staleTime: 1000 * 60 * 30,  // 30m cache
   })
 }

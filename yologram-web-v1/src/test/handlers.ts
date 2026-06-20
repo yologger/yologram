@@ -35,7 +35,7 @@ export const handlers = [
 
     if (body.code !== '123456') {
       return HttpResponse.json(
-        { errorMessage: '인증 코드가 일치하지 않습니다.', errorCode: 'EMAIL_VERIFICATION_INVALID' },
+        { errorMessage: '인증 코드가 일치하지 않습니다.', errorCode: 'USER_EMAIL_VERIFICATION_INVALID' },
         { status: 400 },
       )
     }
@@ -61,7 +61,7 @@ export const handlers = [
 
     if (body.code !== '123456') {
       return HttpResponse.json(
-        { errorMessage: '인증 코드가 일치하지 않습니다.', errorCode: 'PASSWORD_RESET_INVALID' },
+        { errorMessage: '인증 코드가 일치하지 않습니다.', errorCode: 'USER_PASSWORD_RESET_INVALID' },
         { status: 400 },
       )
     }
@@ -106,7 +106,7 @@ export const handlers = [
 
     if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.substring(7) === 'expired-token') {
       return HttpResponse.json(
-        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_TOKEN_INVALID' },
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
         { status: 401 },
       )
     }
@@ -126,7 +126,7 @@ export const handlers = [
 
     if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.substring(7) === 'expired-token') {
       return HttpResponse.json(
-        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_TOKEN_INVALID' },
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
         { status: 401 },
       )
     }
@@ -149,7 +149,7 @@ export const handlers = [
 
     if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.substring(7) === 'expired-token') {
       return HttpResponse.json(
-        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_TOKEN_INVALID' },
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
         { status: 401 },
       )
     }
@@ -174,7 +174,7 @@ export const handlers = [
 
     if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.substring(7) === 'expired-token') {
       return HttpResponse.json(
-        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_TOKEN_INVALID' },
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
         { status: 401 },
       )
     }
@@ -196,7 +196,7 @@ export const handlers = [
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return HttpResponse.json(
-        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_TOKEN_INVALID' },
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
         { status: 401 },
       )
     }
@@ -209,7 +209,7 @@ export const handlers = [
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return HttpResponse.json(
-        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_TOKEN_INVALID' },
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
         { status: 401 },
       )
     }

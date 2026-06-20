@@ -17,7 +17,7 @@ describe('createPost', () => {
     server.use(
       http.post('http://localhost:5001/api/v1/pms/:section/posts', () =>
         HttpResponse.json(
-          { errorMessage: '해당 게시판의 카테고리가 아닙니다.', errorCode: 'INVALID_CATEGORY' },
+          { errorMessage: '해당 게시판의 카테고리가 아닙니다.', errorCode: 'INVALID_POST_CATEGORY' },
           { status: 400 },
         ),
       ),

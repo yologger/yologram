@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Typography } from 'antd'
 import FilterChips, { type ChipItem } from '../../components/common/FilterChips'
-import useCategoriesQuery from '../../queries/useCategoriesQuery'
+import usePostCategoriesQuery from '../../queries/usePostCategoriesQuery'
 
 export default function TechNewsPage() {
   const { 
@@ -9,7 +9,7 @@ export default function TechNewsPage() {
     isLoading, 
     isError, 
     error
-  } = useCategoriesQuery('tech')
+  } = usePostCategoriesQuery('tech')
   const [category, setCategory] = useState<number | null>(null)
 
   const items: Array<ChipItem<number | null>> = [

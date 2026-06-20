@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router'
 import PostCard from './community/PostCard'
 import ScrollToTopButton from '../../components/common/ScrollToTopButton'
 import FilterChips, { type ChipItem } from '../../components/common/FilterChips'
-import useCategoriesQuery from '../../queries/useCategoriesQuery'
+import usePostCategoriesQuery from '../../queries/usePostCategoriesQuery'
 import usePostsQuery from '../../queries/usePostsQuery'
 import styles from './community/TechCommunity.module.css'
 
 export default function TechCommunityPage() {
   const navigate = useNavigate()
-  const { data: categories = [] } = useCategoriesQuery('tech')
+  const { data: categories = [] } = usePostCategoriesQuery('tech')
   const [filter, setFilter] = useState<number | null>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
 

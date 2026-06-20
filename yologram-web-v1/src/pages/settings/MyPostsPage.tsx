@@ -8,7 +8,7 @@ import type { CommunitySection } from '../../types/community'
 import type { PostSummary } from '../../apis/pms'
 import FilterChips from '../../components/common/FilterChips'
 import PostCard from '../tech/community/PostCard'
-import useCategoriesQuery from '../../queries/useCategoriesQuery'
+import usePostCategoriesQuery from '../../queries/usePostCategoriesQuery'
 import styles from './MyPostsPage.module.css'
 
 const { Title } = Typography
@@ -27,7 +27,7 @@ export default function MyPostsPage() {
   const section = SECTION_TABS.find((t) => t.label === label)!.section
   const myPosts = posts.filter((p) => p.author === '나' && p.section === section)
 
-  const { data: categories = [] } = useCategoriesQuery(section.toLowerCase())
+  const { data: categories = [] } = usePostCategoriesQuery(section.toLowerCase())
   const nameById = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories])
 
   return (
