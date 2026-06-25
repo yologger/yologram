@@ -12,8 +12,8 @@ disable-model-invocation: false
 
 git diff로 변경사항을 확인하고, 변경된 프로젝트의 문서를 검토하여 업데이트가 필요한 부분을 최신화:
 
-1. 루트 docs/ 확인 (tasks.md, features.md 2개로 통합 관리, 프로젝트별 섹션)
-   - docs/tasks.md: 해당 프로젝트 섹션에서 완료된 항목은 제거하고 새 할 일 추가 (앞으로 할 일만 유지)
+1. 루트 docs/ 확인 (todos.md, features.md 2개로 통합 관리, 프로젝트별 섹션)
+   - docs/todos.md: 해당 프로젝트 섹션에서 완료된 항목은 제거하고 새 할 일 추가 (앞으로 할 일만 유지)
    - docs/features.md: 이번에 구현 완료한 기능과 그 설계 근거를 해당 프로젝트 섹션에 기록 (tasks에서 완료된 내용을 이쪽으로 이전)
 2. 변경된 프로젝트의 CLAUDE.md, AGENTS.md, README.md 확인
    - 기술 스택, 설정, 포트, 경로 등 변경된 내용 반영
