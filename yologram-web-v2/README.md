@@ -74,3 +74,4 @@ Trace와 Metrics는 OpenTelemetry NodeSDK로 Grafana Cloud OTLP endpoint에 dire
 - 최소 custom metric 추가
 - production 장기 권장안은 Alloy지만 현재는 direct push
 
+

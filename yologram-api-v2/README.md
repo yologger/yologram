@@ -79,3 +79,4 @@ OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS를 OpenTelemetry SDK가 
 - default/local: 콘솔 로그만 출력
 - prod: 콘솔 + Grafana Cloud (OTLP) 전송
 
+
