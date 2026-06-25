@@ -77,8 +77,16 @@ jobs:
 
       - name: Discord 알림
         if: always()
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          JOB_STATUS: ${{ job.status }}
+          REF_NAME: ${{ github.ref_name }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
+          if [ "$JOB_STATUS" = "success" ]; then
             COLOR=3066993
             EMOJI="✅"
             STATUS="success"
@@ -87,10 +95,15 @@ jobs:
             EMOJI="❌"
             STATUS="failed"
           fi
-          COMMIT_MSG=$(echo '${{ github.event.head_commit.message }}' | head -1)
-          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          DESCRIPTION="- result: \`${STATUS}\` ([see details](${RUN_URL}))\n- branch: \`${{ github.ref_name }}\`\n- commit: \`${SHORT_SHA}\`\n\`\`\`\n${COMMIT_MSG}\n\`\`\`"
-          curl -s -H "Content-Type: application/json" \
-            -d "{\"embeds\":[{\"title\":\"${EMOJI} ${{ github.workflow }}\",\"color\":${COLOR},\"description\":\"${DESCRIPTION}\"}]}" \
-            ${{ secrets.DISCORD_WEBHOOK_URL }}
+          COMMIT_TITLE=$(printf '%s' "$COMMIT_MSG" | head -1)
+          SHORT_SHA=$(printf '%s' "$SHA" | cut -c1-8)
+          PAYLOAD=$(jq -cn \
+            --arg title "$EMOJI $WORKFLOW" \
+            --argjson color "$COLOR" \
+            --arg status "$STATUS" \
+            --arg run "$RUN_URL" \
+            --arg branch "$REF_NAME" \
+            --arg sha "$SHORT_SHA" \
+            --arg msg "$COMMIT_TITLE" \
+            '{embeds:[{title:$title, color:$color, description:("- result: `\($status)` ([see details](\($run)))\n- branch: `\($branch)`\n- commit: `\($sha)`\n```\n\($msg)\n```")}]}')
+          curl -s -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"
