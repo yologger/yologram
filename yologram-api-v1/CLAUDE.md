@@ -1,5 +1,16 @@
 # yologram-api-v1 프로젝트 지침
 
+## 프로젝트 개요
+
+Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
+
+## 주요 파일
+
+- src/main/resources/application.yaml: 공통 설정 (OTLP endpoint, resource attributes)
+- src/main/resources/logback-spring.xml: 로깅 설정 (콘솔 + OTEL appender)
+- src/main/kotlin/.../config/OpenTelemetryLoggingConfig.kt: OTEL logback 초기화
+- src/main/kotlin/.../domain/ums/service/AuthService.kt: JWT 로그인/로그아웃/토큰 검증. validate-token은 master DB 조회
+
 ## 기술 스택
 
 - Spring Boot 3.5 (Kotlin), Java 17
@@ -75,7 +86,7 @@
 - 엔드포인트: GET /api/v1/cms/{section}/categories
 - 예외: InvalidSectionException (400, INVALID_SECTION) — CmsExceptionHandler
 - 카테고리는 어드민이 관리하는 콘텐츠(추후 CRUD), 프론트는 이 API로 섹션별 필터를 동적 렌더
-- 도메인 분리 전략(pms/cms/comment/count/news)·하이브리드 스키마 결정은 docs/brainstorm.md 참조
+- 도메인 분리 전략(pms/cms/comment/count/news)·하이브리드 스키마 결정은 루트 docs/features.md 참조
 
 ## 커뮤니티 게시글 (PMS)
 

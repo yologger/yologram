@@ -1,5 +1,17 @@
 # yologram-api-v2 프로젝트 지침
 
+## 프로젝트 개요
+
+FastAPI 기반 API 서버. ECS Fargate에서 운영.
+
+## 주요 파일
+
+- app/main.py: 앱 진입점 (logging, metrics, tracing 초기화)
+- app/config/settings.py: Pydantic Settings (환경변수 매핑)
+- app/config/logging.py: OTLP 로그 설정
+- app/config/metrics.py: OTLP 메트릭 설정
+- app/config/tracing.py: OTLP 트레이스 설정
+
 ## 기술 스택
 
 - FastAPI, Python 3.12+

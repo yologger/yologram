@@ -1,4 +1,4 @@
-# yologram 프로젝트 지침 (Codex)
+# yologram 프로젝트 지침
 
 ## 프로젝트 구조
 
@@ -7,6 +7,7 @@
 - yologram-web-v1/: React
 - yologram-api-v2/: FastAPI
 - yologram-web-v2/: Next.js
+- yologram-admin-web/: 어드민 웹 (예정)
 - .github/workflows/: GitHub Actions
 
 ## 인프라
@@ -25,7 +26,6 @@
 - yologram-api-v2/ 변경 시 yologram-api-v2 workflow 트리거
 - yologram-web-v2/ 변경 시 yologram-web-v2 workflow 트리거
 - ECR push 시 이미지 태그: {branch}-{commit SHA 8자리}
-- 배포 결과 Discord 웹훅 알림
 
 ## 커밋 메시지 컨벤션
 
@@ -35,12 +35,14 @@
 
 ## 작업 규칙
 
-- 코드 개발/수정 시 관련된 루트 프로젝트와 하위 프로젝트의 문서(README.md, CLAUDE.md, AGENTS.md, docs/ 하위 파일)를 함께 최신화할 것
-- 각 프로젝트 docs/는 tasks.md(앞으로 할 일 체크리스트)와 features.md(구현된 기능 + 설계 근거) 2개로 관리
-- 브레인스토밍·플랜은 세션 대화로 진행하고, 결정된 "실제 할 일"만 docs/tasks.md에 추가. 구현 완료 후 그 기능·설계 근거를 features.md에 기록
+- CLAUDE.md는 Claude Code용, AGENTS.md는 Codex용으로 둘 다 둔다(번갈아 사용). 두 파일은 항상 동일 내용을 유지하며, 한쪽을 수정하면 다른 쪽도 즉시 동일하게 반영한다(루트·각 프로젝트 모두)
+- 코드 개발/수정 시 관련 문서(README.md, CLAUDE.md, AGENTS.md, 루트 docs/)를 함께 최신화할 것
+- 문서는 루트 docs/에 통합 관리: docs/tasks.md(앞으로 할 일 체크리스트) + docs/features.md(구현된 기능 + 설계 근거). 두 파일 모두 프로젝트별 섹션(api-v1/api-v2/web-v1/web-v2)으로 구분
+- 브레인스토밍·플랜은 세션 대화로 진행하고, 결정된 "실제 할 일"만 docs/tasks.md에 추가. 구현 완료 후 그 기능·설계 근거를 docs/features.md에 기록
+- docs는 메인(루트) 에이전트만 갱신한다. 멀티에이전트 병렬 작업 시 서브에이전트는 docs read-only(참고만), 코드 변경 결과만 보고 — 단일 writer 유지로 충돌 방지
 - 코드 변경 전 반드시 plan을 먼저 보여주고, 승인 후 적용
 - commit은 사용자가 요청하거나 승인한 경우에만 수행
 - 코드 구현 시 모든 케이스(정상/예외/엣지)에 대해 테스트코드 작성
 - 신규 API 추가 시 Swagger 문서화 필수
-- 작업 전 해당 프로젝트의 docs/ (tasks.md=할 일, features.md=구현 기능·설계 근거)를 참고할 것
+- 작업 전 루트 docs/ (tasks.md=할 일, features.md=구현 기능·설계 근거)를 참고할 것
 - observability는 OpenTelemetry 기준으로 구성하고, 가능하면 기존 서비스와 동일하게 Grafana Cloud OTLP direct push 패턴을 우선 검토할 것
