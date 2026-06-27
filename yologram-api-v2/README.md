@@ -2,6 +2,17 @@
 
 FastAPI 기반 API 서버.
 
+## 기술 스택
+
+- FastAPI, Python 3.12+, uv, uvicorn
+- pydantic-settings (APP_PROFILE 분기), pydantic[email] (이메일 검증)
+- SQLAlchemy + PyMySQL
+- bcrypt (비밀번호 해싱), PyJWT (JWT)
+- boto3 (AWS SES)
+- OpenTelemetry SDK + OTLP exporter (logs/metrics/traces)
+- ApiEnvelop 응답 래퍼, AppException 예외 처리, CORS 전체 허용
+- Dockerfile (python:3.12-slim multi-stage)
+
 ## 사전 준비
 
 - Python 3.12+
@@ -38,29 +49,9 @@ prod DB 연결:
 uv run pytest tests/ -v
 ```
 
-## API 엔드포인트
+- pytest + TestClient, mock(unittest.mock)
 
-| 메서드 | 경로 | 설명 |
-|---|---|---|
-| GET | /api/v2/test | 기본 응답 |
-| GET | /api/v2/test/echo | 클라이언트 요청 정보 반환 |
-| GET | /api/v2/test/profile | 활성 프로파일 반환 |
-| GET | /api/v2/test/property?key=... | 설정값 조회 |
-| POST | /api/v2/ums/user/join | 회원가입 |
-| POST | /api/v2/ums/auth/login | 로그인 |
-| POST | /api/v2/ums/auth/validate-token | 토큰 검증 |
-| POST | /api/v2/ums/auth/logout | 로그아웃 |
-| POST | /api/v2/ums/auth/email-verification/send | 이메일 인증 코드 발송 |
-| POST | /api/v2/ums/auth/email-verification/verify | 이메일 인증 코드 검증 |
-| POST | /api/v2/ums/auth/password-reset/send | 비밀번호 재설정 코드 발송 |
-| POST | /api/v2/ums/auth/password-reset/verify | 비밀번호 재설정 코드 검증 |
-| POST | /api/v2/ums/auth/password-reset/confirm | 비밀번호 재설정 |
-| GET | /api/v2/ums/user/me | 회원정보 조회 |
-| PATCH | /api/v2/ums/user/me | 회원정보 수정 |
-| PATCH | /api/v2/ums/user/me/password | 비밀번호 변경 |
-| DELETE | /api/v2/ums/user/me | 회원탈퇴 (개발 단계: 하드 삭제) |
 
-API 문서: http://localhost:5002/api/v2/docs
 
 ## Observability (Grafana Cloud, OTLP)
 
@@ -73,10 +64,4 @@ API 문서: http://localhost:5002/api/v2/docs
 
 설정값은 ECS secrets (Parameter Store) 에서 환경변수로 주입.
 OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS를 OpenTelemetry SDK가 자동으로 읽음.
-
-### 프로필별 동작
-
-- default/local: 콘솔 로그만 출력
-- prod: 콘솔 + Grafana Cloud (OTLP) 전송
-
 

@@ -4,6 +4,8 @@
 
 React 기반 하이브리드 웹앱. 투자/정치/기술 서비스를 반응형(모바일 탭바 + 데스크탑 사이드바)으로 제공.
 
+> 기술 스택은 README.md, 구현 기능·설계 근거는 루트 docs/done.md, 구현 시 따라야 할 제약·참고는 docs/rules.md 참조.
+
 ## 주요 파일
 
 - src/Router.tsx: 라우팅 정의
@@ -14,14 +16,6 @@ React 기반 하이브리드 웹앱. 투자/정치/기술 서비스를 반응형
 - src/components/common/SubTabLayout.tsx: 서브탭 공통 레이아웃
 - src/components/common/FilterChips.tsx: 필터 칩 공통 컴포넌트
 - src/hooks/useIsMobile.ts: 모바일 판별 훅
-
-## 기술 스택
-
-- React 19, React Router 7, TypeScript
-- Vite 빌드
-- Ant Design UI + CSS Modules (커스텀 스타일)
-- Jotai (상태 관리), axios + TanStack Query (API 통신)
-- Yarn Berry (non-zero-install)
 
 ## 작업 규칙
 

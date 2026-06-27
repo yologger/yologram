@@ -4,18 +4,14 @@
 
 Next.js 16 기반 웹 프론트엔드. ECS Fargate에서 운영.
 
+> 기술 스택은 README.md, 구현 기능·설계 근거는 루트 docs/done.md, 구현 시 따라야 할 제약·참고는 docs/rules.md 참조.
+
 ## 주요 파일
 
 - src/instrumentation.ts: Next.js instrumentation 진입점
 - src/instrumentation.node.ts: OpenTelemetry NodeSDK 초기화 (traces, metrics, logs)
 - src/lib/logger.ts: 서버사이드 로그 유틸 (logInfo, logError)
 - src/app/api/test/route.ts: 테스트 API Route
-
-## 기술 스택
-
-- Next.js 16 (App Router), TypeScript
-- Yarn Berry (non-zero-install)
-- standalone 출력 없이 일반 next start 방식
 
 ## 코드 컨벤션
 
@@ -30,10 +26,8 @@ Next.js 16 기반 웹 프론트엔드. ECS Fargate에서 운영.
 ## Observability
 
 - OpenTelemetry NodeSDK로 Grafana Cloud OTLP direct push
-- Traces: OTLPTraceExporter (Next.js 자동 span)
-- Metrics: OTLPMetricExporter + HostMetrics (process CPU/memory)
-- Logs: OTLPLogExporter (API Route, dynamic 페이지에서 사용)
 - 설정: src/instrumentation.ts → src/instrumentation.node.ts
+- (exporter·메트릭 라이브러리·한계 상세는 README.md 참조)
 
 ## 테스트
 

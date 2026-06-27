@@ -8,7 +8,17 @@ React 기반 하이브리드 웹 애플리케이션. 투자/정치/기술 서비
 - Vite + TypeScript
 - Ant Design + CSS Modules
 - Jotai (상태 관리), axios + TanStack Query (API 통신)
-- Yarn Berry (non-zero-install)
+- Yarn Berry (non-zero-install), Node 24
+
+## React ↔ Next.js 비교 (학습 목적)
+
+web-v2(Next.js)와 동일 기능을 React로 구현한 비교 학습용 프로젝트.
+
+- 라우팅: React Router(코드 기반) vs App Router(파일 기반)
+- 환경변수: `VITE_` prefix vs `NEXT_PUBLIC_`
+- 빌드: Vite 정적 파일 vs Next.js node 서버
+- 배포: S3 + CloudFront vs node server
+- SSR: React는 CSR only, Next.js는 SSR/SSG 가능
 
 ## 실행
 
@@ -22,6 +32,10 @@ yarn start:dev    # http://localhost:3001
 ```bash
 yarn build:prod
 ```
+
+## 테스트
+
+- vitest + Testing Library + msw
 
 ## 디렉토리 구조
 
@@ -40,24 +54,4 @@ src/
 ├── styles/           → 글로벌 스타일
 └── types/            → 타입 선언
 ```
-
-## 반응형 구조
-
-- 모바일 (< 768px): 하단 탭바 (투자, 정치, 기술, 알림, 설정)
-- 데스크탑 (>= 768px): 왼쪽 사이드바 (toggle 가능)
-
-## 인증
-
-- JWT는 `authAtom`에 저장하며 localStorage로 유지합니다.
-- `AuthGate`가 앱 시작 시 저장된 토큰을 `validate-token`으로 확인한 뒤 라우터를 렌더링합니다.
-
-## 로컬 포트
-
-- 개발 서버: 3001
-
-## 배포
-
-- S3 + CloudFront (정적 파일 호스팅)
-- GitHub Actions: yarn build → S3 sync
-
 

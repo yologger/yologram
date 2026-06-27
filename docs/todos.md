@@ -5,6 +5,11 @@
 > 도메인 태그 `(UMS)` 등은 식별용(선택). 구현 기능·설계 근거는 features.md.
 > docs/는 메인(루트) 에이전트만 갱신. 서브에이전트는 read-only(참고만).
 
+## Todos. 
+- [ ] (마이페이지) 내 글 목록
+  - [ ] api-v1 (QueryDSL offset 페이지네이션 + count + 동적조건 — 학습 예제 A 겸)
+  - [ ] api-v2
+  - [ ] web-v1 / web-v2 (현재 더미 → 연동)
 - [ ] (Comment) 댓글 작성/조회/삭제
   - [ ] api-v1 (community_comments 테이블 FK 없이 인덱스 + app-level 검증, /api/v1/comments/...)
   - [ ] api-v2
@@ -19,10 +24,6 @@
   - [ ] api-v1 (PATCH/DELETE /pms/{section}/posts/{id})
   - [ ] api-v2
   - [ ] web-v1 / web-v2
-- [ ] (마이페이지) 내 글 목록
-  - [ ] api-v1 (QueryDSL offset 페이지네이션 + count + 동적조건 — 학습 예제 A 겸)
-  - [ ] api-v2
-  - [ ] web-v1 / web-v2 (현재 더미 → 연동)
 - [ ] (web) invest/politics 피드 연동
   - [ ] web-v1
   - [ ] web-v2
@@ -51,7 +52,16 @@
   - [ ] 유예기간 후 PII 익명화/하드삭제 배치, email 재가입 정책
   - [ ] 연관 데이터 정리 비동기(이벤트/큐) — 게시글 도메인 추가 후
   - [ ] 조회 시 DELETED 유저 데이터 필터링
-  - 정리 전략 상세는 features.md 참조
+  - 데이터 정리 전략 (soft delete 전환 시 결정):
+    - 현재(개발 단계): 레코드 즉시 하드 삭제(UserService.withdraw) → email 해제로 재가입 가능
+    - 탈퇴 요청과 연관 데이터(게시글/댓글/좋아요) 삭제를 분리해 요청 부하 완화
+    - 1차(동기, 즉시 응답): status=DELETED + deletedDate 기록, 토큰 무효화 후 204. 조회 시 DELETED 필터링 → 즉시 탈퇴 효과
+    - 2차(비동기 연관 삭제) 옵션:
+      - SQS 이벤트 + 워커 (권장, 확장성): "user-deleted" 발행 → 워커가 도메인별 배치 삭제, 실패 시 DLQ 재시도
+      - 배치 잡 (간단): DELETED 유저를 주기 스캔해 청크 삭제, 별도 인프라 최소
+      - 앱 내 @Async/BackgroundTasks (소규모/임시): 요청과 분리하나 인스턴스 종속 → 배포/장애 시 유실 위험, 대량 부적합
+    - 대량 삭제는 청크(LIMIT N) 단위 반복으로 락/replica 지연 완화. 보관 의무 데이터는 익명화·유예기간(복구) 검토(soft delete면 자연 지원)
+    - 권장: soft delete 즉시 응답 + SQS 워커 도메인별 청크 삭제 (규모 작으면 배치 잡으로 시작)
 - [ ] (Search) 검색 시스템 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시)
   - [ ] 도입 시점 판단
   - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)
@@ -70,9 +80,17 @@
 - [ ] (Infra) 신규 테이블 추가 시 RDS DDL·인덱스 직접 실행 (validate 모드 — 현재 테이블은 적용 완료)
 - [ ] (web-v2/Observability) 운영: staging/prod OTEL secret 주입, Grafana Tempo trace 수신 확인
 - [ ] (web-v2) 학습·검토: 서버/클라이언트 컴포넌트 이해, cookie 토큰 전환 시 middleware route 보호, route group 구조
+- [ ] (api-v1, api-v2) MSA 전환
+- [ ] (search) 검색 시스템 도입.
+  - [ ] pms vs search 호출 기준: 단건 정확 조회·쓰기·"내 것"(개인화+권한) = pms / 공개 다건 탐색(키워드·카테고리·섹션 목록·필터·정렬·집계) = search
+  - [ ] CQRS: pms = 쓰기 원본(MySQL, 권한·개인화) / search = 읽기 최적화(OpenSearch). 동기화는 pms 쓰기 → 변경 이벤트(SQS/Kinesis) → indexer가 MySQL 읽어 문서화 → OpenSearch 인덱싱 (최종 일관성)
+  - [ ] QueryDSL vs search 역할: QueryDSL은 관계형 복잡성(권한 한정 "내 것/정확"), search는 탐색 복잡성(풀텍스트·연관도·패싯, 공개 카탈로그 발견)
+  - [ ] 도입 전략: 초기엔 pms cursor 목록으로 시작 → 검색·복잡 필터·대량 트래픽 필요 시 OpenSearch+indexer 도입(YAGNI). 별도 서비스 예정(yologram-search-api, yologram-search-indexer)
 
 ## 보류/제외 (현재 범위 밖)
 - [ ] (UMS) OAuth 로그인 (Gmail, Kakao)
 - [ ] (UMS) 프로필 이미지 업로드
 - [ ] (web-v2/Observability) browser RUM, client-side tracing, logs, custom metrics
   - 향후 선택지: Grafana Alloy + spanmetrics로 trace에서 request 메트릭 추출, access log 보강
+
+
