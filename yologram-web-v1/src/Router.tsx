@@ -44,8 +44,8 @@ export default function Router() {
       <Route element={<ResponsiveLayout />}>
         <Route path="/" element={<Navigate to="/tech" replace />} />
         {/* invest/politics 준비 중: 구현 시작 시 ComingSoon 라우트 제거하고 아래 주석 블록 복구 */}
-        <Route path="/invest/*" element={<ComingSoon />} />
-        <Route path="/politics/*" element={<ComingSoon />} />
+        <Route path="/invest/*" element={<ComingSoon title="투자" />} />
+        <Route path="/politics/*" element={<ComingSoon title="정치" />} />
         {/*
         <Route path="/invest" element={<InvestPage />}>
           <Route index element={<Navigate to="/invest/news" replace />} />
@@ -79,7 +79,7 @@ export default function Router() {
         </Route>
 
         {/* 알림 준비 중: 구현 시작 시 ComingSoon 제거하고 아래 RequireAuth 내 NotificationsPage 복구 */}
-        <Route path="/notifications" element={<ComingSoon />} />
+        <Route path="/notifications" element={<ComingSoon title="알림" />} />
         <Route element={<RequireAuth />}>
           {/* <Route path="/notifications" element={<NotificationsPage />} /> */}
           <Route path="/settings" element={<SettingsPage />} />
