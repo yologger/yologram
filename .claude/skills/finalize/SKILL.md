@@ -12,9 +12,9 @@ disable-model-invocation: false
 
 git diff로 변경사항을 확인하고, 변경된 프로젝트의 문서를 검토하여 업데이트가 필요한 부분을 최신화:
 
-1. 루트 docs/ 확인 (todos.md, features.md 2개로 통합 관리, 프로젝트별 섹션)
-   - docs/todos.md: 해당 프로젝트 섹션에서 완료된 항목은 제거하고 새 할 일 추가 (앞으로 할 일만 유지)
-   - docs/features.md: 이번에 구현 완료한 기능과 그 설계 근거를 해당 프로젝트 섹션에 기록 (tasks에서 완료된 내용을 이쪽으로 이전)
+1. 루트 docs/ 확인 (todos.md, features.md 2개로 통합 관리, 프로젝트 구분 없는 평면 구조)
+   - docs/todos.md: 우선순위 순 기능 목록. 완료된 항목(미러링 기능은 해당 프로젝트 하위 체크박스)을 체크/제거하고 새 할 일 추가. 도메인 태그는 선택
+   - docs/features.md: 이번에 구현 완료한 기능을 「구현된 기능」(대략 구현 순서)에, 설계 근거는 「설계 근거」(주제별)에 기록. 미러링 기능은 한 항목에 백엔드/프론트 함께 표기
 2. 변경된 프로젝트의 CLAUDE.md, AGENTS.md, README.md 확인
    - 기술 스택, 설정, 포트, 경로 등 변경된 내용 반영
    - CLAUDE.md와 AGENTS.md는 항상 동기화: CLAUDE.md를 수정하면 AGENTS.md에도 동일한 내용을 반영 (반대도 동일)
