@@ -4,16 +4,18 @@ import RequireAuth from './components/auth/RequireAuth'
 import LoginPage from './pages/auth/LoginPage'
 import JoinPage from './pages/auth/JoinPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
-import InvestPage from './pages/invest/InvestPage'
-import InvestNewsPage from './pages/invest/InvestNewsPage'
-import InvestFavoriteNewsPage from './pages/invest/InvestFavoriteNewsPage'
-import InvestCommunityPage from './pages/invest/InvestCommunityPage'
-import InvestInfoPage from './pages/invest/InvestInfoPage'
-import PoliticsPage from './pages/politics/PoliticsPage'
-import PoliticsNewsPage from './pages/politics/PoliticsNewsPage'
-import PoliticsFavoriteNewsPage from './pages/politics/PoliticsFavoriteNewsPage'
-import PoliticsCommunityPage from './pages/politics/PoliticsCommunityPage'
-import PoliticsInfoPage from './pages/politics/PoliticsInfoPage'
+import ComingSoon from './components/common/ComingSoon'
+// TODO(invest/politics): 섹션 구현 시작 시 아래 import 주석 해제 + ComingSoon 라우트 제거
+// import InvestPage from './pages/invest/InvestPage'
+// import InvestNewsPage from './pages/invest/InvestNewsPage'
+// import InvestFavoriteNewsPage from './pages/invest/InvestFavoriteNewsPage'
+// import InvestCommunityPage from './pages/invest/InvestCommunityPage'
+// import InvestInfoPage from './pages/invest/InvestInfoPage'
+// import PoliticsPage from './pages/politics/PoliticsPage'
+// import PoliticsNewsPage from './pages/politics/PoliticsNewsPage'
+// import PoliticsFavoriteNewsPage from './pages/politics/PoliticsFavoriteNewsPage'
+// import PoliticsCommunityPage from './pages/politics/PoliticsCommunityPage'
+// import PoliticsInfoPage from './pages/politics/PoliticsInfoPage'
 import TechPage from './pages/tech/TechPage'
 import TechNewsPage from './pages/tech/TechNewsPage'
 import TechFavoriteNewsPage from './pages/tech/TechFavoriteNewsPage'
@@ -39,6 +41,10 @@ export default function Router() {
       <Route path="/tech/community/:postId" element={<CommunityDetailPage />} />
       <Route element={<ResponsiveLayout />}>
         <Route path="/" element={<Navigate to="/tech" replace />} />
+        {/* invest/politics 준비 중: 구현 시작 시 ComingSoon 라우트 제거하고 아래 주석 블록 복구 */}
+        <Route path="/invest/*" element={<ComingSoon />} />
+        <Route path="/politics/*" element={<ComingSoon />} />
+        {/*
         <Route path="/invest" element={<InvestPage />}>
           <Route index element={<Navigate to="/invest/news" replace />} />
           <Route path="news" element={<InvestNewsPage />} />
@@ -57,6 +63,7 @@ export default function Router() {
             <Route path="favorite-news" element={<PoliticsFavoriteNewsPage />} />
           </Route>
         </Route>
+        */}
         <Route path="/tech" element={<TechPage />}>
           <Route index element={<Navigate to="/tech/news" replace />} />
           <Route path="news" element={<TechNewsPage />} />
