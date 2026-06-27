@@ -1,3 +1,11 @@
+import ComingSoon from '@/components/common/ComingSoon'
+
+// 알림 준비 중: 구현 시작 시 ComingSoon 제거하고 아래 기존 page를 복구한다.
+export default function Notifications() {
+  return <ComingSoon />
+}
+
+/*
 'use client'
 
 import { Typography } from 'antd'
@@ -10,3 +18,4 @@ export default function Notifications() {
     </RequireAuth>
   )
 }
+*/
