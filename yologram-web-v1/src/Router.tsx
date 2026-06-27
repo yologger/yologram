@@ -24,7 +24,8 @@ import TechCommunityPage from './pages/tech/TechCommunityPage'
 // import TechJobsPage from './pages/tech/TechJobsPage'
 import CommunityWritePage from './pages/tech/community/CommunityWritePage'
 import CommunityDetailPage from './pages/tech/community/CommunityDetailPage'
-import NotificationsPage from './pages/notifications/NotificationsPage'
+// TODO(notifications): 알림 구현 시작 시 주석 해제 + ComingSoon 라우트 제거
+// import NotificationsPage from './pages/notifications/NotificationsPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import ChangePasswordPage from './pages/settings/ChangePasswordPage'
 import EditProfilePage from './pages/settings/EditProfilePage'
@@ -77,8 +78,10 @@ export default function Router() {
           </Route>
         </Route>
 
+        {/* 알림 준비 중: 구현 시작 시 ComingSoon 제거하고 아래 RequireAuth 내 NotificationsPage 복구 */}
+        <Route path="/notifications" element={<ComingSoon />} />
         <Route element={<RequireAuth />}>
-          <Route path="/notifications" element={<NotificationsPage />} />
+          {/* <Route path="/notifications" element={<NotificationsPage />} /> */}
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/change-password" element={<ChangePasswordPage />} />
           <Route path="/settings/edit-profile" element={<EditProfilePage />} />
