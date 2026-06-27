@@ -20,7 +20,8 @@ import TechPage from './pages/tech/TechPage'
 import TechNewsPage from './pages/tech/TechNewsPage'
 import TechFavoriteNewsPage from './pages/tech/TechFavoriteNewsPage'
 import TechCommunityPage from './pages/tech/TechCommunityPage'
-import TechJobsPage from './pages/tech/TechJobsPage'
+// TODO(tech/jobs): 채용 구현 시작 시 주석 해제 + ComingSoon 라우트 제거
+// import TechJobsPage from './pages/tech/TechJobsPage'
 import CommunityWritePage from './pages/tech/community/CommunityWritePage'
 import CommunityDetailPage from './pages/tech/community/CommunityDetailPage'
 import NotificationsPage from './pages/notifications/NotificationsPage'
@@ -68,7 +69,9 @@ export default function Router() {
           <Route index element={<Navigate to="/tech/news" replace />} />
           <Route path="news" element={<TechNewsPage />} />
           <Route path="community" element={<TechCommunityPage />} />
-          <Route path="jobs" element={<TechJobsPage />} />
+          {/* 채용 준비 중: 구현 시작 시 ComingSoon 제거하고 아래 주석 복구 */}
+          <Route path="jobs" element={<ComingSoon />} />
+          {/* <Route path="jobs" element={<TechJobsPage />} /> */}
           <Route element={<RequireAuth />}>
             <Route path="favorite-news" element={<TechFavoriteNewsPage />} />
           </Route>
