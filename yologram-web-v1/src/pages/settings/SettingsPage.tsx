@@ -1,9 +1,9 @@
 import { Avatar, App, Typography } from 'antd'
 import {
   UserOutlined,
-  BellOutlined,
+  // BellOutlined,  // 환경 설정(알림/다크모드) 추후 구현 시 주석 해제
   LockOutlined,
-  BulbOutlined,
+  // BulbOutlined,  // 환경 설정(알림/다크모드) 추후 구현 시 주석 해제
   EditOutlined,
   BookOutlined,
   FileTextOutlined,
@@ -27,13 +27,14 @@ const sections = [
       { icon: <LockOutlined />, label: '비밀번호 변경', desc: '비밀번호를 변경해요', path: '/settings/change-password' },
     ],
   },
-  {
-    title: '환경 설정',
-    items: [
-      { icon: <BellOutlined />, label: '알림 설정', desc: '푸시 알림을 관리해요', path: '' },
-      { icon: <BulbOutlined />, label: '다크 모드 설정', desc: '라이트·다크 모드를 선택해요', path: '' },
-    ],
-  },
+  // 환경 설정(알림 설정/다크 모드)은 추후 구현 — 구현 시 주석 해제
+  // {
+  //   title: '환경 설정',
+  //   items: [
+  //     { icon: <BellOutlined />, label: '알림 설정', desc: '푸시 알림을 관리해요', path: '' },
+  //     { icon: <BulbOutlined />, label: '다크 모드 설정', desc: '라이트·다크 모드를 선택해요', path: '' },
+  //   ],
+  // },
   {
     title: '활동',
     items: [
