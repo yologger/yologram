@@ -23,7 +23,8 @@
 - [ ] (PMS) 게시글 수정/삭제 (본인 글)
   - [ ] api-v1 (PATCH/DELETE /pms/{section}/posts/{id})
   - [ ] api-v2
-  - [ ] web-v1 / web-v2
+  - [ ] web-v1 / web-v2 (상세 페이지 수정/삭제)
+  - [ ] web-v1 / web-v2 내 글 목록(마이페이지)에서 삭제 — 항목별 삭제 버튼 + 확인 모달 → DELETE 후 목록 invalidate
 - [ ] (web) invest/politics 피드 연동
   - [ ] web-v1
   - [ ] web-v2
