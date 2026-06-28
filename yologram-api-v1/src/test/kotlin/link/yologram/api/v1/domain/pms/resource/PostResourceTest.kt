@@ -7,11 +7,13 @@ import link.yologram.api.v1.domain.cms.exception.InvalidSectionException
 import link.yologram.api.v1.domain.pms.exception.InvalidPostCategoryException
 import link.yologram.api.v1.domain.pms.exception.PmsExceptionHandler
 import link.yologram.api.v1.domain.cms.enums.Section
+import link.yologram.api.v1.domain.pms.exception.PostForbiddenException
 import link.yologram.api.v1.domain.pms.exception.PostNotFoundException
 import link.yologram.api.v1.domain.pms.model.CreatePostRequest
 import link.yologram.api.v1.domain.pms.model.CreatePostResponse
 import link.yologram.api.v1.domain.pms.model.PostDetailResponse
 import link.yologram.api.v1.domain.pms.model.PostSummaryResponse
+import link.yologram.api.v1.domain.pms.model.UpdatePostRequest
 import link.yologram.api.v1.domain.pms.service.PostService
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.util.JwtUtil
@@ -32,6 +34,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import java.time.LocalDateTime
 
@@ -155,6 +158,74 @@ class PostResourceTest {
         }.andExpect {
             status { isBadRequest() }
             jsonPath("$.errorCode") { value("INVALID_SECTION") }
+        }
+    }
+
+    @Test
+    fun `게시글 수정 시 204 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+        mockMvc.patch("/api/v1/pms/tech/posts/1") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(UpdatePostRequest(title = "수정", content = "수정 내용", categoryIds = listOf(1L)))
+        }.andExpect {
+            status { isNoContent() }
+        }
+    }
+
+    @Test
+    fun `게시글 수정 시 Authorization 헤더 없으면 401 반환`() {
+        mockMvc.patch("/api/v1/pms/tech/posts/1") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(UpdatePostRequest(content = "수정 내용", categoryIds = listOf(1L)))
+        }.andExpect {
+            status { isUnauthorized() }
+            jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+        }
+    }
+
+    @Test
+    fun `본인 글이 아니면 403 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        doThrow(PostForbiddenException()).whenever(postService).update(any(), any(), any(), any())
+
+        mockMvc.patch("/api/v1/pms/tech/posts/1") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(UpdatePostRequest(content = "수정 내용", categoryIds = listOf(1L)))
+        }.andExpect {
+            status { isForbidden() }
+            jsonPath("$.errorCode") { value("POST_FORBIDDEN") }
+        }
+    }
+
+    @Test
+    fun `존재하지 않는 글 수정 시 404 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        doThrow(PostNotFoundException()).whenever(postService).update(any(), any(), any(), any())
+
+        mockMvc.patch("/api/v1/pms/tech/posts/99") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(UpdatePostRequest(content = "수정 내용", categoryIds = listOf(1L)))
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.errorCode") { value("POST_NOT_FOUND") }
+        }
+    }
+
+    @Test
+    fun `수정 시 내용 누락이면 400 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+        mockMvc.patch("/api/v1/pms/tech/posts/1") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(mapOf("categoryIds" to listOf(1)))
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
         }
     }
 

@@ -9,6 +9,7 @@ import link.yologram.api.v1.domain.pms.model.CreatePostRequest
 import link.yologram.api.v1.domain.pms.model.CreatePostResponse
 import link.yologram.api.v1.domain.pms.model.PostDetailResponse
 import link.yologram.api.v1.domain.pms.model.PostSummaryResponse
+import link.yologram.api.v1.domain.pms.model.UpdatePostRequest
 import link.yologram.api.v1.domain.pms.service.PostService
 import link.yologram.api.v1.domain.ums.resolver.AuthData
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUser
@@ -18,6 +19,7 @@ import link.yologram.api.v1.global.model.ApiEnvelopPage
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -46,6 +48,25 @@ class PostResource(
         @Valid @RequestBody request: CreatePostRequest,
     ): ApiEnvelop<CreatePostResponse> {
         return ApiEnvelop(data = postService.create(section, authData.uid, request))
+    }
+
+    @PatchMapping("/{section}/posts/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "게시글 수정", description = "본인 게시글 수정 (인증 필요)")
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "수정 성공"),
+        ApiResponse(responseCode = "400", description = "입력값 검증 실패 / 유효하지 않은 섹션 / 카테고리 불일치"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "403", description = "본인 글이 아님"),
+        ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음"),
+    )
+    fun update(
+        @PathVariable section: String,
+        @PathVariable id: Long,
+        @AuthenticatedUser authData: AuthData,
+        @Valid @RequestBody request: UpdatePostRequest,
+    ) {
+        postService.update(section, id, authData.uid, request)
     }
 
     // 게시글 피드 (cursor-based pagination)

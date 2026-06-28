@@ -23,10 +23,10 @@ class Post(
     val userId: Long,
 
     @Column(length = 200)
-    val title: String? = null,
+    var title: String? = null,
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    val content: String,
+    var content: String,
 
     @Column(nullable = false)
     var likeCount: Int = 0,
@@ -41,4 +41,10 @@ class Post(
     @LastModifiedDate
     @Column(nullable = false)
     var modifiedDate: LocalDateTime = LocalDateTime.now(),
-)
+) {
+    /** 본인 글 수정: 제목·내용 갱신 (카테고리 매핑은 service에서 교체). modifiedDate는 Auditing이 자동 갱신 */
+    fun update(title: String?, content: String) {
+        this.title = title
+        this.content = content
+    }
+}

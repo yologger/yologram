@@ -5,8 +5,10 @@ import link.yologram.api.v1.domain.cms.exception.InvalidSectionException
 import link.yologram.api.v1.domain.pms.entity.Post
 import link.yologram.api.v1.domain.pms.entity.PostCategoryMapping
 import link.yologram.api.v1.domain.pms.exception.InvalidPostCategoryException
+import link.yologram.api.v1.domain.pms.exception.PostForbiddenException
 import link.yologram.api.v1.domain.pms.exception.PostNotFoundException
 import link.yologram.api.v1.domain.pms.model.CreatePostRequest
+import link.yologram.api.v1.domain.pms.model.UpdatePostRequest
 import link.yologram.api.v1.domain.pms.model.PostCursor
 import link.yologram.api.v1.domain.pms.repository.PostCategoryMappingRepository
 import link.yologram.api.v1.domain.pms.repository.PostRepository
@@ -82,6 +84,62 @@ class PostServiceTest {
             }
 
             verify(postRepository, never()).save(any<Post>())
+        }
+    }
+
+    @Nested
+    inner class 게시글_수정 {
+
+        @Test
+        fun `본인 글이면 제목·내용 수정 후 카테고리를 교체한다`() {
+            whenever(postRepository.findById(1L)).thenReturn(Optional.of(Post(id = 1L, section = Section.TECH, userId = 1L, content = "원본")))
+            whenever(categoryQueryClient.allActiveInSection(Section.TECH, setOf(2L, 3L))).thenReturn(true)
+
+            postService.update("tech", 1L, 1L, UpdatePostRequest(title = "새 제목", content = "새 내용", categoryIds = listOf(2L, 3L)))
+
+            verify(postCategoryMappingRepository).deleteByPostId(1L)
+            verify(postCategoryMappingRepository, times(2)).save(any<PostCategoryMapping>())
+        }
+
+        @Test
+        fun `존재하지 않는 글이면 PostNotFoundException을 던진다`() {
+            whenever(postRepository.findById(99L)).thenReturn(Optional.empty())
+
+            assertThrows<PostNotFoundException> {
+                postService.update("tech", 99L, 1L, UpdatePostRequest(content = "내용", categoryIds = listOf(1L)))
+            }
+        }
+
+        @Test
+        fun `다른 section의 글이면 PostNotFoundException을 던진다`() {
+            whenever(postRepository.findById(1L)).thenReturn(Optional.of(Post(id = 1L, section = Section.INVEST, userId = 1L, content = "내용")))
+
+            assertThrows<PostNotFoundException> {
+                postService.update("tech", 1L, 1L, UpdatePostRequest(content = "내용", categoryIds = listOf(1L)))
+            }
+        }
+
+        @Test
+        fun `본인 글이 아니면 PostForbiddenException을 던진다`() {
+            whenever(postRepository.findById(1L)).thenReturn(Optional.of(Post(id = 1L, section = Section.TECH, userId = 99L, content = "내용")))
+
+            assertThrows<PostForbiddenException> {
+                postService.update("tech", 1L, 1L, UpdatePostRequest(content = "내용", categoryIds = listOf(1L)))
+            }
+
+            verify(postCategoryMappingRepository, never()).deleteByPostId(any())
+        }
+
+        @Test
+        fun `카테고리가 해당 section 것이 아니면 InvalidPostCategoryException을 던진다`() {
+            whenever(postRepository.findById(1L)).thenReturn(Optional.of(Post(id = 1L, section = Section.TECH, userId = 1L, content = "내용")))
+            whenever(categoryQueryClient.allActiveInSection(Section.TECH, setOf(99L))).thenReturn(false)
+
+            assertThrows<InvalidPostCategoryException> {
+                postService.update("tech", 1L, 1L, UpdatePostRequest(content = "내용", categoryIds = listOf(99L)))
+            }
+
+            verify(postCategoryMappingRepository, never()).deleteByPostId(any())
         }
     }
 

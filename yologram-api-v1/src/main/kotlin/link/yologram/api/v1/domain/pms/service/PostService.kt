@@ -4,12 +4,14 @@ import link.yologram.api.v1.domain.cms.enums.Section
 import link.yologram.api.v1.domain.pms.entity.Post
 import link.yologram.api.v1.domain.pms.entity.PostCategoryMapping
 import link.yologram.api.v1.domain.pms.exception.InvalidPostCategoryException
+import link.yologram.api.v1.domain.pms.exception.PostForbiddenException
 import link.yologram.api.v1.domain.pms.exception.PostNotFoundException
 import link.yologram.api.v1.domain.pms.model.CreatePostRequest
 import link.yologram.api.v1.domain.pms.model.CreatePostResponse
 import link.yologram.api.v1.domain.pms.model.PostCursor
 import link.yologram.api.v1.domain.pms.model.PostDetailResponse
 import link.yologram.api.v1.domain.pms.model.PostSummaryResponse
+import link.yologram.api.v1.domain.pms.model.UpdatePostRequest
 import link.yologram.api.v1.domain.pms.repository.PostCategoryMappingRepository
 import link.yologram.api.v1.domain.pms.repository.PostRepository
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
@@ -50,6 +52,34 @@ class PostService(
         }
 
         return CreatePostResponse(id = post.id)
+    }
+
+    // 게시글 수정 (본인 글)
+    @Transactional
+    fun update(sectionPath: String, id: Long, userId: Long, request: UpdatePostRequest) {
+        val section = Section.fromPath(sectionPath)
+
+        // 없거나 다른 section의 글이면 404 (상세 조회와 동일 규칙)
+        val post = postRepository.findByIdOrNull(id) ?: throw PostNotFoundException()
+        if (post.section != section) throw PostNotFoundException()
+
+        // 작성자 본인만 수정 가능 (아니면 403)
+        if (post.userId != userId) throw PostForbiddenException()
+
+        // 카테고리 검증 (작성과 동일: 해당 section 활성 카테고리 1~3개)
+        val categoryIds = request.categoryIds.toSet()
+        if (!categoryQueryClient.allActiveInSection(section, categoryIds)) {
+            throw InvalidPostCategoryException()
+        }
+
+        // 제목·내용 갱신 (JPA 더티체킹 → flush 시 update, modifiedDate 자동 갱신)
+        post.update(request.title?.takeIf { it.isNotBlank() }, request.content!!)
+
+        // 카테고리 매핑은 전체 교체 (기존 제거 후 재생성)
+        postCategoryMappingRepository.deleteByPostId(post.id)
+        categoryIds.forEach { categoryId ->
+            postCategoryMappingRepository.save(PostCategoryMapping(postId = post.id, categoryId = categoryId))
+        }
     }
 
     // 게시글 단건 조회
