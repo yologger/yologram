@@ -2,7 +2,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #fafafa;
+  background: #f7f8fa;
   transition: transform 0.25s ease;
 }
 

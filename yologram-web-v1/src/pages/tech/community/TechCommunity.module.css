@@ -16,7 +16,7 @@
 .status button {
   margin-top: 8px;
   padding: 6px 16px;
-  border: 1px solid #d4d4d8;
+  border: 1px solid #dfe4ea;
   border-radius: 16px;
   background: #fff;
   cursor: pointer;
@@ -29,7 +29,7 @@
   bottom: 56px;
   padding: 10px 16px;
   background: #fff;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #dfe4ea;
   z-index: 15;
 }
 
@@ -48,7 +48,7 @@
   padding: 10px 14px;
   border-radius: 20px;
   border: none;
-  background: #f4f4f5;
+  background: #f7f8fa;
   color: #71717a;
   text-align: left;
   cursor: pointer;

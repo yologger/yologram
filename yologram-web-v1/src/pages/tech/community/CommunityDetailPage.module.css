@@ -8,7 +8,7 @@
   display: flex;
   align-items: center;
   padding: 14px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #dfe4ea;
 }
 
 .back {
@@ -20,7 +20,7 @@
 
 .post {
   padding: 16px;
-  border-bottom: 8px solid #f4f4f5;
+  border-bottom: 8px solid #f7f8fa;
 }
 
 .authorRow {
@@ -76,7 +76,7 @@
 
 .comment {
   padding: 12px 16px;
-  border-bottom: 1px solid #f6f6f6;
+  border-bottom: 1px solid #dfe4ea;
 }
 
 .commentBar {
@@ -88,13 +88,27 @@
   gap: 8px;
   padding: 10px 16px;
   background: #fff;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #dfe4ea;
 }
 
 @media (min-width: 768px) {
-  /* 본문(760px 중앙)과 같은 폭·중앙선에 정렬 */
+  /* 몰입형 전체화면(사이드바 없음) — 화면 전체 기준 760px 중앙 정렬 */
+  .container {
+    background: #f7f8fa;
+  }
+
+  .header,
+  .post,
+  .commentsTitle,
+  .comment {
+    max-width: 760px;
+    margin-inline: auto;
+    width: 100%;
+    background: #fff;
+  }
+
+  /* 하단 고정 입력바도 동일 폭·중앙선에 정렬 (화면 전체 기준 중앙) */
   .commentBar {
-    left: 200px;
     max-width: 760px;
     margin-inline: auto;
   }
@@ -105,7 +119,7 @@
   padding: 10px 14px;
   border-radius: 20px;
   border: none;
-  background: #f4f4f5;
+  background: #f7f8fa;
   outline: none;
   font-size: 14px;
 }

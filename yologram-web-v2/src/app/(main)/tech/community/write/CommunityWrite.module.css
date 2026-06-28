@@ -13,7 +13,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #dfe4ea;
 }
 
 .back {
@@ -71,10 +71,26 @@
   display: flex;
   gap: 20px;
   padding: 14px 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #dfe4ea;
   color: #c4c4c8;
 }
 
 .toolbarItem {
   font-size: 13px;
+}
+
+@media (min-width: 768px) {
+  /* 풀스크린 오버레이(사이드바 가림) — 화면 전체 기준 760px 중앙 정렬 */
+  .container {
+    align-items: center;
+    background: #f7f8fa;
+  }
+
+  .header,
+  .body,
+  .toolbar {
+    width: 100%;
+    max-width: 760px;
+    background: #fff;
+  }
 }

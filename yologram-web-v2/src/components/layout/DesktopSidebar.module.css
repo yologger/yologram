@@ -5,7 +5,7 @@
   bottom: 0;
   width: 200px;
   background: #fff;
-  border-right: 1px solid #f0f0f0;
+  border-right: 1px solid #dfe4ea;
   display: flex;
   flex-direction: column;
   transition: width 0.2s;
