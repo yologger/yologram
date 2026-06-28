@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -196,4 +197,179 @@ class PostServiceTest {
 
         private fun eqSection() = eq(Section.TECH)
     }
+
+    @Nested
+    inner class 내_글_목록_cursor {
+
+        private fun post(id: Long) =
+            Post(id = id, section = Section.TECH, userId = 1L, content = "내용$id")
+
+        @Test
+        fun `결과가 있으면 마지막 글 id를 nextCursor로 반환한다`() {
+            whenever(postRepository.findMyPosts(eq(1L), anyOrNull(), isNull<Long>(), eq(2)))
+                .thenReturn(listOf(post(3), post(2)))
+            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(
+                listOf(PostCategoryMapping(id = 1L, postId = 3L, categoryId = 10L)),
+            )
+
+            val result = postService.getMyPostsByCursor(1L, null, null, 2)
+
+            assertEquals(listOf(3L, 2L), result.data.map { it.id })
+            assertEquals("me", result.data[0].author.nickname)
+            assertEquals(listOf(10L), result.data[0].categoryIds)
+            assertEquals(PostCursor.encode(2L), result.nextCursor)
+        }
+
+        @Test
+        fun `결과가 없으면 빈 목록과 null nextCursor를 반환한다`() {
+            whenever(postRepository.findMyPosts(eq(1L), anyOrNull(), isNull<Long>(), eq(20))).thenReturn(emptyList())
+            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
+
+            val result = postService.getMyPostsByCursor(1L, null, null, 20)
+
+            assertEquals(0, result.data.size)
+            assertNull(result.nextCursor)
+        }
+
+        @Test
+        fun `cursor가 주어지면 디코딩한 id로 조회한다`() {
+            whenever(postRepository.findMyPosts(eq(1L), anyOrNull(), eq<Long?>(5L), eq(20))).thenReturn(emptyList())
+            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
+
+            postService.getMyPostsByCursor(1L, null, PostCursor.encode(5L), 20)
+
+            verify(postRepository).findMyPosts(eq(1L), anyOrNull(), eq<Long?>(5L), eq(20))
+        }
+
+        @Test
+        fun `section이 지정되면 해당 section으로 조회한다`() {
+            whenever(postRepository.findMyPosts(eq(1L), eq(Section.INVEST), isNull<Long>(), eq(20))).thenReturn(emptyList())
+            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
+
+            postService.getMyPostsByCursor(1L, "invest", null, 20)
+
+            verify(postRepository).findMyPosts(eq(1L), eq(Section.INVEST), isNull<Long>(), eq(20))
+        }
+
+        @Test
+        fun `유효하지 않은 section이면 InvalidSectionException을 던진다`() {
+            assertThrows<InvalidSectionException> {
+                postService.getMyPostsByCursor(1L, "unknown", null, 20)
+            }
+
+            verify(postRepository, never()).findMyPosts(any(), anyOrNull(), isNull<Long>(), any())
+        }
+    }
+
+    // offset 엔드포인트는 현재 비활성(PostResource에서 주석)이라 학습용으로 테스트도 주석 처리
+    /*
+    @Nested
+    inner class 내_글_목록_offset_학습용 {
+
+        private fun post(id: Long) =
+            Post(id = id, section = Section.TECH, userId = 1L, content = "내용$id")
+
+        @Test
+        fun `내 글 목록과 페이지 메타를 반환한다`() {
+            whenever(postRepository.countMyPosts(eq(1L), anyOrNull())).thenReturn(3L)
+            whenever(postRepository.findMyPosts(eq(1L), anyOrNull(), eq(0L), eq(20)))
+                .thenReturn(listOf(post(3), post(2), post(1)))
+            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(
+                listOf(PostCategoryMapping(id = 1L, postId = 3L, categoryId = 10L)),
+            )
+
+            val result = postService.getMyPostsByOffset(1L, null, 0, 20)
+
+            assertEquals(listOf(3L, 2L, 1L), result.data.map { it.id })
+            assertEquals("me", result.data[0].author.nickname)
+            assertEquals(listOf(10L), result.data[0].categoryIds)
+            assertEquals(3L, result.totalCount)
+            assertEquals(1L, result.totalPages)
+            assertEquals(0L, result.page)
+            assertEquals(true, result.first)
+            assertEquals(true, result.last)
+        }
+
+        @Test
+        fun `결과가 없으면 빈 목록과 totalPages 0, last=true를 반환한다`() {
+            whenever(postRepository.countMyPosts(eq(1L), anyOrNull())).thenReturn(0L)
+            whenever(postRepository.findMyPosts(eq(1L), anyOrNull(), eq(0L), eq(20))).thenReturn(emptyList())
+            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
+
+            val result = postService.getMyPostsByOffset(1L, null, 0, 20)
+
+            assertEquals(0, result.data.size)
+            assertEquals(0L, result.totalCount)
+            assertEquals(0L, result.totalPages)
+            assertEquals(true, result.last)
+        }
+
+        @Test
+        fun `section이 지정되면 해당 section으로 조회한다`() {
+            whenever(postRepository.countMyPosts(eq(1L), eq(Section.INVEST))).thenReturn(0L)
+            whenever(postRepository.findMyPosts(eq(1L), eq(Section.INVEST), eq(0L), eq(20))).thenReturn(emptyList())
+            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
+
+            postService.getMyPostsByOffset(1L, "invest", 0, 20)
+
+            verify(postRepository).findMyPosts(eq(1L), eq(Section.INVEST), eq(0L), eq(20))
+        }
+
+        @Test
+        fun `section이 없으면 전체(null)로 조회한다`() {
+            whenever(postRepository.countMyPosts(eq(1L), isNull())).thenReturn(0L)
+            whenever(postRepository.findMyPosts(eq(1L), isNull(), eq(0L), eq(20))).thenReturn(emptyList())
+            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
+
+            postService.getMyPostsByOffset(1L, null, 0, 20)
+
+            verify(postRepository).findMyPosts(eq(1L), isNull(), eq(0L), eq(20))
+        }
+
+        @Test
+        fun `page와 size로 offset을 계산하고 중간 페이지 메타를 반환한다`() {
+            whenever(postRepository.countMyPosts(eq(1L), anyOrNull())).thenReturn(100L)
+            whenever(postRepository.findMyPosts(eq(1L), anyOrNull(), eq(20L), eq(10))).thenReturn(emptyList())
+            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
+
+            val result = postService.getMyPostsByOffset(1L, null, 2, 10)
+
+            verify(postRepository).findMyPosts(eq(1L), anyOrNull(), eq(20L), eq(10))
+            assertEquals(10L, result.totalPages)
+            assertEquals(2L, result.page)
+            assertEquals(false, result.first)
+            assertEquals(false, result.last)
+        }
+
+        @Test
+        fun `size가 최대치를 넘으면 50으로 제한된다`() {
+            whenever(postRepository.countMyPosts(eq(1L), anyOrNull())).thenReturn(0L)
+            whenever(postRepository.findMyPosts(eq(1L), anyOrNull(), eq(0L), eq(50))).thenReturn(emptyList())
+            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
+
+            postService.getMyPostsByOffset(1L, null, 0, 100)
+
+            verify(postRepository).findMyPosts(eq(1L), anyOrNull(), eq(0L), eq(50))
+        }
+
+        @Test
+        fun `유효하지 않은 section이면 InvalidSectionException을 던진다`() {
+            assertThrows<InvalidSectionException> {
+                postService.getMyPostsByOffset(1L, "unknown", 0, 20)
+            }
+
+            verify(postRepository, never()).findMyPosts(any(), anyOrNull(), any(), any())
+        }
+    }
+    */
 }

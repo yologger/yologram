@@ -18,6 +18,7 @@ import link.yologram.api.v1.domain.ums.util.JwtUtil
 import link.yologram.api.v1.global.exception.GlobalExceptionHandler
 import link.yologram.api.v1.global.exception.ValidationExceptionHandler
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
+import link.yologram.api.v1.global.model.ApiEnvelopPage
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -233,5 +234,99 @@ class PostResourceTest {
                 status { isBadRequest() }
                 jsonPath("$.errorCode") { value("INVALID_SECTION") }
             }
+    }
+
+    @Test
+    fun `내 글 목록 조회(cursor) 시 200과 data·nextCursor를 반환한다`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        whenever(postService.getMyPostsByCursor(eq(1L), anyOrNull(), anyOrNull(), any())).thenReturn(
+            ApiEnvelopCursorPage(
+                data = listOf(
+                    PostSummaryResponse(
+                        id = 5L,
+                        section = Section.TECH,
+                        author = PostDetailResponse.Author(uid = 1L, nickname = "me"),
+                        title = "제목",
+                        content = "내용",
+                        categoryIds = listOf(1L),
+                        likeCount = 0,
+                        commentCount = 0,
+                        createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
+                    ),
+                ),
+                nextCursor = "next-cursor",
+            ),
+        )
+
+        mockMvc.get("/api/v1/pms/posts/me") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data[0].id") { value(5) }
+            jsonPath("$.data[0].author.nickname") { value("me") }
+            jsonPath("$.nextCursor") { value("next-cursor") }
+        }
+    }
+
+    // offset 엔드포인트는 현재 비활성(PostResource에서 주석)이라 학습용으로 테스트도 주석 처리
+    /*
+    @Test
+    fun `내 글 목록 조회(offset, 학습용) 시 200과 페이지 메타를 반환한다`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        whenever(postService.getMyPostsByOffset(eq(1L), anyOrNull(), any(), any())).thenReturn(
+            ApiEnvelopPage(
+                data = listOf(
+                    PostSummaryResponse(
+                        id = 5L,
+                        section = Section.TECH,
+                        author = PostDetailResponse.Author(uid = 1L, nickname = "me"),
+                        title = "제목",
+                        content = "내용",
+                        categoryIds = listOf(1L),
+                        likeCount = 0,
+                        commentCount = 0,
+                        createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
+                    ),
+                ),
+                page = 0L,
+                size = 20L,
+                totalPages = 1L,
+                totalCount = 1L,
+                first = true,
+                last = true,
+            ),
+        )
+
+        mockMvc.get("/api/v1/pms/posts/me/offset") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data[0].id") { value(5) }
+            jsonPath("$.totalCount") { value(1) }
+            jsonPath("$.last") { value(true) }
+        }
+    }
+    */
+
+    @Test
+    fun `내 글 목록 조회 시 Authorization 헤더 없으면 401 반환`() {
+        mockMvc.get("/api/v1/pms/posts/me")
+            .andExpect {
+                status { isUnauthorized() }
+                jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+            }
+    }
+
+    @Test
+    fun `내 글 목록 조회 시 유효하지 않은 section이면 400 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        doThrow(InvalidSectionException()).whenever(postService).getMyPostsByCursor(eq(1L), eq("unknown"), anyOrNull(), any())
+
+        mockMvc.get("/api/v1/pms/posts/me?section=unknown") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.errorCode") { value("INVALID_SECTION") }
+        }
     }
 }

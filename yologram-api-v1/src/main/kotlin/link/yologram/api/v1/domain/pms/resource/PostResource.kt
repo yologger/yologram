@@ -14,6 +14,7 @@ import link.yologram.api.v1.domain.ums.resolver.AuthData
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUser
 import link.yologram.api.v1.global.model.ApiEnvelop
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
+import link.yologram.api.v1.global.model.ApiEnvelopPage
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -61,6 +62,39 @@ class PostResource(
     ): ApiEnvelopCursorPage<PostSummaryResponse> {
         return postService.getPosts(section, categoryId, cursor, size)
     }
+
+    @GetMapping("/posts/me")
+    @Operation(summary = "내 글 목록 조회", description = "로그인 유저가 작성한 글. 최신순 cursor 페이지네이션 (인증 필요). section 생략 시 전체")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "조회 성공"),
+        ApiResponse(responseCode = "400", description = "유효하지 않은 섹션 / 커서"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+    )
+    fun getMyPostsByCursor(
+        @AuthenticatedUser authData: AuthData,
+        @RequestParam(required = false) section: String?,
+        @RequestParam(required = false) cursor: String?,
+        @RequestParam(required = false, defaultValue = "20") size: Int,
+    ): ApiEnvelopCursorPage<PostSummaryResponse> {
+        return postService.getMyPostsByCursor(authData.uid, section, cursor, size)
+    }
+
+//
+//    @GetMapping("/posts/me")
+//    @Operation(summary = "내 글 목록 조회 (offset, 학습용)", description = "로그인 유저가 작성한 글. 최신순 offset 페이지네이션 + 전체 count (인증 필요). cursor 방식(/posts/me)과 대비되는 학습용")
+//    @ApiResponses(
+//        ApiResponse(responseCode = "200", description = "조회 성공"),
+//        ApiResponse(responseCode = "400", description = "유효하지 않은 섹션"),
+//        ApiResponse(responseCode = "401", description = "인증 실패"),
+//    )
+//    fun getMyPostsByOffset(
+//        @AuthenticatedUser authData: AuthData,
+//        @RequestParam(required = false) section: String?,
+//        @RequestParam(required = false, defaultValue = "0") page: Int,
+//        @RequestParam(required = false, defaultValue = "20") size: Int,
+//    ): ApiEnvelopPage<PostSummaryResponse> {
+//        return postService.getMyPostsByOffset(authData.uid, section, page, size)
+//    }
 
     @GetMapping("/{section}/posts/{id}")
     @Operation(summary = "게시글 상세 조회", description = "섹션(section)의 게시글 단건 조회 (공개)")
