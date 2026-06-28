@@ -8,12 +8,10 @@
 ## Todos. 
 - [ ] (PMS) 게시글 수정/삭제 (본인 글)
   - [ ] 내 글에만 수정/삭제 버튼 활성화 (작성자=인증 유저일 때만 노출)
-  - [ ] 게시글 수정 — api-v1/v2 PATCH /pms/{section}/posts/{id}, web-v1/v2
+  - 게시글 수정 — api-v1/v2 PATCH /pms/{section}/posts/{id} 완료, web-v1/v2 연동 남음
+    - [x] api-v1 / api-v2
+    - [ ] web-v1 / web-v2
   - [ ] 게시글 삭제 — api-v1/v2 DELETE /pms/{section}/posts/{id}, web-v1/v2 (상세 + 내 글 목록, 확인 모달 → 삭제 후 invalidate)
-- [ ] (마이페이지) 내 글 목록
-  - [ ] api-v1 (QueryDSL offset 페이지네이션 + count + 동적조건 — 학습 예제 A 겸)
-  - [ ] api-v2
-  - [ ] web-v1 / web-v2 (현재 더미 → 연동)
 - [ ] (Comment) 댓글
   - [ ] 댓글 작성 — community_comments 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/...), api-v1/v2, web-v1/v2
   - [ ] 댓글 조회 — 최신순/오래된순 정렬, web 무한스크롤 (상세 페이지 더미 → 연동)

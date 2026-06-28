@@ -42,6 +42,15 @@
 - [x] (PMS) 게시글 다건 조회
   - [x] 백엔드 Cursor-based Pagination (id-only 커서, 마지막 글 id를 nextCursor로·빈 결과면 null. +1/hasNext/count 미사용)
   - [x] 프론트: cursor 무한스크롤(useInfiniteQuery, nextCursor 기준)
-- [x] (Settings, PMS)
-- [x] 내가 쓴 글
-  - /settings/my-posts (현재 더미 → 내 글 목록 API 연동 예정)
+  - 섹션 피드 offset 페이지네이션(count+동적조건)은 학습용으로 보존 — 코드만 두고 엔드포인트·테스트는 주석(cursor와 대비)
+- [x] (마이페이지) 내 글 목록
+  - [x] 백엔드: GET /pms/posts/me cursor 무한스크롤 (인증, section 선택, 작성자=본인). api-v1/v2
+  - [x] 프론트: /settings/my-posts 더미 제거 → 연동. 섹션 탭(전체/기술/투자/정치). web-v1/v2
+  - offset 방식(/pms/posts/me/offset, getMyPostsByOffset)은 학습용으로 보존(엔드포인트·테스트 주석). Python(api-v2)은 오버로딩 불가라 cursor/offset 메서드명 분리
+- [x] (PMS) 게시글 수정 (본인 글)
+  - [x] api-v1/v2: PATCH /pms/{section}/posts/{id} (인증). 작성자 본인만(아니면 403 POST_FORBIDDEN), 없거나 다른 section이면 404, 카테고리 1~3 검증. 제목·내용 수정 + 카테고리 매핑 전체 교체
+- [x] (web) 미구현 섹션 안내 + 데스크탑 레이아웃·톤 정리
+  - [x] 투자/정치 섹션, 기술 채용 탭, 알림 페이지를 ComingSoon(준비 중) 화면으로 — 기존 라우트/페이지는 주석 보존, 구현 시 원복
+  - [x] 설정의 알림 설정·다크 모드 항목 임시 숨김(주석)
+  - [x] 글 작성/상세 데스크탑 760px 중앙(몰입형 전체화면 유지), 화면 정중앙 정렬
+  - [x] 전역 배경 #f7f8fa, 구분선 #dfe4ea 톤 통일
