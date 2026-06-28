@@ -2,18 +2,27 @@ import { describe, it, expect, vi, beforeAll, afterEach, afterAll, beforeEach } 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
+import { getDefaultStore } from 'jotai'
 import { renderWithProviders } from '../../../../../test/utils'
 import { server } from '../../../../../test/server'
+import { authAtom } from '@/stores/auth'
 import CommunityDetail from './page'
 
+const mockPush = vi.fn()
 const mockUseParams = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ back: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ back: vi.fn(), push: mockPush }),
   useParams: () => mockUseParams(),
 }))
 
+const store = getDefaultStore()
+
 beforeAll(() => server.listen())
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+  server.resetHandlers()
+  store.set(authAtom, null)
+  mockPush.mockClear()
+})
 afterAll(() => server.close())
 beforeEach(() => mockUseParams.mockReturnValue({ postId: '1' }))
 
@@ -45,6 +54,26 @@ describe('CommunityDetail', () => {
     renderWithProviders(<CommunityDetail />)
 
     expect(await screen.findByText('존재하지 않는 글입니다.')).toBeInTheDocument()
+  })
+
+  it('비로그인 또는 타인 글이면 수정 버튼이 보이지 않는다', async () => {
+    // 핸들러의 author.uid는 12. 로그인하지 않으면 수정 버튼 숨김
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument()
+  })
+
+  it('본인 글이면 수정 버튼이 보이고 클릭 시 수정 화면으로 이동한다', async () => {
+    store.set(authAtom, { uid: 12, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    const editButton = await screen.findByRole('button', { name: '수정' })
+    await user.click(editButton)
+
+    expect(mockPush).toHaveBeenCalledWith('/tech/community/1/edit')
   })
 
   it('서버 오류 시 다시 시도 안내를 표시한다', async () => {

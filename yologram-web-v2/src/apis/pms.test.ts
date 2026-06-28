@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/server'
-import { createPost, getPosts, getMyPosts } from './pms'
+import { createPost, updatePost, getPosts, getMyPosts } from './pms'
 import { getDefaultStore } from 'jotai'
 import { authAtom } from '../stores/auth'
 
@@ -26,6 +26,58 @@ describe('createPost', () => {
     )
 
     await expect(createPost('tech', { content: '내용', categoryIds: [8] })).rejects.toThrow()
+  })
+})
+
+describe('updatePost', () => {
+  const store = getDefaultStore()
+
+  beforeAll(() => {
+    store.set(authAtom, {
+      uid: 1,
+      email: 'test@yologram.link',
+      name: '테스트',
+      nickname: 'tester',
+      accessToken: 'mock-access-token',
+    })
+  })
+
+  afterAll(() => store.set(authAtom, null))
+
+  it('수정 성공 시 정상 resolve된다 (204)', async () => {
+    await expect(
+      updatePost('tech', 1, { title: '수정 제목', content: '수정 내용', categoryIds: [1] }),
+    ).resolves.toBeUndefined()
+  })
+
+  it('본인 글이 아니면 에러를 던진다 (403)', async () => {
+    server.use(
+      http.patch('http://localhost:5002/api/v2/pms/:section/posts/:id', () =>
+        HttpResponse.json(
+          { errorMessage: '권한이 없습니다.', errorCode: 'POST_FORBIDDEN' },
+          { status: 403 },
+        ),
+      ),
+    )
+
+    await expect(
+      updatePost('tech', 1, { title: null, content: '내용', categoryIds: [1] }),
+    ).rejects.toThrow()
+  })
+
+  it('존재하지 않는 글이면 에러를 던진다 (404)', async () => {
+    server.use(
+      http.patch('http://localhost:5002/api/v2/pms/:section/posts/:id', () =>
+        HttpResponse.json(
+          { errorMessage: '게시글을 찾을 수 없습니다.', errorCode: 'POST_NOT_FOUND' },
+          { status: 404 },
+        ),
+      ),
+    )
+
+    await expect(
+      updatePost('tech', 99999, { title: null, content: '내용', categoryIds: [1] }),
+    ).rejects.toThrow()
   })
 })
 

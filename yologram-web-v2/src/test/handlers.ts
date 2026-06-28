@@ -319,6 +319,33 @@ export const handlers = [
     return HttpResponse.json({ data, nextCursor: 'next-cursor' })
   }),
 
+  http.patch('http://localhost:5002/api/v2/pms/:section/posts/:id', async ({ request }) => {
+    const auth = request.headers.get('Authorization')
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
+        { status: 401 },
+      )
+    }
+
+    const body = await request.json() as { content?: string; categoryIds?: number[] }
+
+    if (!body.content || body.content.trim().length === 0) {
+      return HttpResponse.json(
+        { errorMessage: '내용을 입력해주세요.', errorCode: 'VALIDATION_ERROR' },
+        { status: 400 },
+      )
+    }
+    if (!body.categoryIds || body.categoryIds.length < 1 || body.categoryIds.length > 3) {
+      return HttpResponse.json(
+        { errorMessage: '카테고리는 1~3개 선택해주세요.', errorCode: 'VALIDATION_ERROR' },
+        { status: 400 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.get('http://localhost:5002/api/v2/pms/:section/posts/:id', ({ params }) => {
     const id = Number(params.id)
 

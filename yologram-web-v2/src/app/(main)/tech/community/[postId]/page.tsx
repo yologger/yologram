@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import { Avatar } from 'antd'
 import {
   ArrowLeftOutlined,
+  EditOutlined,
   UserOutlined,
   HeartOutlined,
   HeartFilled,
@@ -14,6 +15,7 @@ import {
   ShareAltOutlined,
 } from '@ant-design/icons'
 import { communityCommentsAtom } from '@/stores/community'
+import { authAtom } from '@/stores/auth'
 import type { CommunityComment } from '@/types/community'
 import usePostQuery from '@/queries/usePostQuery'
 import { getErrorStatus } from '@/lib/error'
@@ -25,6 +27,7 @@ export default function CommunityDetail() {
   const id = Number(params.postId)
 
   const { data: post, isLoading, isError, error, refetch } = usePostQuery('tech', id)
+  const auth = useAtomValue(authAtom)
   const [comments, setComments] = useAtom(communityCommentsAtom)
   const [text, setText] = useState('')
 
@@ -85,6 +88,7 @@ export default function CommunityDetail() {
   }
 
   const postComments = comments.filter((c) => c.postId === id)
+  const isOwner = !!auth && post.author.uid === auth.uid
   const authorName = post.author.nickname ?? '알 수 없음'
   const createdAtText = new Date(post.createdAt).toLocaleString('ko-KR')
 
@@ -113,6 +117,15 @@ export default function CommunityDetail() {
         <button className={styles.back} aria-label="뒤로" onClick={goBack}>
           <ArrowLeftOutlined />
         </button>
+        {isOwner && (
+          <button
+            className={styles.edit}
+            aria-label="수정"
+            onClick={() => router.push(`/tech/community/${id}/edit`)}
+          >
+            <EditOutlined /> 수정
+          </button>
+        )}
       </div>
 
       <div className={styles.post}>
