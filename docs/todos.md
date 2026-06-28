@@ -6,25 +6,27 @@
 > docs/는 메인(루트) 에이전트만 갱신. 서브에이전트는 read-only(참고만).
 
 ## Todos. 
+- [ ] (PMS) 게시글 수정/삭제 (본인 글)
+  - [ ] 내 글에만 수정/삭제 버튼 활성화 (작성자=인증 유저일 때만 노출)
+  - [ ] 게시글 수정 — api-v1/v2 PATCH /pms/{section}/posts/{id}, web-v1/v2
+  - [ ] 게시글 삭제 — api-v1/v2 DELETE /pms/{section}/posts/{id}, web-v1/v2 (상세 + 내 글 목록, 확인 모달 → 삭제 후 invalidate)
 - [ ] (마이페이지) 내 글 목록
   - [ ] api-v1 (QueryDSL offset 페이지네이션 + count + 동적조건 — 학습 예제 A 겸)
   - [ ] api-v2
   - [ ] web-v1 / web-v2 (현재 더미 → 연동)
-- [ ] (Comment) 댓글 작성/조회/삭제
-  - [ ] api-v1 (community_comments 테이블 FK 없이 인덱스 + app-level 검증, /api/v1/comments/...)
-  - [ ] api-v2
-  - [ ] web-v1 / web-v2 (상세 페이지 댓글 더미 → 연동, 무한스크롤)
-  - 정렬 방식(최신순/오래된순)·대댓글 지원 여부는 구현 시 결정
+- [ ] (Comment) 댓글
+  - [ ] 댓글 작성 — community_comments 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/...), api-v1/v2, web-v1/v2
+  - [ ] 댓글 조회 — 최신순/오래된순 정렬, web 무한스크롤 (상세 페이지 더미 → 연동)
+  - [ ] 내 댓글에만 수정/삭제 버튼 활성화 (작성자=인증 유저일 때만 노출)
+  - [ ] 댓글 수정 — api-v1/v2, web-v1/v2
+  - [ ] 댓글 삭제 — api-v1/v2, web-v1/v2
+  - 대댓글 지원 여부는 구현 시 결정
 - [ ] (Count) 좋아요 토글 (/count 경로)
   - [ ] api-v1
   - [ ] api-v2
   - [ ] web-v1 / web-v2 (로컬 임시 토글 → 연동)
+  - [ ] 좋아요 수 / 댓글 수 조회·표시 (게시글 목록·상세 카운트, api-v1/v2 + web)
   - 1차는 post 컬럼 동기 보관, 분리 시 이벤트 기반 카운트 이관
-- [ ] (PMS) 게시글 수정/삭제 (본인 글)
-  - [ ] api-v1 (PATCH/DELETE /pms/{section}/posts/{id})
-  - [ ] api-v2
-  - [ ] web-v1 / web-v2 (상세 페이지 수정/삭제)
-  - [ ] web-v1 / web-v2 내 글 목록(마이페이지)에서 삭제 — 항목별 삭제 버튼 + 확인 모달 → DELETE 후 목록 invalidate
 - [ ] (web) invest/politics 피드 연동
   - [ ] web-v1
   - [ ] web-v2
