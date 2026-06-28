@@ -227,4 +227,24 @@ class PostRepositoryImplTest {
             assertEquals(listOf(p1.id), secondPage.map { it.id })
         }
     }
+
+    @Nested
+    inner class 카테고리_매핑_교체 {
+
+        @Test
+        fun `deleteByPostId 후 동일 categoryId를 재삽입해도 충돌이 없다`() {
+            // 게시글 수정 시 카테고리 매핑 교체 시나리오 — derived deleteBy면 flush 순서상 insert가
+            // 먼저 나가 uk_post_category(post_id, category_id) 충돌. @Modifying 벌크 delete로 즉시 삭제돼야 안전
+            val post = savePost(Section.TECH)
+            postCategoryMappingRepository.save(PostCategoryMapping(postId = post.id, categoryId = 2L))
+            entityManager.flush()
+            entityManager.clear()
+
+            postCategoryMappingRepository.deleteByPostId(post.id)
+            postCategoryMappingRepository.save(PostCategoryMapping(postId = post.id, categoryId = 2L))
+            entityManager.flush()
+
+            assertEquals(listOf(2L), postCategoryMappingRepository.findByPostId(post.id).map { it.categoryId })
+        }
+    }
 }
