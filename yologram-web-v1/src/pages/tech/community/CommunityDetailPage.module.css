@@ -7,6 +7,7 @@
 .header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 14px 16px;
   border-bottom: 1px solid #dfe4ea;
 }
@@ -16,6 +17,18 @@
   background: none;
   font-size: 18px;
   cursor: pointer;
+}
+
+.edit {
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #08979c;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .post {

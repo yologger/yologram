@@ -15,6 +15,16 @@ export async function createPost(section: string, request: CreatePostRequest): P
   return response.data.data
 }
 
+export interface UpdatePostRequest {
+  title?: string | null
+  content: string
+  categoryIds: number[]
+}
+
+export async function updatePost(section: string, id: number, request: UpdatePostRequest): Promise<void> {
+  await api.patch(`/api/v1/pms/${section}/posts/${id}`, request)
+}
+
 export interface PostDetail {
   id: number
   section: string

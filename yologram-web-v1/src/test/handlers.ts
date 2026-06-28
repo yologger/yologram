@@ -330,11 +330,14 @@ export const handlers = [
       )
     }
 
+    // id 2 는 타인 글(uid 99), 그 외는 로그인 테스트 유저(uid 1) 본인 글
+    const authorUid = id === 2 ? 99 : 1
+
     return HttpResponse.json({
       data: {
         id,
         section: 'TECH',
-        author: { uid: 12, nickname: '테스터' },
+        author: { uid: authorUid, nickname: '테스터' },
         title: 'API 제목',
         content: 'API 본문 내용',
         categoryIds: [1],
@@ -343,5 +346,24 @@ export const handlers = [
         createdAt: '2026-01-01T00:00:00',
       },
     })
+  }),
+
+  http.patch('http://localhost:5001/api/v1/pms/:section/posts/:id', async ({ request }) => {
+    const body = await request.json() as { content?: string; categoryIds?: number[] }
+
+    if (!body.content || body.content.trim().length === 0) {
+      return HttpResponse.json(
+        { errorMessage: '내용을 입력해주세요.', errorCode: 'VALIDATION_ERROR' },
+        { status: 400 },
+      )
+    }
+    if (!body.categoryIds || body.categoryIds.length < 1 || body.categoryIds.length > 3) {
+      return HttpResponse.json(
+        { errorMessage: '카테고리는 1~3개 선택해주세요.', errorCode: 'VALIDATION_ERROR' },
+        { status: 400 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
   }),
 ]

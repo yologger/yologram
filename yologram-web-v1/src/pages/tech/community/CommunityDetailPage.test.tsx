@@ -2,18 +2,34 @@ import { describe, it, expect, vi, beforeAll, afterEach, afterAll, beforeEach } 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
+import { getDefaultStore } from 'jotai'
 import { renderWithProviders } from '../../../test/utils'
 import { server } from '../../../test/server'
+import { authAtom } from '../../../stores/auth'
 import CommunityDetailPage from './CommunityDetailPage'
 
+const mockNavigate = vi.fn()
 const mockUseParams = vi.fn()
 vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router')
-  return { ...actual, useNavigate: () => vi.fn(), useParams: () => mockUseParams() }
+  return { ...actual, useNavigate: () => mockNavigate, useParams: () => mockUseParams() }
 })
 
+const loginAs = (uid: number) =>
+  getDefaultStore().set(authAtom, {
+    uid,
+    accessToken: 'valid-token',
+    email: 'test@yologram.link',
+    name: '테스터',
+    nickname: 'tester',
+  })
+
 beforeAll(() => server.listen())
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+  server.resetHandlers()
+  mockNavigate.mockClear()
+  getDefaultStore().set(authAtom, null)
+})
 afterAll(() => server.close())
 beforeEach(() => mockUseParams.mockReturnValue({ postId: '1' }))
 
@@ -61,5 +77,34 @@ describe('CommunityDetailPage', () => {
 
     expect(await screen.findByText(/다시 시도해주세요/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument()
+  })
+
+  it('본인 글이면 수정 버튼이 노출되고 클릭 시 편집 화면으로 이동한다', async () => {
+    // id 1 → author.uid 1, 로그인 uid 1 (본인)
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    const editButton = await screen.findByRole('button', { name: '수정' })
+    await user.click(editButton)
+
+    expect(mockNavigate).toHaveBeenCalledWith('/tech/community/1/edit')
+  })
+
+  it('타인 글이면 수정 버튼이 노출되지 않는다', async () => {
+    // id 2 → author.uid 99, 로그인 uid 1 (타인)
+    mockUseParams.mockReturnValue({ postId: '2' })
+    loginAs(1)
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('API 본문 내용')
+    expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument()
+  })
+
+  it('비로그인 상태면 수정 버튼이 노출되지 않는다', async () => {
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('API 본문 내용')
+    expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument()
   })
 })

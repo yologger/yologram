@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { App, Button } from 'antd'
@@ -8,19 +8,40 @@ import MultiSelectChips from '../../../components/common/MultiSelectChips'
 import { type ChipItem } from '../../../components/common/FilterChips'
 import usePostCategoriesQuery from '../../../queries/usePostCategoriesQuery'
 import useCreatePostMutation from '../../../queries/useCreatePostMutation'
+import useUpdatePostMutation from '../../../queries/useUpdatePostMutation'
+import usePostQuery from '../../../queries/usePostQuery'
 import styles from './CommunityWritePage.module.css'
 
 export default function CommunityWritePage() {
   const navigate = useNavigate()
+  const { postId } = useParams()
   const { message } = App.useApp()
   const queryClient = useQueryClient()
   const { data: categories = [] } = usePostCategoriesQuery('tech')
-  const { mutate: createPost, isPending } = useCreatePostMutation()
+  const { mutate: createPost, isPending: isCreating } = useCreatePostMutation()
+  const { mutate: updatePost, isPending: isUpdating } = useUpdatePostMutation()
+
+  // postId가 있으면 수정 모드 (라우트: /tech/community/:postId/edit)
+  const isEdit = postId != null
+  const id = Number(postId)
+  const { data: post } = usePostQuery('tech', isEdit ? id : NaN)
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [categoryIds, setCategoryIds] = useState<number[]>([])
+  const [prefilled, setPrefilled] = useState(false)
 
+  // 수정 모드: 기존 글을 한 번만 prefill (이후 사용자 입력 보존)
+  useEffect(() => {
+    if (isEdit && post && !prefilled) {
+      setTitle(post.title ?? '')
+      setContent(post.content)
+      setCategoryIds(post.categoryIds)
+      setPrefilled(true)
+    }
+  }, [isEdit, post, prefilled])
+
+  const isPending = isCreating || isUpdating
   const canSubmit = content.trim().length > 0 && categoryIds.length > 0
 
   const categoryItems: Array<ChipItem<number>> = categories.map((c) => ({ label: c.name, value: c.id }))
@@ -42,6 +63,26 @@ export default function CommunityWritePage() {
     const trimmedTitle = title.trim() || undefined
     const trimmedContent = content.trim()
 
+    if (isEdit) {
+      updatePost(
+        { section: 'tech', id, request: { title: trimmedTitle ?? null, content: trimmedContent, categoryIds } },
+        {
+          onSuccess: () => {
+            // 상세/피드/내 글 목록 무효화 → 수정 내용 반영
+            queryClient.invalidateQueries({ queryKey: ['post', 'tech', id] })
+            queryClient.invalidateQueries({ queryKey: ['posts', 'tech'] })
+            queryClient.invalidateQueries({ queryKey: ['my-posts'] })
+            message.success('글이 수정되었습니다.')
+            navigate(`/tech/community/${id}`)
+          },
+          onError: () => {
+            message.error('글 수정에 실패했어요. 잠시 후 다시 시도해주세요.')
+          },
+        },
+      )
+      return
+    }
+
     createPost(
       { section: 'tech', request: { title: trimmedTitle, content: trimmedContent, categoryIds } },
       {
@@ -58,10 +99,15 @@ export default function CommunityWritePage() {
     )
   }
 
+  const handleBack = () => {
+    if (isEdit) navigate(`/tech/community/${id}`)
+    else navigate('/tech/community')
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <button className={styles.back} aria-label="뒤로" onClick={() => navigate('/tech/community')}>
+        <button className={styles.back} aria-label="뒤로" onClick={handleBack}>
           <ArrowLeftOutlined />
         </button>
         <Button
@@ -71,7 +117,7 @@ export default function CommunityWritePage() {
           disabled={!canSubmit}
           onClick={handleSubmit}
         >
-          남기기
+          {isEdit ? '수정하기' : '남기기'}
         </Button>
       </div>
 

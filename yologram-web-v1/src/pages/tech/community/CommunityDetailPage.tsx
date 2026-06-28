@@ -10,7 +10,9 @@ import {
   MessageOutlined,
   RetweetOutlined,
   ShareAltOutlined,
+  EditOutlined,
 } from '@ant-design/icons'
+import { authAtom } from '../../../stores/auth'
 import { communityCommentsAtom } from '../../../stores/community'
 import type { CommunityComment } from '../../../types/community'
 import usePostQuery from '../../../queries/usePostQuery'
@@ -23,6 +25,7 @@ export default function CommunityDetailPage() {
   const id = Number(postId)
 
   const { data: post, isLoading, isError, error, refetch } = usePostQuery('tech', id)
+  const [auth] = useAtom(authAtom)
   const [comments, setComments] = useAtom(communityCommentsAtom)
   const [text, setText] = useState('')
 
@@ -82,6 +85,8 @@ export default function CommunityDetailPage() {
 
   const postComments = comments.filter((c) => c.postId === id)
   const authorName = post.author.nickname ?? '알 수 없음'
+  // 본인 글일 때만 수정 노출 (상세 응답 author.uid 와 로그인 uid 비교)
+  const isAuthor = auth != null && auth.uid === post.author.uid
   const createdAtText = new Date(post.createdAt).toLocaleString('ko-KR')
 
   const toggleLike = () => {
@@ -109,6 +114,15 @@ export default function CommunityDetailPage() {
         <button className={styles.back} aria-label="뒤로" onClick={() => navigate(-1)}>
           <ArrowLeftOutlined />
         </button>
+        {isAuthor && (
+          <button
+            className={styles.edit}
+            aria-label="수정"
+            onClick={() => navigate(`/tech/community/${id}/edit`)}
+          >
+            <EditOutlined /> 수정
+          </button>
+        )}
       </div>
 
       <div className={styles.post}>
