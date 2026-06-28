@@ -197,7 +197,7 @@ class PostResourceTest {
 
     @Test
     fun `게시글 목록 조회 시 200과 data·nextCursor를 반환한다`() {
-        whenever(postService.getPosts(eq("tech"), anyOrNull(), anyOrNull(), any())).thenReturn(
+        whenever(postService.getPostsByCursor(eq("tech"), anyOrNull(), anyOrNull(), any())).thenReturn(
             ApiEnvelopCursorPage(
                 data = listOf(
                     PostSummaryResponse(
@@ -225,9 +225,46 @@ class PostResourceTest {
             }
     }
 
+    // 섹션 피드 offset 엔드포인트는 현재 비활성(PostResource에서 주석)이라 학습용으로 테스트도 주석 처리
+    /*
+    @Test
+    fun `게시글 목록 조회(offset, 학습용) 시 200과 페이지 메타를 반환한다`() {
+        whenever(postService.getPostsByOffset(eq("tech"), anyOrNull(), any(), any())).thenReturn(
+            ApiEnvelopPage(
+                data = listOf(
+                    PostSummaryResponse(
+                        id = 2L,
+                        section = Section.TECH,
+                        author = PostDetailResponse.Author(uid = 12L, nickname = "tester"),
+                        title = "제목",
+                        content = "내용",
+                        categoryIds = listOf(1L),
+                        likeCount = 0,
+                        commentCount = 0,
+                        createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
+                    ),
+                ),
+                page = 0L,
+                size = 20L,
+                totalPages = 1L,
+                totalCount = 1L,
+                first = true,
+                last = true,
+            ),
+        )
+
+        mockMvc.get("/api/v1/pms/tech/posts/offset")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.data[0].id") { value(2) }
+                jsonPath("$.totalCount") { value(1) }
+            }
+    }
+    */
+
     @Test
     fun `목록 조회 시 유효하지 않은 section이면 400 반환`() {
-        doThrow(InvalidSectionException()).whenever(postService).getPosts(eq("unknown"), anyOrNull(), anyOrNull(), any())
+        doThrow(InvalidSectionException()).whenever(postService).getPostsByCursor(eq("unknown"), anyOrNull(), anyOrNull(), any())
 
         mockMvc.get("/api/v1/pms/unknown/posts")
             .andExpect {

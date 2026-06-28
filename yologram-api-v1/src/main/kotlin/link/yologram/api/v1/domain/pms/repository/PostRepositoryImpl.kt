@@ -12,19 +12,60 @@ class PostRepositoryImpl(
     private val queryFactory: JPAQueryFactory,
 ) : PostRepositoryCustom {
 
+    // cursor-based pagination
     override fun findPostsBySection(section: Section, categoryId: Long?, cursorId: Long?, limit: Int): List<Post> {
         val post = QPost.post
-        val postCategory = QPostCategoryMapping.postCategoryMapping
 
-        // 기본 조건: 해당 섹션 글만 (인덱스 idx_post_section_id의 선두 컬럼)
-        val query = queryFactory
+        // 섹션(+카테고리) 동적 조건 + 커서 조건(id < cursorId, 직전 페이지보다 과거 글).
+        // OFFSET 없이 인덱스 범위 스캔으로 다음 페이지를 이어받는 keyset 방식
+        val builder = sectionCondition(post, section, categoryId)
+        if (cursorId != null) {
+            builder.and(post.id.lt(cursorId))
+        }
+
+        // 최신순(id desc) 정렬 후 limit개. 커서+정렬이 idx_post_section_id를 그대로 탐
+        return queryFactory
             .selectFrom(post)
-            .where(post.section.eq(section))
+            .where(builder)
+            .orderBy(post.id.desc())
+            .limit(limit.toLong())
+            .fetch()
+    }
 
-        // 카테고리 필터(선택): post_category_mapping에 (post_id, categoryId) 매핑이 있는 글만.
-        // EXISTS는 매칭 1건에 단축 → join처럼 행이 불어나지 않아 글:카테고리 1:N에서도 안전
+    override fun findPostsBySection(section: Section, categoryId: Long?, offset: Long, limit: Int): List<Post> {
+        val post = QPost.post
+        // 섹션 피드 offset 페이지네이션(학습용). cursor와 동일 조건 + offset/limit
+        return queryFactory
+            .selectFrom(post)
+            .where(sectionCondition(post, section, categoryId))
+            .orderBy(post.id.desc())
+            .offset(offset)
+            .limit(limit.toLong())
+            .fetch()
+    }
+
+    // offset-based pagination
+    override fun countPostsBySection(section: Section, categoryId: Long?): Long {
+        val post = QPost.post
+        // totalCount: 조건은 findPostsBySection과 동일, count(*)만 집계
+        return queryFactory
+            .select(post.count())
+            .from(post)
+            .where(sectionCondition(post, section, categoryId))
+            .fetchOne() ?: 0L
+    }
+
+    /**
+     * 섹션 피드 동적 조건: section은 항상, categoryId는 있을 때만 EXISTS로 결합.
+     * 카테고리 필터는 post_category_mapping에 (post_id, categoryId) 매핑이 있는 글만 — EXISTS는
+     * 매칭 1건에 단축돼 join처럼 행이 불어나지 않아 글:카테고리 1:N에서도 안전. cursor/offset/count가 공유.
+     */
+    private fun sectionCondition(post: QPost, section: Section, categoryId: Long?): BooleanBuilder {
+        val postCategory = QPostCategoryMapping.postCategoryMapping
+        val builder = BooleanBuilder()
+        builder.and(post.section.eq(section))
         if (categoryId != null) {
-            query.where(
+            builder.and(
                 JPAExpressions
                     .selectOne()
                     .from(postCategory)
@@ -32,18 +73,7 @@ class PostRepositoryImpl(
                     .exists(),
             )
         }
-
-        // 커서 조건(선택): id가 곧 작성순이므로 id < cursorId면 직전 페이지보다 과거 글.
-        // OFFSET 없이 인덱스 범위 스캔으로 다음 페이지를 이어받는 keyset 방식
-        if (cursorId != null) {
-            query.where(post.id.lt(cursorId))
-        }
-
-        // 최신순(id desc) 정렬 후 limit개. 커서+정렬이 idx_post_section_id를 그대로 탐
-        return query
-            .orderBy(post.id.desc())
-            .limit(limit.toLong())
-            .fetch()
+        return builder
     }
 
     override fun findMyPosts(userId: Long, section: Section?, cursorId: Long?, limit: Int): List<Post> {

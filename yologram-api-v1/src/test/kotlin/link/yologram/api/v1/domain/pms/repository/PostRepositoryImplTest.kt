@@ -82,7 +82,8 @@ class PostRepositoryImplTest {
             val firstPage = postRepository.findPostsBySection(Section.TECH, null, null, 2)
             assertEquals(listOf(p3.id, p2.id), firstPage.map { it.id })
 
-            val cursorId = firstPage.last().id
+            // cursorId는 Long?로 줘야 cursor 오버로드가 선택됨(Long이면 offset 오버로드로 감)
+            val cursorId: Long? = firstPage.last().id
             val secondPage = postRepository.findPostsBySection(Section.TECH, null, cursorId, 2)
             assertEquals(listOf(p1.id), secondPage.map { it.id })
         }
@@ -115,6 +116,36 @@ class PostRepositoryImplTest {
             val result = postRepository.findPostsBySection(Section.TECH, null, null, 3)
 
             assertEquals(3, result.size)
+        }
+    }
+
+    @Nested
+    inner class 섹션_피드_offset {
+
+        @Test
+        fun `offset과 limit으로 페이지를 건너뛴다`() {
+            val p1 = savePost(Section.TECH)
+            val p2 = savePost(Section.TECH)
+            val p3 = savePost(Section.TECH)
+
+            // id desc → p3, p2, p1. 3번째 인자가 Long(offset)이라 offset 오버로드가 선택됨
+            val firstPage = postRepository.findPostsBySection(Section.TECH, null, 0L, 2)
+            assertEquals(listOf(p3.id, p2.id), firstPage.map { it.id })
+
+            val secondPage = postRepository.findPostsBySection(Section.TECH, null, 2L, 2)
+            assertEquals(listOf(p1.id), secondPage.map { it.id })
+        }
+
+        @Test
+        fun `countPostsBySection은 섹션·카테고리 글 수를 센다`() {
+            val p1 = savePost(Section.TECH)
+            savePost(Section.TECH)
+            savePost(Section.INVEST)
+            postCategoryMappingRepository.save(PostCategoryMapping(postId = p1.id, categoryId = 10L))
+            entityManager.flush()
+
+            assertEquals(2L, postRepository.countPostsBySection(Section.TECH, null))
+            assertEquals(1L, postRepository.countPostsBySection(Section.TECH, 10L))
         }
     }
 

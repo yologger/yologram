@@ -136,13 +136,13 @@ class PostServiceTest {
         @Test
         fun `결과가 있으면 마지막 글 id를 nextCursor로 반환한다`() {
             val fetched = listOf(post(3), post(2))
-            whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), anyOrNull(), eq(2))).thenReturn(fetched)
+            whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), isNull<Long>(), eq(2))).thenReturn(fetched)
             whenever(userQueryClient.findNicknames(any())).thenReturn(mapOf(3L to "u3", 2L to "u2"))
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(
                 listOf(PostCategoryMapping(id = 1L, postId = 3L, categoryId = 10L)),
             )
 
-            val result = postService.getPosts("tech", null, null, 2)
+            val result = postService.getPostsByCursor("tech", null, null, 2)
 
             assertEquals(2, result.data.size)
             assertEquals(listOf(3L, 2L), result.data.map { it.id })
@@ -154,11 +154,11 @@ class PostServiceTest {
 
         @Test
         fun `결과가 없으면 빈 목록과 null nextCursor를 반환한다`() {
-            whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), anyOrNull(), eq(20))).thenReturn(emptyList())
+            whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), isNull<Long>(), eq(20))).thenReturn(emptyList())
             whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
-            val result = postService.getPosts("tech", null, null, 20)
+            val result = postService.getPostsByCursor("tech", null, null, 20)
 
             assertEquals(0, result.data.size)
             assertNull(result.nextCursor)
@@ -166,37 +166,70 @@ class PostServiceTest {
 
         @Test
         fun `cursor가 주어지면 디코딩한 id로 조회한다`() {
-            whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), eq(5L), eq(20))).thenReturn(emptyList())
+            whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), eq<Long?>(5L), eq(20))).thenReturn(emptyList())
             whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
-            postService.getPosts("tech", null, PostCursor.encode(5L), 20)
+            postService.getPostsByCursor("tech", null, PostCursor.encode(5L), 20)
 
-            verify(postRepository).findPostsBySection(eqSection(), anyOrNull(), eq(5L), eq(20))
+            verify(postRepository).findPostsBySection(eqSection(), anyOrNull(), eq<Long?>(5L), eq(20))
         }
 
         @Test
         fun `size가 최대치를 넘으면 50으로 제한된다`() {
-            whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), anyOrNull(), eq(50))).thenReturn(emptyList())
+            whenever(postRepository.findPostsBySection(eqSection(), anyOrNull(), isNull<Long>(), eq(50))).thenReturn(emptyList())
             whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
-            postService.getPosts("tech", null, null, 100)
+            postService.getPostsByCursor("tech", null, null, 100)
 
-            verify(postRepository).findPostsBySection(eqSection(), anyOrNull(), anyOrNull(), eq(50))
+            verify(postRepository).findPostsBySection(eqSection(), anyOrNull(), isNull<Long>(), eq(50))
         }
 
         @Test
         fun `유효하지 않은 section이면 InvalidSectionException을 던진다`() {
             assertThrows<InvalidSectionException> {
-                postService.getPosts("unknown", null, null, 20)
+                postService.getPostsByCursor("unknown", null, null, 20)
             }
 
-            verify(postRepository, never()).findPostsBySection(any(), anyOrNull(), anyOrNull(), any())
+            verify(postRepository, never()).findPostsBySection(any(), anyOrNull(), isNull<Long>(), any())
         }
 
         private fun eqSection() = eq(Section.TECH)
     }
+
+    // 섹션 피드 offset은 엔드포인트 비활성(PostResource에서 주석)이라 학습용으로 테스트도 주석 처리
+    /*
+    @Nested
+    inner class 섹션_피드_offset_학습용 {
+
+        private fun post(id: Long) = Post(id = id, section = Section.TECH, userId = id, content = "내용$id")
+
+        @Test
+        fun `섹션 피드 offset 목록과 페이지 메타를 반환한다`() {
+            whenever(postRepository.countPostsBySection(eq(Section.TECH), anyOrNull())).thenReturn(3L)
+            whenever(postRepository.findPostsBySection(eq(Section.TECH), anyOrNull(), eq(0L), eq(20)))
+                .thenReturn(listOf(post(3), post(2), post(1)))
+            whenever(userQueryClient.findNicknames(any())).thenReturn(mapOf(3L to "u3", 2L to "u2", 1L to "u1"))
+            whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
+
+            val result = postService.getPostsByOffset("tech", null, 0, 20)
+
+            assertEquals(listOf(3L, 2L, 1L), result.data.map { it.id })
+            assertEquals(3L, result.totalCount)
+            assertEquals(1L, result.totalPages)
+            assertEquals(true, result.first)
+            assertEquals(true, result.last)
+        }
+
+        @Test
+        fun `유효하지 않은 section이면 InvalidSectionException을 던진다`() {
+            assertThrows<InvalidSectionException> {
+                postService.getPostsByOffset("unknown", null, 0, 20)
+            }
+        }
+    }
+    */
 
     @Nested
     inner class 내_글_목록_cursor {

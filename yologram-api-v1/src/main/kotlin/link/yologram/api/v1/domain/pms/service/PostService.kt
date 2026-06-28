@@ -80,11 +80,10 @@ class PostService(
     }
 
     /**
-     * 섹션 피드 목록 조회 (cursor 페이지네이션). id desc 최신순
-     * 정렬/조회는 repository(QueryDSL)가, 페이지 경계·DTO 매핑·커서 생성은 여기서 담당.
+     * 섹션 피드 목록 조회 (cursor 페이지네이션)
      */
     @Transactional(readOnly = true)
-    fun getPosts(sectionPath: String, categoryId: Long?, cursor: String?, size: Int): ApiEnvelopCursorPage<PostSummaryResponse> {
+    fun getPostsByCursor(sectionPath: String, categoryId: Long?, cursor: String?, size: Int): ApiEnvelopCursorPage<PostSummaryResponse> {
 
         // 1) 섹션 검증: "tech" 같은 경로 문자열 → Section enum. 잘못된 값이면 InvalidSectionException(400)
         val section = Section.fromPath(sectionPath)
@@ -129,8 +128,51 @@ class PostService(
     }
 
     /**
+     * 섹션 피드 목록 조회 (offset 페이지네이션)
+     */
+    @Transactional(readOnly = true)
+    fun getPostsByOffset(sectionPath: String, categoryId: Long?, page: Int, size: Int): ApiEnvelopPage<PostSummaryResponse> {
+        val section = Section.fromPath(sectionPath)
+        val pageNumber = page.coerceAtLeast(0)
+        val pageSize = size.coerceIn(1, MAX_PAGE_SIZE)
+        val offset = pageNumber.toLong() * pageSize
+
+        val totalCount = postRepository.countPostsBySection(section, categoryId)
+        val posts = postRepository.findPostsBySection(section, categoryId, offset, pageSize)
+
+        val nicknames = userQueryClient.findNicknames(posts.map { it.userId })
+        val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.id })
+            .groupBy({ it.postId }, { it.categoryId })
+
+        val data = posts.map { post ->
+            PostSummaryResponse(
+                id = post.id,
+                section = post.section,
+                author = PostDetailResponse.Author(uid = post.userId, nickname = nicknames[post.userId]),
+                title = post.title,
+                content = post.content,
+                categoryIds = categoryIdsByPost[post.id] ?: emptyList(),
+                likeCount = post.likeCount,
+                commentCount = post.commentCount,
+                createdAt = post.createdAt,
+            )
+        }
+
+        val totalPages = if (totalCount == 0L) 0L else (totalCount + pageSize - 1) / pageSize
+        return ApiEnvelopPage(
+            data = data,
+            page = pageNumber.toLong(),
+            size = pageSize.toLong(),
+            totalPages = totalPages,
+            totalCount = totalCount,
+            first = pageNumber == 0,
+            last = totalPages == 0L || pageNumber.toLong() >= totalPages - 1,
+        )
+    }
+
+    /**
      * 내 글 목록 조회 (cursor 페이지네이션.) — 실사용. id desc 최신순 +
-     * 피드(getPosts)와 동일 방식. 무한스크롤에 적합(일관성·인덱스 범위 스캔).
+     * 피드(getPostsByCursor)와 동일 방식. 무한스크롤에 적합(일관성·인덱스 범위 스캔).
      */
     @Transactional(readOnly = true)
     fun getMyPostsByCursor(userId: Long, sectionPath: String?, cursor: String?, size: Int): ApiEnvelopCursorPage<PostSummaryResponse> {
