@@ -85,6 +85,11 @@ class InvalidCursorException(AppException):
         super().__init__(400, "유효하지 않은 커서입니다.", "INVALID_CURSOR")
 
 
+class PostForbiddenException(AppException):
+    def __init__(self):
+        super().__init__(403, "본인 게시글만 수정·삭제할 수 있습니다.", "POST_FORBIDDEN")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:

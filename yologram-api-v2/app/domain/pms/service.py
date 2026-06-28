@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.core.exception import InvalidPostCategoryException, PostNotFoundException
+from app.core.exception import InvalidPostCategoryException, PostForbiddenException, PostNotFoundException
 from app.core.response import ApiEnvelopCursorPage, ApiEnvelopPage
 from app.domain.cms.enum import Section
 from app.domain.pms.post_category_query_client import PostCategoryQueryClient, LocalPostCategoryQueryClient
@@ -13,6 +13,7 @@ from app.domain.pms.schema import (
     PostAuthor,
     PostDetailResponse,
     PostSummaryResponse,
+    UpdatePostRequest,
 )
 from app.domain.pms.user_query_client import LocalUserQueryClient, UserQueryClient
 
@@ -47,6 +48,33 @@ class PostService:
             self.post_category_repository.save(PostCategoryMapping(post_id=post.id, category_id=category_id))
 
         return CreatePostResponse(id=post.id)
+
+    def update(self, section_path: str, post_id: int, user_id: int, request: UpdatePostRequest) -> None:
+        """게시글 수정 (본인 글). 제목·내용 갱신 + 카테고리 매핑 전체 교체."""
+        section = Section.from_path(section_path)
+
+        # 없거나 다른 section의 글이면 404 (상세 조회와 동일 규칙)
+        post = self.post_repository.find_by_id(post_id)
+        if post is None or post.section != section:
+            raise PostNotFoundException()
+
+        # 작성자 본인만 수정 가능 (아니면 403)
+        if post.user_id != user_id:
+            raise PostForbiddenException()
+
+        # 카테고리 검증 (작성과 동일: 해당 section 활성 카테고리 1~3개)
+        category_ids = list(dict.fromkeys(request.category_ids))  # 중복 제거(순서 유지)
+        if not self.post_category_query_client.all_active_in_section(section, category_ids):
+            raise InvalidPostCategoryException()
+
+        # 제목·내용 갱신 (속성 변경 → get_db commit 시 flush, modified_date는 onupdate로 자동 갱신)
+        post.title = request.title or None
+        post.content = request.content
+
+        # 카테고리 매핑은 전체 교체 (기존 제거 후 재생성)
+        self.post_category_repository.delete_by_post_id(post.id)
+        for category_id in category_ids:
+            self.post_category_repository.save(PostCategoryMapping(post_id=post.id, category_id=category_id))
 
     def get_post(self, section_path: str, id: int) -> PostDetailResponse:
         section = Section.from_path(section_path)

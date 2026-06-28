@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config.database import get_db
 from app.core.response import ApiEnvelop, ApiEnvelopCursorPage, ApiEnvelopPage
-from app.domain.pms.schema import CreatePostRequest, PostSummaryResponse
+from app.domain.pms.schema import CreatePostRequest, PostSummaryResponse, UpdatePostRequest
 from app.domain.pms.service import PostService
 from app.domain.ums.auth_dependency import get_authenticated_user
 from app.domain.ums.auth_schema import AuthData
@@ -32,6 +32,30 @@ def create_post(
     service = PostService(db)
     result = service.create(section, auth_data.uid, request)
     return ApiEnvelop(data=result)
+
+
+@router.patch(
+    "/{section}/posts/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="게시글 수정",
+    description="본인 게시글 수정 (인증 필요)",
+    responses={
+        204: {"description": "수정 성공"},
+        400: {"description": "입력값 검증 실패 / 유효하지 않은 섹션 / 카테고리 불일치"},
+        401: {"description": "인증 실패"},
+        403: {"description": "본인 글이 아님"},
+        404: {"description": "게시글을 찾을 수 없음"},
+    },
+)
+def update_post(
+    section: str,
+    id: int,
+    request: UpdatePostRequest,
+    auth_data: AuthData = Depends(get_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    service = PostService(db)
+    service.update(section, id, auth_data.uid, request)
 
 
 # cursor-based pagination

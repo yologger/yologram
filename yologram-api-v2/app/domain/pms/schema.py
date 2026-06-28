@@ -27,6 +27,30 @@ class CreatePostRequest(BaseModel):
         return v
 
 
+class UpdatePostRequest(BaseModel):
+    """게시글 수정 요청 (작성과 동일 검증)."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    title: str | None = Field(default=None, max_length=200)
+    content: str | None = Field(default=None, validate_default=True)
+    category_ids: list[int] = Field(default_factory=list, validate_default=True, alias="categoryIds")
+
+    @field_validator("content")
+    @classmethod
+    def content_not_blank(cls, v: str | None) -> str:
+        if v is None or not v.strip():
+            raise ValueError("내용을 입력해주세요.")
+        return v
+
+    @field_validator("category_ids")
+    @classmethod
+    def category_ids_count(cls, v: list[int]) -> list[int]:
+        if not 1 <= len(v) <= 3:
+            raise ValueError("카테고리는 1~3개 선택해주세요.")
+        return v
+
+
 class CreatePostResponse(BaseModel):
     id: int
 

@@ -102,3 +102,7 @@ class PostCategoryMappingRepository:
         if not post_ids:
             return []
         return self.db.query(PostCategoryMapping).filter(PostCategoryMapping.post_id.in_(post_ids)).all()
+
+    def delete_by_post_id(self, post_id: int) -> None:
+        """게시글 수정/삭제 시 카테고리 매핑 전체 제거 (수정은 제거 후 재생성으로 교체)."""
+        self.db.query(PostCategoryMapping).filter(PostCategoryMapping.post_id == post_id).delete()
