@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, DateTime, Enum, Integer, String, Text, func
+from sqlalchemy import BigInteger, Column, DateTime, Enum, Integer, String, Text, UniqueConstraint, func
 
 from app.config.database import Base
 from app.domain.cms.enum import Section
@@ -20,6 +20,7 @@ class Post(Base):
 
 class PostCategoryMapping(Base):
     __tablename__ = "post_category_mapping"
+    __table_args__ = (UniqueConstraint("post_id", "category_id", name="uk_post_category"),)
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     post_id = Column(BigInteger, nullable=False)  # pms 내부
