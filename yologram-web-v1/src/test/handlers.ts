@@ -292,6 +292,34 @@ export const handlers = [
     return HttpResponse.json({ data, nextCursor: 'next-cursor' })
   }),
 
+  http.get('http://localhost:5001/api/v1/pms/posts/me', ({ request }) => {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
+        { status: 401 },
+      )
+    }
+
+    const url = new URL(request.url)
+    const cursor = url.searchParams.get('cursor')
+    const section = url.searchParams.get('section')
+
+    // 커서가 있으면 마지막 페이지(빈 결과)로 무한스크롤 종료
+    if (cursor) {
+      return HttpResponse.json({ data: [], nextCursor: null })
+    }
+
+    const all = [
+      { id: 2001, section: 'TECH', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 기술 글', categoryIds: [1], likeCount: 3, commentCount: 1, createdAt: '2026-06-18T09:00:00' },
+      { id: 2002, section: 'INVEST', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 투자 글', categoryIds: [9], likeCount: 5, commentCount: 2, createdAt: '2026-06-17T09:00:00' },
+      { id: 2003, section: 'POLITICS', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 정치 글', categoryIds: [16], likeCount: 1, commentCount: 0, createdAt: '2026-06-16T09:00:00' },
+    ]
+    const data = section ? all.filter((p) => p.section.toLowerCase() === section.toLowerCase()) : all
+
+    return HttpResponse.json({ data, nextCursor: 'next-cursor' })
+  }),
+
   http.get('http://localhost:5001/api/v1/pms/:section/posts/:id', ({ params }) => {
     const id = Number(params.id)
 
