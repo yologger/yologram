@@ -264,6 +264,34 @@ export const handlers = [
     return HttpResponse.json({ data: { id: 9999 } }, { status: 201 })
   }),
 
+  http.get('http://localhost:5002/api/v2/pms/posts/me', ({ request }) => {
+    const auth = request.headers.get('Authorization')
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
+        { status: 401 },
+      )
+    }
+
+    const url = new URL(request.url)
+    const section = url.searchParams.get('section')
+    const cursor = url.searchParams.get('cursor')
+
+    // 커서가 있으면 마지막 페이지(빈 결과)로 무한스크롤 종료
+    if (cursor) {
+      return HttpResponse.json({ data: [], nextCursor: null })
+    }
+
+    const all = [
+      { id: 3001, section: 'TECH', author: { uid: 1, nickname: '테스터' }, content: '내 기술 글 1', categoryIds: [1], likeCount: 2, commentCount: 0, createdAt: '2026-06-18T09:00:00' },
+      { id: 3002, section: 'INVEST', author: { uid: 1, nickname: '테스터' }, content: '내 투자 글 1', categoryIds: [9], likeCount: 5, commentCount: 2, createdAt: '2026-06-17T09:00:00' },
+      { id: 3003, section: 'POLITICS', author: { uid: 1, nickname: '테스터' }, content: '내 정치 글 1', categoryIds: [16], likeCount: 1, commentCount: 0, createdAt: '2026-06-16T09:00:00' },
+    ]
+    const data = section ? all.filter((p) => p.section.toLowerCase() === section) : all
+
+    return HttpResponse.json({ data, nextCursor: 'next-cursor' })
+  }),
+
   http.get('http://localhost:5002/api/v2/pms/:section/posts', ({ request, params }) => {
     const section = String(params.section).toUpperCase()
     if (!['TECH', 'INVEST', 'POLITICS'].includes(section)) {

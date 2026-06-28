@@ -64,3 +64,20 @@ export async function getPosts(section: string, params: GetPostsParams = {}): Pr
   const response = await api.get<PostPage>(`/api/v2/pms/${section}/posts`, { params: query })
   return response.data
 }
+
+export interface GetMyPostsParams {
+  // section 생략 시 전체 조회. 값은 소문자(tech/invest/politics)
+  section?: string | null
+  cursor?: string | null
+  size?: number
+}
+
+export async function getMyPosts(params: GetMyPostsParams = {}): Promise<PostPage> {
+  const query: Record<string, string | number> = {}
+  if (params.section) query.section = params.section
+  if (params.cursor) query.cursor = params.cursor
+  if (params.size) query.size = params.size
+
+  const response = await api.get<PostPage>('/api/v2/pms/posts/me', { params: query })
+  return response.data
+}

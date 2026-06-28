@@ -1,37 +1,63 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Typography } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
-import { useAtomValue } from 'jotai'
-import { communityPostsAtom } from '@/stores/community'
-import type { CommunitySection } from '@/types/community'
-import type { PostSummary } from '@/apis/pms'
-import FilterChips from '@/components/common/FilterChips'
+import FilterChips, { type ChipItem } from '@/components/common/FilterChips'
 import PostCard from '@/components/community/PostCard'
 import RequireAuth from '@/components/auth/RequireAuth'
 import usePostCategoriesQuery from '@/queries/usePostCategoriesQuery'
+import useMyPostsQuery from '@/queries/useMyPostsQuery'
 import styles from './MyPosts.module.css'
 
 const { Title } = Typography
 
-const SECTION_TABS: { label: string; section: CommunitySection }[] = [
-  { label: '기술', section: 'TECH' },
-  { label: '투자', section: 'INVEST' },
-  { label: '정치', section: 'POLITICS' },
+// 값은 백엔드 section 파라미터(소문자). null = 전체(파라미터 생략)
+const SECTION_TABS: Array<ChipItem<string | null>> = [
+  { label: '전체', value: null },
+  { label: '기술', value: 'tech' },
+  { label: '투자', value: 'invest' },
+  { label: '정치', value: 'politics' },
 ]
 
 export default function MyPosts() {
   const router = useRouter()
-  const posts = useAtomValue(communityPostsAtom)
-  const [label, setLabel] = useState('기술')
+  const [section, setSection] = useState<string | null>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
-  const section = SECTION_TABS.find((t) => t.label === label)!.section
-  const myPosts = posts.filter((p) => p.author === '나' && p.section === section)
+  const {
+    data: posts = [],
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    refetch,
+  } = useMyPostsQuery(section)
 
-  const { data: categories = [] } = usePostCategoriesQuery(section.toLowerCase())
-  const nameById = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories])
+  // 글이 여러 섹션에 걸쳐 있을 수 있어 세 섹션 카테고리를 모두 받아 id→name 병합
+  const { data: tech = [] } = usePostCategoriesQuery('tech')
+  const { data: invest = [] } = usePostCategoriesQuery('invest')
+  const { data: politics = [] } = usePostCategoriesQuery('politics')
+  const nameById = useMemo(
+    () => new Map([...tech, ...invest, ...politics].map((c) => [c.id, c.name])),
+    [tech, invest, politics],
+  )
+
+  useEffect(() => {
+    if (!hasNextPage) return
+    const el = sentinelRef.current
+    if (!el) return
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !isFetchingNextPage) {
+        fetchNextPage()
+      }
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
     <RequireAuth>
@@ -44,33 +70,30 @@ export default function MyPosts() {
         </div>
 
         <div className={styles.body}>
-          <FilterChips items={SECTION_TABS.map((t) => t.label)} selected={label} onChange={setLabel} />
-          {myPosts.length === 0 ? (
-            <div className={styles.empty}>작성한 글이 없어요</div>
-          ) : (
-            myPosts.map((post) => {
-              // 내 글 더미(CommunityPost) → PostCard용 PostSummary 매핑 (내 글 API 도입 전까지 임시)
-              const summary: PostSummary = {
-                id: post.id,
-                section: post.section,
-                author: { uid: 0, nickname: post.author },
-                title: post.title,
-                content: post.content,
-                categoryIds: post.categoryIds,
-                likeCount: post.likeCount,
-                commentCount: post.commentCount,
-                createdAt: post.createdAt,
-              }
-              return (
-                <PostCard
-                  key={post.id}
-                  post={summary}
-                  categoryNames={post.categoryIds.map((id) => nameById.get(id)).filter((n): n is string => !!n)}
-                  onClick={section === 'TECH' ? () => router.push(`/tech/community/${post.id}`) : undefined}
-                />
-              )
-            })
+          <FilterChips items={SECTION_TABS} selected={section} onChange={setSection} />
+
+          {isLoading && <div className={styles.status}>불러오는 중…</div>}
+
+          {isError && (
+            <div className={styles.status}>
+              <p>글을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
+              <button onClick={() => refetch()}>다시 시도</button>
+            </div>
           )}
+
+          {!isLoading && !isError && posts.length === 0 && (
+            <div className={styles.empty}>작성한 글이 없어요</div>
+          )}
+
+          {posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              categoryNames={post.categoryIds.map((id) => nameById.get(id)).filter((n): n is string => !!n)}
+              onClick={post.section === 'TECH' ? () => router.push(`/tech/community/${post.id}`) : undefined}
+            />
+          ))}
+          {hasNextPage && <div ref={sentinelRef} className={styles.sentinel} />}
         </div>
       </div>
     </RequireAuth>
