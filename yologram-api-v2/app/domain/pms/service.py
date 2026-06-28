@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.core.exception import InvalidPostCategoryException, PostNotFoundException
-from app.core.response import ApiEnvelopCursorPage
+from app.core.response import ApiEnvelopCursorPage, ApiEnvelopPage
 from app.domain.cms.enum import Section
 from app.domain.pms.post_category_query_client import PostCategoryQueryClient, LocalPostCategoryQueryClient
 from app.domain.pms.cursor import PostCursor
@@ -69,31 +69,77 @@ class PostService:
             created_at=post.created_at,
         )
 
-    def get_posts(
+    # --- 섹션 피드 ---
+
+    def get_posts_by_cursor(
         self, section_path: str, category_id: int | None, cursor: str | None, size: int
     ) -> ApiEnvelopCursorPage[PostSummaryResponse]:
-        # 1) 섹션 검증
+        """섹션 피드 (cursor 페이지네이션) — 실사용. id desc + keyset."""
         section = Section.from_path(section_path)
-
-        # 2) size 보정 (1~50)
         page_size = max(1, min(size, MAX_PAGE_SIZE))
-
-        # 3) cursor 디코딩(마지막으로 본 글 id), 없으면 첫 페이지. 깨진 값이면 400 INVALID_CURSOR
         cursor_id = PostCursor.decode(cursor) if cursor else None
 
-        # 4) 목록 조회 (id desc, cursor_id보다 과거 글)
         posts = self.post_repository.find_posts_by_section(section, category_id, cursor_id, page_size)
 
-        # 5) 작성자 닉네임 배치 조회 (N+1 회피, ums 경계 추상화)
+        data = self._to_summaries(posts)
+        next_cursor = PostCursor.encode(posts[-1].id) if posts else None
+        return ApiEnvelopCursorPage(data=data, next_cursor=next_cursor)
+
+    def get_posts_by_offset(
+        self, section_path: str, category_id: int | None, page: int, size: int
+    ) -> ApiEnvelopPage[PostSummaryResponse]:
+        """섹션 피드 (offset 페이지네이션) — 학습용. cursor 방식과 대비되는 offset+count 예시."""
+        section = Section.from_path(section_path)
+        page_number = max(0, page)
+        page_size = max(1, min(size, MAX_PAGE_SIZE))
+        offset = page_number * page_size
+
+        total_count = self.post_repository.count_posts_by_section(section, category_id)
+        posts = self.post_repository.find_posts_by_section_offset(section, category_id, offset, page_size)
+
+        data = self._to_summaries(posts)
+        return self._to_page(data, page_number, page_size, total_count)
+
+    # --- 내 글 ---
+
+    def get_my_posts_by_cursor(
+        self, user_id: int, section_path: str | None, cursor: str | None, size: int
+    ) -> ApiEnvelopCursorPage[PostSummaryResponse]:
+        """내 글 목록 (cursor 페이지네이션) — 실사용. 피드와 동일 방식, 무한스크롤 적합."""
+        section = Section.from_path(section_path) if section_path else None
+        page_size = max(1, min(size, MAX_PAGE_SIZE))
+        cursor_id = PostCursor.decode(cursor) if cursor else None
+
+        posts = self.post_repository.find_my_posts_by_cursor(user_id, section, cursor_id, page_size)
+
+        data = self._to_summaries(posts)
+        next_cursor = PostCursor.encode(posts[-1].id) if posts else None
+        return ApiEnvelopCursorPage(data=data, next_cursor=next_cursor)
+
+    def get_my_posts_by_offset(
+        self, user_id: int, section_path: str | None, page: int, size: int
+    ) -> ApiEnvelopPage[PostSummaryResponse]:
+        """내 글 목록 (offset 페이지네이션) — 학습용. cursor 방식과 대비되는 offset+count 예시."""
+        section = Section.from_path(section_path) if section_path else None
+        page_number = max(0, page)
+        page_size = max(1, min(size, MAX_PAGE_SIZE))
+        offset = page_number * page_size
+
+        total_count = self.post_repository.count_my_posts(user_id, section)
+        posts = self.post_repository.find_my_posts_by_offset(user_id, section, offset, page_size)
+
+        data = self._to_summaries(posts)
+        return self._to_page(data, page_number, page_size, total_count)
+
+    def _to_summaries(self, posts: list[Post]) -> list[PostSummaryResponse]:
+        """글 목록 → PostSummaryResponse. 닉네임·카테고리 배치 조회(N+1 회피)를 공유."""
         nicknames = self.user_query_client.find_nicknames([p.user_id for p in posts])
 
-        # 6) 카테고리 배치 조회 (N+1 회피, 1:N이라 join 대신 IN) → post_id별 그룹핑
         category_ids_by_post: dict[int, list[int]] = {}
         for pc in self.post_category_repository.find_by_post_ids([p.id for p in posts]):
             category_ids_by_post.setdefault(pc.post_id, []).append(pc.category_id)
 
-        # 7) DTO 매핑
-        data = [
+        return [
             PostSummaryResponse(
                 id=post.id,
                 section=post.section,
@@ -108,7 +154,17 @@ class PostService:
             for post in posts
         ]
 
-        # 8) 마지막 글 id를 다음 커서로(빈 결과면 None). 클라이언트는 빈 응답으로 끝을 판단
-        next_cursor = PostCursor.encode(posts[-1].id) if posts else None
-
-        return ApiEnvelopCursorPage(data=data, next_cursor=next_cursor)
+    @staticmethod
+    def _to_page(
+        data: list[PostSummaryResponse], page_number: int, page_size: int, total_count: int
+    ) -> ApiEnvelopPage[PostSummaryResponse]:
+        total_pages = 0 if total_count == 0 else (total_count + page_size - 1) // page_size
+        return ApiEnvelopPage(
+            data=data,
+            page=page_number,
+            size=page_size,
+            total_pages=total_pages,
+            total_count=total_count,
+            first=(page_number == 0),
+            last=(total_pages == 0 or page_number >= total_pages - 1),
+        )

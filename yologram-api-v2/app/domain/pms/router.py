@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.core.response import ApiEnvelop, ApiEnvelopCursorPage
+from app.core.response import ApiEnvelop, ApiEnvelopCursorPage, ApiEnvelopPage
 from app.domain.pms.schema import CreatePostRequest, PostSummaryResponse
 from app.domain.pms.service import PostService
 from app.domain.ums.auth_dependency import get_authenticated_user
@@ -34,6 +34,7 @@ def create_post(
     return ApiEnvelop(data=result)
 
 
+# cursor-based pagination
 @router.get(
     "/{section}/posts",
     response_model=ApiEnvelopCursorPage[PostSummaryResponse],
@@ -52,7 +53,77 @@ def get_posts(
     db: Session = Depends(get_db),
 ):
     service = PostService(db)
-    return service.get_posts(section, category_id, cursor, size)
+    return service.get_posts_by_cursor(section, category_id, cursor, size)
+
+
+# 섹션 피드 offset 페이지네이션 — 학습용. cursor 방식(/{section}/posts)과 대비.
+# 코드는 PostService.get_posts_by_offset에 보존, 엔드포인트는 비활성(필요 시 주석 해제)
+# @router.get(
+#     "/{section}/posts/offset",
+#     response_model=ApiEnvelopPage[PostSummaryResponse],
+#     summary="게시글 목록 조회 (offset, 학습용)",
+#     description="섹션(section) 피드. offset 페이지네이션 + 전체 count (공개). cursor 방식과 대비되는 학습용",
+#     responses={
+#         200: {"description": "조회 성공"},
+#         400: {"description": "유효하지 않은 섹션"},
+#     },
+# )
+# def get_posts_by_offset(
+#     section: str,
+#     category_id: int | None = Query(default=None, alias="categoryId"),
+#     page: int = Query(default=0),
+#     size: int = Query(default=20),
+#     db: Session = Depends(get_db),
+# ):
+#     service = PostService(db)
+#     return service.get_posts_by_offset(section, category_id, page, size)
+
+
+# 내 글 목록 (cursor) — 실사용
+@router.get(
+    "/posts/me",
+    response_model=ApiEnvelopCursorPage[PostSummaryResponse],
+    summary="내 글 목록 조회",
+    description="로그인 유저가 작성한 글. 최신순 cursor 페이지네이션 (인증 필요). section 생략 시 전체",
+    responses={
+        200: {"description": "조회 성공"},
+        400: {"description": "유효하지 않은 섹션 / 커서"},
+        401: {"description": "인증 실패"},
+    },
+)
+def get_my_posts_by_cursor(
+    section: str | None = Query(default=None),
+    cursor: str | None = Query(default=None),
+    size: int = Query(default=20),
+    auth_data: AuthData = Depends(get_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    service = PostService(db)
+    return service.get_my_posts_by_cursor(auth_data.uid, section, cursor, size)
+
+
+# 내 글 목록 (offset) — 학습용. cursor 방식(/posts/me)과 대비.
+# 코드는 PostService.get_my_posts_by_offset에 보존, 엔드포인트는 비활성(필요 시 주석 해제)
+# @router.get(
+#     "/posts/me/offset",
+#     response_model=ApiEnvelopPage[PostSummaryResponse],
+#     summary="내 글 목록 조회 (offset, 학습용)",
+#     description="로그인 유저가 작성한 글. offset 페이지네이션 + 전체 count (인증 필요). cursor 방식과 대비되는 학습용",
+#     responses={
+#         200: {"description": "조회 성공"},
+#         400: {"description": "유효하지 않은 섹션"},
+#         401: {"description": "인증 실패"},
+#     },
+# )
+# def get_my_posts_by_offset(
+#     section: str | None = Query(default=None),
+#     page: int = Query(default=0),
+#     size: int = Query(default=20),
+#     auth_data: AuthData = Depends(get_authenticated_user),
+#     db: Session = Depends(get_db),
+# ):
+#     service = PostService(db)
+#     return service.get_my_posts_by_offset(auth_data.uid, section, page, size)
 
 
 @router.get(

@@ -190,3 +190,38 @@ class TestPmsRouter:
 
         assert response.status_code == 400
         assert response.json()["errorCode"] == "INVALID_SECTION"
+
+    @patch("app.domain.pms.service.LocalUserQueryClient")
+    @patch("app.domain.pms.service.PostCategoryMappingRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_내_글_목록_조회_시_200과_data_nextCursor(self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls):
+        self._authenticate()
+        post = _saved_post(5)
+        post.user_id = 1
+        post.title = "제목"
+        post.like_count = 0
+        post.comment_count = 0
+        post.created_at = datetime(2026, 1, 1, 0, 0)
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_my_posts_by_cursor.return_value = [post]
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo.find_by_post_ids.return_value = []
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_user = MagicMock()
+        mock_user.find_nicknames.return_value = {1: "me"}
+        mock_user_cls.return_value = mock_user
+
+        response = self.client.get("/api/v2/pms/posts/me?size=5")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data"][0]["id"] == 5
+        assert body["data"][0]["author"]["nickname"] == "me"
+        assert body["nextCursor"] is not None
+
+    def test_내_글_목록_조회_시_미인증_401(self):
+        response = self.client.get("/api/v2/pms/posts/me")
+
+        assert response.status_code == 401
+        assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
