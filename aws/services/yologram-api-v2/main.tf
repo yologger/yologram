@@ -87,6 +87,30 @@ resource "aws_iam_role_policy" "task_ssm_read" {
   })
 }
 
+resource "aws_iam_role_policy" "task_ses_send" {
+  name = "ses-send-email"
+  role = aws_iam_role.task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail",
+        ]
+        Resource = "arn:aws:ses:ap-northeast-2:${data.aws_caller_identity.current.account_id}:identity/yologram.link"
+        Condition = {
+          StringEquals = {
+            "ses:FromAddress" = "no-reply@yologram.link"
+          }
+        }
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "execution_ssm_read" {
   name = "yologram-api-v2-ssm-read"
   role = "ecs-task-execution-role"
