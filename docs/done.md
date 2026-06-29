@@ -52,7 +52,8 @@
     - 카테고리 매핑 교체는 @Modifying 벌크 delete 후 재삽입(api-v1 JPA flush 순서 충돌 회피), 같은 트랜잭션이라 원자적. uk_post_category(post_id, category_id) unique
   - [x] web-v1/v2: 상세 페이지에 본인 글일 때만 수정 버튼(author.uid === 로그인 uid) → /tech/community/{id}/edit. 작성 폼 재사용해 기존 값 prefill, 성공 시 상세/목록 invalidate 후 상세 이동
 - [x] (PMS) 게시글 삭제 (본인 글)
-  - [x] api-v1: DELETE /pms/{section}/posts/{id} (인증). 작성자 본인만(403), 없거나 다른 section이면 404. 카테고리 매핑 정리 후 게시글 삭제 (api-v2·web 진행 예정)
+  - [x] api-v1/v2: DELETE /pms/{section}/posts/{id} (인증). 작성자 본인만(403 POST_FORBIDDEN), 없거나 다른 section이면 404. 카테고리 매핑 정리 후 게시글 삭제(같은 트랜잭션)
+  - [x] web-v1/v2: 상세·내 글 목록에서 본인 글일 때만 삭제 버튼(테마색 #08979c/#e7689a). 확인 모달 → DELETE → 목록/상세 invalidate. 상세에서 삭제 후 진입 출처로 복귀(navigate(-1)/router.back(), 뒤로가기와 동일). 삭제 실패 시 모달 닫고 에러 토스트(modal onOk reject 미사용 — unhandled rejection 방지)
 - [x] (web) 미구현 섹션 안내 + 데스크탑 레이아웃·톤 정리
   - [x] 투자/정치 섹션, 기술 채용 탭, 알림 페이지를 ComingSoon(준비 중) 화면으로 — 기존 라우트/페이지는 주석 보존, 구현 시 원복
   - [x] 설정의 알림 설정·다크 모드 항목 임시 숨김(주석)

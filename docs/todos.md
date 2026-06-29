@@ -6,11 +6,6 @@
 > docs/는 메인(루트) 에이전트만 갱신. 서브에이전트는 read-only(참고만).
 
 ## Todos. 
-- [ ] (PMS) 게시글 삭제 (본인 글) — 수정은 완료(done.md)
-  - [x] api-v1 — DELETE /pms/{section}/posts/{id} (카테고리 매핑 정리 후 삭제)
-  - [ ] api-v2
-  - [ ] web-v1 / web-v2 (상세 + 내 글 목록, 확인 모달 → 삭제 후 invalidate)
-  - [ ] 내 글에만 삭제 버튼 활성화 (작성자=인증 유저일 때만 노출 — 수정 버튼은 완료)
 - [ ] (Comment) 댓글
   - [ ] 댓글 작성 — community_comments 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/...), api-v1/v2, web-v1/v2
   - [ ] 댓글 조회 — 최신순/오래된순 정렬, web 무한스크롤 (상세 페이지 더미 → 연동)
