@@ -11,6 +11,7 @@
 - yologram 예: "내 글 목록"(section·작성자 필터 + 카테고리 조인 + 페이지네이션) = pms + QueryDSL / 공개 섹션 피드·키워드 검색 = search
 - 구현 메모: PostRepositoryImpl.findPostsBySection이 첫 QueryDSL 사용처 — 동적 조건(categoryId/cursor) + EXISTS 서브쿼리 + keyset
 - 함정: enum을 담는 패키지명에 `enum`(Java 예약어) 금지. QueryDSL APT가 `import ...enum.Xxx`를 생성 못 해 해당 enum 필드가 Q클래스에서 통째 누락됨(다른 타입 필드는 정상). cms.enum → cms.enums로 해결. ums.enum도 동일 잠재 이슈(현재 QueryDSL 미사용이라 보류)
+- 함정: 게시글 수정 시 카테고리 매핑 교체(전체 삭제 후 재삽입)는 JPA(api-v1)에서 derived `deleteByPostId`를 쓰면 flush 순서상 insert가 delete보다 먼저 나가 uk_post_category(post_id, category_id) 충돌(1062). `@Modifying` 벌크 delete로 즉시 삭제 후 재삽입할 것. SQLAlchemy(api-v2)는 `.delete()`가 즉시 실행이라 무관. delete+insert는 같은 트랜잭션이라 중간 상태 노출·부분 실패 없음
 
 ### MSA 
 -  지금은 모놀리틱이나 추후 MSA로 전환 예정이라, 가능하면 아래 내용을 참고하여 MSA 전환이 쉬운 구조로 구현
