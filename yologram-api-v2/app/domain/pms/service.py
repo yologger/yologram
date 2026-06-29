@@ -76,6 +76,22 @@ class PostService:
         for category_id in category_ids:
             self.post_category_repository.save(PostCategoryMapping(post_id=post.id, category_id=category_id))
 
+    def delete(self, section_path: str, post_id: int, user_id: int) -> None:
+        """게시글 삭제 (본인 글). 카테고리 매핑 제거 후 게시글 삭제 (한 트랜잭션)."""
+        section = Section.from_path(section_path)
+
+        # 없거나 다른 section의 글이면 404 (상세 조회와 동일 규칙)
+        post = self.post_repository.find_by_id(post_id)
+        if post is None or post.section != section:
+            raise PostNotFoundException()
+
+        # 작성자 본인만 삭제 가능 (아니면 403)
+        if post.user_id != user_id:
+            raise PostForbiddenException()
+
+        self.post_category_repository.delete_by_post_id(post.id)
+        self.post_repository.delete(post)
+
     def get_post(self, section_path: str, id: int) -> PostDetailResponse:
         section = Section.from_path(section_path)
         post = self.post_repository.find_by_id(id)

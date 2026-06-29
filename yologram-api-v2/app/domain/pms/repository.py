@@ -19,6 +19,9 @@ class PostRepository:
     def find_by_id(self, id: int) -> Post | None:
         return self.db.query(Post).filter(Post.id == id).first()
 
+    def delete(self, post: Post) -> None:
+        self.db.delete(post)
+
     # --- 섹션 피드 ---
 
     def find_posts_by_section(

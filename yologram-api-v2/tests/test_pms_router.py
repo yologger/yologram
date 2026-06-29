@@ -306,3 +306,60 @@ class TestPmsRouter:
 
         assert response.status_code == 400
         assert response.json()["errorCode"] == "VALIDATION_ERROR"
+
+    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryMappingRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_게시글_삭제_시_204(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
+        self._authenticate()
+        post = _saved_post(1)
+        post.user_id = 1
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_by_id.return_value = post
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo_cls.return_value = MagicMock()
+        mock_cat_cls.return_value = MagicMock()
+
+        response = self.client.delete("/api/v2/pms/tech/posts/1")
+
+        assert response.status_code == 204
+
+    def test_게시글_삭제_미인증_401(self):
+        response = self.client.delete("/api/v2/pms/tech/posts/1")
+
+        assert response.status_code == 401
+        assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
+
+    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryMappingRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_본인_글이_아니면_삭제_403(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
+        self._authenticate()
+        post = _saved_post(1)
+        post.user_id = 99
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_by_id.return_value = post
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo_cls.return_value = MagicMock()
+        mock_cat_cls.return_value = MagicMock()
+
+        response = self.client.delete("/api/v2/pms/tech/posts/1")
+
+        assert response.status_code == 403
+        assert response.json()["errorCode"] == "POST_FORBIDDEN"
+
+    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryMappingRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_존재하지_않는_글_삭제_시_404(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
+        self._authenticate()
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_by_id.return_value = None
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo_cls.return_value = MagicMock()
+        mock_cat_cls.return_value = MagicMock()
+
+        response = self.client.delete("/api/v2/pms/tech/posts/99")
+
+        assert response.status_code == 404
+        assert response.json()["errorCode"] == "POST_NOT_FOUND"

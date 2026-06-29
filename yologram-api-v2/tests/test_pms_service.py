@@ -177,6 +177,84 @@ class TestPostServiceUpdate:
         mock_pc_repo.delete_by_post_id.assert_not_called()
 
 
+class TestPostServiceDelete:
+
+    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryMappingRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_본인_글이면_카테고리_매핑_제거_후_게시글_삭제(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
+        post = _post(1, user_id=1)
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_by_id.return_value = post
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_cat_cls.return_value = MagicMock()
+
+        service = PostService(MagicMock())
+        service.delete("tech", 1, 1)
+
+        mock_pc_repo.delete_by_post_id.assert_called_once_with(1)
+        mock_post_repo.delete.assert_called_once_with(post)
+
+    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryMappingRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_존재하지_않는_글이면_404(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_by_id.return_value = None
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_cat_cls.return_value = MagicMock()
+
+        service = PostService(MagicMock())
+        with pytest.raises(PostNotFoundException):
+            service.delete("tech", 99, 1)
+
+        mock_pc_repo.delete_by_post_id.assert_not_called()
+        mock_post_repo.delete.assert_not_called()
+
+    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryMappingRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_다른_section의_글이면_404(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
+        post = Post(section=Section.INVEST, user_id=1, content="내용")
+        post.id = 1
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_by_id.return_value = post
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_cat_cls.return_value = MagicMock()
+
+        service = PostService(MagicMock())
+        with pytest.raises(PostNotFoundException):
+            service.delete("tech", 1, 1)
+
+        mock_pc_repo.delete_by_post_id.assert_not_called()
+        mock_post_repo.delete.assert_not_called()
+
+    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
+    @patch("app.domain.pms.service.PostCategoryMappingRepository")
+    @patch("app.domain.pms.service.PostRepository")
+    def test_본인_글이_아니면_403(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
+        post = _post(1, user_id=99)
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_by_id.return_value = post
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_cat_cls.return_value = MagicMock()
+
+        service = PostService(MagicMock())
+        with pytest.raises(PostForbiddenException):
+            service.delete("tech", 1, 1)
+
+        mock_pc_repo.delete_by_post_id.assert_not_called()
+        mock_post_repo.delete.assert_not_called()
+
+
 class TestPostServiceGetPost:
 
     @patch("app.domain.pms.service.LocalUserQueryClient")

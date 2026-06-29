@@ -58,6 +58,28 @@ def update_post(
     service.update(section, id, auth_data.uid, request)
 
 
+@router.delete(
+    "/{section}/posts/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="게시글 삭제",
+    description="본인 게시글 삭제 (인증 필요)",
+    responses={
+        204: {"description": "삭제 성공"},
+        401: {"description": "인증 실패"},
+        403: {"description": "본인 글이 아님"},
+        404: {"description": "게시글을 찾을 수 없음"},
+    },
+)
+def delete_post(
+    section: str,
+    id: int,
+    auth_data: AuthData = Depends(get_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    service = PostService(db)
+    service.delete(section, id, auth_data.uid)
+
+
 # cursor-based pagination
 @router.get(
     "/{section}/posts",
