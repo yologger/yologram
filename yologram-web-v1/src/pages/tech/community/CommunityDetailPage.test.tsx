@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterEach, afterAll, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { getDefaultStore } from 'jotai'
@@ -32,6 +32,12 @@ afterEach(() => {
 })
 afterAll(() => server.close())
 beforeEach(() => mockUseParams.mockReturnValue({ postId: '1' }))
+
+// 모달 portal이 테스트 간 body에 누적될 수 있어, 가장 최근에 열린 dialog를 사용
+const latestDialog = async () => {
+  const dialogs = await screen.findAllByRole('dialog')
+  return dialogs[dialogs.length - 1]
+}
 
 describe('CommunityDetailPage', () => {
   it('API로 조회한 게시글 본문과 댓글 영역을 표시한다', async () => {
@@ -106,5 +112,65 @@ describe('CommunityDetailPage', () => {
 
     await screen.findByText('API 본문 내용')
     expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument()
+  })
+
+  it('본인 글이면 삭제 버튼이 노출되고, 확인 모달에서 삭제하면 목록으로 이동한다', async () => {
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    const deleteButton = await screen.findByRole('button', { name: '삭제' })
+    await user.click(deleteButton)
+
+    // 확인 모달 노출 후 모달 내 '삭제' 버튼 클릭
+    const dialog = await latestDialog()
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }))
+
+    await waitFor(() => {
+      // 진입 출처로 복귀(뒤로가기와 동일)
+      expect(mockNavigate).toHaveBeenCalledWith(-1)
+    })
+  })
+
+  it('삭제 확인 모달에서 취소하면 삭제되지 않고 이동하지 않는다', async () => {
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await user.click(await screen.findByRole('button', { name: '삭제' }))
+    const dialog = await latestDialog()
+    await user.click(within(dialog).getByRole('button', { name: '취소' }))
+
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('타인 글이면 삭제 버튼이 노출되지 않는다', async () => {
+    mockUseParams.mockReturnValue({ postId: '2' })
+    loginAs(1)
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('API 본문 내용')
+    expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument()
+  })
+
+  it('삭제 API 실패 시 에러 메시지를 표시하고 이동하지 않는다', async () => {
+    server.use(
+      http.delete('http://localhost:5001/api/v1/pms/:section/posts/:id', () =>
+        HttpResponse.json(
+          { errorMessage: '서버 오류', errorCode: 'INTERNAL_SERVER_ERROR' },
+          { status: 500 },
+        ),
+      ),
+    )
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await user.click(await screen.findByRole('button', { name: '삭제' }))
+    const dialog = await latestDialog()
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }))
+
+    expect(await screen.findByText(/삭제에 실패했어요/)).toBeInTheDocument()
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 })

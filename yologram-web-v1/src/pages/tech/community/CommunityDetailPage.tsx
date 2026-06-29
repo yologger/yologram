@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useAtom } from 'jotai'
-import { Avatar } from 'antd'
+import { useQueryClient } from '@tanstack/react-query'
+import { App, Avatar } from 'antd'
 import {
   ArrowLeftOutlined,
   UserOutlined,
@@ -11,11 +12,13 @@ import {
   RetweetOutlined,
   ShareAltOutlined,
   EditOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons'
 import { authAtom } from '../../../stores/auth'
 import { communityCommentsAtom } from '../../../stores/community'
 import type { CommunityComment } from '../../../types/community'
 import usePostQuery from '../../../queries/usePostQuery'
+import useDeletePostMutation from '../../../queries/useDeletePostMutation'
 import { getErrorStatus } from '../../../lib/error'
 import styles from './CommunityDetailPage.module.css'
 
@@ -28,6 +31,9 @@ export default function CommunityDetailPage() {
   const [auth] = useAtom(authAtom)
   const [comments, setComments] = useAtom(communityCommentsAtom)
   const [text, setText] = useState('')
+  const { message, modal } = App.useApp()
+  const queryClient = useQueryClient()
+  const { mutate: deletePost } = useDeletePostMutation()
 
   // 좋아요는 서버 API(count 도메인) 도입 전까지 로컬 임시 상태
   const [liked, setLiked] = useState(false)
@@ -94,6 +100,40 @@ export default function CommunityDetailPage() {
     setLikeCount((prev) => (liked ? prev - 1 : prev + 1))
   }
 
+  const handleDelete = () => {
+    // 삭제는 되돌릴 수 없으므로 확인 모달을 거친다
+    modal.confirm({
+      title: '게시글을 삭제할까요?',
+      content: '삭제한 글은 되돌릴 수 없어요.',
+      okText: '삭제',
+      okButtonProps: { danger: true },
+      cancelText: '취소',
+      onOk: () =>
+        new Promise<void>((resolve) => {
+          deletePost(
+            { section: 'tech', id },
+            {
+              onSuccess: () => {
+                // 피드/내 글 목록/상세 무효화 → 삭제 반영
+                queryClient.invalidateQueries({ queryKey: ['posts', 'tech'] })
+                queryClient.invalidateQueries({ queryKey: ['my-posts'] })
+                queryClient.invalidateQueries({ queryKey: ['post', 'tech', id] })
+                message.success('글이 삭제되었습니다.')
+                // 진입 출처(기술 커뮤니티 또는 내 글 목록)로 복귀 — 뒤로가기 버튼과 동일
+                navigate(-1)
+                resolve()
+              },
+              onError: () => {
+                // 실패해도 모달은 닫고 에러 토스트만(reject 시 unhandled rejection 발생)
+                message.error('글 삭제에 실패했어요. 잠시 후 다시 시도해주세요.')
+                resolve()
+              },
+            },
+          )
+        }),
+    })
+  }
+
   const submitComment = () => {
     if (!text.trim()) return
     const newComment: CommunityComment = {
@@ -115,13 +155,18 @@ export default function CommunityDetailPage() {
           <ArrowLeftOutlined />
         </button>
         {isAuthor && (
-          <button
-            className={styles.edit}
-            aria-label="수정"
-            onClick={() => navigate(`/tech/community/${id}/edit`)}
-          >
-            <EditOutlined /> 수정
-          </button>
+          <div className={styles.authorActions}>
+            <button
+              className={styles.edit}
+              aria-label="수정"
+              onClick={() => navigate(`/tech/community/${id}/edit`)}
+            >
+              <EditOutlined /> 수정
+            </button>
+            <button className={styles.delete} aria-label="삭제" onClick={handleDelete}>
+              <DeleteOutlined /> 삭제
+            </button>
+          </div>
         )}
       </div>
 

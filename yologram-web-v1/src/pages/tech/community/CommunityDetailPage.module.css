@@ -19,7 +19,25 @@
   cursor: pointer;
 }
 
+.authorActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .edit {
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #08979c;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.delete {
   border: none;
   background: none;
   font-size: 14px;
