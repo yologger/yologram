@@ -346,6 +346,33 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
+  http.delete('http://localhost:5002/api/v2/pms/:section/posts/:id', ({ request, params }) => {
+    const auth = request.headers.get('Authorization')
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
+        { status: 401 },
+      )
+    }
+
+    const id = Number(params.id)
+
+    if (id === 99999) {
+      return HttpResponse.json(
+        { errorMessage: '게시글을 찾을 수 없습니다.', errorCode: 'POST_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+    if (id === 88888) {
+      return HttpResponse.json(
+        { errorMessage: '본인 글만 삭제할 수 있습니다.', errorCode: 'POST_FORBIDDEN' },
+        { status: 403 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.get('http://localhost:5002/api/v2/pms/:section/posts/:id', ({ params }) => {
     const id = Number(params.id)
 

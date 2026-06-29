@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/server'
-import { createPost, updatePost, getPosts, getMyPosts } from './pms'
+import { createPost, updatePost, deletePost, getPosts, getMyPosts } from './pms'
 import { getDefaultStore } from 'jotai'
 import { authAtom } from '../stores/auth'
 
@@ -78,6 +78,48 @@ describe('updatePost', () => {
     await expect(
       updatePost('tech', 99999, { title: null, content: '내용', categoryIds: [1] }),
     ).rejects.toThrow()
+  })
+})
+
+describe('deletePost', () => {
+  const store = getDefaultStore()
+
+  beforeAll(() => {
+    store.set(authAtom, {
+      uid: 1,
+      email: 'test@yologram.link',
+      name: '테스트',
+      nickname: 'tester',
+      accessToken: 'mock-access-token',
+    })
+  })
+
+  afterAll(() => store.set(authAtom, null))
+
+  it('삭제 성공 시 정상 resolve된다 (204)', async () => {
+    await expect(deletePost('tech', 1)).resolves.toBeUndefined()
+  })
+
+  it('본인 글이 아니면 에러를 던진다 (403)', async () => {
+    await expect(deletePost('tech', 88888)).rejects.toThrow()
+  })
+
+  it('존재하지 않는 글이면 에러를 던진다 (404)', async () => {
+    await expect(deletePost('tech', 99999)).rejects.toThrow()
+  })
+
+  it('인증 토큰이 없으면 에러를 던진다 (401)', async () => {
+    store.set(authAtom, null)
+
+    await expect(deletePost('tech', 1)).rejects.toThrow()
+
+    store.set(authAtom, {
+      uid: 1,
+      email: 'test@yologram.link',
+      name: '테스트',
+      nickname: 'tester',
+      accessToken: 'mock-access-token',
+    })
   })
 })
 

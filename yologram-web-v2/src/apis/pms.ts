@@ -25,6 +25,10 @@ export async function updatePost(section: string, id: number, request: UpdatePos
   await api.patch(`/api/v2/pms/${section}/posts/${id}`, request)
 }
 
+export async function deletePost(section: string, id: number): Promise<void> {
+  await api.delete(`/api/v2/pms/${section}/posts/${id}`)
+}
+
 export interface PostDetail {
   id: number
   section: string

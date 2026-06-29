@@ -22,7 +22,25 @@
   cursor: pointer;
 }
 
+.ownerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .edit {
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e7689a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.delete {
   border: none;
   background: none;
   font-size: 14px;

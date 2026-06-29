@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Typography } from 'antd'
+import { useQueryClient } from '@tanstack/react-query'
+import { App, Typography } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import FilterChips, { type ChipItem } from '@/components/common/FilterChips'
 import PostCard from '@/components/community/PostCard'
 import RequireAuth from '@/components/auth/RequireAuth'
+import type { PostSummary } from '@/apis/pms'
 import usePostCategoriesQuery from '@/queries/usePostCategoriesQuery'
 import useMyPostsQuery from '@/queries/useMyPostsQuery'
+import useDeletePostMutation from '@/queries/useDeletePostMutation'
 import styles from './MyPosts.module.css'
 
 const { Title } = Typography
@@ -23,6 +26,9 @@ const SECTION_TABS: Array<ChipItem<string | null>> = [
 
 export default function MyPosts() {
   const router = useRouter()
+  const { modal, message } = App.useApp()
+  const queryClient = useQueryClient()
+  const { mutate: deletePost } = useDeletePostMutation()
   const [section, setSection] = useState<string | null>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -44,6 +50,38 @@ export default function MyPosts() {
     () => new Map([...tech, ...invest, ...politics].map((c) => [c.id, c.name])),
     [tech, invest, politics],
   )
+
+  const handleDelete = (post: PostSummary) => {
+    const sectionParam = post.section.toLowerCase()
+    modal.confirm({
+      title: '글을 삭제할까요?',
+      content: '삭제한 글은 복구할 수 없어요.',
+      okText: '삭제',
+      okButtonProps: { danger: true },
+      cancelText: '취소',
+      onOk: () =>
+        new Promise<void>((resolve) => {
+          deletePost(
+            { section: sectionParam, id: post.id },
+            {
+              onSuccess: () => {
+                // 내 글 목록/피드/상세 재조회로 삭제 반영
+                queryClient.invalidateQueries({ queryKey: ['myPosts'] })
+                queryClient.invalidateQueries({ queryKey: ['posts', sectionParam] })
+                queryClient.removeQueries({ queryKey: ['post', sectionParam, post.id] })
+                message.success('글이 삭제되었습니다.')
+                resolve()
+              },
+              onError: () => {
+                // 실패해도 모달은 닫고 에러 토스트만(reject 시 unhandled rejection 발생)
+                message.error('글 삭제에 실패했어요. 잠시 후 다시 시도해주세요.')
+                resolve()
+              },
+            },
+          )
+        }),
+    })
+  }
 
   useEffect(() => {
     if (!hasNextPage) return
@@ -91,6 +129,7 @@ export default function MyPosts() {
               post={post}
               categoryNames={post.categoryIds.map((id) => nameById.get(id)).filter((n): n is string => !!n)}
               onClick={post.section === 'TECH' ? () => router.push(`/tech/community/${post.id}`) : undefined}
+              onDelete={() => handleDelete(post)}
             />
           ))}
           {hasNextPage && <div ref={sentinelRef} className={styles.sentinel} />}

@@ -9,9 +9,10 @@ import { authAtom } from '@/stores/auth'
 import CommunityDetail from './page'
 
 const mockPush = vi.fn()
+const mockBack = vi.fn()
 const mockUseParams = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ back: vi.fn(), push: mockPush }),
+  useRouter: () => ({ back: mockBack, push: mockPush }),
   useParams: () => mockUseParams(),
 }))
 
@@ -22,6 +23,7 @@ afterEach(() => {
   server.resetHandlers()
   store.set(authAtom, null)
   mockPush.mockClear()
+  mockBack.mockClear()
 })
 afterAll(() => server.close())
 beforeEach(() => mockUseParams.mockReturnValue({ postId: '1' }))
@@ -74,6 +76,51 @@ describe('CommunityDetail', () => {
     await user.click(editButton)
 
     expect(mockPush).toHaveBeenCalledWith('/tech/community/1/edit')
+  })
+
+  it('비로그인 또는 타인 글이면 삭제 버튼이 보이지 않는다', async () => {
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument()
+  })
+
+  it('본인 글에서 삭제 확인 시 삭제 후 목록으로 이동한다', async () => {
+    store.set(authAtom, { uid: 12, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    await user.click(await screen.findByRole('button', { name: '삭제' }))
+
+    // 확인 모달 노출
+    expect((await screen.findAllByText('글을 삭제할까요?')).length).toBeGreaterThan(0)
+
+    // 모달 확인(삭제) 버튼은 danger 스타일
+    const okButton = document.querySelector('.ant-modal-confirm-btns .ant-btn-dangerous') as HTMLElement
+    await user.click(okButton)
+
+    await waitFor(() => {
+      // 진입 출처로 복귀(뒤로가기와 동일)
+      expect(mockBack).toHaveBeenCalled()
+    })
+  })
+
+  it('삭제 확인 모달에서 취소하면 삭제되지 않는다', async () => {
+    store.set(authAtom, { uid: 12, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    await user.click(await screen.findByRole('button', { name: '삭제' }))
+
+    await screen.findAllByText('글을 삭제할까요?')
+    const cancelButton = document.querySelector('.ant-modal-confirm-btns .ant-btn:not(.ant-btn-dangerous)') as HTMLElement
+    await user.click(cancelButton)
+
+    // 취소 시 목록 이동 미발생
+    await new Promise((r) => setTimeout(r, 100))
+    expect(mockBack).not.toHaveBeenCalled()
   })
 
   it('서버 오류 시 다시 시도 안내를 표시한다', async () => {

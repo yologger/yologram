@@ -21,6 +21,21 @@
   font-size: 12px;
 }
 
+.delete {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: #e7689a;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.delete:hover {
+  color: #d4587f;
+}
+
 .title {
   font-weight: 600;
   margin-bottom: 4px;
