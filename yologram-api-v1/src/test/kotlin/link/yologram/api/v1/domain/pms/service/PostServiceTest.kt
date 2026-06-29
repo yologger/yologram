@@ -144,6 +144,55 @@ class PostServiceTest {
     }
 
     @Nested
+    inner class 게시글_삭제 {
+
+        @Test
+        fun `본인 글이면 카테고리 매핑과 게시글을 삭제한다`() {
+            val post = Post(id = 1L, section = Section.TECH, userId = 1L, content = "내용")
+            whenever(postRepository.findById(1L)).thenReturn(Optional.of(post))
+
+            postService.delete("tech", 1L, 1L)
+
+            verify(postCategoryMappingRepository).deleteByPostId(1L)
+            verify(postRepository).delete(post)
+        }
+
+        @Test
+        fun `존재하지 않는 글이면 PostNotFoundException을 던진다`() {
+            whenever(postRepository.findById(99L)).thenReturn(Optional.empty())
+
+            assertThrows<PostNotFoundException> {
+                postService.delete("tech", 99L, 1L)
+            }
+
+            verify(postRepository, never()).delete(any<Post>())
+        }
+
+        @Test
+        fun `다른 section의 글이면 PostNotFoundException을 던진다`() {
+            whenever(postRepository.findById(1L)).thenReturn(Optional.of(Post(id = 1L, section = Section.INVEST, userId = 1L, content = "내용")))
+
+            assertThrows<PostNotFoundException> {
+                postService.delete("tech", 1L, 1L)
+            }
+
+            verify(postRepository, never()).delete(any<Post>())
+        }
+
+        @Test
+        fun `본인 글이 아니면 PostForbiddenException을 던진다`() {
+            whenever(postRepository.findById(1L)).thenReturn(Optional.of(Post(id = 1L, section = Section.TECH, userId = 99L, content = "내용")))
+
+            assertThrows<PostForbiddenException> {
+                postService.delete("tech", 1L, 1L)
+            }
+
+            verify(postCategoryMappingRepository, never()).deleteByPostId(any())
+            verify(postRepository, never()).delete(any<Post>())
+        }
+    }
+
+    @Nested
     inner class 게시글_상세_조회 {
 
         @Test

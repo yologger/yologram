@@ -19,6 +19,7 @@ import link.yologram.api.v1.global.model.ApiEnvelopPage
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -67,6 +68,23 @@ class PostResource(
         @Valid @RequestBody request: UpdatePostRequest,
     ) {
         postService.update(section, id, authData.uid, request)
+    }
+
+    @DeleteMapping("/{section}/posts/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "게시글 삭제", description = "본인 게시글 삭제 (인증 필요)")
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "삭제 성공"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "403", description = "본인 글이 아님"),
+        ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음"),
+    )
+    fun delete(
+        @PathVariable section: String,
+        @PathVariable id: Long,
+        @AuthenticatedUser authData: AuthData,
+    ) {
+        postService.delete(section, id, authData.uid)
     }
 
     // 게시글 피드 (cursor-based pagination)

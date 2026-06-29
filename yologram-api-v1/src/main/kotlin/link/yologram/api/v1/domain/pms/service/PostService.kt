@@ -82,6 +82,23 @@ class PostService(
         }
     }
 
+    // 게시글 삭제 (본인 글)
+    @Transactional
+    fun delete(sectionPath: String, id: Long, userId: Long) {
+        val section = Section.fromPath(sectionPath)
+
+        // 없거나 다른 section의 글이면 404 (상세 조회와 동일 규칙)
+        val post = postRepository.findByIdOrNull(id) ?: throw PostNotFoundException()
+        if (post.section != section) throw PostNotFoundException()
+
+        // 작성자 본인만 삭제 가능 (아니면 403)
+        if (post.userId != userId) throw PostForbiddenException()
+
+        // 연관 카테고리 매핑 정리 후 게시글 삭제 (댓글/좋아요 도메인은 미구현)
+        postCategoryMappingRepository.deleteByPostId(post.id)
+        postRepository.delete(post)
+    }
+
     // 게시글 단건 조회
     @Transactional(readOnly = true)
     fun getPost(sectionPath: String, id: Long): PostDetailResponse {
