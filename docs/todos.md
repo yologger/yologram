@@ -6,6 +6,7 @@
 > docs/는 메인(루트) 에이전트만 갱신. 서브에이전트는 read-only(참고만).
 
 ## Todos. 
+- [ ] (PMS) 기술/정치/투자 섹션 게시글 분리 (세부는 진행 시 결정)
 - [ ] (Comment) 댓글
   - [ ] 댓글 작성 — community_comments 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/...), api-v1/v2, web-v1/v2
   - [ ] 댓글 조회 — 최신순/오래된순 정렬, web 무한스크롤 (상세 페이지 더미 → 연동)
@@ -19,6 +20,19 @@
   - [ ] web-v1 / web-v2 (로컬 임시 토글 → 연동)
   - [ ] 좋아요 수 / 댓글 수 조회·표시 (게시글 목록·상세 카운트, api-v1/v2 + web)
   - 1차는 post 컬럼 동기 보관, 분리 시 이벤트 기반 카운트 이관
+- [ ] (News) 기술 커뮤니티 뉴스 — RSS로 주요 기술 블로그 글 구독 후 표시 (세부는 진행 시 결정)
+- [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
+  - [ ] 도입 시점 판단
+  - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)
+  - [ ] 검색 인덱서(yologram-search-indexer): pms 변경 이벤트 → OpenSearch 동기화
+  - [ ] 검색 API(yologram-search-api): 키워드/카테고리/섹션 검색·필터·정렬·집계
+  - [ ] 프론트 이관: 공개 다건 탐색 → search (단건·쓰기·내 글은 pms 유지)
+  - pms vs search 호출 기준: 단건 정확 조회·쓰기·"내 것"(개인화+권한) = pms / 공개 다건 탐색(키워드·카테고리·섹션 목록·필터·정렬·집계) = search
+  - CQRS: pms = 쓰기 원본(MySQL, 권한·개인화) / search = 읽기 최적화(OpenSearch). 동기화는 pms 쓰기 → 변경 이벤트(SQS/Kinesis) → indexer가 MySQL 읽어 문서화 → OpenSearch 인덱싱 (최종 일관성)
+  - QueryDSL vs search 역할: QueryDSL은 관계형 복잡성(권한 한정 "내 것/정확"), search는 탐색 복잡성(풀텍스트·연관도·패싯, 공개 카탈로그 발견)
+  - 도입 전략: 초기엔 pms cursor 목록으로 시작 → 필요 시 OpenSearch+indexer 도입. 별도 서비스(yologram-search-api, yologram-search-indexer)
+- [ ] (Cache) Redis 도입 — 캐싱 등 활용 (세부는 진행 시 결정)
+- [ ] (Notification) 웹 알림 — 모바일 앱 푸시(FCM/APNs) 대신 웹 기반 알림 처리 (세부는 진행 시 결정)
 - [ ] (web) invest/politics 피드 연동
   - [ ] web-v1
   - [ ] web-v2
@@ -57,13 +71,6 @@
       - 앱 내 @Async/BackgroundTasks (소규모/임시): 요청과 분리하나 인스턴스 종속 → 배포/장애 시 유실 위험, 대량 부적합
     - 대량 삭제는 청크(LIMIT N) 단위 반복으로 락/replica 지연 완화. 보관 의무 데이터는 익명화·유예기간(복구) 검토(soft delete면 자연 지원)
     - 권장: soft delete 즉시 응답 + SQS 워커 도메인별 청크 삭제 (규모 작으면 배치 잡으로 시작)
-- [ ] (Search) 검색 시스템 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시)
-  - [ ] 도입 시점 판단
-  - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)
-  - [ ] 검색 인덱서(yologram-search-indexer): pms 변경 이벤트 → OpenSearch 동기화
-  - [ ] 검색 API(yologram-search-api): 키워드/카테고리/섹션 검색·필터·정렬·집계
-  - [ ] 프론트 이관: 공개 다건 탐색 → search (단건·쓰기·내 글은 pms 유지)
-  - CQRS·호출 기준은 features.md 참조
 - [ ] (api-v1) QueryDSL 학습 예제 (legacy 이식, 토이/공부용)
   - [ ] B. 카테고리별 글 수 집계: post ↔ post_category_mapping join + groupBy + count
   - [ ] C. 목록에 카테고리명 포함: 멀티 join + Projections 중첩 (pms→cms 경계 결합, 학습용 예외)
@@ -76,11 +83,6 @@
 - [ ] (web-v2/Observability) 운영: staging/prod OTEL secret 주입, Grafana Tempo trace 수신 확인
 - [ ] (web-v2) 학습·검토: 서버/클라이언트 컴포넌트 이해, cookie 토큰 전환 시 middleware route 보호, route group 구조
 - [ ] (api-v1, api-v2) MSA 전환
-- [ ] (search) 검색 시스템 도입.
-  - [ ] pms vs search 호출 기준: 단건 정확 조회·쓰기·"내 것"(개인화+권한) = pms / 공개 다건 탐색(키워드·카테고리·섹션 목록·필터·정렬·집계) = search
-  - [ ] CQRS: pms = 쓰기 원본(MySQL, 권한·개인화) / search = 읽기 최적화(OpenSearch). 동기화는 pms 쓰기 → 변경 이벤트(SQS/Kinesis) → indexer가 MySQL 읽어 문서화 → OpenSearch 인덱싱 (최종 일관성)
-  - [ ] QueryDSL vs search 역할: QueryDSL은 관계형 복잡성(권한 한정 "내 것/정확"), search는 탐색 복잡성(풀텍스트·연관도·패싯, 공개 카탈로그 발견)
-  - [ ] 도입 전략: 초기엔 pms cursor 목록으로 시작 → 검색·복잡 필터·대량 트래픽 필요 시 OpenSearch+indexer 도입(YAGNI). 별도 서비스 예정(yologram-search-api, yologram-search-indexer)
 
 ## 보류/제외 (현재 범위 밖)
 - [ ] (UMS) OAuth 로그인 (Gmail, Kakao)
