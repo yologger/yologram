@@ -59,3 +59,7 @@
   - [x] 설정의 알림 설정·다크 모드 항목 임시 숨김(주석)
   - [x] 글 작성/상세 데스크탑 760px 중앙(몰입형 전체화면 유지), 화면 정중앙 정렬
   - [x] 전역 배경 #f7f8fa, 구분선 #dfe4ea 톤 통일
+- [x] (Comment) 댓글 작성 (본인 인증)
+  - [x] api-v1/v2: POST /comments/posts/{postId} (인증). 별도 comment 도메인(post_comment 테이블, post_id·user_id FK 없이 컬럼 — pms와 동일 경계). 대상 글 존재 검증(PostQueryClient, 없으면 404 POST_NOT_FOUND), content 필수·최대 1000자(400). 조회/수정/삭제는 후속(하나씩 진행)
+  - [x] web-v1/v2: 상세 하단 입력창 → 작성 API 연동, 성공 시 입력창 초기화 + 토스트. 조회 API 미구현이라 목록 갱신 없음(더미 목록 유지), 미인증 시 비활성/안내
+  - commentCount(게시글 댓글 수) 동기화는 별도 Count 도메인 작업으로 분리 — 현재 작성해도 카운트 미증가

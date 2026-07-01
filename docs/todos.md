@@ -8,17 +8,18 @@
 ## Todos. 
 - [ ] (PMS) 기술/정치/투자 섹션 게시글 분리 (세부는 진행 시 결정)
 - [ ] (Comment) 댓글
-  - [ ] 댓글 작성 — community_comments 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/...), api-v1/v2, web-v1/v2
+  - [x] 댓글 작성 — post_comment 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/posts/{postId}), api-v1/v2, web-v1/v2 (완료, done.md)
   - [ ] 댓글 조회 — 최신순/오래된순 정렬, web 무한스크롤 (상세 페이지 더미 → 연동)
   - [ ] 내 댓글에만 수정/삭제 버튼 활성화 (작성자=인증 유저일 때만 노출)
   - [ ] 댓글 수정 — api-v1/v2, web-v1/v2
   - [ ] 댓글 삭제 — api-v1/v2, web-v1/v2
+  - [ ] 게시글 삭제 시 연관 댓글 정리 (고아 댓글 방지 — pms delete에서 post_comment 정리, api-v1/v2)
   - 대댓글 지원 여부는 구현 시 결정
 - [ ] (Count) 좋아요 토글 (/count 경로)
   - [ ] api-v1
   - [ ] api-v2
   - [ ] web-v1 / web-v2 (로컬 임시 토글 → 연동)
-  - [ ] 좋아요 수 / 댓글 수 조회·표시 (게시글 목록·상세 카운트, api-v1/v2 + web)
+  - [ ] 좋아요 수 / 댓글 수 조회·표시 (게시글 목록·상세 카운트, api-v1/v2 + web). 댓글 작성/삭제 시 post.commentCount 동기화 (현재 미증가 — 카운트 항상 0)
   - 1차는 post 컬럼 동기 보관, 분리 시 이벤트 기반 카운트 이관
 - [ ] (News) 기술 커뮤니티 뉴스 — RSS로 주요 기술 블로그 글 구독 후 표시 (세부는 진행 시 결정)
 - [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
@@ -51,6 +52,10 @@
 - [ ] (web) 설정 — 다크 모드 (web-v1 theme + 설정 저장, web-v1/v2 설정 페이지)
 - [ ] (web) 설정 — 저장한 글 페이지 (web-v1 / web-v2)
 - [ ] (web) 커뮤니티 확장: 팔로우/리포스트/공유/이모지/정렬/작성 툴바 (web-v1 / web-v2)
+- [ ] (web) 로그인 리다이렉트(returnTo) + 미인증 진입점 로그인 유도 (web-v1 / web-v2)
+  - [ ] 로그인 후 원위치 복귀 — 현재 RequireAuth·LoginPage는 /login 이동만 하고 복귀 없음(로그인 시 홈으로). returnTo/from 도입
+  - [ ] 미인증 상태의 댓글 입력·좋아요·수정 등 진입 시 로그인 유도(막다른 비활성 placeholder 대신), 로그인 후 원래 위치로 복귀해 이어서
+  - 공통 인프라(returnTo)를 먼저 갖춘 뒤 각 진입점에 일괄 적용
 - [ ] (web-v1) 인증 게이팅
 - [ ] (UMS) 운영 보강 — 이메일 인증·비밀번호 찾기 (api-v1/v2 공통)
   - [ ] 코드 해시 저장, 시도 횟수 제한/잠금
