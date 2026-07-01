@@ -12,12 +12,3 @@ export interface CommunityPost {
   commentCount: number
   liked: boolean
 }
-
-export interface CommunityComment {
-  id: number
-  postId: number
-  author: string
-  createdAt: string
-  content: string
-  likeCount: number
-}

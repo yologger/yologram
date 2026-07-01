@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAtomValue } from 'jotai'
 import { useQueryClient } from '@tanstack/react-query'
@@ -16,9 +16,10 @@ import {
   RetweetOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons'
-import { communityCommentsAtom } from '@/stores/community'
 import { authAtom } from '@/stores/auth'
+import type { CommentSort } from '@/apis/pms'
 import usePostQuery from '@/queries/usePostQuery'
+import useCommentsQuery from '@/queries/useCommentsQuery'
 import useDeletePostMutation from '@/queries/useDeletePostMutation'
 import useCreateCommentMutation from '@/queries/useCreateCommentMutation'
 import { getErrorStatus } from '@/lib/error'
@@ -31,12 +32,36 @@ export default function CommunityDetail() {
 
   const { data: post, isLoading, isError, error, refetch } = usePostQuery('tech', id)
   const auth = useAtomValue(authAtom)
-  const comments = useAtomValue(communityCommentsAtom)
   const [text, setText] = useState('')
+  const [sort, setSort] = useState<CommentSort>('latest')
   const { modal, message } = App.useApp()
   const queryClient = useQueryClient()
   const { mutate: deletePost } = useDeletePostMutation()
   const { mutate: createComment, isPending: isCommentPending } = useCreateCommentMutation()
+
+  const {
+    data: comments = [],
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isCommentsLoading,
+    isError: isCommentsError,
+  } = useCommentsQuery(id, sort)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!hasNextPage) return
+    const el = sentinelRef.current
+    if (!el) return
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !isFetchingNextPage) {
+        fetchNextPage()
+      }
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   // 좋아요는 서버 API(count 도메인) 도입 전까지 로컬 임시 상태
   const [liked, setLiked] = useState(false)
@@ -94,7 +119,6 @@ export default function CommunityDetail() {
     )
   }
 
-  const postComments = comments.filter((c) => c.postId === id)
   const isOwner = !!auth && post.author.uid === auth.uid
   const authorName = post.author.nickname ?? '알 수 없음'
   const createdAtText = new Date(post.createdAt).toLocaleString('ko-KR')
@@ -151,8 +175,8 @@ export default function CommunityDetail() {
       { postId: id, content },
       {
         onSuccess: () => {
-          // 댓글 조회 API 미구현 — 작성 성공 피드백 + 입력창 초기화까지만.
-          // TODO: 댓글 조회 도입 시 목록 invalidate/재조회 연동
+          // 작성 성공 시 해당 글의 댓글 목록 재조회(정렬 무관 전체 무효화)
+          queryClient.invalidateQueries({ queryKey: ['comments', id] })
           setText('')
           message.success('댓글이 등록되었습니다.')
         },
@@ -210,17 +234,43 @@ export default function CommunityDetail() {
         </div>
       </div>
 
-      <div className={styles.commentsTitle}>댓글 {postComments.length}</div>
-      {postComments.map((c) => (
+      <div className={styles.commentsHeader}>
+        <span className={styles.commentsTitle}>댓글 {post.commentCount}</span>
+        <div className={styles.sortToggle}>
+          <button
+            className={`${styles.sortButton} ${sort === 'latest' ? styles.sortActive : ''}`}
+            onClick={() => setSort('latest')}
+          >
+            최신순
+          </button>
+          <button
+            className={`${styles.sortButton} ${sort === 'oldest' ? styles.sortActive : ''}`}
+            onClick={() => setSort('oldest')}
+          >
+            오래된순
+          </button>
+        </div>
+      </div>
+
+      {isCommentsLoading && <div className={styles.commentStatus}>댓글을 불러오는 중…</div>}
+      {isCommentsError && (
+        <div className={styles.commentStatus}>댓글을 불러오지 못했어요.</div>
+      )}
+      {!isCommentsLoading && !isCommentsError && comments.length === 0 && (
+        <div className={styles.commentStatus}>첫 댓글을 남겨보세요.</div>
+      )}
+
+      {comments.map((c) => (
         <div key={c.id} className={styles.comment}>
           <div className={styles.authorRow}>
             <Avatar size={28} icon={<UserOutlined />} />
-            <span className={styles.author}>{c.author}</span>
-            <span className={styles.time}>{c.createdAt}</span>
+            <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
+            <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
           </div>
           <div className={styles.content}>{c.content}</div>
         </div>
       ))}
+      {hasNextPage && <div ref={sentinelRef} className={styles.sentinel} />}
 
       <div className={styles.commentBar}>
         <input

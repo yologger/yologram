@@ -401,6 +401,38 @@ export const handlers = [
     return HttpResponse.json({ data: { id: 7777 } }, { status: 201 })
   }),
 
+  http.get('http://localhost:5002/api/v2/comments/posts/:postId', ({ request, params }) => {
+    const postId = Number(params.postId)
+    const url = new URL(request.url)
+    const sort = url.searchParams.get('sort') ?? 'latest'
+    const cursor = url.searchParams.get('cursor')
+
+    // 커서가 있으면 두 번째(마지막) 페이지 반환 후 종료
+    if (cursor) {
+      return HttpResponse.json({
+        data: [
+          { id: 502, postId, author: { uid: 3, nickname: '두번째페이지' }, content: '커서 이후 댓글', createdAt: '2026-06-01T09:00:00' },
+        ],
+        nextCursor: null,
+      })
+    }
+
+    // sort에 따라 노출 내용을 달리해 정렬 전환 재조회를 검증할 수 있게 함
+    const latest = [
+      { id: 401, postId, author: { uid: 1, nickname: '최신유저' }, content: '가장 최근 댓글', createdAt: '2026-06-10T12:00:00' },
+      { id: 400, postId, author: { uid: 2, nickname: '이전유저' }, content: '조금 이전 댓글', createdAt: '2026-06-09T12:00:00' },
+    ]
+    const oldest = [
+      { id: 400, postId, author: { uid: 2, nickname: '이전유저' }, content: '가장 오래된 댓글', createdAt: '2026-06-09T12:00:00' },
+      { id: 401, postId, author: { uid: 1, nickname: '최신유저' }, content: '그 다음 댓글', createdAt: '2026-06-10T12:00:00' },
+    ]
+
+    return HttpResponse.json({
+      data: sort === 'oldest' ? oldest : latest,
+      nextCursor: 'comment-next-cursor',
+    })
+  }),
+
   http.get('http://localhost:5002/api/v2/pms/:section/posts/:id', ({ params }) => {
     const id = Number(params.id)
 
