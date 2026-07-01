@@ -90,6 +90,11 @@ class PostForbiddenException(AppException):
         super().__init__(403, "본인 게시글만 수정·삭제할 수 있습니다.", "POST_FORBIDDEN")
 
 
+class TargetPostNotFoundException(AppException):
+    def __init__(self):
+        super().__init__(404, "대상 게시글을 찾을 수 없습니다.", "POST_NOT_FOUND")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:
