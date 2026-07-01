@@ -9,7 +9,10 @@
 - [ ] (PMS) 기술/정치/투자 섹션 게시글 분리 (세부는 진행 시 결정)
 - [ ] (Comment) 댓글
   - [x] 댓글 작성 — post_comment 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/posts/{postId}), api-v1/v2, web-v1/v2 (완료, done.md)
-  - [ ] 댓글 조회 — 최신순/오래된순 정렬, web 무한스크롤 (상세 페이지 더미 → 연동)
+  - [ ] 댓글 조회 (최신순/오래된순 정렬, 최신이 위 기본) — sort=latest|oldest 양방향 cursor 무한스크롤, 상세 더미 → 연동
+    - [x] api-v1 (cursor 실사용 + offset 학습용 보존)
+    - [ ] api-v2
+    - [ ] web-v1 / web-v2
   - [ ] 내 댓글에만 수정/삭제 버튼 활성화 (작성자=인증 유저일 때만 노출)
   - [ ] 댓글 수정 — api-v1/v2, web-v1/v2
   - [ ] 댓글 삭제 — api-v1/v2, web-v1/v2
