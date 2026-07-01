@@ -95,3 +95,15 @@ export async function getMyPosts(params: GetMyPostsParams = {}): Promise<PostPag
   const response = await api.get<PostPage>('/api/v2/pms/posts/me', { params: query })
   return response.data
 }
+
+export interface CreateCommentResponse {
+  id: number
+}
+
+export async function createComment(postId: number, content: string): Promise<CreateCommentResponse> {
+  const response = await api.post<{ data: CreateCommentResponse }>(
+    `/api/v2/comments/posts/${postId}`,
+    { content },
+  )
+  return response.data.data
+}

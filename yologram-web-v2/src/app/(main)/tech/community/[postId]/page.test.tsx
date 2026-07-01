@@ -37,18 +37,77 @@ describe('CommunityDetail', () => {
     expect(screen.getByPlaceholderText('댓글로 의견을 남겨보세요')).toBeInTheDocument()
   })
 
-  it('댓글을 입력하고 등록하면 목록에 추가된다', async () => {
+  it('내용이 없으면 등록 버튼이 비활성화되고 클릭해도 요청하지 않는다', async () => {
+    let called = false
+    server.use(
+      http.post('http://localhost:5002/api/v2/comments/posts/:postId', () => {
+        called = true
+        return HttpResponse.json({ data: { id: 7777 } }, { status: 201 })
+      }),
+    )
+    store.set(authAtom, { uid: 12, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    expect(screen.getByRole('button', { name: '등록' })).toBeDisabled()
+
+    await new Promise((r) => setTimeout(r, 50))
+    expect(called).toBe(false)
+  })
+
+  it('로그인 상태에서 댓글을 입력하고 등록하면 성공 피드백과 입력창 초기화가 이뤄진다', async () => {
+    store.set(authAtom, { uid: 12, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
     const user = userEvent.setup()
     renderWithProviders(<CommunityDetail />)
 
     await screen.findByText('API 본문 내용')
 
-    await user.type(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), '좋은 글이네요')
+    const input = screen.getByPlaceholderText('댓글로 의견을 남겨보세요') as HTMLInputElement
+    await user.type(input, '좋은 글이네요')
     await user.click(screen.getByRole('button', { name: '등록' }))
 
-    await waitFor(() => {
-      expect(screen.getByText('좋은 글이네요')).toBeInTheDocument()
-    })
+    expect(await screen.findByText('댓글이 등록되었습니다.')).toBeInTheDocument()
+    await waitFor(() => expect(input.value).toBe(''))
+  })
+
+  it('비로그인 상태에서 등록하면 로그인 안내만 하고 요청하지 않는다', async () => {
+    let called = false
+    server.use(
+      http.post('http://localhost:5002/api/v2/comments/posts/:postId', () => {
+        called = true
+        return HttpResponse.json({ data: { id: 7777 } }, { status: 201 })
+      }),
+    )
+    // 비로그인 상태 유지(afterEach에서 null 설정)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    await user.type(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), '댓글 내용')
+    await user.click(screen.getByRole('button', { name: '등록' }))
+
+    expect(await screen.findByText('로그인 후 댓글을 남길 수 있어요.')).toBeInTheDocument()
+    expect(called).toBe(false)
+  })
+
+  it('댓글 등록 실패 시 에러 토스트를 표시한다', async () => {
+    server.use(
+      http.post('http://localhost:5002/api/v2/comments/posts/:postId', () =>
+        HttpResponse.json(
+          { errorMessage: '서버 오류가 발생했습니다.', errorCode: 'INTERNAL_SERVER_ERROR' },
+          { status: 500 },
+        ),
+      ),
+    )
+    store.set(authAtom, { uid: 12, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    await user.type(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), '실패할 댓글')
+    await user.click(screen.getByRole('button', { name: '등록' }))
+
+    expect(await screen.findByText(/댓글 등록에 실패했어요/)).toBeInTheDocument()
   })
 
   it('존재하지 않는 글이면 안내 문구를 표시한다', async () => {

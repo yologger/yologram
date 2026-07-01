@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useAtom, useAtomValue } from 'jotai'
+import { useAtomValue } from 'jotai'
 import { useQueryClient } from '@tanstack/react-query'
 import { App, Avatar } from 'antd'
 import {
@@ -18,9 +18,9 @@ import {
 } from '@ant-design/icons'
 import { communityCommentsAtom } from '@/stores/community'
 import { authAtom } from '@/stores/auth'
-import type { CommunityComment } from '@/types/community'
 import usePostQuery from '@/queries/usePostQuery'
 import useDeletePostMutation from '@/queries/useDeletePostMutation'
+import useCreateCommentMutation from '@/queries/useCreateCommentMutation'
 import { getErrorStatus } from '@/lib/error'
 import styles from './CommunityDetail.module.css'
 
@@ -31,11 +31,12 @@ export default function CommunityDetail() {
 
   const { data: post, isLoading, isError, error, refetch } = usePostQuery('tech', id)
   const auth = useAtomValue(authAtom)
-  const [comments, setComments] = useAtom(communityCommentsAtom)
+  const comments = useAtomValue(communityCommentsAtom)
   const [text, setText] = useState('')
   const { modal, message } = App.useApp()
   const queryClient = useQueryClient()
   const { mutate: deletePost } = useDeletePostMutation()
+  const { mutate: createComment, isPending: isCommentPending } = useCreateCommentMutation()
 
   // 좋아요는 서버 API(count 도메인) 도입 전까지 로컬 임시 상태
   const [liked, setLiked] = useState(false)
@@ -137,17 +138,30 @@ export default function CommunityDetail() {
   }
 
   const submitComment = () => {
-    if (!text.trim()) return
-    const newComment: CommunityComment = {
-      id: Date.now(),
-      postId: id,
-      author: '나',
-      createdAt: '방금 전',
-      content: text.trim(),
-      likeCount: 0,
+    const content = text.trim()
+    if (!content || isCommentPending) return
+
+    // 댓글 작성은 인증 필요. 미로그인 시 안내만 하고 요청하지 않는다.
+    if (!auth) {
+      message.warning('로그인 후 댓글을 남길 수 있어요.')
+      return
     }
-    setComments((prev) => [...prev, newComment])
-    setText('')
+
+    createComment(
+      { postId: id, content },
+      {
+        onSuccess: () => {
+          // 댓글 조회 API 미구현 — 작성 성공 피드백 + 입력창 초기화까지만.
+          // TODO: 댓글 조회 도입 시 목록 invalidate/재조회 연동
+          setText('')
+          message.success('댓글이 등록되었습니다.')
+        },
+        onError: () => {
+          // reject 시 unhandled rejection 발생 — 에러 토스트만 노출하고 콜백은 정상 종료
+          message.error('댓글 등록에 실패했어요. 잠시 후 다시 시도해주세요.')
+        },
+      },
+    )
   }
 
   return (
@@ -218,7 +232,11 @@ export default function CommunityDetail() {
             if (e.key === 'Enter') submitComment()
           }}
         />
-        <button className={styles.sendButton} disabled={!text.trim()} onClick={submitComment}>
+        <button
+          className={styles.sendButton}
+          disabled={!text.trim() || isCommentPending}
+          onClick={submitComment}
+        >
           등록
         </button>
       </div>
