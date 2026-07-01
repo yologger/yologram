@@ -41,6 +41,7 @@ const latestDialog = async () => {
 
 describe('CommunityDetailPage', () => {
   it('API로 조회한 게시글 본문과 댓글 영역을 표시한다', async () => {
+    loginAs(1)
     renderWithProviders(<CommunityDetailPage />)
 
     expect(await screen.findByText('API 본문 내용')).toBeInTheDocument()
@@ -48,19 +49,64 @@ describe('CommunityDetailPage', () => {
     expect(screen.getByPlaceholderText('댓글로 의견을 남겨보세요')).toBeInTheDocument()
   })
 
-  it('댓글을 입력하고 등록하면 목록에 추가된다', async () => {
+  it('로그인 상태에서 댓글을 등록하면 성공 피드백을 표시하고 입력창을 비운다', async () => {
+    loginAs(1)
     const user = userEvent.setup()
     renderWithProviders(<CommunityDetailPage />)
 
     // 게시글 로드 대기
     await screen.findByText('API 본문 내용')
 
-    await user.type(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), '좋은 글이네요')
+    const input = screen.getByPlaceholderText('댓글로 의견을 남겨보세요')
+    await user.type(input, '좋은 글이네요')
     await user.click(screen.getByRole('button', { name: '등록' }))
 
-    await waitFor(() => {
-      expect(screen.getByText('좋은 글이네요')).toBeInTheDocument()
-    })
+    // 성공 토스트 + 입력창 초기화 (조회 API가 없어 목록에 추가되지는 않는다)
+    expect(await screen.findByText('댓글이 등록되었습니다.')).toBeInTheDocument()
+    await waitFor(() => expect(input).toHaveValue(''))
+  })
+
+  it('내용이 없으면 등록 버튼이 비활성이고 API를 호출하지 않는다', async () => {
+    loginAs(1)
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('API 본문 내용')
+
+    // 빈 상태에서는 등록 버튼 비활성 (파생 isValid 관례)
+    expect(screen.getByRole('button', { name: '등록' })).toBeDisabled()
+  })
+
+  it('비로그인 상태면 입력창이 비활성화되고 로그인 안내를 표시한다', async () => {
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('API 본문 내용')
+
+    expect(screen.getByPlaceholderText('로그인 후 댓글을 남길 수 있어요')).toBeDisabled()
+    expect(screen.getByRole('button', { name: '등록' })).toBeDisabled()
+  })
+
+  it('댓글 등록 API 실패 시 에러 메시지를 표시하고 입력값을 유지한다', async () => {
+    server.use(
+      http.post('http://localhost:5001/api/v1/comments/posts/:postId', () =>
+        HttpResponse.json(
+          { errorMessage: '서버 오류', errorCode: 'INTERNAL_SERVER_ERROR' },
+          { status: 500 },
+        ),
+      ),
+    )
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('API 본문 내용')
+
+    const input = screen.getByPlaceholderText('댓글로 의견을 남겨보세요')
+    await user.type(input, '등록 실패할 댓글')
+    await user.click(screen.getByRole('button', { name: '등록' }))
+
+    expect(await screen.findByText(/등록에 실패했어요/)).toBeInTheDocument()
+    // 실패 시 재시도할 수 있게 입력값 유지
+    expect(input).toHaveValue('등록 실패할 댓글')
   })
 
   it('존재하지 않는 글이면 안내 문구를 표시한다', async () => {

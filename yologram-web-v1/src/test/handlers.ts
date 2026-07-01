@@ -367,6 +367,34 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
+  http.post('http://localhost:5001/api/v1/comments/posts/:postId', async ({ request, params }) => {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
+        { status: 401 },
+      )
+    }
+
+    const postId = Number(params.postId)
+    if (postId === 99999) {
+      return HttpResponse.json(
+        { errorMessage: '게시글을 찾을 수 없습니다.', errorCode: 'POST_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+
+    const body = await request.json() as { content?: string }
+    if (!body.content || body.content.trim().length === 0) {
+      return HttpResponse.json(
+        { errorMessage: '내용을 입력해주세요.', errorCode: 'VALIDATION_ERROR' },
+        { status: 400 },
+      )
+    }
+
+    return HttpResponse.json({ data: { id: 5001 } }, { status: 201 })
+  }),
+
   http.delete('http://localhost:5001/api/v1/pms/:section/posts/:id', ({ request, params }) => {
     const authHeader = request.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

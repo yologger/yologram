@@ -16,9 +16,9 @@ import {
 } from '@ant-design/icons'
 import { authAtom } from '../../../stores/auth'
 import { communityCommentsAtom } from '../../../stores/community'
-import type { CommunityComment } from '../../../types/community'
 import usePostQuery from '../../../queries/usePostQuery'
 import useDeletePostMutation from '../../../queries/useDeletePostMutation'
+import useCreateCommentMutation from '../../../queries/useCreateCommentMutation'
 import { getErrorStatus } from '../../../lib/error'
 import styles from './CommunityDetailPage.module.css'
 
@@ -29,11 +29,12 @@ export default function CommunityDetailPage() {
 
   const { data: post, isLoading, isError, error, refetch } = usePostQuery('tech', id)
   const [auth] = useAtom(authAtom)
-  const [comments, setComments] = useAtom(communityCommentsAtom)
+  const [comments] = useAtom(communityCommentsAtom)
   const [text, setText] = useState('')
   const { message, modal } = App.useApp()
   const queryClient = useQueryClient()
   const { mutate: deletePost } = useDeletePostMutation()
+  const { mutate: createComment, isPending: isSubmitting } = useCreateCommentMutation()
 
   // 좋아요는 서버 API(count 도메인) 도입 전까지 로컬 임시 상태
   const [liked, setLiked] = useState(false)
@@ -134,18 +135,25 @@ export default function CommunityDetailPage() {
     })
   }
 
+  const isAuthenticated = auth != null
+
   const submitComment = () => {
-    if (!text.trim()) return
-    const newComment: CommunityComment = {
-      id: Date.now(),
-      postId: id,
-      author: '나',
-      createdAt: '방금 전',
-      content: text.trim(),
-      likeCount: 0,
-    }
-    setComments((prev) => [...prev, newComment])
-    setText('')
+    // 미인증/빈 내용/전송 중에는 무시 (버튼도 동일 조건으로 비활성)
+    if (!isAuthenticated || !text.trim() || isSubmitting) return
+    // 댓글 조회 API가 아직 없어 목록 갱신은 하지 않는다. 성공 피드백 + 입력창 초기화만.
+    createComment(
+      { postId: id, content: text.trim() },
+      {
+        onSuccess: () => {
+          setText('')
+          message.success('댓글이 등록되었습니다.')
+        },
+        onError: () => {
+          // reject를 남기면 unhandled rejection이 되므로 토스트만 띄우고 안전하게 종료
+          message.error('댓글 등록에 실패했어요. 잠시 후 다시 시도해주세요.')
+        },
+      },
+    )
   }
 
   return (
@@ -205,14 +213,20 @@ export default function CommunityDetailPage() {
       <div className={styles.commentBar}>
         <input
           className={styles.commentInput}
-          placeholder="댓글로 의견을 남겨보세요"
+          placeholder={isAuthenticated ? '댓글로 의견을 남겨보세요' : '로그인 후 댓글을 남길 수 있어요'}
           value={text}
+          disabled={!isAuthenticated || isSubmitting}
+          maxLength={1000}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') submitComment()
           }}
         />
-        <button className={styles.sendButton} disabled={!text.trim()} onClick={submitComment}>
+        <button
+          className={styles.sendButton}
+          disabled={!isAuthenticated || !text.trim() || isSubmitting}
+          onClick={submitComment}
+        >
           등록
         </button>
       </div>
