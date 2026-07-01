@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.core.response import ApiEnvelop
-from app.domain.comment.schema import CreateCommentRequest
+from app.core.response import ApiEnvelop, ApiEnvelopCursorPage, ApiEnvelopPage
+from app.domain.comment.schema import CommentResponse, CreateCommentRequest
 from app.domain.comment.service import CommentService
 from app.domain.ums.auth_dependency import get_authenticated_user
 from app.domain.ums.auth_schema import AuthData
@@ -33,3 +33,47 @@ def create_comment(
     service = CommentService(db)
     result = service.create(post_id, auth_data.uid, request)
     return ApiEnvelop(data=result)
+
+
+# cursor-based pagination
+@router.get(
+    "/posts/{post_id}",
+    response_model=ApiEnvelopCursorPage[CommentResponse],
+    summary="댓글 목록 조회",
+    description="게시글(postId)의 댓글. 최신순(기본)/오래된순 cursor 페이지네이션 (공개)",
+    responses={
+        200: {"description": "조회 성공"},
+        400: {"description": "유효하지 않은 커서"},
+    },
+)
+def get_comments(
+    post_id: int,
+    sort: str | None = Query(default=None),
+    cursor: str | None = Query(default=None),
+    size: int = Query(default=20),
+    db: Session = Depends(get_db),
+):
+    service = CommentService(db)
+    return service.get_comments_by_cursor(post_id, sort, cursor, size)
+
+
+# 댓글 목록 offset 페이지네이션 — 학습용. cursor 방식(/posts/{post_id})과 대비.
+# 코드는 CommentService.get_comments_by_offset에 보존, 엔드포인트는 비활성(필요 시 주석 해제)
+# @router.get(
+#     "/posts/{post_id}/offset",
+#     response_model=ApiEnvelopPage[CommentResponse],
+#     summary="댓글 목록 조회 (offset, 학습용)",
+#     description="게시글(postId)의 댓글. offset 페이지네이션 + 전체 count (공개). cursor 방식과 대비되는 학습용",
+#     responses={
+#         200: {"description": "조회 성공"},
+#     },
+# )
+# def get_comments_by_offset(
+#     post_id: int,
+#     sort: str | None = Query(default=None),
+#     page: int = Query(default=0),
+#     size: int = Query(default=20),
+#     db: Session = Depends(get_db),
+# ):
+#     service = CommentService(db)
+#     return service.get_comments_by_offset(post_id, sort, page, size)

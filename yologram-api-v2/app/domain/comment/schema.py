@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -16,3 +18,20 @@ class CreateCommentRequest(BaseModel):
 
 class CreateCommentResponse(BaseModel):
     id: int
+
+
+class CommentAuthor(BaseModel):
+    uid: int
+    nickname: str | None
+
+
+class CommentResponse(BaseModel):
+    """댓글 목록 항목. api-v1 CommentResponse와 동일 직렬화(postId, createdAt는 camelCase)."""
+
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+
+    id: int
+    post_id: int = Field(serialization_alias="postId")
+    author: CommentAuthor
+    content: str
+    created_at: datetime = Field(serialization_alias="createdAt")
