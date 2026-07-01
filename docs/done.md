@@ -64,6 +64,7 @@
   - [x] web-v1/v2: 상세 하단 입력창 → 작성 API 연동, 성공 시 입력창 초기화 + 토스트. 조회 API 미구현이라 목록 갱신 없음(더미 목록 유지), 미인증 시 비활성/안내
   - commentCount(게시글 댓글 수) 동기화는 별도 Count 도메인 작업으로 분리 — 현재 작성해도 카운트 미증가
 - [x] (Comment) 댓글 조회 (cursor 실사용 + offset 학습용)
-  - [x] api-v1: GET /comments/posts/{postId} (공개) — sort=latest|oldest 양방향 keyset 커서(최신순 id desc·id<cursor / 오래된순 id asc·id>cursor). 작성자 nickname은 UserQueryClient 배치(N+1 회피). 없는 postId면 빈 목록, 잘못된 커서 400. (api-v2·web 진행 예정)
-  - offset 페이지네이션(getCommentsByOffset + countByPost)은 학습용으로 코드 보존 — CommentResource 엔드포인트·서비스 테스트는 주석(cursor/offset 대비). cursor는 getCommentsByCursor로 대칭 명명
-  - Kotlin 오버로드(findByPost의 cursorId: Long? vs offset: Long) 함정은 pms와 동일 — 커서 호출 시 cursorId를 Long?로 명시해 offset 오버로드 오선택 회피
+  - [x] api-v1/v2: GET /comments/posts/{postId} (공개) — sort=latest|oldest 양방향 keyset 커서(최신순 id desc·id<cursor / 오래된순 id asc·id>cursor). 작성자 nickname은 UserQueryClient 배치(N+1 회피). 없는 postId면 빈 목록, 잘못된 커서 400
+  - [x] web-v1/v2: 상세 페이지 더미 댓글 제거 → 실제 조회 연동. useInfiniteQuery 20개/페이지 커서 무한스크롤(IntersectionObserver), 최신/오래된순 정렬 토글, 작성 성공 시 ['comments', postId] invalidate로 갱신. 더미 atom(stores/community) 제거
+  - offset 페이지네이션(getCommentsByOffset + countByPost)은 학습용으로 코드 보존 — 엔드포인트·서비스 테스트는 주석(cursor/offset 대비). cursor는 getCommentsByCursor로 대칭 명명. api-v2는 Python 오버로딩 불가라 find_by_post_cursor/_offset 메서드명 분리
+  - Kotlin 오버로드(findByPost의 cursorId: Long? vs offset: Long) 함정은 pms와 동일(api-v1) — 커서 호출 시 cursorId를 Long?로 명시해 offset 오버로드 오선택 회피
