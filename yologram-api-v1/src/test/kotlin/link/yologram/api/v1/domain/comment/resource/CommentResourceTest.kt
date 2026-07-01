@@ -3,7 +3,9 @@ package link.yologram.api.v1.domain.comment.resource
 import com.fasterxml.jackson.databind.ObjectMapper
 import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.comment.exception.CommentExceptionHandler
+import link.yologram.api.v1.domain.comment.exception.InvalidCommentCursorException
 import link.yologram.api.v1.domain.comment.exception.TargetPostNotFoundException
+import link.yologram.api.v1.domain.comment.model.CommentResponse
 import link.yologram.api.v1.domain.comment.model.CreateCommentRequest
 import link.yologram.api.v1.domain.comment.model.CreateCommentResponse
 import link.yologram.api.v1.domain.comment.service.CommentService
@@ -11,9 +13,12 @@ import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import link.yologram.api.v1.global.exception.GlobalExceptionHandler
 import link.yologram.api.v1.global.exception.ValidationExceptionHandler
+import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -21,7 +26,9 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import java.time.LocalDateTime
 
 @WebMvcTest(CommentResource::class)
 @Import(
@@ -100,5 +107,56 @@ class CommentResourceTest {
             status { isNotFound() }
             jsonPath("$.errorCode") { value("POST_NOT_FOUND") }
         }
+    }
+
+    @Test
+    fun `댓글 목록 조회 시 200과 data·nextCursor를 반환한다`() {
+        whenever(commentService.getCommentsByCursor(eq(1155L), anyOrNull(), anyOrNull(), any())).thenReturn(
+            ApiEnvelopCursorPage(
+                data = listOf(
+                    CommentResponse(
+                        id = 2L,
+                        postId = 1155L,
+                        author = CommentResponse.Author(uid = 12L, nickname = "tester"),
+                        content = "댓글 내용",
+                        createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
+                    ),
+                ),
+                nextCursor = "next-cursor",
+            ),
+        )
+
+        mockMvc.get("/api/v1/comments/posts/1155")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.data[0].id") { value(2) }
+                jsonPath("$.data[0].author.nickname") { value("tester") }
+                jsonPath("$.data[0].content") { value("댓글 내용") }
+                jsonPath("$.nextCursor") { value("next-cursor") }
+            }
+    }
+
+    @Test
+    fun `댓글 목록 조회는 인증 없이 가능하다`() {
+        whenever(commentService.getCommentsByCursor(eq(1155L), anyOrNull(), anyOrNull(), any())).thenReturn(
+            ApiEnvelopCursorPage(data = emptyList(), nextCursor = null),
+        )
+
+        mockMvc.get("/api/v1/comments/posts/1155")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.data") { isEmpty() }
+            }
+    }
+
+    @Test
+    fun `유효하지 않은 커서면 400 반환`() {
+        doThrow(InvalidCommentCursorException()).whenever(commentService).getCommentsByCursor(eq(1155L), anyOrNull(), anyOrNull(), any())
+
+        mockMvc.get("/api/v1/comments/posts/1155?cursor=@@@")
+            .andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errorCode") { value("INVALID_CURSOR") }
+            }
     }
 }

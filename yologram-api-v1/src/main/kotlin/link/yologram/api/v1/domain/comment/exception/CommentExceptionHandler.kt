@@ -16,4 +16,9 @@ class CommentExceptionHandler {
     fun handleTargetPostNotFound(e: TargetPostNotFoundException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(e.message, e.errorCode))
     }
+
+    @ExceptionHandler(InvalidCommentCursorException::class)
+    fun handleInvalidCursor(e: InvalidCommentCursorException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
+    }
 }
