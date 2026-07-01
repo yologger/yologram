@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useAtom } from 'jotai'
 import { useQueryClient } from '@tanstack/react-query'
@@ -15,10 +15,11 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons'
 import { authAtom } from '../../../stores/auth'
-import { communityCommentsAtom } from '../../../stores/community'
 import usePostQuery from '../../../queries/usePostQuery'
 import useDeletePostMutation from '../../../queries/useDeletePostMutation'
 import useCreateCommentMutation from '../../../queries/useCreateCommentMutation'
+import useCommentsQuery from '../../../queries/useCommentsQuery'
+import type { CommentSort } from '../../../apis/comments'
 import { getErrorStatus } from '../../../lib/error'
 import styles from './CommunityDetailPage.module.css'
 
@@ -29,12 +30,37 @@ export default function CommunityDetailPage() {
 
   const { data: post, isLoading, isError, error, refetch } = usePostQuery('tech', id)
   const [auth] = useAtom(authAtom)
-  const [comments] = useAtom(communityCommentsAtom)
   const [text, setText] = useState('')
+  const [sort, setSort] = useState<CommentSort>('latest')
+  const sentinelRef = useRef<HTMLDivElement>(null)
   const { message, modal } = App.useApp()
   const queryClient = useQueryClient()
   const { mutate: deletePost } = useDeletePostMutation()
   const { mutate: createComment, isPending: isSubmitting } = useCreateCommentMutation()
+
+  const {
+    data: comments = [],
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isCommentsLoading,
+    isError: isCommentsError,
+    refetch: refetchComments,
+  } = useCommentsQuery(id, sort)
+
+  useEffect(() => {
+    if (!hasNextPage) return
+    const el = sentinelRef.current
+    if (!el) return
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !isFetchingNextPage) {
+        fetchNextPage()
+      }
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   // 좋아요는 서버 API(count 도메인) 도입 전까지 로컬 임시 상태
   const [liked, setLiked] = useState(false)
@@ -90,7 +116,6 @@ export default function CommunityDetailPage() {
     )
   }
 
-  const postComments = comments.filter((c) => c.postId === id)
   const authorName = post.author.nickname ?? '알 수 없음'
   // 본인 글일 때만 수정 노출 (상세 응답 author.uid 와 로그인 uid 비교)
   const isAuthor = auth != null && auth.uid === post.author.uid
@@ -140,13 +165,14 @@ export default function CommunityDetailPage() {
   const submitComment = () => {
     // 미인증/빈 내용/전송 중에는 무시 (버튼도 동일 조건으로 비활성)
     if (!isAuthenticated || !text.trim() || isSubmitting) return
-    // 댓글 조회 API가 아직 없어 목록 갱신은 하지 않는다. 성공 피드백 + 입력창 초기화만.
     createComment(
       { postId: id, content: text.trim() },
       {
         onSuccess: () => {
           setText('')
           message.success('댓글이 등록되었습니다.')
+          // 목록 무효화 → 작성한 댓글이 최신순 맨 위에 반영
+          queryClient.invalidateQueries({ queryKey: ['comments', id] })
         },
         onError: () => {
           // reject를 남기면 unhandled rejection이 되므로 토스트만 띄우고 안전하게 종료
@@ -198,17 +224,48 @@ export default function CommunityDetailPage() {
         </div>
       </div>
 
-      <div className={styles.commentsTitle}>댓글 {postComments.length}</div>
-      {postComments.map((c) => (
+      <div className={styles.commentsHeader}>
+        <span className={styles.commentsTitle}>댓글 {post.commentCount}</span>
+        <div className={styles.sortToggle}>
+          <button
+            className={`${styles.sortButton} ${sort === 'latest' ? styles.sortActive : ''}`}
+            onClick={() => setSort('latest')}
+          >
+            최신순
+          </button>
+          <button
+            className={`${styles.sortButton} ${sort === 'oldest' ? styles.sortActive : ''}`}
+            onClick={() => setSort('oldest')}
+          >
+            오래된순
+          </button>
+        </div>
+      </div>
+
+      {isCommentsLoading && <div className={styles.commentsState}>댓글을 불러오는 중…</div>}
+
+      {isCommentsError && (
+        <div className={styles.commentsState}>
+          <p>댓글을 불러오지 못했어요.</p>
+          <button className={styles.sendButton} onClick={() => refetchComments()}>다시 시도</button>
+        </div>
+      )}
+
+      {!isCommentsLoading && !isCommentsError && comments.length === 0 && (
+        <div className={styles.commentsState}>아직 댓글이 없어요. 첫 댓글을 남겨보세요.</div>
+      )}
+
+      {comments.map((c) => (
         <div key={c.id} className={styles.comment}>
           <div className={styles.authorRow}>
             <Avatar size={28} icon={<UserOutlined />} />
-            <span className={styles.author}>{c.author}</span>
-            <span className={styles.time}>{c.createdAt}</span>
+            <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
+            <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
           </div>
           <div className={styles.content}>{c.content}</div>
         </div>
       ))}
+      {hasNextPage && <div ref={sentinelRef} className={styles.sentinel} />}
 
       <div className={styles.commentBar}>
         <input

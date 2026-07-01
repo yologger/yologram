@@ -395,6 +395,27 @@ export const handlers = [
     return HttpResponse.json({ data: { id: 5001 } }, { status: 201 })
   }),
 
+  http.get('http://localhost:5001/api/v1/comments/posts/:postId', ({ request, params }) => {
+    const postId = Number(params.postId)
+    const url = new URL(request.url)
+    const cursor = url.searchParams.get('cursor')
+    const sort = url.searchParams.get('sort') ?? 'latest'
+
+    // 커서가 있으면 마지막 페이지(빈 결과)로 무한스크롤 종료
+    if (cursor) {
+      return HttpResponse.json({ data: [], nextCursor: null })
+    }
+
+    // 최신순(latest): 최신이 위, 오래된순(oldest): 오래된 게 위
+    const latest = [
+      { id: 102, postId, author: { uid: 2, nickname: '다른유저' }, content: '최신 댓글', createdAt: '2026-06-20T12:00:00' },
+      { id: 101, postId, author: { uid: 1, nickname: '테스터' }, content: '오래된 댓글', createdAt: '2026-06-19T12:00:00' },
+    ]
+    const data = sort === 'oldest' ? [...latest].reverse() : latest
+
+    return HttpResponse.json({ data, nextCursor: 'next-cursor' })
+  }),
+
   http.delete('http://localhost:5001/api/v1/pms/:section/posts/:id', ({ request, params }) => {
     const authHeader = request.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

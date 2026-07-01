@@ -15,3 +15,34 @@ export async function createComment(postId: number, content: string): Promise<Cr
   )
   return response.data.data
 }
+
+export type CommentSort = 'latest' | 'oldest'
+
+export interface Comment {
+  id: number
+  postId: number
+  author: { uid: number; nickname: string | null }
+  content: string
+  createdAt: string
+}
+
+export interface CommentPage {
+  data: Comment[]
+  nextCursor?: string | null
+}
+
+export interface GetCommentsParams {
+  sort?: CommentSort
+  cursor?: string | null
+  size?: number
+}
+
+export async function getComments(postId: number, params: GetCommentsParams = {}): Promise<CommentPage> {
+  const query: Record<string, string | number> = {}
+  if (params.sort) query.sort = params.sort
+  if (params.cursor) query.cursor = params.cursor
+  if (params.size) query.size = params.size
+
+  const response = await api.get<CommentPage>(`/api/v1/comments/posts/${postId}`, { params: query })
+  return response.data
+}

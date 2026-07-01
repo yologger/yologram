@@ -24,13 +24,33 @@ const loginAs = (uid: number) =>
     nickname: 'tester',
   })
 
-beforeAll(() => server.listen())
+// jsdom에는 IntersectionObserver가 없어 스텁 처리 (무한스크롤 센티넬용).
+// 관찰 콜백을 저장해 테스트에서 교차(intersect)를 수동으로 트리거한다.
+let intersect: (() => void) | null = null
+beforeAll(() => {
+  server.listen()
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class {
+      constructor(cb: (entries: { isIntersecting: boolean }[]) => void) {
+        intersect = () => cb([{ isIntersecting: true }])
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  )
+})
 afterEach(() => {
   server.resetHandlers()
   mockNavigate.mockClear()
+  intersect = null
   getDefaultStore().set(authAtom, null)
 })
-afterAll(() => server.close())
+afterAll(() => {
+  server.close()
+  vi.unstubAllGlobals()
+})
 beforeEach(() => mockUseParams.mockReturnValue({ postId: '1' }))
 
 // 모달 portal이 테스트 간 body에 누적될 수 있어, 가장 최근에 열린 dialog를 사용
@@ -40,13 +60,88 @@ const latestDialog = async () => {
 }
 
 describe('CommunityDetailPage', () => {
-  it('API로 조회한 게시글 본문과 댓글 영역을 표시한다', async () => {
+  it('API로 조회한 게시글 본문과 댓글 목록을 표시한다', async () => {
     loginAs(1)
     renderWithProviders(<CommunityDetailPage />)
 
     expect(await screen.findByText('API 본문 내용')).toBeInTheDocument()
-    expect(screen.getByText('테스터')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('댓글로 의견을 남겨보세요')).toBeInTheDocument()
+    // 조회한 댓글 목록 렌더 (최신순 기본)
+    expect(await screen.findByText('최신 댓글')).toBeInTheDocument()
+    expect(screen.getByText('오래된 댓글')).toBeInTheDocument()
+    expect(screen.getByText('다른유저')).toBeInTheDocument()
+  })
+
+  it('정렬을 오래된순으로 바꾸면 재조회하여 순서가 바뀐다', async () => {
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('최신 댓글')
+    // 최신순 기본: 최신 댓글이 오래된 댓글보다 앞
+    const before = screen.getAllByText(/댓글$/).map((el) => el.textContent)
+    expect(before.indexOf('최신 댓글')).toBeLessThan(before.indexOf('오래된 댓글'))
+
+    await user.click(screen.getByRole('button', { name: '오래된순' }))
+
+    // 재조회 후 순서 반전
+    await waitFor(() => {
+      const after = screen.getAllByText(/댓글$/).map((el) => el.textContent)
+      expect(after.indexOf('오래된 댓글')).toBeLessThan(after.indexOf('최신 댓글'))
+    })
+  })
+
+  it('센티넬 교차 시 다음 페이지를 불러온다 (무한스크롤)', async () => {
+    server.use(
+      http.get('http://localhost:5001/api/v1/comments/posts/:postId', ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get('cursor')
+        if (cursor) {
+          // 두 번째 페이지 (마지막)
+          return HttpResponse.json({
+            data: [{ id: 300, postId: 1, author: { uid: 3, nickname: '세번째' }, content: '다음 페이지 댓글', createdAt: '2026-06-18T12:00:00' }],
+            nextCursor: null,
+          })
+        }
+        return HttpResponse.json({
+          data: [{ id: 100, postId: 1, author: { uid: 1, nickname: '테스터' }, content: '첫 페이지 댓글', createdAt: '2026-06-20T12:00:00' }],
+          nextCursor: 'next-cursor',
+        })
+      }),
+    )
+    renderWithProviders(<CommunityDetailPage />)
+
+    expect(await screen.findByText('첫 페이지 댓글')).toBeInTheDocument()
+    expect(screen.queryByText('다음 페이지 댓글')).not.toBeInTheDocument()
+
+    // 센티넬 교차 → fetchNextPage
+    intersect?.()
+
+    expect(await screen.findByText('다음 페이지 댓글')).toBeInTheDocument()
+  })
+
+  it('댓글이 없으면 빈 목록 안내를 표시한다', async () => {
+    server.use(
+      http.get('http://localhost:5001/api/v1/comments/posts/:postId', () =>
+        HttpResponse.json({ data: [], nextCursor: null }),
+      ),
+    )
+    renderWithProviders(<CommunityDetailPage />)
+
+    expect(await screen.findByText(/아직 댓글이 없어요/)).toBeInTheDocument()
+  })
+
+  it('댓글 조회 실패 시 다시 시도 안내를 표시한다', async () => {
+    server.use(
+      http.get('http://localhost:5001/api/v1/comments/posts/:postId', () =>
+        HttpResponse.json(
+          { errorMessage: '서버 오류', errorCode: 'INTERNAL_SERVER_ERROR' },
+          { status: 500 },
+        ),
+      ),
+    )
+    renderWithProviders(<CommunityDetailPage />)
+
+    expect(await screen.findByText(/댓글을 불러오지 못했어요/)).toBeInTheDocument()
   })
 
   it('로그인 상태에서 댓글을 등록하면 성공 피드백을 표시하고 입력창을 비운다', async () => {
@@ -61,9 +156,38 @@ describe('CommunityDetailPage', () => {
     await user.type(input, '좋은 글이네요')
     await user.click(screen.getByRole('button', { name: '등록' }))
 
-    // 성공 토스트 + 입력창 초기화 (조회 API가 없어 목록에 추가되지는 않는다)
+    // 성공 토스트 + 입력창 초기화
     expect(await screen.findByText('댓글이 등록되었습니다.')).toBeInTheDocument()
     await waitFor(() => expect(input).toHaveValue(''))
+  })
+
+  it('댓글 등록 성공 시 목록을 무효화하여 다시 조회한다', async () => {
+    loginAs(1)
+    let getCount = 0
+    server.use(
+      http.get('http://localhost:5001/api/v1/comments/posts/:postId', ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get('cursor')
+        if (cursor) return HttpResponse.json({ data: [], nextCursor: null })
+        getCount += 1
+        return HttpResponse.json({
+          data: [
+            { id: 200 + getCount, postId: 1, author: { uid: 1, nickname: '테스터' }, content: `조회 ${getCount}`, createdAt: '2026-06-20T12:00:00' },
+          ],
+          nextCursor: null,
+        })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    expect(await screen.findByText('조회 1')).toBeInTheDocument()
+
+    const input = screen.getByPlaceholderText('댓글로 의견을 남겨보세요')
+    await user.type(input, '새 댓글')
+    await user.click(screen.getByRole('button', { name: '등록' }))
+
+    // invalidate → 재조회로 새 목록 노출
+    expect(await screen.findByText('조회 2')).toBeInTheDocument()
   })
 
   it('내용이 없으면 등록 버튼이 비활성이고 API를 호출하지 않는다', async () => {

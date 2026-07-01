@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw'
 import { getDefaultStore } from 'jotai'
 import { server } from '../test/server'
 import { authAtom } from '../stores/auth'
-import { createComment } from './comments'
+import { createComment, getComments } from './comments'
 
 const login = () =>
   getDefaultStore().set(authAtom, {
@@ -53,5 +53,37 @@ describe('createComment', () => {
       ),
     )
     await expect(createComment(1, '내용')).rejects.toThrow()
+  })
+})
+
+describe('getComments', () => {
+  it('댓글 목록과 nextCursor를 반환한다 (최신순 기본)', async () => {
+    const page = await getComments(1)
+    expect(page.data).toHaveLength(2)
+    expect(page.data[0].content).toBe('최신 댓글')
+    expect(page.nextCursor).toBe('next-cursor')
+  })
+
+  it('오래된순 정렬 시 오래된 댓글이 먼저 온다', async () => {
+    const page = await getComments(1, { sort: 'oldest' })
+    expect(page.data[0].content).toBe('오래된 댓글')
+  })
+
+  it('커서를 전달하면 다음(마지막) 페이지를 반환한다', async () => {
+    const page = await getComments(1, { cursor: 'next-cursor' })
+    expect(page.data).toHaveLength(0)
+    expect(page.nextCursor).toBeNull()
+  })
+
+  it('서버 오류 시 에러를 던진다', async () => {
+    server.use(
+      http.get('http://localhost:5001/api/v1/comments/posts/:postId', () =>
+        HttpResponse.json(
+          { errorMessage: '서버 오류', errorCode: 'INTERNAL_SERVER_ERROR' },
+          { status: 500 },
+        ),
+      ),
+    )
+    await expect(getComments(1)).rejects.toThrow()
   })
 })

@@ -99,10 +99,45 @@
   color: #ef4444;
 }
 
-.commentsTitle {
+.commentsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 12px 16px;
+}
+
+.commentsTitle {
   color: #71717a;
   font-size: 13px;
+}
+
+.sortToggle {
+  display: flex;
+  gap: 4px;
+}
+
+.sortButton {
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #a1a1aa;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.sortActive {
+  color: #08979c;
+  font-weight: 600;
+}
+
+.commentsState {
+  padding: 16px;
+  color: #71717a;
+  font-size: 14px;
+}
+
+.sentinel {
+  height: 1px;
 }
 
 .comment {
@@ -130,7 +165,8 @@
 
   .header,
   .post,
-  .commentsTitle,
+  .commentsHeader,
+  .commentsState,
   .comment {
     max-width: 760px;
     margin-inline: auto;
