@@ -19,6 +19,9 @@ class CommentRepository:
     def find_by_id(self, id: int) -> Comment | None:
         return self.db.query(Comment).filter(Comment.id == id).first()
 
+    def delete(self, comment: Comment) -> None:
+        self.db.delete(comment)
+
     def find_by_post_cursor(
         self, post_id: int, sort: CommentSort, cursor_id: int | None, limit: int
     ) -> list[Comment]:

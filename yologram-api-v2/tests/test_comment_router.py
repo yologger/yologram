@@ -172,6 +172,63 @@ class TestCommentUpdateRouter:
         assert response.json()["errorCode"] == "VALIDATION_ERROR"
 
 
+class TestCommentDeleteRouter:
+
+    def setup_method(self):
+        self.mock_db = MagicMock()
+        app.dependency_overrides[get_db] = lambda: self.mock_db
+        self.client = TestClient(app)
+
+    def teardown_method(self):
+        app.dependency_overrides.clear()
+
+    def _authenticate(self, uid: int = 1):
+        app.dependency_overrides[get_authenticated_user] = lambda: AuthData(uid=uid, access_token="t")
+
+    @patch("app.domain.comment.service.CommentRepository")
+    def test_정상_삭제_시_204(self, mock_repo_cls):
+        self._authenticate(uid=1)
+        mock_repo = MagicMock()
+        mock_repo.find_by_id.return_value = _saved_comment(10)  # user_id=1
+        mock_repo_cls.return_value = mock_repo
+
+        response = self.client.delete("/api/v2/comments/10")
+
+        assert response.status_code == 204
+        assert response.content == b""
+        mock_repo.delete.assert_called_once()
+
+    def test_미인증_시_401(self):
+        response = self.client.delete("/api/v2/comments/10")
+
+        assert response.status_code == 401
+        assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
+
+    @patch("app.domain.comment.service.CommentRepository")
+    def test_없는_댓글이면_404(self, mock_repo_cls):
+        self._authenticate(uid=1)
+        mock_repo = MagicMock()
+        mock_repo.find_by_id.return_value = None
+        mock_repo_cls.return_value = mock_repo
+
+        response = self.client.delete("/api/v2/comments/99")
+
+        assert response.status_code == 404
+        assert response.json()["errorCode"] == "COMMENT_NOT_FOUND"
+
+    @patch("app.domain.comment.service.CommentRepository")
+    def test_본인_댓글_아니면_403(self, mock_repo_cls):
+        self._authenticate(uid=2)
+        mock_repo = MagicMock()
+        mock_repo.find_by_id.return_value = _saved_comment(10)  # user_id=1
+        mock_repo_cls.return_value = mock_repo
+
+        response = self.client.delete("/api/v2/comments/10")
+
+        assert response.status_code == 403
+        assert response.json()["errorCode"] == "COMMENT_FORBIDDEN"
+
+
 def _comment(comment_id: int, post_id: int = 1, user_id: int = 1) -> Comment:
     from datetime import datetime
 

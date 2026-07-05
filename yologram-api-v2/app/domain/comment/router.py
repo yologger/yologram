@@ -58,6 +58,27 @@ def update_comment(
     service.update(comment_id, auth_data.uid, request)
 
 
+@router.delete(
+    "/{comment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="댓글 삭제",
+    description="본인 댓글 삭제 (인증 필요)",
+    responses={
+        204: {"description": "삭제 성공"},
+        401: {"description": "인증 실패"},
+        403: {"description": "본인 댓글이 아님"},
+        404: {"description": "댓글을 찾을 수 없음"},
+    },
+)
+def delete_comment(
+    comment_id: int,
+    auth_data: AuthData = Depends(get_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    service = CommentService(db)
+    service.delete(comment_id, auth_data.uid)
+
+
 # cursor-based pagination
 @router.get(
     "/posts/{post_id}",

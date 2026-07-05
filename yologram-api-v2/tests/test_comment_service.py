@@ -112,6 +112,55 @@ class TestCommentServiceUpdate:
         assert comment.content == "내용"
 
 
+class TestCommentServiceDelete:
+
+    @patch("app.domain.comment.service.LocalPostQueryClient")
+    @patch("app.domain.comment.service.CommentRepository")
+    def test_정상_삭제_시_repository_delete_호출(self, mock_repo_cls, mock_client_cls):
+        comment = _comment(10, user_id=1)
+        mock_repo = MagicMock()
+        mock_repo.find_by_id.return_value = comment
+        mock_repo_cls.return_value = mock_repo
+        mock_client_cls.return_value = MagicMock()
+
+        service = CommentService(MagicMock())
+        result = service.delete(10, 1)
+
+        assert result is None
+        mock_repo.delete.assert_called_once_with(comment)
+
+    @patch("app.domain.comment.service.LocalPostQueryClient")
+    @patch("app.domain.comment.service.CommentRepository")
+    def test_없는_댓글이면_CommentNotFoundException(self, mock_repo_cls, mock_client_cls):
+        mock_repo = MagicMock()
+        mock_repo.find_by_id.return_value = None
+        mock_repo_cls.return_value = mock_repo
+        mock_client_cls.return_value = MagicMock()
+
+        service = CommentService(MagicMock())
+
+        with pytest.raises(CommentNotFoundException):
+            service.delete(99, 1)
+
+        mock_repo.delete.assert_not_called()
+
+    @patch("app.domain.comment.service.LocalPostQueryClient")
+    @patch("app.domain.comment.service.CommentRepository")
+    def test_본인_댓글_아니면_CommentForbiddenException(self, mock_repo_cls, mock_client_cls):
+        comment = _comment(10, user_id=1)
+        mock_repo = MagicMock()
+        mock_repo.find_by_id.return_value = comment
+        mock_repo_cls.return_value = mock_repo
+        mock_client_cls.return_value = MagicMock()
+
+        service = CommentService(MagicMock())
+
+        with pytest.raises(CommentForbiddenException):
+            service.delete(10, 2)
+
+        mock_repo.delete.assert_not_called()
+
+
 class TestCommentServiceQuery:
 
     @patch("app.domain.comment.service.LocalUserQueryClient")

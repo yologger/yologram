@@ -58,6 +58,19 @@ class CommentService:
         # 내용 갱신 (속성 변경 → get_db commit 시 flush, modified_date는 onupdate로 자동 갱신)
         comment.content = request.content
 
+    def delete(self, comment_id: int, user_id: int) -> None:
+        """댓글 삭제 (본인 댓글)."""
+        # 없으면 404
+        comment = self.comment_repository.find_by_id(comment_id)
+        if comment is None:
+            raise CommentNotFoundException()
+
+        # 작성자 본인만 삭제 가능 (아니면 403)
+        if comment.user_id != user_id:
+            raise CommentForbiddenException()
+
+        self.comment_repository.delete(comment)
+
     def get_comments_by_cursor(
         self, post_id: int, sort_param: str | None, cursor: str | None, size: int
     ) -> ApiEnvelopCursorPage[CommentResponse]:
