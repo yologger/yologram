@@ -103,6 +103,42 @@ class CommentServiceTest {
     }
 
     @Nested
+    inner class 댓글_삭제 {
+
+        @Test
+        fun `본인 댓글이면 삭제한다`() {
+            val target = comment(1L, userId = 1L)
+            whenever(commentRepository.findById(1L)).thenReturn(Optional.of(target))
+
+            commentService.delete(1L, 1L)
+
+            verify(commentRepository).delete(target)
+        }
+
+        @Test
+        fun `존재하지 않는 댓글이면 CommentNotFoundException을 던진다`() {
+            whenever(commentRepository.findById(99L)).thenReturn(Optional.empty())
+
+            assertThrows<CommentNotFoundException> {
+                commentService.delete(99L, 1L)
+            }
+
+            verify(commentRepository, never()).delete(any<Comment>())
+        }
+
+        @Test
+        fun `본인 댓글이 아니면 CommentForbiddenException을 던진다`() {
+            whenever(commentRepository.findById(1L)).thenReturn(Optional.of(comment(1L, userId = 99L)))
+
+            assertThrows<CommentForbiddenException> {
+                commentService.delete(1L, 1L)
+            }
+
+            verify(commentRepository, never()).delete(any<Comment>())
+        }
+    }
+
+    @Nested
     inner class 댓글_목록_조회 {
 
         @Test

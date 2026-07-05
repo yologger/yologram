@@ -15,6 +15,7 @@ import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUser
 import link.yologram.api.v1.global.model.ApiEnvelop
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -65,6 +66,22 @@ class CommentResource(
         @Valid @RequestBody request: UpdateCommentRequest,
     ) {
         commentService.update(commentId, authData.uid, request)
+    }
+
+    @DeleteMapping("/{commentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "댓글 삭제", description = "본인 댓글 삭제 (인증 필요)")
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "삭제 성공"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "403", description = "본인 댓글이 아님"),
+        ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음"),
+    )
+    fun delete(
+        @PathVariable commentId: Long,
+        @AuthenticatedUser authData: AuthData,
+    ) {
+        commentService.delete(commentId, authData.uid)
     }
 
     @GetMapping("/posts/{postId}")

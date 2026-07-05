@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
@@ -178,6 +179,52 @@ class CommentResourceTest {
         }.andExpect {
             status { isBadRequest() }
             jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
+        }
+    }
+
+    @Test
+    fun `댓글 삭제 시 204 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+        mockMvc.delete("/api/v1/comments/1") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isNoContent() }
+        }
+    }
+
+    @Test
+    fun `삭제 시 Authorization 헤더 없으면 401 반환`() {
+        mockMvc.delete("/api/v1/comments/1")
+            .andExpect {
+                status { isUnauthorized() }
+                jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+            }
+    }
+
+    @Test
+    fun `본인 댓글이 아니면 삭제 시 403 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        doThrow(CommentForbiddenException()).whenever(commentService).delete(any(), any())
+
+        mockMvc.delete("/api/v1/comments/1") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isForbidden() }
+            jsonPath("$.errorCode") { value("COMMENT_FORBIDDEN") }
+        }
+    }
+
+    @Test
+    fun `존재하지 않는 댓글 삭제 시 404 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        doThrow(CommentNotFoundException()).whenever(commentService).delete(any(), any())
+
+        mockMvc.delete("/api/v1/comments/99") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.errorCode") { value("COMMENT_NOT_FOUND") }
         }
     }
 

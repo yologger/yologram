@@ -55,6 +55,16 @@ class CommentService(
         comment.update(request.content!!)
     }
 
+    // 댓글 삭제 (본인 댓글)
+    @Transactional
+    fun delete(commentId: Long, userId: Long) {
+        val comment = commentRepository.findByIdOrNull(commentId) ?: throw CommentNotFoundException()
+        // 작성자 본인만 삭제 가능 (아니면 403)
+        if (comment.userId != userId) throw CommentForbiddenException()
+
+        commentRepository.delete(comment)
+    }
+
     /**
      * 특정 글의 댓글 목록 조회 (cursor 페이지네이션, 최신순/오래된순).
      * 없는 postId면 빈 목록을 반환한다(존재 검증은 작성 시에만).
