@@ -71,3 +71,6 @@
 - [x] (Comment) 댓글 수정 (본인 댓글)
   - [x] api-v1/v2: PATCH /comments/{commentId} (인증). 작성자 본인만(403 COMMENT_FORBIDDEN), 없으면 404 COMMENT_NOT_FOUND, content 필수·최대 1000자(400). 내용만 갱신(더티체킹)
   - [x] web-v1/v2: 각 댓글에 본인일 때만 수정 버튼(author.uid === 로그인 uid). 인라인 편집(기존 content textarea → 저장/취소) → 저장 시 PATCH → ['comments', postId] invalidate로 목록 재조회. 실패 시 토스트만(reject 미사용). 수정 버튼 aria-label은 게시글 수정과 분리("댓글 수정")
+- [x] (Comment) 댓글 삭제 (본인 댓글)
+  - [x] api-v1/v2: DELETE /comments/{commentId} (인증). 작성자 본인만(403 COMMENT_FORBIDDEN), 없으면 404 COMMENT_NOT_FOUND. 댓글 단건 삭제(게시글 삭제 시 연관 댓글 정리는 후속)
+  - [x] web-v1/v2: 각 댓글에 본인일 때만 삭제 버튼(수정 버튼 옆, 편집 중엔 숨김). 확인 모달 → DELETE → ['comments', postId] invalidate로 목록 갱신. modal onOk는 성공/실패 모두 resolve(unhandled rejection 방지). 삭제 버튼 aria-label "댓글 삭제"
