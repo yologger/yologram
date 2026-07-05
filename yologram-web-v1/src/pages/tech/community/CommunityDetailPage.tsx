@@ -18,6 +18,7 @@ import { authAtom } from '../../../stores/auth'
 import usePostQuery from '../../../queries/usePostQuery'
 import useDeletePostMutation from '../../../queries/useDeletePostMutation'
 import useCreateCommentMutation from '../../../queries/useCreateCommentMutation'
+import useUpdateCommentMutation from '../../../queries/useUpdateCommentMutation'
 import useCommentsQuery from '../../../queries/useCommentsQuery'
 import type { CommentSort } from '../../../apis/comments'
 import { getErrorStatus } from '../../../lib/error'
@@ -32,11 +33,15 @@ export default function CommunityDetailPage() {
   const [auth] = useAtom(authAtom)
   const [text, setText] = useState('')
   const [sort, setSort] = useState<CommentSort>('latest')
+  // 한 번에 하나의 댓글만 편집 (편집 중인 commentId + 편집 텍스트)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editText, setEditText] = useState('')
   const sentinelRef = useRef<HTMLDivElement>(null)
   const { message, modal } = App.useApp()
   const queryClient = useQueryClient()
   const { mutate: deletePost } = useDeletePostMutation()
   const { mutate: createComment, isPending: isSubmitting } = useCreateCommentMutation()
+  const { mutate: updateComment, isPending: isUpdating } = useUpdateCommentMutation()
 
   const {
     data: comments = [],
@@ -182,6 +187,38 @@ export default function CommunityDetailPage() {
     )
   }
 
+  const startEdit = (commentId: number, content: string) => {
+    setEditingId(commentId)
+    setEditText(content)
+  }
+
+  const cancelEdit = () => {
+    // 편집 취소 시 원복 (편집 모드 종료 + 임시 텍스트 초기화)
+    setEditingId(null)
+    setEditText('')
+  }
+
+  const saveEdit = (commentId: number) => {
+    // 빈 내용/전송 중에는 무시 (저장 버튼도 동일 조건으로 비활성)
+    if (!editText.trim() || isUpdating) return
+    updateComment(
+      { commentId, content: editText.trim() },
+      {
+        onSuccess: () => {
+          setEditingId(null)
+          setEditText('')
+          message.success('댓글이 수정되었습니다.')
+          // 목록 무효화 → 수정 내용 반영
+          queryClient.invalidateQueries({ queryKey: ['comments', id] })
+        },
+        onError: () => {
+          // reject를 남기면 unhandled rejection이 되므로 토스트만 띄우고 안전하게 종료
+          message.error('댓글 수정에 실패했어요. 잠시 후 다시 시도해주세요.')
+        },
+      },
+    )
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -255,16 +292,59 @@ export default function CommunityDetailPage() {
         <div className={styles.commentsState}>아직 댓글이 없어요. 첫 댓글을 남겨보세요.</div>
       )}
 
-      {comments.map((c) => (
-        <div key={c.id} className={styles.comment}>
-          <div className={styles.authorRow}>
-            <Avatar size={28} icon={<UserOutlined />} />
-            <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
-            <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
+      {comments.map((c) => {
+        // 본인 댓글일 때만 수정 노출 (게시글 isAuthor 패턴과 동일)
+        const isCommentAuthor = auth != null && auth.uid === c.author.uid
+        const isEditing = editingId === c.id
+        return (
+          <div key={c.id} className={styles.comment}>
+            <div className={styles.authorRow}>
+              <Avatar size={28} icon={<UserOutlined />} />
+              <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
+              <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
+              {isCommentAuthor && !isEditing && (
+                <button
+                  className={styles.commentEdit}
+                  aria-label="댓글 수정"
+                  onClick={() => startEdit(c.id, c.content)}
+                >
+                  <EditOutlined /> 수정
+                </button>
+              )}
+            </div>
+            {isEditing ? (
+              <div className={styles.commentEditBox}>
+                <textarea
+                  className={styles.commentEditInput}
+                  aria-label="댓글 수정 입력"
+                  value={editText}
+                  maxLength={1000}
+                  disabled={isUpdating}
+                  onChange={(e) => setEditText(e.target.value)}
+                />
+                <div className={styles.commentEditActions}>
+                  <button
+                    className={styles.commentEditSave}
+                    disabled={!editText.trim() || isUpdating}
+                    onClick={() => saveEdit(c.id)}
+                  >
+                    저장
+                  </button>
+                  <button
+                    className={styles.commentEditCancel}
+                    disabled={isUpdating}
+                    onClick={cancelEdit}
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.content}>{c.content}</div>
+            )}
           </div>
-          <div className={styles.content}>{c.content}</div>
-        </div>
-      ))}
+        )
+      })}
       {hasNextPage && <div ref={sentinelRef} className={styles.sentinel} />}
 
       <div className={styles.commentBar}>

@@ -343,4 +343,133 @@ describe('CommunityDetailPage', () => {
     expect(await screen.findByText(/삭제에 실패했어요/)).toBeInTheDocument()
     expect(mockNavigate).not.toHaveBeenCalled()
   })
+
+  // 댓글 목록 msw: '오래된 댓글'(id 101, uid 1) = 본인, '최신 댓글'(id 102, uid 2) = 타인
+  it('본인 댓글에만 수정 버튼이 노출되고 타인 댓글엔 노출되지 않는다', async () => {
+    loginAs(1)
+    renderWithProviders(<CommunityDetailPage />)
+
+    // 본인 댓글(오래된 댓글) 1개에만 '댓글 수정' 버튼 노출
+    await screen.findByText('오래된 댓글')
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: '댓글 수정' })).toHaveLength(1),
+    )
+  })
+
+  it('비로그인 상태면 댓글 수정 버튼이 노출되지 않는다', async () => {
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('오래된 댓글')
+    expect(screen.queryByRole('button', { name: '댓글 수정' })).not.toBeInTheDocument()
+  })
+
+  it('수정 버튼을 누르면 편집 모드로 전환되어 기존 내용이 채워진다', async () => {
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('오래된 댓글')
+    await user.click(screen.getByRole('button', { name: '댓글 수정' }))
+
+    // textarea에 기존 content가 채워지고 저장/취소 버튼 노출
+    expect(screen.getByRole('textbox', { name: '댓글 수정 입력' })).toHaveValue('오래된 댓글')
+    expect(screen.getByRole('button', { name: '저장' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '취소' })).toBeInTheDocument()
+  })
+
+  it('편집 내용을 비우면 저장 버튼이 비활성화된다', async () => {
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('오래된 댓글')
+    await user.click(screen.getByRole('button', { name: '댓글 수정' }))
+
+    await user.clear(screen.getByRole('textbox', { name: '댓글 수정 입력' }))
+    expect(screen.getByRole('button', { name: '저장' })).toBeDisabled()
+  })
+
+  it('저장하면 PATCH를 호출하고 성공 후 목록을 무효화하여 다시 조회한다', async () => {
+    loginAs(1)
+    let getCount = 0
+    let patchCalled = false
+    server.use(
+      http.get('http://localhost:5001/api/v1/comments/posts/:postId', ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get('cursor')
+        if (cursor) return HttpResponse.json({ data: [], nextCursor: null })
+        getCount += 1
+        return HttpResponse.json({
+          data: [
+            { id: 101, postId: 1, author: { uid: 1, nickname: '테스터' }, content: `내 댓글 ${getCount}`, createdAt: '2026-06-19T12:00:00' },
+          ],
+          nextCursor: null,
+        })
+      }),
+      http.patch('http://localhost:5001/api/v1/comments/:commentId', async () => {
+        patchCalled = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    expect(await screen.findByText('내 댓글 1')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '댓글 수정' }))
+    const textarea = screen.getByRole('textbox', { name: '댓글 수정 입력' })
+    await user.clear(textarea)
+    await user.type(textarea, '수정한 내용')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+
+    // 성공 토스트 + PATCH 호출 + invalidate 재조회
+    expect(await screen.findByText('댓글이 수정되었습니다.')).toBeInTheDocument()
+    expect(patchCalled).toBe(true)
+    expect(await screen.findByText('내 댓글 2')).toBeInTheDocument()
+    // 편집 모드 종료
+    expect(screen.queryByRole('textbox', { name: '댓글 수정 입력' })).not.toBeInTheDocument()
+  })
+
+  it('취소하면 편집 모드가 종료되고 원래 내용이 유지된다', async () => {
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('오래된 댓글')
+    await user.click(screen.getByRole('button', { name: '댓글 수정' }))
+
+    const textarea = screen.getByRole('textbox', { name: '댓글 수정 입력' })
+    await user.clear(textarea)
+    await user.type(textarea, '취소할 편집')
+    await user.click(screen.getByRole('button', { name: '취소' }))
+
+    // 편집 모드 종료 + 원래 내용 그대로
+    expect(screen.queryByRole('textbox', { name: '댓글 수정 입력' })).not.toBeInTheDocument()
+    expect(screen.getByText('오래된 댓글')).toBeInTheDocument()
+  })
+
+  it('수정 API 실패 시 에러 메시지를 표시하고 편집 모드를 유지한다', async () => {
+    server.use(
+      http.patch('http://localhost:5001/api/v1/comments/:commentId', () =>
+        HttpResponse.json(
+          { errorMessage: '권한이 없습니다.', errorCode: 'COMMENT_FORBIDDEN' },
+          { status: 403 },
+        ),
+      ),
+    )
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('오래된 댓글')
+    await user.click(screen.getByRole('button', { name: '댓글 수정' }))
+
+    const textarea = screen.getByRole('textbox', { name: '댓글 수정 입력' })
+    await user.clear(textarea)
+    await user.type(textarea, '수정 실패할 내용')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(await screen.findByText(/수정에 실패했어요/)).toBeInTheDocument()
+    // 실패 시 재시도할 수 있게 편집 모드 유지
+    expect(screen.getByRole('textbox', { name: '댓글 수정 입력' })).toHaveValue('수정 실패할 내용')
+  })
 })

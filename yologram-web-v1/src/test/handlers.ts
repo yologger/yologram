@@ -416,6 +416,42 @@ export const handlers = [
     return HttpResponse.json({ data, nextCursor: 'next-cursor' })
   }),
 
+  http.patch('http://localhost:5001/api/v1/comments/:commentId', async ({ request, params }) => {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
+        { status: 401 },
+      )
+    }
+
+    const commentId = Number(params.commentId)
+    if (commentId === 99999) {
+      return HttpResponse.json(
+        { errorMessage: '댓글을 찾을 수 없습니다.', errorCode: 'COMMENT_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+
+    // id 102 는 타인 댓글 → 본인만 수정 가능
+    if (commentId === 102) {
+      return HttpResponse.json(
+        { errorMessage: '권한이 없습니다.', errorCode: 'COMMENT_FORBIDDEN' },
+        { status: 403 },
+      )
+    }
+
+    const body = await request.json() as { content?: string }
+    if (!body.content || body.content.trim().length === 0) {
+      return HttpResponse.json(
+        { errorMessage: '내용을 입력해주세요.', errorCode: 'VALIDATION_ERROR' },
+        { status: 400 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.delete('http://localhost:5001/api/v1/pms/:section/posts/:id', ({ request, params }) => {
     const authHeader = request.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
