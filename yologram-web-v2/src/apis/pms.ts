@@ -108,6 +108,10 @@ export async function createComment(postId: number, content: string): Promise<Cr
   return response.data.data
 }
 
+export async function updateComment(commentId: number, content: string): Promise<void> {
+  await api.patch(`/api/v2/comments/${commentId}`, { content })
+}
+
 export type CommentSort = 'latest' | 'oldest'
 
 export interface Comment {

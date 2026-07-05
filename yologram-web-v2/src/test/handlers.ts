@@ -401,6 +401,40 @@ export const handlers = [
     return HttpResponse.json({ data: { id: 7777 } }, { status: 201 })
   }),
 
+  http.patch('http://localhost:5002/api/v2/comments/:commentId', async ({ request, params }) => {
+    const auth = request.headers.get('Authorization')
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
+        { status: 401 },
+      )
+    }
+
+    const commentId = Number(params.commentId)
+    if (commentId === 99999) {
+      return HttpResponse.json(
+        { errorMessage: '댓글을 찾을 수 없습니다.', errorCode: 'COMMENT_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+    if (commentId === 88888) {
+      return HttpResponse.json(
+        { errorMessage: '본인 댓글만 수정할 수 있습니다.', errorCode: 'COMMENT_FORBIDDEN' },
+        { status: 403 },
+      )
+    }
+
+    const body = await request.json() as { content?: string }
+    if (!body.content || body.content.trim().length === 0 || body.content.length > 1000) {
+      return HttpResponse.json(
+        { errorMessage: '내용을 입력해주세요.', errorCode: 'VALIDATION_ERROR' },
+        { status: 400 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.get('http://localhost:5002/api/v2/comments/posts/:postId', ({ request, params }) => {
     const postId = Number(params.postId)
     const url = new URL(request.url)

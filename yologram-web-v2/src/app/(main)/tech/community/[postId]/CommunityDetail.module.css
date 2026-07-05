@@ -149,6 +149,68 @@
   border-bottom: 1px solid #dfe4ea;
 }
 
+.commentEdit {
+  margin-left: auto;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e7689a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.editArea {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editInput {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #e7689a;
+  background: #fff;
+  outline: none;
+  font-size: 14px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.editCancel {
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #a1a1aa;
+  cursor: pointer;
+  padding: 0;
+}
+
+.editSave {
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e7689a;
+  cursor: pointer;
+  padding: 0;
+}
+
+.editSave:disabled {
+  color: #c4c4c8;
+  cursor: not-allowed;
+}
+
 .commentBar {
   position: fixed;
   left: 0;

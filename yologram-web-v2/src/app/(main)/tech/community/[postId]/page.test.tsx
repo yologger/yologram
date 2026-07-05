@@ -283,6 +283,127 @@ describe('CommunityDetail', () => {
     expect(mockBack).not.toHaveBeenCalled()
   })
 
+  it('본인 댓글에만 수정 버튼이 보이고 타인 댓글에는 보이지 않는다', async () => {
+    // 기본 핸들러: 댓글 401(uid 1, 최신유저), 400(uid 2, 이전유저). uid 1로 로그인
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    renderWithProviders(<CommunityDetail />)
+
+    expect(await screen.findByText('가장 최근 댓글')).toBeInTheDocument()
+    // 본인 댓글(uid 1) 하나에만 수정 버튼 노출
+    expect(screen.getAllByRole('button', { name: '댓글 수정' })).toHaveLength(1)
+  })
+
+  it('비로그인 상태에서는 댓글 수정 버튼이 보이지 않는다', async () => {
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('가장 최근 댓글')
+    expect(screen.queryByRole('button', { name: '댓글 수정' })).not.toBeInTheDocument()
+  })
+
+  it('본인 댓글을 인라인 편집·저장하면 PATCH 요청·목록 재조회·성공 피드백이 이뤄진다', async () => {
+    let patched: { commentId: string; content: string } | null = null
+    let getCount = 0
+    server.use(
+      http.patch('http://localhost:5002/api/v2/comments/:commentId', async ({ request, params }) => {
+        const body = await request.json() as { content: string }
+        patched = { commentId: String(params.commentId), content: body.content }
+        return new HttpResponse(null, { status: 204 })
+      }),
+      http.get('http://localhost:5002/api/v2/comments/posts/:postId', () => {
+        getCount += 1
+        return HttpResponse.json({
+          data: [{ id: 401, postId: 1, author: { uid: 1, nickname: '최신유저' }, content: '가장 최근 댓글', createdAt: '2026-06-10T12:00:00' }],
+          nextCursor: null,
+        })
+      }),
+    )
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('가장 최근 댓글')
+    const initialGetCount = getCount
+
+    await user.click(screen.getByRole('button', { name: '댓글 수정' }))
+
+    // 편집모드: 기존 내용이 채워진 textarea 노출
+    const textarea = screen.getByDisplayValue('가장 최근 댓글') as HTMLTextAreaElement
+    await user.clear(textarea)
+    await user.type(textarea, '수정된 댓글')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(await screen.findByText('댓글이 수정되었습니다.')).toBeInTheDocument()
+    await waitFor(() => expect(patched).toEqual({ commentId: '401', content: '수정된 댓글' }))
+    // 수정 성공 시 invalidateQueries로 목록 GET 재요청 발생
+    await waitFor(() => expect(getCount).toBeGreaterThan(initialGetCount))
+    // 편집 종료(textarea 사라짐)
+    await waitFor(() => expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument())
+  })
+
+  it('편집 중 취소하면 요청 없이 원래 내용으로 돌아간다', async () => {
+    let patchCalled = false
+    server.use(
+      http.patch('http://localhost:5002/api/v2/comments/:commentId', () => {
+        patchCalled = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('가장 최근 댓글')
+    await user.click(screen.getByRole('button', { name: '댓글 수정' }))
+
+    const textarea = screen.getByDisplayValue('가장 최근 댓글') as HTMLTextAreaElement
+    await user.clear(textarea)
+    await user.type(textarea, '취소될 수정')
+    await user.click(screen.getByRole('button', { name: '취소' }))
+
+    // 편집 종료 + 원본 내용 유지 + 요청 미발생
+    await waitFor(() => expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument())
+    expect(screen.getByText('가장 최근 댓글')).toBeInTheDocument()
+    expect(patchCalled).toBe(false)
+  })
+
+  it('편집 내용이 비면 저장 버튼이 비활성화된다', async () => {
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('가장 최근 댓글')
+    await user.click(screen.getByRole('button', { name: '댓글 수정' }))
+
+    const textarea = screen.getByDisplayValue('가장 최근 댓글') as HTMLTextAreaElement
+    await user.clear(textarea)
+
+    expect(screen.getByRole('button', { name: '저장' })).toBeDisabled()
+  })
+
+  it('댓글 수정 실패 시 에러 토스트를 표시한다', async () => {
+    server.use(
+      http.patch('http://localhost:5002/api/v2/comments/:commentId', () =>
+        HttpResponse.json(
+          { errorMessage: '서버 오류가 발생했습니다.', errorCode: 'INTERNAL_SERVER_ERROR' },
+          { status: 500 },
+        ),
+      ),
+    )
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('가장 최근 댓글')
+    await user.click(screen.getByRole('button', { name: '댓글 수정' }))
+
+    const textarea = screen.getByDisplayValue('가장 최근 댓글') as HTMLTextAreaElement
+    await user.clear(textarea)
+    await user.type(textarea, '실패할 수정')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(await screen.findByText(/댓글 수정에 실패했어요/)).toBeInTheDocument()
+  })
+
   it('서버 오류 시 다시 시도 안내를 표시한다', async () => {
     server.use(
       http.get('http://localhost:5002/api/v2/pms/:section/posts/:id', () =>

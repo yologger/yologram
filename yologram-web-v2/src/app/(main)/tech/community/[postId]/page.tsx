@@ -22,6 +22,7 @@ import usePostQuery from '@/queries/usePostQuery'
 import useCommentsQuery from '@/queries/useCommentsQuery'
 import useDeletePostMutation from '@/queries/useDeletePostMutation'
 import useCreateCommentMutation from '@/queries/useCreateCommentMutation'
+import useUpdateCommentMutation from '@/queries/useUpdateCommentMutation'
 import { getErrorStatus } from '@/lib/error'
 import styles from './CommunityDetail.module.css'
 
@@ -38,6 +39,11 @@ export default function CommunityDetail() {
   const queryClient = useQueryClient()
   const { mutate: deletePost } = useDeletePostMutation()
   const { mutate: createComment, isPending: isCommentPending } = useCreateCommentMutation()
+  const { mutate: updateComment, isPending: isUpdatePending } = useUpdateCommentMutation()
+
+  // 인라인 편집 중인 댓글 하나만 관리(commentId + 편집 텍스트)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editText, setEditText] = useState('')
 
   const {
     data: comments = [],
@@ -188,6 +194,39 @@ export default function CommunityDetail() {
     )
   }
 
+  const startEditComment = (commentId: number, content: string) => {
+    setEditingId(commentId)
+    setEditText(content)
+  }
+
+  const cancelEditComment = () => {
+    // 취소 시 편집 상태만 종료(원본은 목록 데이터 그대로라 별도 원복 불필요)
+    setEditingId(null)
+    setEditText('')
+  }
+
+  const saveEditComment = () => {
+    const content = editText.trim()
+    if (editingId == null || !content || isUpdatePending) return
+
+    updateComment(
+      { commentId: editingId, content },
+      {
+        onSuccess: () => {
+          // 수정 성공 시 해당 글의 댓글 목록 재조회(정렬 무관 전체 무효화)
+          queryClient.invalidateQueries({ queryKey: ['comments', id] })
+          setEditingId(null)
+          setEditText('')
+          message.success('댓글이 수정되었습니다.')
+        },
+        onError: () => {
+          // reject 시 unhandled rejection 발생 — 에러 토스트만 노출하고 콜백은 정상 종료
+          message.error('댓글 수정에 실패했어요. 잠시 후 다시 시도해주세요.')
+        },
+      },
+    )
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -260,16 +299,52 @@ export default function CommunityDetail() {
         <div className={styles.commentStatus}>첫 댓글을 남겨보세요.</div>
       )}
 
-      {comments.map((c) => (
-        <div key={c.id} className={styles.comment}>
-          <div className={styles.authorRow}>
-            <Avatar size={28} icon={<UserOutlined />} />
-            <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
-            <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
+      {comments.map((c) => {
+        const isCommentOwner = !!auth && c.author.uid === auth.uid
+        const isEditing = editingId === c.id
+        return (
+          <div key={c.id} className={styles.comment}>
+            <div className={styles.authorRow}>
+              <Avatar size={28} icon={<UserOutlined />} />
+              <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
+              <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
+              {isCommentOwner && !isEditing && (
+                <button
+                  className={styles.commentEdit}
+                  aria-label="댓글 수정"
+                  onClick={() => startEditComment(c.id, c.content)}
+                >
+                  <EditOutlined /> 수정
+                </button>
+              )}
+            </div>
+            {isEditing ? (
+              <div className={styles.editArea}>
+                <textarea
+                  className={styles.editInput}
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  rows={2}
+                />
+                <div className={styles.editActions}>
+                  <button className={styles.editCancel} onClick={cancelEditComment}>
+                    취소
+                  </button>
+                  <button
+                    className={styles.editSave}
+                    disabled={!editText.trim() || isUpdatePending}
+                    onClick={saveEditComment}
+                  >
+                    저장
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.content}>{c.content}</div>
+            )}
           </div>
-          <div className={styles.content}>{c.content}</div>
-        </div>
-      ))}
+        )
+      })}
       {hasNextPage && <div ref={sentinelRef} className={styles.sentinel} />}
 
       <div className={styles.commentBar}>
