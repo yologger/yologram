@@ -21,4 +21,14 @@ class CommentExceptionHandler {
     fun handleInvalidCursor(e: InvalidCommentCursorException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
+
+    @ExceptionHandler(CommentNotFoundException::class)
+    fun handleCommentNotFound(e: CommentNotFoundException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(e.message, e.errorCode))
+    }
+
+    @ExceptionHandler(CommentForbiddenException::class)
+    fun handleCommentForbidden(e: CommentForbiddenException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse(e.message, e.errorCode))
+    }
 }

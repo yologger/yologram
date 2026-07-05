@@ -32,4 +32,9 @@ class Comment(
     @LastModifiedDate
     @Column(nullable = false)
     var modifiedDate: LocalDateTime = LocalDateTime.now(),
-)
+) {
+    /** 본인 댓글 수정: 내용 갱신. modifiedDate는 Auditing이 자동 갱신 */
+    fun update(content: String) {
+        this.content = content
+    }
+}

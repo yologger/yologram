@@ -8,6 +8,7 @@ import jakarta.validation.Valid
 import link.yologram.api.v1.domain.comment.model.CommentResponse
 import link.yologram.api.v1.domain.comment.model.CreateCommentRequest
 import link.yologram.api.v1.domain.comment.model.CreateCommentResponse
+import link.yologram.api.v1.domain.comment.model.UpdateCommentRequest
 import link.yologram.api.v1.domain.comment.service.CommentService
 import link.yologram.api.v1.domain.ums.resolver.AuthData
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUser
@@ -15,6 +16,7 @@ import link.yologram.api.v1.global.model.ApiEnvelop
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -45,6 +47,24 @@ class CommentResource(
         @Valid @RequestBody request: CreateCommentRequest,
     ): ApiEnvelop<CreateCommentResponse> {
         return ApiEnvelop(data = commentService.create(postId, authData.uid, request))
+    }
+
+    @PatchMapping("/{commentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "댓글 수정", description = "본인 댓글 수정 (인증 필요)")
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "수정 성공"),
+        ApiResponse(responseCode = "400", description = "입력값 검증 실패"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "403", description = "본인 댓글이 아님"),
+        ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음"),
+    )
+    fun update(
+        @PathVariable commentId: Long,
+        @AuthenticatedUser authData: AuthData,
+        @Valid @RequestBody request: UpdateCommentRequest,
+    ) {
+        commentService.update(commentId, authData.uid, request)
     }
 
     @GetMapping("/posts/{postId}")

@@ -1,11 +1,15 @@
 package link.yologram.api.v1.domain.comment.service
 
 import link.yologram.api.v1.domain.comment.entity.Comment
+import link.yologram.api.v1.domain.comment.exception.CommentForbiddenException
+import link.yologram.api.v1.domain.comment.exception.CommentNotFoundException
 import link.yologram.api.v1.domain.comment.exception.TargetPostNotFoundException
 import link.yologram.api.v1.domain.comment.model.CommentCursor
 import link.yologram.api.v1.domain.comment.model.CommentSort
 import link.yologram.api.v1.domain.comment.model.CreateCommentRequest
+import link.yologram.api.v1.domain.comment.model.UpdateCommentRequest
 import link.yologram.api.v1.domain.comment.repository.CommentRepository
+import java.util.Optional
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Nested
@@ -63,6 +67,38 @@ class CommentServiceTest {
             }
 
             verify(commentRepository, never()).save(any<Comment>())
+        }
+    }
+
+    @Nested
+    inner class 댓글_수정 {
+
+        @Test
+        fun `본인 댓글이면 내용을 수정한다`() {
+            val target = comment(1L, userId = 1L, content = "원본")
+            whenever(commentRepository.findById(1L)).thenReturn(Optional.of(target))
+
+            commentService.update(1L, 1L, UpdateCommentRequest(content = "수정됨"))
+
+            assertEquals("수정됨", target.content)
+        }
+
+        @Test
+        fun `존재하지 않는 댓글이면 CommentNotFoundException을 던진다`() {
+            whenever(commentRepository.findById(99L)).thenReturn(Optional.empty())
+
+            assertThrows<CommentNotFoundException> {
+                commentService.update(99L, 1L, UpdateCommentRequest(content = "수정"))
+            }
+        }
+
+        @Test
+        fun `본인 댓글이 아니면 CommentForbiddenException을 던진다`() {
+            whenever(commentRepository.findById(1L)).thenReturn(Optional.of(comment(1L, userId = 99L)))
+
+            assertThrows<CommentForbiddenException> {
+                commentService.update(1L, 1L, UpdateCommentRequest(content = "수정"))
+            }
         }
     }
 

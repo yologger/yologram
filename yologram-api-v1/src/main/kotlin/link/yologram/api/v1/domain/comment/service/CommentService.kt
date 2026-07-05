@@ -1,15 +1,19 @@
 package link.yologram.api.v1.domain.comment.service
 
 import link.yologram.api.v1.domain.comment.entity.Comment
+import link.yologram.api.v1.domain.comment.exception.CommentForbiddenException
+import link.yologram.api.v1.domain.comment.exception.CommentNotFoundException
 import link.yologram.api.v1.domain.comment.exception.TargetPostNotFoundException
 import link.yologram.api.v1.domain.comment.model.CommentCursor
 import link.yologram.api.v1.domain.comment.model.CommentResponse
 import link.yologram.api.v1.domain.comment.model.CommentSort
 import link.yologram.api.v1.domain.comment.model.CreateCommentRequest
 import link.yologram.api.v1.domain.comment.model.CreateCommentResponse
+import link.yologram.api.v1.domain.comment.model.UpdateCommentRequest
 import link.yologram.api.v1.domain.comment.repository.CommentRepository
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import link.yologram.api.v1.global.model.ApiEnvelopPage
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -38,6 +42,17 @@ class CommentService(
             )
         )
         return CreateCommentResponse(id = comment.id)
+    }
+
+    // 댓글 수정 (본인 댓글)
+    @Transactional
+    fun update(commentId: Long, userId: Long, request: UpdateCommentRequest) {
+        val comment = commentRepository.findByIdOrNull(commentId) ?: throw CommentNotFoundException()
+        // 작성자 본인만 수정 가능 (아니면 403)
+        if (comment.userId != userId) throw CommentForbiddenException()
+
+        // 내용 갱신 (JPA 더티체킹 → flush 시 update, modifiedDate 자동 갱신)
+        comment.update(request.content!!)
     }
 
     /**

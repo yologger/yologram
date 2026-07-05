@@ -3,11 +3,14 @@ package link.yologram.api.v1.domain.comment.resource
 import com.fasterxml.jackson.databind.ObjectMapper
 import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.comment.exception.CommentExceptionHandler
+import link.yologram.api.v1.domain.comment.exception.CommentForbiddenException
+import link.yologram.api.v1.domain.comment.exception.CommentNotFoundException
 import link.yologram.api.v1.domain.comment.exception.InvalidCommentCursorException
 import link.yologram.api.v1.domain.comment.exception.TargetPostNotFoundException
 import link.yologram.api.v1.domain.comment.model.CommentResponse
 import link.yologram.api.v1.domain.comment.model.CreateCommentRequest
 import link.yologram.api.v1.domain.comment.model.CreateCommentResponse
+import link.yologram.api.v1.domain.comment.model.UpdateCommentRequest
 import link.yologram.api.v1.domain.comment.service.CommentService
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.util.JwtUtil
@@ -27,6 +30,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import java.time.LocalDateTime
 
@@ -106,6 +110,74 @@ class CommentResourceTest {
         }.andExpect {
             status { isNotFound() }
             jsonPath("$.errorCode") { value("POST_NOT_FOUND") }
+        }
+    }
+
+    @Test
+    fun `댓글 수정 시 204 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+        mockMvc.patch("/api/v1/comments/1") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(UpdateCommentRequest(content = "수정된 댓글"))
+        }.andExpect {
+            status { isNoContent() }
+        }
+    }
+
+    @Test
+    fun `수정 시 Authorization 헤더 없으면 401 반환`() {
+        mockMvc.patch("/api/v1/comments/1") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(UpdateCommentRequest(content = "수정된 댓글"))
+        }.andExpect {
+            status { isUnauthorized() }
+            jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+        }
+    }
+
+    @Test
+    fun `본인 댓글이 아니면 수정 시 403 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        doThrow(CommentForbiddenException()).whenever(commentService).update(any(), any(), any())
+
+        mockMvc.patch("/api/v1/comments/1") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(UpdateCommentRequest(content = "수정된 댓글"))
+        }.andExpect {
+            status { isForbidden() }
+            jsonPath("$.errorCode") { value("COMMENT_FORBIDDEN") }
+        }
+    }
+
+    @Test
+    fun `존재하지 않는 댓글 수정 시 404 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+        doThrow(CommentNotFoundException()).whenever(commentService).update(any(), any(), any())
+
+        mockMvc.patch("/api/v1/comments/99") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(UpdateCommentRequest(content = "수정된 댓글"))
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.errorCode") { value("COMMENT_NOT_FOUND") }
+        }
+    }
+
+    @Test
+    fun `수정 시 내용 누락이면 400 반환`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
+
+        mockMvc.patch("/api/v1/comments/1") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(mapOf<String, Any>())
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
         }
     }
 
