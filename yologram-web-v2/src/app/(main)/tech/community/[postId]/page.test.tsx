@@ -380,6 +380,105 @@ describe('CommunityDetail', () => {
     expect(screen.getByRole('button', { name: '저장' })).toBeDisabled()
   })
 
+  it('본인 댓글에만 삭제 버튼이 보이고 타인 댓글에는 보이지 않는다', async () => {
+    // 기본 핸들러: 댓글 401(uid 1), 400(uid 2). uid 1로 로그인 → 본인 댓글 하나만 삭제 버튼 노출
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    renderWithProviders(<CommunityDetail />)
+
+    expect(await screen.findByText('가장 최근 댓글')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: '댓글 삭제' })).toHaveLength(1)
+  })
+
+  it('비로그인 상태에서는 댓글 삭제 버튼이 보이지 않는다', async () => {
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('가장 최근 댓글')
+    expect(screen.queryByRole('button', { name: '댓글 삭제' })).not.toBeInTheDocument()
+  })
+
+  it('본인 댓글 삭제 확인 시 DELETE 요청·목록 재조회·성공 피드백이 이뤄진다', async () => {
+    let deleted: string | null = null
+    let getCount = 0
+    server.use(
+      http.delete('http://localhost:5002/api/v2/comments/:commentId', ({ params }) => {
+        deleted = String(params.commentId)
+        return new HttpResponse(null, { status: 204 })
+      }),
+      http.get('http://localhost:5002/api/v2/comments/posts/:postId', () => {
+        getCount += 1
+        return HttpResponse.json({
+          data: [{ id: 401, postId: 1, author: { uid: 1, nickname: '최신유저' }, content: '가장 최근 댓글', createdAt: '2026-06-10T12:00:00' }],
+          nextCursor: null,
+        })
+      }),
+    )
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('가장 최근 댓글')
+    const initialGetCount = getCount
+
+    await user.click(screen.getByRole('button', { name: '댓글 삭제' }))
+
+    // 확인 모달 노출
+    expect((await screen.findAllByText('댓글을 삭제할까요?')).length).toBeGreaterThan(0)
+
+    const okButton = document.querySelector('.ant-modal-confirm-btns .ant-btn-dangerous') as HTMLElement
+    await user.click(okButton)
+
+    expect(await screen.findByText('댓글이 삭제되었습니다.')).toBeInTheDocument()
+    await waitFor(() => expect(deleted).toBe('401'))
+    // 삭제 성공 시 invalidateQueries로 목록 GET 재요청 발생
+    await waitFor(() => expect(getCount).toBeGreaterThan(initialGetCount))
+  })
+
+  it('삭제 확인 모달에서 취소하면 DELETE 요청이 발생하지 않는다', async () => {
+    let deleteCalled = false
+    server.use(
+      http.delete('http://localhost:5002/api/v2/comments/:commentId', () => {
+        deleteCalled = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('가장 최근 댓글')
+    await user.click(screen.getByRole('button', { name: '댓글 삭제' }))
+
+    await screen.findAllByText('댓글을 삭제할까요?')
+    const cancelButton = document.querySelector('.ant-modal-confirm-btns .ant-btn:not(.ant-btn-dangerous)') as HTMLElement
+    await user.click(cancelButton)
+
+    await new Promise((r) => setTimeout(r, 100))
+    expect(deleteCalled).toBe(false)
+  })
+
+  it('댓글 삭제 실패 시 에러 토스트를 표시한다', async () => {
+    server.use(
+      http.delete('http://localhost:5002/api/v2/comments/:commentId', () =>
+        HttpResponse.json(
+          { errorMessage: '서버 오류가 발생했습니다.', errorCode: 'INTERNAL_SERVER_ERROR' },
+          { status: 500 },
+        ),
+      ),
+    )
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('가장 최근 댓글')
+    await user.click(screen.getByRole('button', { name: '댓글 삭제' }))
+
+    await screen.findAllByText('댓글을 삭제할까요?')
+    const okButton = document.querySelector('.ant-modal-confirm-btns .ant-btn-dangerous') as HTMLElement
+    await user.click(okButton)
+
+    expect(await screen.findByText(/댓글 삭제에 실패했어요/)).toBeInTheDocument()
+  })
+
   it('댓글 수정 실패 시 에러 토스트를 표시한다', async () => {
     server.use(
       http.patch('http://localhost:5002/api/v2/comments/:commentId', () =>

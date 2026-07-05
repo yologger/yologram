@@ -149,8 +149,27 @@
   border-bottom: 1px solid #dfe4ea;
 }
 
-.commentEdit {
+.commentActions {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.commentEdit {
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e7689a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.commentDelete {
   border: none;
   background: none;
   font-size: 13px;

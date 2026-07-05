@@ -112,6 +112,10 @@ export async function updateComment(commentId: number, content: string): Promise
   await api.patch(`/api/v2/comments/${commentId}`, { content })
 }
 
+export async function deleteComment(commentId: number): Promise<void> {
+  await api.delete(`/api/v2/comments/${commentId}`)
+}
+
 export type CommentSort = 'latest' | 'oldest'
 
 export interface Comment {

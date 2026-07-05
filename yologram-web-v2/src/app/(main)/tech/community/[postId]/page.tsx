@@ -23,6 +23,7 @@ import useCommentsQuery from '@/queries/useCommentsQuery'
 import useDeletePostMutation from '@/queries/useDeletePostMutation'
 import useCreateCommentMutation from '@/queries/useCreateCommentMutation'
 import useUpdateCommentMutation from '@/queries/useUpdateCommentMutation'
+import useDeleteCommentMutation from '@/queries/useDeleteCommentMutation'
 import { getErrorStatus } from '@/lib/error'
 import styles from './CommunityDetail.module.css'
 
@@ -40,6 +41,7 @@ export default function CommunityDetail() {
   const { mutate: deletePost } = useDeletePostMutation()
   const { mutate: createComment, isPending: isCommentPending } = useCreateCommentMutation()
   const { mutate: updateComment, isPending: isUpdatePending } = useUpdateCommentMutation()
+  const { mutate: deleteComment } = useDeleteCommentMutation()
 
   // 인라인 편집 중인 댓글 하나만 관리(commentId + 편집 텍스트)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -227,6 +229,40 @@ export default function CommunityDetail() {
     )
   }
 
+  const handleDeleteComment = (commentId: number) => {
+    modal.confirm({
+      title: '댓글을 삭제할까요?',
+      content: '삭제한 댓글은 복구할 수 없어요.',
+      okText: '삭제',
+      okButtonProps: { danger: true },
+      cancelText: '취소',
+      // 게시글 삭제와 동일 패턴: 성공/실패 모두 resolve(reject 시 unhandled rejection 발생)
+      onOk: () =>
+        new Promise<void>((resolve) => {
+          deleteComment(
+            { commentId },
+            {
+              onSuccess: () => {
+                // 삭제 성공 시 해당 글의 댓글 목록 재조회(정렬 무관 전체 무효화)
+                queryClient.invalidateQueries({ queryKey: ['comments', id] })
+                // 편집 중이던 댓글을 삭제한 경우 편집 상태도 종료
+                if (editingId === commentId) {
+                  setEditingId(null)
+                  setEditText('')
+                }
+                message.success('댓글이 삭제되었습니다.')
+                resolve()
+              },
+              onError: () => {
+                message.error('댓글 삭제에 실패했어요. 잠시 후 다시 시도해주세요.')
+                resolve()
+              },
+            },
+          )
+        }),
+    })
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -309,13 +345,22 @@ export default function CommunityDetail() {
               <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
               <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
               {isCommentOwner && !isEditing && (
-                <button
-                  className={styles.commentEdit}
-                  aria-label="댓글 수정"
-                  onClick={() => startEditComment(c.id, c.content)}
-                >
-                  <EditOutlined /> 수정
-                </button>
+                <div className={styles.commentActions}>
+                  <button
+                    className={styles.commentEdit}
+                    aria-label="댓글 수정"
+                    onClick={() => startEditComment(c.id, c.content)}
+                  >
+                    <EditOutlined /> 수정
+                  </button>
+                  <button
+                    className={styles.commentDelete}
+                    aria-label="댓글 삭제"
+                    onClick={() => handleDeleteComment(c.id)}
+                  >
+                    <DeleteOutlined /> 삭제
+                  </button>
+                </div>
               )}
             </div>
             {isEditing ? (

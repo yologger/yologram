@@ -435,6 +435,32 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
+  http.delete('http://localhost:5002/api/v2/comments/:commentId', ({ request, params }) => {
+    const auth = request.headers.get('Authorization')
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
+        { status: 401 },
+      )
+    }
+
+    const commentId = Number(params.commentId)
+    if (commentId === 99999) {
+      return HttpResponse.json(
+        { errorMessage: '댓글을 찾을 수 없습니다.', errorCode: 'COMMENT_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+    if (commentId === 88888) {
+      return HttpResponse.json(
+        { errorMessage: '본인 댓글만 삭제할 수 있습니다.', errorCode: 'COMMENT_FORBIDDEN' },
+        { status: 403 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.get('http://localhost:5002/api/v2/comments/posts/:postId', ({ request, params }) => {
     const postId = Number(params.postId)
     const url = new URL(request.url)
