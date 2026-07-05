@@ -68,3 +68,6 @@
   - [x] web-v1/v2: 상세 페이지 더미 댓글 제거 → 실제 조회 연동. useInfiniteQuery 20개/페이지 커서 무한스크롤(IntersectionObserver), 최신/오래된순 정렬 토글, 작성 성공 시 ['comments', postId] invalidate로 갱신. 더미 atom(stores/community) 제거
   - offset 페이지네이션(getCommentsByOffset + countByPost)은 학습용으로 코드 보존 — 엔드포인트·서비스 테스트는 주석(cursor/offset 대비). cursor는 getCommentsByCursor로 대칭 명명. api-v2는 Python 오버로딩 불가라 find_by_post_cursor/_offset 메서드명 분리
   - Kotlin 오버로드(findByPost의 cursorId: Long? vs offset: Long) 함정은 pms와 동일(api-v1) — 커서 호출 시 cursorId를 Long?로 명시해 offset 오버로드 오선택 회피
+- [x] (Comment) 댓글 수정 (본인 댓글)
+  - [x] api-v1/v2: PATCH /comments/{commentId} (인증). 작성자 본인만(403 COMMENT_FORBIDDEN), 없으면 404 COMMENT_NOT_FOUND, content 필수·최대 1000자(400). 내용만 갱신(더티체킹)
+  - [x] web-v1/v2: 각 댓글에 본인일 때만 수정 버튼(author.uid === 로그인 uid). 인라인 편집(기존 content textarea → 저장/취소) → 저장 시 PATCH → ['comments', postId] invalidate로 목록 재조회. 실패 시 토스트만(reject 미사용). 수정 버튼 aria-label은 게시글 수정과 분리("댓글 수정")

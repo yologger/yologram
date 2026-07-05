@@ -10,9 +10,8 @@
 - [ ] (Comment) 댓글
   - [x] 댓글 작성 — post_comment 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/posts/{postId}), api-v1/v2, web-v1/v2 (완료, done.md)
   - [x] 댓글 조회 (최신순/오래된순 정렬, 최신이 위 기본) — sort=latest|oldest 양방향 cursor 무한스크롤(20개/페이지), 더미 → 연동, api-v1/v2 + web-v1/v2 (완료, done.md). cursor 실사용 + offset 학습용 보존
-  - [ ] 내 댓글에만 수정/삭제 버튼 활성화 (작성자=인증 유저일 때만 노출)
-  - [ ] 댓글 수정 — api-v1/v2, web-v1/v2
-  - [ ] 댓글 삭제 — api-v1/v2, web-v1/v2
+  - [x] 댓글 수정 — api-v1/v2, web-v1/v2 (본인 댓글 인라인 편집, 완료·done.md)
+  - [ ] 내 댓글에 삭제 버튼 활성화 + 댓글 삭제 — 수정 버튼/인라인 편집은 완료(done.md), 삭제 버튼·DELETE만 남음. api-v1/v2, web-v1/v2
   - [ ] 게시글 삭제 시 연관 댓글 정리 (고아 댓글 방지 — pms delete에서 post_comment 정리, api-v1/v2)
   - 대댓글 지원 여부는 구현 시 결정
 - [ ] (Count) 좋아요 토글 (/count 경로)
