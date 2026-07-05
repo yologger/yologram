@@ -27,6 +27,10 @@ export async function updateComment(commentId: number, content: string): Promise
   )
 }
 
+export async function deleteComment(commentId: number): Promise<void> {
+  await api.delete(`/api/v1/comments/${commentId}`)
+}
+
 export type CommentSort = 'latest' | 'oldest'
 
 export interface Comment {

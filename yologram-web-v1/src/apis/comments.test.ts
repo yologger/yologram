@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw'
 import { getDefaultStore } from 'jotai'
 import { server } from '../test/server'
 import { authAtom } from '../stores/auth'
-import { createComment, getComments } from './comments'
+import { createComment, getComments, deleteComment } from './comments'
 
 const login = () =>
   getDefaultStore().set(authAtom, {
@@ -85,5 +85,26 @@ describe('getComments', () => {
       ),
     )
     await expect(getComments(1)).rejects.toThrow()
+  })
+})
+
+describe('deleteComment', () => {
+  it('본인 댓글 삭제 성공 시 정상 반환한다', async () => {
+    login()
+    await expect(deleteComment(101)).resolves.toBeUndefined()
+  })
+
+  it('타인 댓글이면 403 에러를 던진다', async () => {
+    login()
+    await expect(deleteComment(102)).rejects.toThrow()
+  })
+
+  it('존재하지 않는 댓글이면 404 에러를 던진다', async () => {
+    login()
+    await expect(deleteComment(99999)).rejects.toThrow()
+  })
+
+  it('미인증 상태면 401 에러를 던진다', async () => {
+    await expect(deleteComment(101)).rejects.toThrow()
   })
 })

@@ -19,6 +19,7 @@ import usePostQuery from '../../../queries/usePostQuery'
 import useDeletePostMutation from '../../../queries/useDeletePostMutation'
 import useCreateCommentMutation from '../../../queries/useCreateCommentMutation'
 import useUpdateCommentMutation from '../../../queries/useUpdateCommentMutation'
+import useDeleteCommentMutation from '../../../queries/useDeleteCommentMutation'
 import useCommentsQuery from '../../../queries/useCommentsQuery'
 import type { CommentSort } from '../../../apis/comments'
 import { getErrorStatus } from '../../../lib/error'
@@ -42,6 +43,7 @@ export default function CommunityDetailPage() {
   const { mutate: deletePost } = useDeletePostMutation()
   const { mutate: createComment, isPending: isSubmitting } = useCreateCommentMutation()
   const { mutate: updateComment, isPending: isUpdating } = useUpdateCommentMutation()
+  const { mutate: deleteComment } = useDeleteCommentMutation()
 
   const {
     data: comments = [],
@@ -219,6 +221,36 @@ export default function CommunityDetailPage() {
     )
   }
 
+  const handleDeleteComment = (commentId: number) => {
+    // 삭제는 되돌릴 수 없으므로 확인 모달을 거친다 (게시글 삭제와 동일 패턴)
+    modal.confirm({
+      title: '댓글을 삭제할까요?',
+      content: '삭제한 댓글은 되돌릴 수 없어요.',
+      okText: '삭제',
+      okButtonProps: { danger: true },
+      cancelText: '취소',
+      onOk: () =>
+        new Promise<void>((resolve) => {
+          deleteComment(
+            { commentId },
+            {
+              onSuccess: () => {
+                message.success('댓글이 삭제되었습니다.')
+                // 목록 무효화 → 삭제 반영
+                queryClient.invalidateQueries({ queryKey: ['comments', id] })
+                resolve()
+              },
+              onError: () => {
+                // 실패해도 모달은 닫고 에러 토스트만(reject 시 unhandled rejection 발생)
+                message.error('댓글 삭제에 실패했어요. 잠시 후 다시 시도해주세요.')
+                resolve()
+              },
+            },
+          )
+        }),
+    })
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -303,13 +335,22 @@ export default function CommunityDetailPage() {
               <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
               <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
               {isCommentAuthor && !isEditing && (
-                <button
-                  className={styles.commentEdit}
-                  aria-label="댓글 수정"
-                  onClick={() => startEdit(c.id, c.content)}
-                >
-                  <EditOutlined /> 수정
-                </button>
+                <>
+                  <button
+                    className={styles.commentEdit}
+                    aria-label="댓글 수정"
+                    onClick={() => startEdit(c.id, c.content)}
+                  >
+                    <EditOutlined /> 수정
+                  </button>
+                  <button
+                    className={styles.commentDelete}
+                    aria-label="댓글 삭제"
+                    onClick={() => handleDeleteComment(c.id)}
+                  >
+                    <DeleteOutlined /> 삭제
+                  </button>
+                </>
               )}
             </div>
             {isEditing ? (

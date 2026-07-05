@@ -472,4 +472,101 @@ describe('CommunityDetailPage', () => {
     // 실패 시 재시도할 수 있게 편집 모드 유지
     expect(screen.getByRole('textbox', { name: '댓글 수정 입력' })).toHaveValue('수정 실패할 내용')
   })
+
+  // 댓글 목록 msw: '오래된 댓글'(id 101, uid 1) = 본인, '최신 댓글'(id 102, uid 2) = 타인
+  it('본인 댓글에만 삭제 버튼이 노출되고 타인 댓글엔 노출되지 않는다', async () => {
+    loginAs(1)
+    renderWithProviders(<CommunityDetailPage />)
+
+    // 본인 댓글(오래된 댓글) 1개에만 '댓글 삭제' 버튼 노출
+    await screen.findByText('오래된 댓글')
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: '댓글 삭제' })).toHaveLength(1),
+    )
+  })
+
+  it('비로그인 상태면 댓글 삭제 버튼이 노출되지 않는다', async () => {
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('오래된 댓글')
+    expect(screen.queryByRole('button', { name: '댓글 삭제' })).not.toBeInTheDocument()
+  })
+
+  it('삭제 확인 모달에서 삭제하면 DELETE를 호출하고 목록을 무효화하여 다시 조회한다', async () => {
+    loginAs(1)
+    let getCount = 0
+    let deleteCalled = false
+    server.use(
+      http.get('http://localhost:5001/api/v1/comments/posts/:postId', ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get('cursor')
+        if (cursor) return HttpResponse.json({ data: [], nextCursor: null })
+        getCount += 1
+        return HttpResponse.json({
+          data: [
+            { id: 101, postId: 1, author: { uid: 1, nickname: '테스터' }, content: `내 댓글 ${getCount}`, createdAt: '2026-06-19T12:00:00' },
+          ],
+          nextCursor: null,
+        })
+      }),
+      http.delete('http://localhost:5001/api/v1/comments/:commentId', () => {
+        deleteCalled = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    expect(await screen.findByText('내 댓글 1')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '댓글 삭제' }))
+    const dialog = await latestDialog()
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }))
+
+    // 성공 토스트 + DELETE 호출 + invalidate 재조회
+    expect(await screen.findByText('댓글이 삭제되었습니다.')).toBeInTheDocument()
+    expect(deleteCalled).toBe(true)
+    expect(await screen.findByText('내 댓글 2')).toBeInTheDocument()
+  })
+
+  it('삭제 확인 모달에서 취소하면 DELETE를 호출하지 않는다', async () => {
+    loginAs(1)
+    let deleteCalled = false
+    server.use(
+      http.delete('http://localhost:5001/api/v1/comments/:commentId', () => {
+        deleteCalled = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('오래된 댓글')
+    await user.click(screen.getByRole('button', { name: '댓글 삭제' }))
+    const dialog = await latestDialog()
+    await user.click(within(dialog).getByRole('button', { name: '취소' }))
+
+    // 취소 시 onOk 미실행 → DELETE 미호출 (게시글 삭제 취소와 동일)
+    expect(deleteCalled).toBe(false)
+  })
+
+  it('삭제 API 실패 시 에러 메시지를 표시한다', async () => {
+    server.use(
+      http.delete('http://localhost:5001/api/v1/comments/:commentId', () =>
+        HttpResponse.json(
+          { errorMessage: '권한이 없습니다.', errorCode: 'COMMENT_FORBIDDEN' },
+          { status: 403 },
+        ),
+      ),
+    )
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('오래된 댓글')
+    await user.click(screen.getByRole('button', { name: '댓글 삭제' }))
+    const dialog = await latestDialog()
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }))
+
+    expect(await screen.findByText(/삭제에 실패했어요/)).toBeInTheDocument()
+  })
 })
