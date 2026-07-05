@@ -35,7 +35,10 @@ git diff로 변경사항을 확인하고, 변경된 프로젝트의 문서를 �
 
 ### 3단계: Commit
 
-1. 문서/Swagger 변경사항이 있으면 기능 코드와 함께 commit
+1. docs(done.md/todos.md/rules.md) 및 Swagger 변경사항을 commit
+   - 기능 코드가 아직 미커밋이면 기능 코드와 함께 commit
+   - 기능 코드가 이미 프로젝트별로 커밋된 상태면, 문서 변경(docs/done.md·todos.md 등)은 `[all] docs: <설명>` 커밋으로 별도 반영
+   - done.md에 완료 기능 기록 + todos.md 완료 항목 체크는 finalize의 핵심 산출물이므로 누락하지 않는다
 2. 커밋 메시지는 프로젝트 커밋 컨벤션을 따름
    - 형식: [프로젝트명] 타입: 설명
 3. commit 전 변경 내용을 사용자에게 보여주고 승인 후 진행
