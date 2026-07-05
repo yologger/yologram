@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config.database import get_db
 from app.core.response import ApiEnvelop, ApiEnvelopCursorPage, ApiEnvelopPage
-from app.domain.comment.schema import CommentResponse, CreateCommentRequest
+from app.domain.comment.schema import CommentResponse, CreateCommentRequest, UpdateCommentRequest
 from app.domain.comment.service import CommentService
 from app.domain.ums.auth_dependency import get_authenticated_user
 from app.domain.ums.auth_schema import AuthData
@@ -33,6 +33,29 @@ def create_comment(
     service = CommentService(db)
     result = service.create(post_id, auth_data.uid, request)
     return ApiEnvelop(data=result)
+
+
+@router.patch(
+    "/{comment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="댓글 수정",
+    description="본인 댓글 수정 (인증 필요)",
+    responses={
+        204: {"description": "수정 성공"},
+        400: {"description": "입력값 검증 실패"},
+        401: {"description": "인증 실패"},
+        403: {"description": "본인 댓글이 아님"},
+        404: {"description": "댓글을 찾을 수 없음"},
+    },
+)
+def update_comment(
+    comment_id: int,
+    request: UpdateCommentRequest,
+    auth_data: AuthData = Depends(get_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    service = CommentService(db)
+    service.update(comment_id, auth_data.uid, request)
 
 
 # cursor-based pagination

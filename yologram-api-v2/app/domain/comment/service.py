@@ -1,6 +1,10 @@
 from sqlalchemy.orm import Session
 
-from app.core.exception import TargetPostNotFoundException
+from app.core.exception import (
+    CommentForbiddenException,
+    CommentNotFoundException,
+    TargetPostNotFoundException,
+)
 from app.core.response import ApiEnvelopCursorPage, ApiEnvelopPage
 from app.domain.comment.cursor import CommentCursor
 from app.domain.comment.model import Comment
@@ -11,6 +15,7 @@ from app.domain.comment.schema import (
     CommentResponse,
     CreateCommentRequest,
     CreateCommentResponse,
+    UpdateCommentRequest,
 )
 from app.domain.comment.sort import CommentSort
 from app.domain.comment.user_query_client import LocalUserQueryClient, UserQueryClient
@@ -38,6 +43,20 @@ class CommentService:
             )
         )
         return CreateCommentResponse(id=comment.id)
+
+    def update(self, comment_id: int, user_id: int, request: UpdateCommentRequest) -> None:
+        """댓글 수정 (본인 댓글). 내용만 갱신."""
+        # 없으면 404
+        comment = self.comment_repository.find_by_id(comment_id)
+        if comment is None:
+            raise CommentNotFoundException()
+
+        # 작성자 본인만 수정 가능 (아니면 403)
+        if comment.user_id != user_id:
+            raise CommentForbiddenException()
+
+        # 내용 갱신 (속성 변경 → get_db commit 시 flush, modified_date는 onupdate로 자동 갱신)
+        comment.content = request.content
 
     def get_comments_by_cursor(
         self, post_id: int, sort_param: str | None, cursor: str | None, size: int

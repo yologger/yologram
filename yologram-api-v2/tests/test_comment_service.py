@@ -4,9 +4,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.core.exception import InvalidCursorException, TargetPostNotFoundException
+from app.core.exception import (
+    CommentForbiddenException,
+    CommentNotFoundException,
+    InvalidCursorException,
+    TargetPostNotFoundException,
+)
 from app.domain.comment.model import Comment
-from app.domain.comment.schema import CreateCommentRequest
+from app.domain.comment.schema import CreateCommentRequest, UpdateCommentRequest
 from app.domain.comment.service import CommentService
 from app.domain.comment.sort import CommentSort
 
@@ -57,6 +62,54 @@ class TestCommentService:
             service.create(99, 1, CreateCommentRequest(content="내용"))
 
         mock_comment_repo.save.assert_not_called()
+
+
+class TestCommentServiceUpdate:
+
+    @patch("app.domain.comment.service.LocalPostQueryClient")
+    @patch("app.domain.comment.service.CommentRepository")
+    def test_정상_수정_시_내용_갱신(self, mock_repo_cls, mock_client_cls):
+        comment = _comment(10, user_id=1)
+        mock_repo = MagicMock()
+        mock_repo.find_by_id.return_value = comment
+        mock_repo_cls.return_value = mock_repo
+        mock_client_cls.return_value = MagicMock()
+
+        service = CommentService(MagicMock())
+        result = service.update(10, 1, UpdateCommentRequest(content="수정된 내용"))
+
+        assert result is None
+        assert comment.content == "수정된 내용"
+
+    @patch("app.domain.comment.service.LocalPostQueryClient")
+    @patch("app.domain.comment.service.CommentRepository")
+    def test_없는_댓글이면_CommentNotFoundException(self, mock_repo_cls, mock_client_cls):
+        mock_repo = MagicMock()
+        mock_repo.find_by_id.return_value = None
+        mock_repo_cls.return_value = mock_repo
+        mock_client_cls.return_value = MagicMock()
+
+        service = CommentService(MagicMock())
+
+        with pytest.raises(CommentNotFoundException):
+            service.update(99, 1, UpdateCommentRequest(content="수정된 내용"))
+
+    @patch("app.domain.comment.service.LocalPostQueryClient")
+    @patch("app.domain.comment.service.CommentRepository")
+    def test_본인_댓글_아니면_CommentForbiddenException(self, mock_repo_cls, mock_client_cls):
+        comment = _comment(10, user_id=1)
+        mock_repo = MagicMock()
+        mock_repo.find_by_id.return_value = comment
+        mock_repo_cls.return_value = mock_repo
+        mock_client_cls.return_value = MagicMock()
+
+        service = CommentService(MagicMock())
+
+        with pytest.raises(CommentForbiddenException):
+            service.update(10, 2, UpdateCommentRequest(content="수정된 내용"))
+
+        # 내용은 변경되지 않아야 한다
+        assert comment.content == "내용"
 
 
 class TestCommentServiceQuery:
