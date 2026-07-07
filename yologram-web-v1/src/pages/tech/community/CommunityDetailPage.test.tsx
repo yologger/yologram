@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeAll, afterEach, afterAll, beforeEach } 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
+import { QueryClient } from '@tanstack/react-query'
 import { getDefaultStore } from 'jotai'
 import { renderWithProviders } from '../../../test/utils'
 import { server } from '../../../test/server'
@@ -300,6 +301,23 @@ describe('CommunityDetailPage', () => {
       // 진입 출처로 복귀(뒤로가기와 동일)
       expect(mockNavigate).toHaveBeenCalledWith(-1)
     })
+  })
+
+  it('게시글 삭제 성공 시 해당 글의 댓글 캐시를 제거한다', async () => {
+    // 삭제된 글은 다시 볼 일이 없으므로 removeQueries 호출을 검증
+    const removeSpy = vi.spyOn(QueryClient.prototype, 'removeQueries')
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await user.click(await screen.findByRole('button', { name: '삭제' }))
+    const dialog = await latestDialog()
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }))
+
+    await waitFor(() => {
+      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['comments', 1] })
+    })
+    removeSpy.mockRestore()
   })
 
   it('삭제 확인 모달에서 취소하면 삭제되지 않고 이동하지 않는다', async () => {

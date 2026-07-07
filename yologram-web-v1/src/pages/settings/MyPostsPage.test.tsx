@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach, vi } 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
+import { QueryClient } from '@tanstack/react-query'
 import { getDefaultStore } from 'jotai'
 import { server } from '../../test/server'
 import { renderWithProviders } from '../../test/utils'
@@ -136,6 +137,27 @@ describe('MyPostsPage', () => {
       expect(screen.queryByText('내가 쓴 기술 글')).not.toBeInTheDocument()
     })
     expect(screen.getByText('내가 쓴 투자 글')).toBeInTheDocument()
+  })
+
+  it('게시글 삭제 성공 시 해당 글의 댓글 캐시를 제거한다', async () => {
+    // 삭제된 글은 다시 볼 일이 없으므로 removeQueries 호출을 검증
+    const removeSpy = vi.spyOn(QueryClient.prototype, 'removeQueries')
+    const user = userEvent.setup()
+    renderWithProviders(<MyPostsPage />)
+
+    await screen.findByText('내가 쓴 기술 글')
+
+    // 첫 번째 글(기술 글, id 2001)의 삭제 버튼 클릭
+    const deleteButtons = screen.getAllByRole('button', { name: '삭제' })
+    await user.click(deleteButtons[0])
+
+    const dialog = await latestDialog()
+    await user.click(within(dialog).getByRole('button', { name: '삭제' }))
+
+    await waitFor(() => {
+      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['comments', 2001] })
+    })
+    removeSpy.mockRestore()
   })
 
   it('삭제 확인 모달에서 취소하면 글이 그대로 남는다', async () => {
