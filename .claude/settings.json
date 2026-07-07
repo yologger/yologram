@@ -2,5 +2,10 @@
   "project": {
     "name": "yologram-v1",
     "type": "monorepo"
+  },
+  "permissions": {
+    "allow": [
+      "Bash"
+    ]
   }
 }
