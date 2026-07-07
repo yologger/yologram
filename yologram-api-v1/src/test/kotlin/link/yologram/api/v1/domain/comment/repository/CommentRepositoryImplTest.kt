@@ -121,4 +121,20 @@ class CommentRepositoryImplTest {
             assertEquals(2, result.size)
         }
     }
+
+    @Nested
+    inner class 글_단위_삭제 {
+
+        @Test
+        fun `해당 글의 댓글만 전부 삭제하고 다른 글 댓글은 보존한다`() {
+            saveComment(postId = 100L)
+            saveComment(postId = 100L)
+            val other = saveComment(postId = 200L)
+
+            commentRepository.deleteByPostId(100L)
+
+            assertEquals(0, commentRepository.findByPost(100L, CommentSort.LATEST, null, 10).size)
+            assertEquals(listOf(other.id), commentRepository.findByPost(200L, CommentSort.LATEST, null, 10).map { it.id })
+        }
+    }
 }

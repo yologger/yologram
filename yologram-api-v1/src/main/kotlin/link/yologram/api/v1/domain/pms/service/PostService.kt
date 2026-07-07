@@ -26,6 +26,7 @@ class PostService(
     private val postCategoryMappingRepository: PostCategoryMappingRepository,
     private val categoryQueryClient: PostCategoryQueryClient,
     private val userQueryClient: UserQueryClient,
+    private val commentCleanupClient: CommentCleanupClient,
 ) {
 
     // 게시글 단건 생성
@@ -94,8 +95,10 @@ class PostService(
         // 작성자 본인만 삭제 가능 (아니면 403)
         if (post.userId != userId) throw PostForbiddenException()
 
-        // 연관 카테고리 매핑 정리 후 게시글 삭제 (댓글/좋아요 도메인은 미구현)
+        // 연관 데이터 정리 후 게시글 삭제 — 카테고리 매핑 + 댓글(고아 방지, CommentCleanupClient로 경계 추상화).
+        // 같은 트랜잭션이라 글·매핑·댓글 삭제가 원자적 (좋아요 도메인은 미구현)
         postCategoryMappingRepository.deleteByPostId(post.id)
+        commentCleanupClient.deleteByPostId(post.id)
         postRepository.delete(post)
     }
 

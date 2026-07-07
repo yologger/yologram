@@ -46,6 +46,9 @@ class PostServiceTest {
     @Mock
     lateinit var userQueryClient: UserQueryClient
 
+    @Mock
+    lateinit var commentCleanupClient: CommentCleanupClient
+
     @InjectMocks
     lateinit var postService: PostService
 
@@ -147,13 +150,14 @@ class PostServiceTest {
     inner class 게시글_삭제 {
 
         @Test
-        fun `본인 글이면 카테고리 매핑과 게시글을 삭제한다`() {
+        fun `본인 글이면 카테고리 매핑·댓글과 게시글을 삭제한다`() {
             val post = Post(id = 1L, section = Section.TECH, userId = 1L, content = "내용")
             whenever(postRepository.findById(1L)).thenReturn(Optional.of(post))
 
             postService.delete("tech", 1L, 1L)
 
             verify(postCategoryMappingRepository).deleteByPostId(1L)
+            verify(commentCleanupClient).deleteByPostId(1L)
             verify(postRepository).delete(post)
         }
 
@@ -166,6 +170,7 @@ class PostServiceTest {
             }
 
             verify(postRepository, never()).delete(any<Post>())
+            verify(commentCleanupClient, never()).deleteByPostId(any())
         }
 
         @Test
@@ -177,6 +182,7 @@ class PostServiceTest {
             }
 
             verify(postRepository, never()).delete(any<Post>())
+            verify(commentCleanupClient, never()).deleteByPostId(any())
         }
 
         @Test
@@ -188,6 +194,7 @@ class PostServiceTest {
             }
 
             verify(postCategoryMappingRepository, never()).deleteByPostId(any())
+            verify(commentCleanupClient, never()).deleteByPostId(any())
             verify(postRepository, never()).delete(any<Post>())
         }
     }
