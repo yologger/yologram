@@ -153,6 +153,8 @@ export default function CommunityDetail() {
                 queryClient.invalidateQueries({ queryKey: ['posts', 'tech'] })
                 queryClient.invalidateQueries({ queryKey: ['myPosts'] })
                 queryClient.removeQueries({ queryKey: ['post', 'tech', id] })
+                // 삭제된 글은 다시 볼 일이 없으므로 댓글 캐시도 제거(백엔드도 함께 삭제)
+                queryClient.removeQueries({ queryKey: ['comments', id] })
                 message.success('글이 삭제되었습니다.')
                 // 진입 출처(기술 커뮤니티 또는 내 글 목록)로 복귀 — 뒤로가기 버튼과 동일
                 router.back()

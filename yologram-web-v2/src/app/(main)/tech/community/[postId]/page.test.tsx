@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeAll, afterEach, afterAll, beforeEach } 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
+import { QueryClient } from '@tanstack/react-query'
 import { getDefaultStore } from 'jotai'
 import { renderWithProviders } from '../../../../../test/utils'
 import { server } from '../../../../../test/server'
@@ -264,6 +265,26 @@ describe('CommunityDetail', () => {
       // 진입 출처로 복귀(뒤로가기와 동일)
       expect(mockBack).toHaveBeenCalled()
     })
+  })
+
+  it('글 삭제 성공 시 상세·댓글 캐시를 제거한다', async () => {
+    const removeSpy = vi.spyOn(QueryClient.prototype, 'removeQueries')
+    store.set(authAtom, { uid: 12, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    await user.click(await screen.findByRole('button', { name: '삭제' }))
+
+    await screen.findAllByText('글을 삭제할까요?')
+    const okButton = document.querySelector('.ant-modal-confirm-btns .ant-btn-dangerous') as HTMLElement
+    await user.click(okButton)
+
+    await waitFor(() => {
+      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['post', 'tech', 1] })
+      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['comments', 1] })
+    })
+    removeSpy.mockRestore()
   })
 
   it('삭제 확인 모달에서 취소하면 삭제되지 않는다', async () => {
