@@ -12,7 +12,8 @@
   - [x] 댓글 조회 (최신순/오래된순 정렬, 최신이 위 기본) — sort=latest|oldest 양방향 cursor 무한스크롤(20개/페이지), 더미 → 연동, api-v1/v2 + web-v1/v2 (완료, done.md). cursor 실사용 + offset 학습용 보존
   - [x] 댓글 수정 — api-v1/v2, web-v1/v2 (본인 댓글 인라인 편집, 완료·done.md)
   - [x] 내 댓글에 삭제 버튼 + 댓글 삭제 — api-v1/v2, web-v1/v2 (본인 댓글 삭제 버튼·확인 모달, 완료·done.md)
-  - [ ] 게시글 삭제 시 연관 댓글 정리 (고아 댓글 방지 — pms delete에서 post_comment 정리, api-v1/v2)
+  - [x] 게시글 삭제 시 연관 댓글 정리 — api-v1/v2 + web 캐시 제거 (완료, done.md)
+  - [ ] 게시글 삭제 시 댓글 정리 비동기 이관 (SQS 워커) — 현재 동기 벌크 delete는 댓글이 극단적으로 많으면 응답 지연·행 잠금·replica 지연 유발. post-deleted 이벤트 발행 → worker가 청크(LIMIT N) 삭제·DLQ 재시도로 이관. CommentCleanupClient 구현 교체 지점. 회원탈퇴 soft delete의 SQS 워커 인프라와 공유 검토
   - 대댓글 지원 여부는 구현 시 결정
 - [ ] (Count) 좋아요 토글 (/count 경로)
   - [ ] api-v1
@@ -32,7 +33,12 @@
   - QueryDSL vs search 역할: QueryDSL은 관계형 복잡성(권한 한정 "내 것/정확"), search는 탐색 복잡성(풀텍스트·연관도·패싯, 공개 카탈로그 발견)
   - 도입 전략: 초기엔 pms cursor 목록으로 시작 → 필요 시 OpenSearch+indexer 도입. 별도 서비스(yologram-search-api, yologram-search-indexer)
 - [ ] (Cache) Redis 도입 — 캐싱 등 활용 (세부는 진행 시 결정)
+  - 후보: user 단건 조회 캐싱 — 목록/상세 렌더마다 닉네임 조회(UserQueryClient)로 user select가 요청마다 반복됨(Hibernate 로그로 확인). uid→nickname 캐시 우선 검토
 - [ ] (Notification) 웹 알림 — 모바일 앱 푸시(FCM/APNs) 대신 웹 기반 알림 처리 (세부는 진행 시 결정)
+- [ ] (Worker) 비동기 워커 구성 — SQS 컨슈머 워커 서비스(별도 서비스, 세부는 진행 시 결정)
+  - 용도: 회원탈퇴 시 연관 데이터(게시글·댓글·좋아요) 청크 삭제, 게시글 삭제 시 댓글 정리 이관 등 요청 경로에서 분리할 대량/후속 작업
+  - 이벤트 발행(user-deleted, post-deleted 등) → worker 청크(LIMIT N) 처리 → 실패 시 DLQ 재시도
+  - 기존 Client 인터페이스(CommentCleanupClient 등) 구현을 이벤트 발행으로 교체하는 지점
 - [ ] (web) invest/politics 피드 연동
   - [ ] web-v1
   - [ ] web-v2
@@ -60,6 +66,11 @@
   - [ ] 코드 해시 저장, 시도 횟수 제한/잠금
   - [ ] 발송 재발송 최소 간격 제한 (최근 발송 후 N초 이내 429)
   - [ ] web 코드 발송 버튼 재발송 쿨다운 (web-v1/v2, localStorage)
+- [ ] (PMS/Comment) 게시글·댓글 soft delete 전환 — 하드 삭제 대신 status=DELETED(+deleted_date) 변경 (유저는 아래 회원탈퇴 항목과 한 방향)
+  - [ ] post·post_comment에 status/deleted_date 컬럼, 삭제 API는 status 변경으로 (api-v1/v2)
+  - [ ] 모든 조회에 DELETED 필터 — 피드 커서/내 글/상세/댓글 목록/exists 검증/count. 하나라도 누락 시 삭제 글 노출 버그 → 전환 시 일괄 점검 + rules.md에 규칙화
+  - [ ] 실제 정리는 Worker 유예 후 하드삭제/익명화 배치로 (비동기 워커 구성과 한 세트 — 삭제 요청은 UPDATE 한 건이라 대량 댓글 부하 문제도 해소)
+  - 댓글은 대댓글 도입 시 "삭제된 댓글입니다" 표시로 스레드 보존 가능
 - [ ] (UMS) 회원탈퇴 soft delete 전환
   - [ ] api-v1 / api-v2 (status=DELETED + deletedDate, 탈퇴 유저 login/validate 차단 USER_WITHDRAWN 403)
   - [ ] 유예기간 후 PII 익명화/하드삭제 배치, email 재가입 정책

@@ -74,3 +74,7 @@
 - [x] (Comment) 댓글 삭제 (본인 댓글)
   - [x] api-v1/v2: DELETE /comments/{commentId} (인증). 작성자 본인만(403 COMMENT_FORBIDDEN), 없으면 404 COMMENT_NOT_FOUND. 댓글 단건 삭제(게시글 삭제 시 연관 댓글 정리는 후속)
   - [x] web-v1/v2: 각 댓글에 본인일 때만 삭제 버튼(수정 버튼 옆, 편집 중엔 숨김). 확인 모달 → DELETE → ['comments', postId] invalidate로 목록 갱신. modal onOk는 성공/실패 모두 resolve(unhandled rejection 방지). 삭제 버튼 aria-label "댓글 삭제"
+- [x] (Comment) 게시글 삭제 시 연관 댓글 정리 (고아 댓글 방지)
+  - [x] api-v1/v2: pms delete에서 카테고리 매핑 → 댓글(벌크 delete_by_post_id) → 글 순으로 정리, 같은 트랜잭션(원자적 — 중간 실패 시 전부 롤백). pms → comment 경계는 CommentCleanupClient(api-v1 인터페이스+Local / api-v2 Protocol+Local)로 추상화 — MSA·비동기 이관 시 이벤트 발행 구현으로 교체 지점
+  - [x] web-v1/v2: 게시글 삭제 성공 시 그 글의 댓글 캐시 removeQueries(['comments', postId])
+  - 댓글이 극단적으로 많은 경우의 비동기(SQS 워커) 이관·soft delete 전환은 todos 참조
