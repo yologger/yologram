@@ -22,6 +22,11 @@ class CommentRepository:
     def delete(self, comment: Comment) -> None:
         self.db.delete(comment)
 
+    def delete_by_post_id(self, post_id: int) -> None:
+        """게시글 삭제 시 해당 글의 댓글 전체 제거 (고아 댓글 방지).
+        댓글 N건을 개별 delete 대신 벌크 delete 쿼리 한 번으로 정리."""
+        self.db.query(Comment).filter(Comment.post_id == post_id).delete()
+
     def find_by_post_cursor(
         self, post_id: int, sort: CommentSort, cursor_id: int | None, limit: int
     ) -> list[Comment]:

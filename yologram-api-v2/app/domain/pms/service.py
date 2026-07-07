@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.exception import InvalidPostCategoryException, PostForbiddenException, PostNotFoundException
 from app.core.response import ApiEnvelopCursorPage, ApiEnvelopPage
 from app.domain.cms.enum import Section
+from app.domain.pms.comment_cleanup_client import CommentCleanupClient, LocalCommentCleanupClient
 from app.domain.pms.post_category_query_client import PostCategoryQueryClient, LocalPostCategoryQueryClient
 from app.domain.pms.cursor import PostCursor
 from app.domain.pms.model import Post, PostCategoryMapping
@@ -26,6 +27,7 @@ class PostService:
         self.post_repository = PostRepository(db)
         self.post_category_repository = PostCategoryMappingRepository(db)
         self.post_category_query_client: PostCategoryQueryClient = LocalPostCategoryQueryClient(db)
+        self.comment_cleanup_client: CommentCleanupClient = LocalCommentCleanupClient(db)
         self.user_query_client: UserQueryClient = LocalUserQueryClient(db)
 
     def create(self, section_path: str, user_id: int, request: CreatePostRequest) -> CreatePostResponse:
@@ -77,7 +79,7 @@ class PostService:
             self.post_category_repository.save(PostCategoryMapping(post_id=post.id, category_id=category_id))
 
     def delete(self, section_path: str, post_id: int, user_id: int) -> None:
-        """게시글 삭제 (본인 글). 카테고리 매핑 제거 후 게시글 삭제 (한 트랜잭션)."""
+        """게시글 삭제 (본인 글). 연관 데이터(카테고리 매핑·댓글) 정리 후 게시글 삭제 (한 트랜잭션)."""
         section = Section.from_path(section_path)
 
         # 없거나 다른 section의 글이면 404 (상세 조회와 동일 규칙)
@@ -89,7 +91,10 @@ class PostService:
         if post.user_id != user_id:
             raise PostForbiddenException()
 
+        # 연관 데이터 정리 후 게시글 삭제 — 카테고리 매핑 + 댓글(고아 방지, CommentCleanupClient로 경계 추상화).
+        # get_db 세션(요청 단위 commit)이라 글·매핑·댓글 삭제가 원자적 (좋아요 도메인은 미구현)
         self.post_category_repository.delete_by_post_id(post.id)
+        self.comment_cleanup_client.delete_by_post_id(post.id)
         self.post_repository.delete(post)
 
     def get_post(self, section_path: str, id: int) -> PostDetailResponse:
