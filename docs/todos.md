@@ -6,7 +6,21 @@
 > docs/는 메인(루트) 에이전트만 갱신. 서브에이전트는 read-only(참고만).
 
 ## Todos. 
-- [ ] (PMS) 기술/정치/투자 섹션 게시글 분리 (세부는 진행 시 결정)
+- [ ] (Worker) 비동기 워커 구성 — 별도 워커 서비스 (세부는 진행 시 결정)
+  - 용도: RSS 뉴스 주기 수집(스케줄), 회원탈퇴 시 연관 데이터(게시글·댓글·좋아요) 청크 삭제, 게시글 삭제 시 댓글 정리 이관 등 요청 경로에서 분리할 대량/주기/후속 작업
+  - 이벤트 발행(user-deleted, post-deleted 등) → worker 청크(LIMIT N) 처리 → 실패 시 DLQ 재시도 (SQS 컨슈머) + 주기 작업(스케줄러)
+  - 기존 Client 인터페이스(CommentCleanupClient 등) 구현을 이벤트 발행으로 교체하는 지점
+- [ ] (Admin) 어드민 페이지 (yologram-admin-web) — 어드민 웹 신규 구성 (세부는 진행 시 결정)
+  - [ ] 프로젝트 부트스트랩·어드민 인증
+  - [ ] RSS 피드 소스 관리 (News 연계)
+  - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
+- [ ] (News) 기술 뉴스 — RSS 구독 수집(Worker에서 구현) → DB 저장 → TECH > News 표시 (세부는 진행 시 결정)
+  - [ ] news 도메인·테이블 설계 (피드 소스, 수집 글: 제목/링크/요약/발행시각/출처, 중복 수집 방지 키)
+  - [ ] worker가 RSS 주기 수집·파싱 → DB 저장 (위 Worker 구성 선행)
+  - [ ] 뉴스 목록 조회 API (api-v1/v2, cursor)
+  - [ ] web TECH > News 더미 → 연동 (web-v1/v2)
+  - [ ] RSS 피드 소스 관리는 어드민에서 (위 Admin 연계)
+- [ ] (Infra) n8n 제거 — 현재 RSS 구독 → Discord 알림 역할만 수행 중. News(RSS 수집)가 Worker로 대체되면 n8n 정리
 - [ ] (Comment) 댓글
   - [x] 댓글 작성 — post_comment 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/posts/{postId}), api-v1/v2, web-v1/v2 (완료, done.md)
   - [x] 댓글 조회 (최신순/오래된순 정렬, 최신이 위 기본) — sort=latest|oldest 양방향 cursor 무한스크롤(20개/페이지), 더미 → 연동, api-v1/v2 + web-v1/v2 (완료, done.md). cursor 실사용 + offset 학습용 보존
@@ -21,7 +35,7 @@
   - [ ] web-v1 / web-v2 (로컬 임시 토글 → 연동)
   - [ ] 좋아요 수 / 댓글 수 조회·표시 (게시글 목록·상세 카운트, api-v1/v2 + web). 댓글 작성/삭제 시 post.commentCount 동기화 (현재 미증가 — 카운트 항상 0)
   - 1차는 post 컬럼 동기 보관, 분리 시 이벤트 기반 카운트 이관
-- [ ] (News) 기술 커뮤니티 뉴스 — RSS로 주요 기술 블로그 글 구독 후 표시 (세부는 진행 시 결정)
+- [ ] (PMS) 기술/정치/투자 섹션 게시글 분리 (세부는 진행 시 결정)
 - [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
   - [ ] 도입 시점 판단
   - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)
@@ -35,10 +49,6 @@
 - [ ] (Cache) Redis 도입 — 캐싱 등 활용 (세부는 진행 시 결정)
   - 후보: user 단건 조회 캐싱 — 목록/상세 렌더마다 닉네임 조회(UserQueryClient)로 user select가 요청마다 반복됨(Hibernate 로그로 확인). uid→nickname 캐시 우선 검토
 - [ ] (Notification) 웹 알림 — 모바일 앱 푸시(FCM/APNs) 대신 웹 기반 알림 처리 (세부는 진행 시 결정)
-- [ ] (Worker) 비동기 워커 구성 — SQS 컨슈머 워커 서비스(별도 서비스, 세부는 진행 시 결정)
-  - 용도: 회원탈퇴 시 연관 데이터(게시글·댓글·좋아요) 청크 삭제, 게시글 삭제 시 댓글 정리 이관 등 요청 경로에서 분리할 대량/후속 작업
-  - 이벤트 발행(user-deleted, post-deleted 등) → worker 청크(LIMIT N) 처리 → 실패 시 DLQ 재시도
-  - 기존 Client 인터페이스(CommentCleanupClient 등) 구현을 이벤트 발행으로 교체하는 지점
 - [ ] (web) invest/politics 피드 연동
   - [ ] web-v1
   - [ ] web-v2
