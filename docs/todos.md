@@ -6,9 +6,12 @@
 > docs/는 메인(루트) 에이전트만 갱신. 서브에이전트는 read-only(참고만).
 
 ## Todos. 
-- [ ] (Worker) 비동기 워커 구성 — 별도 워커 서비스 (세부는 진행 시 결정)
-  - 용도: RSS 뉴스 주기 수집(스케줄), 회원탈퇴 시 연관 데이터(게시글·댓글·좋아요) 청크 삭제, 게시글 삭제 시 댓글 정리 이관 등 요청 경로에서 분리할 대량/주기/후속 작업
-  - 이벤트 발행(user-deleted, post-deleted 등) → worker 청크(LIMIT N) 처리 → 실패 시 DLQ 재시도 (SQS 컨슈머) + 주기 작업(스케줄러)
+- [ ] (Worker) 비동기 워커 구성 — yologram-worker/, Spring Boot(Kotlin), 번장 bun-ums-worker 패턴 미러
+  - [ ] 1차: 부트스트랩만 — Spring Boot + actuator + Parameter Store + OTel(Grafana Cloud) + Dockerfile + CI(경로 트리거 → ECR → ECS)
+  - 주기 작업(RSS 수집 등)은 @Scheduled — 단일 인스턴스 전제, 확장 시 ShedLock 검토
+  - 배포는 기존과 동일 FARGATE_SPOT 0.25vCPU/512MB(월 ~$3, 서울 온디맨드 vCPU $0.04656/h·GB $0.00511/h 기준 ~70% 할인). Spot 중단 시 @Scheduled는 놓친 사이클 소급 실행 없음 — RSS처럼 멱등·다음 주기가 커버하는 작업은 무해. 시각 민감/누적형/중단 불가 배치가 생기면 그 배치만 EventBridge Scheduler → SQS로 이관(스케줄 발화를 인프라가 보장, 워커 다운 중에도 메시지 보존) 또는 온디맨드 capacity 혼합
+  - SQS는 비동기 배치 용도(API가 큐에 넣고 worker가 풀링 — 예: OpenSearch full index, 회원탈퇴 청크 삭제, 댓글 정리 이관). @SqsListener + EventHandler(canHandle/handle) 라우팅은 해당 기능 진행 시
+  - 실시간 스트림이 필요해지면 Kinesis/Kafka 재논의 (현재는 SQS로 충분)
   - 기존 Client 인터페이스(CommentCleanupClient 등) 구현을 이벤트 발행으로 교체하는 지점
 - [ ] (Admin) 어드민 페이지 (yologram-admin-web) — 어드민 웹 신규 구성 (세부는 진행 시 결정)
   - [ ] 프로젝트 부트스트랩·어드민 인증
@@ -16,7 +19,7 @@
   - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
 - [ ] (News) 기술 뉴스 — RSS 구독 수집(Worker에서 구현) → DB 저장 → TECH > News 표시 (세부는 진행 시 결정)
   - [ ] news 도메인·테이블 설계 (피드 소스, 수집 글: 제목/링크/요약/발행시각/출처, 중복 수집 방지 키)
-  - [ ] worker가 RSS 주기 수집·파싱 → DB 저장 (위 Worker 구성 선행)
+  - [ ] worker가 RSS 주기 수집·파싱(@Scheduled) → DB 저장 (위 Worker 구성 선행). Spring RSS 처리 라이브러리 조사(Rome 등) 포함
   - [ ] 뉴스 목록 조회 API (api-v1/v2, cursor)
   - [ ] web TECH > News 더미 → 연동 (web-v1/v2)
   - [ ] RSS 피드 소스 관리는 어드민에서 (위 Admin 연계)
