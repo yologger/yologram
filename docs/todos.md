@@ -7,14 +7,15 @@
 
 ## Todos. 
 - [ ] (Worker) 비동기 워커 구성 — yologram-worker/, Spring Boot(Kotlin), 번장 bun-ums-worker 패턴 미러
-  - [ ] 1차: 부트스트랩만 — Spring Boot + actuator + Parameter Store + OTel(Grafana Cloud) + Dockerfile + CI(경로 트리거 → ECR → ECS)
+  - [x] 1차: 부트스트랩 — Spring Boot + actuator + Parameter Store + OTel + Dockerfile + 인프라(ECR/ECS SPOT) + CI (완료, done.md)
   - 주기 작업(RSS 수집 등)은 @Scheduled — 단일 인스턴스 전제, 확장 시 ShedLock 검토
   - 배포는 기존과 동일 FARGATE_SPOT 0.25vCPU/512MB(월 ~$3, 서울 온디맨드 vCPU $0.04656/h·GB $0.00511/h 기준 ~70% 할인). Spot 중단 시 @Scheduled는 놓친 사이클 소급 실행 없음 — RSS처럼 멱등·다음 주기가 커버하는 작업은 무해. 시각 민감/누적형/중단 불가 배치가 생기면 그 배치만 EventBridge Scheduler → SQS로 이관(스케줄 발화를 인프라가 보장, 워커 다운 중에도 메시지 보존) 또는 온디맨드 capacity 혼합
   - SQS는 비동기 배치 용도(API가 큐에 넣고 worker가 풀링 — 예: OpenSearch full index, 회원탈퇴 청크 삭제, 댓글 정리 이관). @SqsListener + EventHandler(canHandle/handle) 라우팅은 해당 기능 진행 시
   - 실시간 스트림이 필요해지면 Kinesis/Kafka 재논의 (현재는 SQS로 충분)
   - 기존 Client 인터페이스(CommentCleanupClient 등) 구현을 이벤트 발행으로 교체하는 지점
 - [ ] (Admin) 어드민 페이지 (yologram-admin-web) — 어드민 웹 신규 구성 (세부는 진행 시 결정)
-  - [ ] 프로젝트 부트스트랩·어드민 인증
+  - [x] 프로젝트 부트스트랩 — React(web-v1 미러)·S3+CloudFront(admin.yologram.link)·CI (완료, done.md)
+  - [ ] 어드민 인증 — 방식 결정(앱 레벨 ADMIN role JWT vs CloudFront Functions basic auth vs WAF IP 제한) 후 구현
   - [ ] RSS 피드 소스 관리 (News 연계)
   - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
 - [ ] (News) 기술 뉴스 — RSS 구독 수집(Worker에서 구현) → DB 저장 → TECH > News 표시 (세부는 진행 시 결정)

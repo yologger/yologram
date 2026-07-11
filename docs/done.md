@@ -78,3 +78,17 @@
   - [x] api-v1/v2: pms delete에서 카테고리 매핑 → 댓글(벌크 delete_by_post_id) → 글 순으로 정리, 같은 트랜잭션(원자적 — 중간 실패 시 전부 롤백). pms → comment 경계는 CommentCleanupClient(api-v1 인터페이스+Local / api-v2 Protocol+Local)로 추상화 — MSA·비동기 이관 시 이벤트 발행 구현으로 교체 지점
   - [x] web-v1/v2: 게시글 삭제 성공 시 그 글의 댓글 캐시 removeQueries(['comments', postId])
   - 댓글이 극단적으로 많은 경우의 비동기(SQS 워커) 이관·soft delete 전환은 todos 참조
+- [x] (Admin) yologram-admin-web 프로젝트 부트스트랩 + 인프라 + CI
+  - [x] 프로젝트 스캐폴드: web-v1 미러(React 19 + Vite + antd 6 + react-query/jotai/axios + react-router 7, Yarn Berry non-zero-install, Node 24). 로컬 포트 3002, API 대상은 api-v1(VITE_APP_API_URL — dev localhost:5001 / prod api.yologram.link)
+  - [x] 데스크탑 전용 AdminLayout(antd Layout+Sider, 반응형 분기 없음 — 어드민은 모바일 미지원 결정). 메뉴 5개(대시보드/회원/카테고리/게시글/RSS 피드) 전부 ComingSoon 라우트 매핑(web-v1 미구현 섹션 패턴), 기능 구현 시 페이지 컴포넌트로 교체. / 및 미매칭 경로는 /dashboard 리다이렉트
+  - [x] 테스트 셋업(vitest + jsdom + RTL + msw, web-v1 동일) + 라우팅/레이아웃/ComingSoon 테스트 15개
+  - [x] 인프라: S3(yologram-admin-web) + CloudFront(OAC, SPA fallback 403/404→index.html) + ACM(us-east-1) + Route53 admin.yologram.link — yologram-infra/aws/services/yologram-admin-web, web-v1 tf 미러
+  - [x] CI: yologram-admin-web.yaml (경로 트리거, test → build:prod → S3 sync, index.html no-cache, Discord 알림) — web-v1 워크플로 미러
+  - 인증(로그인·AuthGate·RequireAuth)·API 클라이언트(lib/api, stores)는 부트스트랩에서 제외 — 어드민 인증 방식(앱 레벨 ADMIN role vs CloudFront/WAF) 결정 후 구현 (todos 참조)
+  - 호스팅을 web-v1과 동일한 S3+CloudFront로 한 근거: 어드민은 CSR SPA로 충분하고 트래픽 미미 — ECS 대비 비용·운영 부담 최소, 기존 tf/CI 패턴 재사용
+- [x] (Worker) yologram-worker 부트스트랩 + 인프라 + CI
+  - [x] Spring Boot(Kotlin 1.9.25/Boot 3.5.14/Java 17) 부트스트랩 — 번장 bun-ums-worker 패턴 미러(Application init: TimeZone Asia/Seoul·JVM DNS TTL). web+actuator(헬스체크), Parameter Store(optional local), OTel(Grafana OTLP — api-v1 미러). JPA는 News 때 추가. 로컬 포트 5003
+  - [x] 로컬/테스트는 OTLP 더미 엔드포인트+전송 비활성으로 Parameter Store 없이 기동(api-v1 test 패턴)
+  - [x] 인프라: ECR + ECS Fargate SPOT(0.25/512, ecs-prod) + task role(SSM read 한정) + SSM OTLP 6종 — yologram-infra/aws/services/yologram-worker. 인바운드 없음: API GW·Cloud Map·portMappings 미사용, SG egress만(actuator는 ECS exec로 localhost 접근)
+  - [x] CI: yologram-worker.yaml (경로 트리거 → Gradle build → ECR push → ECS 재배포, Discord 알림) — api-v1 워크플로 미러
+  - 워커 작업 설계 원칙: Spot 중단 전제 멱등·재시도 가능하게. @Scheduled는 놓친 사이클 미소급(RSS류만 적합), 시각 민감 배치는 EventBridge→SQS 이관 기준 (todos 참조)

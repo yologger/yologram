@@ -7,15 +7,17 @@
 - yologram-web-v1/: React
 - yologram-api-v2/: FastAPI
 - yologram-web-v2/: Next.js
-- yologram-admin-web/: 어드민 웹 (예정)
+- yologram-worker/: Spring Boot 비동기 워커 (Kotlin) — 주기 작업(@Scheduled)·SQS 배치 소비
+- yologram-admin-web/: 어드민 웹 (React, web-v1과 동일 스택)
 - .github/workflows/: GitHub Actions
 
 ## 인프라
 
-- IaC: Terraform (~/Workspace/yologger/yologger-infra/ 에서 관리)
+- IaC: Terraform (~/Workspace/yologger/yologram-infra/ 에서 관리)
 - ECS Fargate: api-v1(5000), api-v2(5000), web-v2(3000)
 - API Gateway: api.yologram.link → /api/v1/{proxy+}는 api-v1, /api/v2/{proxy+}는 api-v2, /{proxy+}는 web-v2
-- web-v1: S3 + CloudFront
+- web-v1: S3 + CloudFront (web.v1.yologram.link)
+- admin-web: S3 + CloudFront (admin.yologram.link)
 - 검색: OpenSearch (추후 도입 예정)
 
 ## CI/CD
@@ -25,6 +27,8 @@
 - yologram-web-v1/ 변경 시 yologram-web-v1 workflow 트리거
 - yologram-api-v2/ 변경 시 yologram-api-v2 workflow 트리거
 - yologram-web-v2/ 변경 시 yologram-web-v2 workflow 트리거
+- yologram-worker/ 변경 시 yologram-worker workflow 트리거
+- yologram-admin-web/ 변경 시 yologram-admin-web workflow 트리거
 - ECR push 시 이미지 태그: {branch}-{commit SHA 8자리}
 
 ## 커밋 메시지 컨벤션
