@@ -9,7 +9,7 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 ## 구조
 
 - aws/global/ - 환경 공통 리소스 (VPC, ECS 클러스터, API Gateway, Database, ElastiCache, OpenSearch, IAM)
-- aws/services/ - 개별 서비스 인프라 (yologram-api-v1, yologram-api-v2, yologram-web-v1, yologram-web-v2)
+- aws/services/ - 개별 서비스 인프라 (yologram-api-v1, yologram-api-v2, yologram-web-v1, yologram-web-v2, yologram-worker)
 - aws/tools/ - 운영 보조 도구 (n8n)
 - 각 디렉토리가 독립된 terraform state를 가짐
 
@@ -99,6 +99,14 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 - SSM: OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS
 - 환경변수: APP_ENV=production
 - vpc_link_id 변수 필요
+
+### yologram-worker (aws/services/yologram-worker/)
+- ECS Fargate SPOT (0.25 vCPU, 512MB)
+- Spring Boot 비동기 워커, 인바운드 트래픽 없음 (API Gateway·Cloud Map·portMappings 미사용, SG는 egress만)
+- ECR: yologram-worker
+- SSM(prod): Grafana OTLP (metrics/traces/logs) — DB·JWT는 필요 시(News) 추가
+- 컨테이너 환경변수는 SPRING_PROFILES_ACTIVE만 주입, 나머지는 앱이 SSM에서 직접 read
+- actuator(5000)는 ECS exec로 localhost 접근
 
 ## Terraform 명령어
 
