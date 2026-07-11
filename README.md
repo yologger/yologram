@@ -8,6 +8,7 @@ yologram AWS 인프라 관리 (Terraform).
 - API Gateway: https://api.yologram.link
 - web-v1 (CloudFront): https://web.v1.yologram.link
 - web-v2 (ECS): https://web.v2.yologram.link
+- admin-web (CloudFront): https://admin.yologram.link
 
 ## 아키텍처
 
@@ -16,18 +17,22 @@ flowchart LR
     Client([Client])
 
     Client -- "web.v1.yologram.link" --> CloudFront
+    Client -- "admin.yologram.link" --> CloudFrontAdmin
     Client -- "api.yologram.link<br/>web.v2.yologram.link" --> APIGW
 
     subgraph AWS
         CloudFront --> S3["S3<br/>yologram-web-v1"]
 
         APIGW["API Gateway<br/>yologram-gateway (HTTP API)"]
-        APIGW -- "/api/v1/*" --> ECS_API_V1["ECS Fargate<br/>yologram-api-v1<br/>:5000"]
-        APIGW -- "/api/v2/*" --> ECS_API_V2["ECS Fargate<br/>yologram-api-v2<br/>:5000"]
-        APIGW -- "/* (catch-all)" --> ECS_WEB_V2["ECS Fargate<br/>yologram-web-v2<br/>:3000"]
+        APIGW -- "/api/v1/*" --> ECS_API_V1["ECS Fargate<br/>yologram-api-v1"]
+        APIGW -- "/api/v2/*" --> ECS_API_V2["ECS Fargate<br/>yologram-api-v2"]
+        APIGW -- "/* (catch-all)" --> ECS_WEB_V2["ECS Fargate<br/>yologram-web-v2"]
 
-        ECS_API_V1 --> RDS[(RDS MySQL)]
-        ECS_API_V2 --> RDS
+
+        ECS_WORKER["ECS Fargate<br/>yologram-worker"]
+
+        
+        CloudFrontAdmin --> S3Admin["S3<br/>yologram-admin-web"]
     end
 ```
 
@@ -50,6 +55,8 @@ aws/
     yologram-api-v2/        # FastAPI (ECS Fargate SPOT)
     yologram-web-v1/        # S3 + CloudFront (SPA)
     yologram-web-v2/        # Next.js (ECS Fargate SPOT)
+    yologram-worker/        # Spring Boot 비동기 워커 (ECS Fargate SPOT, 인바운드 없음)
+    yologram-admin-web/     # 어드민 웹, S3 + CloudFront (SPA)
   tools/
     n8n/                    # n8n 워크플로우 자동화 (Lightsail)
 ```
