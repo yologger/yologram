@@ -1,0 +1,104 @@
+name: yologram-worker
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'yologram-worker/**'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'yologram-worker/**'
+
+env:
+  ECR_REPOSITORY: yologram-worker
+  ECS_CLUSTER: ecs-prod
+  ECS_SERVICE: yologram-worker-prod
+  ECS_TASK_FAMILY: yologram-worker-prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Gradle build
+        working-directory: yologram-worker
+        run: ./gradlew build --build-cache
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+
+      - name: Build and push Docker image
+        working-directory: yologram-worker
+        run: |
+          BRANCH=${GITHUB_REF##*/}
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-8)
+          IMAGE_TAG=${BRANCH}-${SHORT_SHA}
+          ECR_URL=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+          docker build -t $ECR_URL:$IMAGE_TAG -t $ECR_URL:latest .
+          docker push $ECR_URL:$IMAGE_TAG
+          docker push $ECR_URL:latest
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --force-new-deployment \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Wait for deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Discord 알림
+        if: always()
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          JOB_STATUS: ${{ job.status }}
+          REF_NAME: ${{ github.ref_name }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ "$JOB_STATUS" = "success" ]; then
+            COLOR=3066993
+            EMOJI="✅"
+            STATUS="success"
+          else
+            COLOR=15158332
+            EMOJI="❌"
+            STATUS="failed"
+          fi
+          COMMIT_TITLE=$(printf '%s' "$COMMIT_MSG" | head -1)
+          SHORT_SHA=$(printf '%s' "$SHA" | cut -c1-8)
+          PAYLOAD=$(jq -cn \
+            --arg title "$EMOJI $WORKFLOW" \
+            --argjson color "$COLOR" \
+            --arg status "$STATUS" \
+            --arg run "$RUN_URL" \
+            --arg branch "$REF_NAME" \
+            --arg sha "$SHORT_SHA" \
+            --arg msg "$COMMIT_TITLE" \
+            '{embeds:[{title:$title, color:$color, description:("- result: `\($status)` ([see details](\($run)))\n- branch: `\($branch)`\n- commit: `\($sha)`\n```\n\($msg)\n```")}]}')
+          curl -s -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"

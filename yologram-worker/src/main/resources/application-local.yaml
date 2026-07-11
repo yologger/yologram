@@ -1,0 +1,23 @@
+server:
+  port: 5003
+
+spring:
+  config:
+    import:
+      # 워커 Parameter Store 경로는 인프라 구성 시 생성 — 없어도 로컬 기동되도록 optional
+      - 'optional:aws-parameterstore:/yologram/service/yologram-worker_local/'
+      - 'optional:aws-parameterstore:/yologram/service/yologram-worker_prod/'
+
+# 로컬: OTLP는 더미 엔드포인트로 exporter 생성만 통과시키고 전송 비활성 (Parameter Store 없이 기동)
+management:
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
+    metrics:
+      export:
+        url: http://localhost:4318/v1/metrics
+        enabled: false
+    logging:
+      endpoint: http://localhost:4318/v1/logs
+  tracing:
+    enabled: false

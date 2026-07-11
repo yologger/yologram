@@ -1,0 +1,38 @@
+server:
+  port: 5000
+
+spring:
+  application:
+    name: yologram-worker
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint:   # /yologram/service/yologram-worker_{ENV}/management.otlp.tracing.endpoint
+      headers:
+        Authorization:  # /yologram/service/yologram-worker_{ENV}/management.otlp.tracing.headers.Authorization
+    metrics:
+      export:
+        url:    # /yologram/service/yologram-worker_{ENV}/management.otlp.metrics.export.url
+        step: 1m
+        headers:
+          Authorization:  # /yologram/service/yologram-worker_{ENV}/management.otlp.metrics.export.headers.Authorization
+    logging:
+      endpoint:   # /yologram/service/yologram-worker_{ENV}/management.otlp.logging.endpoint
+      headers:
+        Authorization:  # /yologram/service/yologram-worker_{ENV}/management.otlp.logging.headers.Authorization
+  opentelemetry:
+    resource-attributes:
+      service.name: ${spring.application.name}
+      deployment.environment.name: ${spring.profiles.active:default}
+      service.instance.id: ${server.hostname:unknown}
+      service.namespace: yologram
+  metrics:
+    tags:
+      service.name: ${spring.application.name}
+      deployment.environment.name: ${spring.profiles.active:default}
+      service.instance.id: ${server.hostname:unknown}
+      service.namespace: yologram

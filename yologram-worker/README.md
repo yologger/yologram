@@ -1,0 +1,39 @@
+# yologram-worker
+
+비동기 워커 서비스. 요청 경로에서 분리할 주기/배치/후속 작업을 담당한다.
+
+- 주기 작업(@Scheduled): RSS 뉴스 수집 (예정)
+- SQS 컨슈머: API가 큐에 넣은 배치 작업 풀링 — OpenSearch full index, 회원탈퇴 연관 데이터 청크 삭제, 게시글 삭제 시 댓글 정리 이관 (예정)
+
+## 기술 스택
+
+- Kotlin 1.9.25, Spring Boot 3.5.14, Java 17
+- Spring Web + Actuator (헬스체크)
+- Spring Cloud AWS Parameter Store (설정 주입)
+- OpenTelemetry (logs/metrics/traces → Grafana Cloud OTLP direct push)
+- Gradle (Kotlin DSL)
+
+## 실행
+
+```bash
+# 로컬 (포트 5003, Parameter Store 없어도 기동 — OTLP 미전송)
+./gradlew bootRun --args='--spring.profiles.active=local'
+
+# 테스트
+./gradlew test
+
+# 빌드
+./gradlew build
+```
+
+## 설정
+
+- application.yaml: 공통 (OTLP placeholder — 값은 Parameter Store에서 주입)
+- application-local.yaml: 로컬 (포트 5003, OTLP 비활성, Parameter Store optional)
+- application-prod.yaml: 프로덕션 (Parameter Store /yologram/service/yologram-worker_prod/)
+
+## 배포
+
+- Docker (amazoncorretto:17-alpine)
+- ECS Fargate Spot 0.25vCPU/512MB (yologram-infra aws/services/yologram-worker)
+- GitHub Actions: Gradle build → Docker build → ECR push → ECS 재배포
