@@ -9,7 +9,7 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 ## 구조
 
 - aws/global/ - 환경 공통 리소스 (VPC, ECS 클러스터, API Gateway, Database, ElastiCache, OpenSearch, IAM)
-- aws/services/ - 개별 서비스 인프라 (yologram-api-v1, yologram-api-v2, yologram-web-v1, yologram-web-v2, yologram-worker)
+- aws/services/ - 개별 서비스 인프라 (yologram-api-v1, yologram-api-v2, yologram-web-v1, yologram-web-v2, yologram-worker, yologram-admin-web)
 - aws/tools/ - 운영 보조 도구 (n8n)
 - 각 디렉토리가 독립된 terraform state를 가짐
 
@@ -99,6 +99,12 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 - SSM: OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS
 - 환경변수: APP_ENV=production
 - vpc_link_id 변수 필요
+
+### yologram-admin-web (aws/services/yologram-admin-web/)
+- S3 + CloudFront (SPA)
+- 도메인: admin.yologram.link
+- ACM 인증서: us-east-1 (CloudFront 요구사항)
+- VPC 무관
 
 ### yologram-worker (aws/services/yologram-worker/)
 - ECS Fargate SPOT (0.25 vCPU, 512MB)
