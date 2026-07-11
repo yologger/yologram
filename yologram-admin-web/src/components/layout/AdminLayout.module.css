@@ -1,0 +1,20 @@
+.layout {
+  min-height: 100vh;
+}
+
+.sider {
+  border-right: 1px solid #f0f0f0;
+}
+
+.logo {
+  padding: 16px;
+}
+
+.logoTitle {
+  margin: 0 !important;
+  color: #1677ff !important;
+}
+
+.content {
+  padding: 24px;
+}
