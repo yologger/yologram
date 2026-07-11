@@ -37,7 +37,7 @@ resource "aws_elasticache_replication_group" "valkey_prod" {
   description          = "Valkey prod"
   engine               = "valkey"
   engine_version       = "8.0"
-  node_type            = "cache.t3.micro"
+  node_type            = "cache.t4g.micro"
   num_cache_clusters   = 1
   port                 = 6379
 
