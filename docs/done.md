@@ -79,7 +79,8 @@
   - [x] web-v1/v2: 게시글 삭제 성공 시 그 글의 댓글 캐시 removeQueries(['comments', postId])
   - 댓글이 극단적으로 많은 경우의 비동기(SQS 워커) 이관·soft delete 전환은 todos 참조
 - [x] (Admin) yologram-admin-web 프로젝트 부트스트랩 + 인프라 + CI
-  - [x] 프로젝트 스캐폴드: web-v1 미러(React 19 + Vite + antd 6 + react-query/jotai/axios + react-router 7, Yarn Berry non-zero-install, Node 24). 로컬 포트 3002, API 대상은 api-v1(VITE_APP_API_URL — dev localhost:5001 / prod api.yologram.link)
+  - [x] 프로젝트 스캐폴드: web-v1 미러(React 19 + Vite + antd 6 + react-query/jotai/axios + react-router 7, Yarn Berry non-zero-install, Node 24). 로컬 포트 3003, API 대상은 api-v1(VITE_APP_API_URL — dev localhost:5001 / prod api.yologram.link)
+  - 테마 컬러는 서비스별 구분: admin-web 파란 계열(#1677ff, hover #4096ff, active #0958d9) — web-v1 초록(#08979c), web-v2 핑크(#e7689a)
   - [x] 데스크탑 전용 AdminLayout(antd Layout+Sider, 반응형 분기 없음 — 어드민은 모바일 미지원 결정). 메뉴 5개(대시보드/회원/카테고리/게시글/RSS 피드) 전부 ComingSoon 라우트 매핑(web-v1 미구현 섹션 패턴), 기능 구현 시 페이지 컴포넌트로 교체. / 및 미매칭 경로는 /dashboard 리다이렉트
   - [x] 테스트 셋업(vitest + jsdom + RTL + msw, web-v1 동일) + 라우팅/레이아웃/ComingSoon 테스트 15개
   - [x] 인프라: S3(yologram-admin-web) + CloudFront(OAC, SPA fallback 403/404→index.html) + ACM(us-east-1) + Route53 admin.yologram.link — yologram-infra/aws/services/yologram-admin-web, web-v1 tf 미러

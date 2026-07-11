@@ -8,6 +8,8 @@
 - yologram-web-v1/: React
 - yologram-api-v2/: FastAPI
 - yologram-web-v2/: Next.js
+- yologram-worker/: Spring Boot 비동기 워커 (Kotlin)
+- yologram-admin-web/: 어드민 웹 (React, web-v1과 동일 스택)
 - .github/workflows/: GitHub Actions
 
 ## 인프라
@@ -17,6 +19,8 @@
 - ECS Fargate: api-v1(5000), api-v2(5000), web-v2(3000)
 - API Gateway: api.yologram.link / web.v2.yologram.link → /api/v1/{proxy+}는 api-v1, /api/v2/{proxy+}는 api-v2, /{proxy+}는 web-v2
 - web-v1: S3 + CloudFront (web.v1.yologram.link)
+- admin-web: S3 + CloudFront (admin.yologram.link)
+- worker: ECS Fargate (인바운드 없음)
 
 
 ```mermaid
@@ -24,10 +28,12 @@ flowchart LR
     Client([Client])
 
     Client -- "web.v1.yologram.link" --> CloudFront
+    Client -- "admin.yologram.link" --> CloudFrontAdmin
     Client -- "api.yologram.link<br/>web.v2.yologram.link" --> APIGW
 
     subgraph AWS
         CloudFront --> S3["S3<br/>yologram-web-v1"]
+        CloudFrontAdmin --> S3Admin["S3<br/>yologram-admin-web"]
 
         APIGW["API Gateway<br/>yologram-gateway (HTTP API)"]
         APIGW -- "/api/v1/*" --> ECS_API_V1["ECS Fargate<br/>yologram-api-v1<br/>:5000"]
@@ -36,6 +42,8 @@ flowchart LR
 
         ECS_API_V1 --> RDS[(RDS MySQL)]
         ECS_API_V2 --> RDS
+
+        ECS_WORKER["ECS Fargate<br/>yologram-worker<br/>(인바운드 없음)"]
     end
 ```
 
