@@ -13,17 +13,19 @@
   - SQS는 비동기 배치 용도(API가 큐에 넣고 worker가 풀링 — 예: OpenSearch full index, 회원탈퇴 청크 삭제, 댓글 정리 이관). @SqsListener + EventHandler(canHandle/handle) 라우팅은 해당 기능 진행 시
   - 실시간 스트림이 필요해지면 Kinesis/Kafka 재논의 (현재는 SQS로 충분)
   - 기존 Client 인터페이스(CommentCleanupClient 등) 구현을 이벤트 발행으로 교체하는 지점
-- [ ] (Admin) 어드민 페이지 (yologram-admin-web) — 어드민 웹 신규 구성 (세부는 진행 시 결정)
+- [ ] (Admin) 어드민 페이지 (yologram-admin-web)
   - [x] 프로젝트 부트스트랩 — React(web-v1 미러)·S3+CloudFront(admin.yologram.link)·CI (완료, done.md)
-  - [ ] 어드민 인증 — 방식 결정(앱 레벨 ADMIN role JWT vs CloudFront Functions basic auth vs WAF IP 제한) 후 구현
-  - [ ] RSS 피드 소스 관리 (News 연계)
+  - [ ] 어드민 인증 — 방식 확정: user.type에 ADMIN 추가 + JWT 검증 시 type 체크(@AdminUser 리졸버, api-v1/v2). 어드민 웹 로그인·가드 연동. News 어드민 API의 선행 작업
+  - [ ] RSS 피드 소스 관리 화면 (News 연계)
   - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
-- [ ] (News) 기술 뉴스 — RSS 구독 수집(Worker에서 구현) → DB 저장 → TECH > News 표시 (세부는 진행 시 결정)
-  - [ ] news 도메인·테이블 설계 (피드 소스, 수집 글: 제목/링크/요약/발행시각/출처, 중복 수집 방지 키)
-  - [ ] worker가 RSS 주기 수집·파싱(@Scheduled) → DB 저장 (위 Worker 구성 선행). Spring RSS 처리 라이브러리 조사(Rome 등) 포함
-  - [ ] 뉴스 목록 조회 API (api-v1/v2, cursor)
-  - [ ] web TECH > News 더미 → 연동 (web-v1/v2)
-  - [ ] RSS 피드 소스 관리는 어드민에서 (위 Admin 연계)
+- [ ] (News) 기술 뉴스 — RSS 수집(Worker) → LLM 요약 → TECH > News 표시. 구현 순서: ①Admin 인증 → ②테이블+피드 CRUD API+어드민 화면 → ③worker 수집 → ④LLM 요약 → ⑤공개 조회 API+web → ⑥어드민 뉴스 수정/삭제
+  - [ ] news 도메인·테이블 — news_feed(id, name, url unique, section, is_active) + news(id, feed_id — 같은 도메인이라 FK 허용, title, link unique=중복 수집 방지 키, summary, source_name, published_at, status COLLECTED/SUMMARIZED/FAILED, retry_count)
+  - [ ] 피드 CRUD API(어드민 전용, api-v1/v2) + admin-web 피드 관리 화면
+  - [ ] worker RSS 수집(@Scheduled) — Rome 파서, 피드별 실패 격리, link unique 멱등. LLM 없이 COLLECTED 저장까지
+  - [ ] LLM 요약 스텝 — Spring AI(1.1.x, OpenAI 호환 ChatModel) + 3단 fallback: Gemini(무료 1,500 req/일) → Groq(1,000/일) → Cerebras(1M tokens/일). 전부 OpenAI 호환 base-url, 키는 Parameter Store. 한국어 2~3문장 요약. 입력은 원문 크롤링(jsoup+Readability4J), 실패 시 RSS description 폴백. 429/5xx 시 다음 제공자, 전부 실패 시 status 재시도(N회 후 FAILED)
+  - [ ] 공개 뉴스 목록 조회 API (api-v1/v2) — 발행순(published_at desc) + (published_at, id) 복합 keyset 커서
+  - [ ] web TECH > News 더미 → 연동 (web-v1/v2, 무한스크롤, 원문 링크)
+  - [ ] 어드민 뉴스 수정(요약 교정)/삭제 API + 화면
 - [ ] (Infra) n8n 제거 — 현재 RSS 구독 → Discord 알림 역할만 수행 중. News(RSS 수집)가 Worker로 대체되면 n8n 정리
 - [ ] (Comment) 댓글
   - [x] 댓글 작성 — post_comment 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/posts/{postId}), api-v1/v2, web-v1/v2 (완료, done.md)
