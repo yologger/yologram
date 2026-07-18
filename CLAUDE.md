@@ -110,7 +110,7 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 - ECS Fargate SPOT (0.25 vCPU, 512MB)
 - Spring Boot 비동기 워커, 인바운드 트래픽 없음 (API Gateway·Cloud Map·portMappings 미사용, SG는 egress만)
 - ECR: yologram-worker
-- SSM(prod): Grafana OTLP (metrics/traces/logs) — DB·JWT는 필요 시(News) 추가
+- SSM(prod): Grafana OTLP (metrics/traces/logs) + DB writer/reader 접속정보 + LLM API 키(yologram.llm.gemini/groq.api-key) + Discord 웹훅 채널별 url(yologram.discord.webhooks.tech.url — enabled는 yaml, politics/invest 도입 시 추가)
 - 컨테이너 환경변수는 SPRING_PROFILES_ACTIVE만 주입, 나머지는 앱이 SSM에서 직접 read
 - actuator(5000)는 ECS exec로 localhost 접근
 

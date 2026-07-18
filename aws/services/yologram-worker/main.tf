@@ -150,6 +150,121 @@ resource "aws_ssm_parameter" "grafana_logs_auth_prod" {
   }
 }
 
+# Discord 웹훅 — 채널별 url (요약 알림. enabled는 yaml에서 관리, 실제 값은 콘솔에서 직접 입력)
+resource "aws_ssm_parameter" "discord_webhook_tech_url_prod" {
+  name  = "/yologram/service/yologram-worker_prod/yologram.discord.webhooks.tech.url"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "discord_webhook_invest_url_prod" {
+  name  = "/yologram/service/yologram-worker_prod/yologram.discord.webhooks.invest.url"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "discord_webhook_politics_url_prod" {
+  name  = "/yologram/service/yologram-worker_prod/yologram.discord.webhooks.politics.url"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+# LLM API 키 (테크 아티클 요약 — Gemini 1순위, Groq fallback. 실제 값은 콘솔에서 직접 입력)
+resource "aws_ssm_parameter" "llm_gemini_api_key_prod" {
+  name  = "/yologram/service/yologram-worker_prod/yologram.llm.gemini.api-key"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "llm_groq_api_key_prod" {
+  name  = "/yologram/service/yologram-worker_prod/yologram.llm.groq.api-key"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+###################################
+## SSM Parameter Store (DB prod) ##
+###################################
+resource "aws_ssm_parameter" "db_writer_url_prod" {
+  name  = "/yologram/service/yologram-worker_prod/database.main.writer.datasource.url"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "db_writer_username_prod" {
+  name  = "/yologram/service/yologram-worker_prod/database.main.writer.datasource.username"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "db_writer_password_prod" {
+  name  = "/yologram/service/yologram-worker_prod/database.main.writer.datasource.password"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "db_reader_url_prod" {
+  name  = "/yologram/service/yologram-worker_prod/database.main.reader.datasource.url"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "db_reader_username_prod" {
+  name  = "/yologram/service/yologram-worker_prod/database.main.reader.datasource.username"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "db_reader_password_prod" {
+  name  = "/yologram/service/yologram-worker_prod/database.main.reader.datasource.password"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 # 인바운드 트래픽 없음 — egress만 (ECR pull, SSM, OTLP push, RSS fetch)
 resource "aws_security_group" "this" {
   name        = "yologram-worker-prod-sg"
