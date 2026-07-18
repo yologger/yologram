@@ -117,3 +117,15 @@
   - [x] News→Article rename: 페이지 6개(각 웹)·컴포넌트명·라우트(/tech/articles, /tech/favorite-articles — web-v2는 디렉토리 rename)·메뉴 라벨('아티클'/'관심 아티클')·redirect. 잔존 표기 grep 0건
   - 검증: web-v1 테스트 143·web-v2 138 통과 + 양쪽 프로덕션 빌드, dev 서버 실동작(댓글 CRUD·라우팅) 확인
   - 남은 것: web prod 배포 확인 후 api-v1 LegacyCommentResource·api-v2 legacy 라우터 제거 (todos). 배포 순서는 api 먼저 → web
+- [x] (Article/CMS) 카테고리 마스터 통합 — tech_category (게시판·아티클 공용)
+  - [x] 테이블: tech_post_category → tech_category rename(호환 뷰로 무중단 전환 후 제거), tech_article_category_mapping은 라벨 문자열 → category_id 참조로 마이그레이션 (라벨 JOIN UPDATE, 전건 매칭 검증)
+  - [x] worker: TechArticleCategory enum 삭제 → 요약 배치마다 tech_category(활성)를 로드해 LLM 프롬프트 어휘·파싱 매칭으로 사용. 어드민 카테고리 변경이 분류에 자동 반영, 매핑은 categoryId 저장
+  - [x] api-v1/v2: TechPostCategory→TechCategory rename(경로 /cms/tech/categories·응답 불변), 아티클 필터 ?category=(라벨) → ?categoryId=(id), 응답 categories는 마스터 조인 라벨(삭제된 카테고리 매핑은 표시 제외)
+  - [x] web-v1/v2: 아티클 칩을 고정 7개 상수 → 카테고리 API 로드('전체'+id 기반, 커뮤니티와 동일 패턴), 쿼리키 [articles, tech, categoryId]
+  - 설계 근거: 단일 마스터로 게시판·아티클·LLM 어휘·칩이 한 소스 — id 참조라 카테고리 rename에 안전(문자열 방식은 rename 시 기존 매핑 전부 어긋남), 어드민 카테고리 관리(예정)가 두 도메인을 한 번에 커버
+  - 카테고리 삭제 정책(어드민 구현 시): 기본은 is_active=false 비활성(칩·작성·LLM 어휘에서 제외, 기존 표시 유지). hard delete는 같은 트랜잭션에서 post/article 매핑 벌크 정리 동반(무FK — 앱 책임). 삭제된 카테고리의 잔여 매핑은 라벨 해석에서 자동 제외
+- [x] (Article) 테크 아티클 공개 조회 + web 연동 — TECH > 아티클 실화면
+  - [x] api-v1/v2: GET /articles/{section=tech} — SUMMARIZED만, 발행순(published_at desc, id desc), (publishedAt|id) 복합 keyset 커서(v1·v2 바이트 호환 — Java ISO 초 생략 형식 통일), categoryId 필터(EXISTS), categories 라벨 배치 조인, size 1~50, 400 INVALID_CURSOR
+  - [x] web-v1/v2: /tech/articles 더미 → 실연동. 카테고리 칩(API 로드) + 무한스크롤(useInfiniteQuery+IntersectionObserver) + 카드(소스명·상대시각·카테고리 태그·제목=원문 새 탭·summary 마크다운 렌더 — react-markdown 추가)
+  - [x] worker LLM 분류: 요약 프롬프트에 카테고리 섹션(어휘 1~3개), TechArticleCategoryParser로 summary와 분리(파싱 실패 시 '기타' 폴백 — 요약 저장을 막지 않음), 저장+매핑 교체는 TransactionTemplate 단일 트랜잭션(@Modifying delete 트랜잭션 누락 버그 수정 — @Transactional 없는 통합 테스트로 재발 방지)
+  - 기존 요약분은 status 리셋 백필로 재요약+분류 (prod 워커로 진행, Discord는 새 채널로 재발송)

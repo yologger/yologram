@@ -25,8 +25,8 @@
   - [ ] 소스 CRUD API(어드민 전용, api-v1/v2) + admin-web 소스 관리 화면
   - [ ] 새 아티클 유저 알림 — 요약 확정(SUMMARIZED/FAILED) + notified_at IS NULL 기준으로 발송 후 notified_at 기록(정확히 한 번·멱등). tech_article에 notified_at 컬럼 추가. 발송 채널(푸시/인앱)은 그때 결정
   - Discord 수집 알림은 개발자 모니터링용(임시) — 유저 알림 도입 후 yologram.discord.enabled=false로 비활성 또는 제거
-  - [ ] 공개 아티클 목록 조회 API (api-v1/v2) — 발행순(published_at desc) + (published_at, id) 복합 keyset 커서
-  - [ ] web TECH > News 더미 → 연동 (web-v1/v2, 무한스크롤, 원문 링크)
+  - [x] 공개 아티클 목록 조회 API (api-v1/v2) + 카테고리 마스터 통합·LLM 분류 (완료, done.md)
+  - [x] web TECH > 아티클 더미 → 실연동 (web-v1/v2 — 칩·무한스크롤·마크다운 요약, 완료 done.md)
   - [x] web 표기 News → Articles 변경 — web-v1/v2 라우트(/tech/articles)·컴포넌트·메뉴 라벨(아티클) 완료 (admin은 해당 화면 구현 시)
   - [ ] 어드민 아티클 수정(요약 교정)/삭제 API + 화면
 - [ ] (Infra) n8n 제거 — Worker가 소스 6개 승계 + 요약 embed 알림까지 완전 대체 완료. n8n 워크플로 비활성화·인스턴스 정리만 남음
@@ -72,9 +72,9 @@
 - [ ] (UMS/Admin) 회원 관리
   - [ ] api-v1 / api-v2 (GET /ums/admin/users, GET/PATCH/DELETE /{uid}, ADMIN 권한, 테스트/Swagger)
   - [ ] web-admin (회원정보 조회 등)
-- [ ] (CMS/Admin) 카테고리 관리
+- [ ] (CMS/Admin) 카테고리 관리 — tech_category 단일 마스터 (게시판·아티클·LLM 어휘·칩 공용)
   - [ ] api-v1 / api-v2 (POST/DELETE/GET /cms/admin/{section}/categories)
-  - 카테고리 삭제 시 기존 글 처리 정책(is_active 비활성 vs 매핑 제거)
+  - 삭제 정책 확정: 기본 is_active=false 비활성(칩·작성·LLM 어휘 제외, 기존 표시 유지). hard delete는 post/article 매핑 벌크 정리 동반(무FK — 앱 책임). done.md 설계 근거 참조
 - [ ] (PMS/Admin) 게시글 관리
   - [ ] api-v1 / api-v2 (GET /admin/posts, GET/DELETE /{id})
 - [ ] (web) 설정 — 알림 설정 페이지 (web-v1 / web-v2)

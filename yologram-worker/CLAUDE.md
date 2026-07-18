@@ -16,7 +16,7 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled)과 SQS 배치 �
 - global/client/WebClientFactory.kt·HttpClientConfig.kt: 공용 WebClient (타임아웃·리다이렉트, 수집용 outboundWebClient 빈)
 - global/llm/: LlmClient(Gemini→Groq fallback)·LlmConfig(Spring AI OpenAI 호환, read timeout 60초)·LlmProperties(yologram.llm.*)
 - global/discord/: DiscordNotifier(채널별 웹훅 send/sendEmbed)·DiscordConfig·DiscordProperties(yologram.discord.webhooks.{채널}.url/enabled)
-- domain/tech/article/: 테크 아티클 도메인 — client(RssFeedClient·ArticleContentCrawler), service(Collect·Summarize), scheduler(cron 수집 10분·요약 5분)
+- domain/tech/article/: 테크 아티클 도메인 — client(RssFeedClient·ArticleContentCrawler), service(Collect·Summarize·CategoryParser), scheduler(cron 수집 10분·요약 5분). LLM 분류 어휘는 tech_category(활성)를 배치마다 로드 — 어드민 카테고리 변경 자동 반영, 매핑은 categoryId
 - src/main/resources/application.yaml: 공통 설정 (database.main, cron, LLM 모델, Discord 채널)
 - src/main/resources/logback-spring.xml: 로깅 (콘솔 + prod OTEL appender)
 

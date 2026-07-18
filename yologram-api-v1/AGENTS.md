@@ -16,7 +16,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - src/main/kotlin/.../domain/ums/service/UserService.kt: 회원가입(이메일 인증 확인)·정보 수정·비밀번호 변경·회원탈퇴
 - src/main/kotlin/.../domain/ums/service/UserEmailVerificationService.kt + EmailSender(Stub/Ses)·SesConfig: 이메일 인증·발송
 - src/main/kotlin/.../domain/ums/service/UserPasswordResetService.kt: 비밀번호 찾기
-- src/main/kotlin/.../domain/tech: tech 섹션 게시판 — post(TechPostService·TechPostRepositoryImpl QueryDSL), category(TechPostCategoryService), comment(TechPostCommentService + LegacyCommentResource 구경로 위임)
+- src/main/kotlin/.../domain/tech: tech 섹션 — post(TechPostService·QueryDSL), category(TechCategoryService — tech_category 공용 마스터), comment(TechPostCommentService), article(TechArticleService — 공개 조회: 복합 커서·categoryId 필터·라벨 조인)
 
 ## 설정 관리
 

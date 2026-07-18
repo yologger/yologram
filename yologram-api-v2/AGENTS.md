@@ -13,7 +13,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - app/config/database.py: engine, SessionLocal, get_db
 - app/config/logging.py · metrics.py · tracing.py: OTLP 로그/메트릭/트레이스
 - app/domain/ums: AuthService(JWT 로그인/로그아웃/검증), UserService(가입/수정/비번변경/탈퇴), UserEmailVerificationService + EmailSender(Stub/Ses), UserPasswordResetService
-- app/domain/tech: tech 섹션 게시판 — post(TechPostService·TechPostRepository), category(TechPostCategoryService), comment(TechPostCommentService + 구경로 deprecated 라우터)
+- app/domain/tech: tech 섹션 — post(TechPostService), category(TechCategoryService — tech_category 공용 마스터), comment(TechPostCommentService), article(TechArticleService — 공개 조회: 복합 커서·categoryId 필터·라벨 조인)
 
 ## 설정 관리
 
