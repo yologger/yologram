@@ -111,3 +111,9 @@
   - 행동 변화 2건(의도됨): 비-tech 섹션 경로 400→404(라우트 소멸), /pms/posts/me의 section 파라미터는 tech만 허용
   - 설계 근거: 섹션 = 도메인 경계 = 미래 MSA 경계 (워커 domain/{섹션}/{기능}과 정합). 완전 복제를 택한 이유는 섹션별 독립 진화 허용 — 단 게시판 CRUD 로직이 동일한 동안은 수정 시 섹션 간 동기화 필요(트레이드오프 인지하고 선택)
   - 설계 근거: 참조 테이블(댓글·카테고리)까지 함께 분리 — post만 쪼개면 섹션별 독립 AUTO_INCREMENT 때문에 post_id 참조가 모호해짐. 검증: 조회 전수 + 쓰기 전 사이클(작성→댓글 신규·구경로→수정→삭제→정리) curl 확인, v1/v2 응답 동일성 diff 확인
+- [x] (PMS/Article) web-v1/v2 — 댓글 API 섹션 경로 전환 + News→Article 표기 변경
+  - [x] 댓글 API 4함수(create/get/update/delete)에 section 인자 추가 → 정식 경로 /comments/{section}/posts/{postId}·/comments/{section}/{commentId} 사용 (게시글 API의 section 변수 패턴과 통일, deprecated 구경로 탈피)
+  - [x] react-query 키 ['comments', section, postId, sort]로 통일 — 게시글 키(['posts', section, ...])와 일관, 무효화·게시글 삭제 시 캐시 제거 지점 전부 갱신
+  - [x] News→Article rename: 페이지 6개(각 웹)·컴포넌트명·라우트(/tech/articles, /tech/favorite-articles — web-v2는 디렉토리 rename)·메뉴 라벨('아티클'/'관심 아티클')·redirect. 잔존 표기 grep 0건
+  - 검증: web-v1 테스트 143·web-v2 138 통과 + 양쪽 프로덕션 빌드, dev 서버 실동작(댓글 CRUD·라우팅) 확인
+  - 남은 것: web prod 배포 확인 후 api-v1 LegacyCommentResource·api-v2 legacy 라우터 제거 (todos). 배포 순서는 api 먼저 → web

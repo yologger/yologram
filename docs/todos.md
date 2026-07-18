@@ -27,7 +27,7 @@
   - Discord 수집 알림은 개발자 모니터링용(임시) — 유저 알림 도입 후 yologram.discord.enabled=false로 비활성 또는 제거
   - [ ] 공개 아티클 목록 조회 API (api-v1/v2) — 발행순(published_at desc) + (published_at, id) 복합 keyset 커서
   - [ ] web TECH > News 더미 → 연동 (web-v1/v2, 무한스크롤, 원문 링크)
-  - [ ] web/admin 표기 News → Articles 변경 (web-v1/v2 메뉴·라우트·문구 — 백엔드 Article rename에 맞춤, 나중에)
+  - [x] web 표기 News → Articles 변경 — web-v1/v2 라우트(/tech/articles)·컴포넌트·메뉴 라벨(아티클) 완료 (admin은 해당 화면 구현 시)
   - [ ] 어드민 아티클 수정(요약 교정)/삭제 API + 화면
 - [ ] (Infra) n8n 제거 — Worker가 소스 6개 승계 + 요약 embed 알림까지 완전 대체 완료. n8n 워크플로 비활성화·인스턴스 정리만 남음
 - [ ] (Comment) 댓글
@@ -46,7 +46,8 @@
   - 1차는 post 컬럼 동기 보관, 분리 시 이벤트 기반 카운트 이관
 - [ ] (PMS) 기술/정치/투자 섹션 게시글 분리
   - [x] tech 분리 — 테이블 tech_post/tech_post_category/tech_post_category_mapping/tech_post_comment + api-v1/v2 domain/tech/{post,category,comment} 완전 분리 (완료, done.md). invest/politics는 게시판 오픈 시 동일 세트 복제
-  - [ ] web-v1/v2 댓글 API 경로 전환 — /comments/posts/{postId} → /comments/tech/posts/{postId} (수정/삭제도 /comments/tech/{commentId}). 전환 후 api-v1 LegacyCommentResource·api-v2 legacy 라우터 제거
+  - [x] web-v1/v2 댓글 API 경로 전환 — section 인자 추가로 정식 경로(/comments/{section}/...) 사용, 쿼리키 [comments, section, postId]로 통일 (완료, done.md)
+  - [ ] api-v1 LegacyCommentResource·api-v2 legacy 댓글 라우터 제거 — web-v1/v2 prod 배포 확인 후 (배포 순서: api 먼저 → web)
   - [ ] legacy 테이블 정리 — 배포 직전 델타 마이그레이션(INSERT IGNORE 재실행) → 배포·검증 후 post/post_category/post_category_mapping/post_comment를 *_legacy로 rename → 유예 후 DROP
   - [ ] api-v2 createdAt UTC 저장 이슈 — 신규 작성 시 v1은 KST, v2는 UTC로 저장됨 (분리 전부터 존재하던 차이). v2 프로세스 타임존/DB 세션 타임존 정합 필요
 - [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
