@@ -155,7 +155,7 @@ describe('MyPostsPage', () => {
     await user.click(within(dialog).getByRole('button', { name: '삭제' }))
 
     await waitFor(() => {
-      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['comments', 2001] })
+      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['comments', 'tech', 2001] })
     })
     removeSpy.mockRestore()
   })

@@ -367,7 +367,7 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
-  http.post('http://localhost:5001/api/v1/comments/posts/:postId', async ({ request, params }) => {
+  http.post('http://localhost:5001/api/v1/comments/:section/posts/:postId', async ({ request, params }) => {
     const authHeader = request.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return HttpResponse.json(
@@ -395,7 +395,7 @@ export const handlers = [
     return HttpResponse.json({ data: { id: 5001 } }, { status: 201 })
   }),
 
-  http.get('http://localhost:5001/api/v1/comments/posts/:postId', ({ request, params }) => {
+  http.get('http://localhost:5001/api/v1/comments/:section/posts/:postId', ({ request, params }) => {
     const postId = Number(params.postId)
     const url = new URL(request.url)
     const cursor = url.searchParams.get('cursor')
@@ -416,7 +416,7 @@ export const handlers = [
     return HttpResponse.json({ data, nextCursor: 'next-cursor' })
   }),
 
-  http.patch('http://localhost:5001/api/v1/comments/:commentId', async ({ request, params }) => {
+  http.patch('http://localhost:5001/api/v1/comments/:section/:commentId', async ({ request, params }) => {
     const authHeader = request.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return HttpResponse.json(
@@ -452,7 +452,7 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
-  http.delete('http://localhost:5001/api/v1/comments/:commentId', ({ request, params }) => {
+  http.delete('http://localhost:5001/api/v1/comments/:section/:commentId', ({ request, params }) => {
     const authHeader = request.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return HttpResponse.json(

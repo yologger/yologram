@@ -3,7 +3,7 @@ import { updateComment } from '../apis/comments'
 
 export default function useUpdateCommentMutation() {
   return useMutation({
-    mutationFn: ({ commentId, content }: { commentId: number; content: string }) =>
-      updateComment(commentId, content),
+    mutationFn: ({ section, commentId, content }: { section: string; commentId: number; content: string }) =>
+      updateComment(section, commentId, content),
   })
 }

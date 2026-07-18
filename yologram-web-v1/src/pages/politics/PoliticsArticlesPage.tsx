@@ -4,7 +4,7 @@ import FilterChips from '../../components/common/FilterChips'
 
 const categories = ['전체', '국내', '해외']
 
-export default function PoliticsNewsPage() {
+export default function PoliticsArticlesPage() {
   const [category, setCategory] = useState('전체')
 
   return (

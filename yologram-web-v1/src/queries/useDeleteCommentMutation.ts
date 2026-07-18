@@ -3,6 +3,7 @@ import { deleteComment } from '../apis/comments'
 
 export default function useDeleteCommentMutation() {
   return useMutation({
-    mutationFn: ({ commentId }: { commentId: number }) => deleteComment(commentId),
+    mutationFn: ({ section, commentId }: { section: string; commentId: number }) =>
+      deleteComment(section, commentId),
   })
 }

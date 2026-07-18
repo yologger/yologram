@@ -53,7 +53,7 @@ export default function CommunityDetailPage() {
     isLoading: isCommentsLoading,
     isError: isCommentsError,
     refetch: refetchComments,
-  } = useCommentsQuery(id, sort)
+  } = useCommentsQuery('tech', id, sort)
 
   useEffect(() => {
     if (!hasNextPage) return
@@ -152,7 +152,7 @@ export default function CommunityDetailPage() {
                 queryClient.invalidateQueries({ queryKey: ['my-posts'] })
                 queryClient.invalidateQueries({ queryKey: ['post', 'tech', id] })
                 // 삭제된 글은 다시 볼 일이 없으므로 댓글 캐시는 제거
-                queryClient.removeQueries({ queryKey: ['comments', id] })
+                queryClient.removeQueries({ queryKey: ['comments', 'tech', id] })
                 message.success('글이 삭제되었습니다.')
                 // 진입 출처(기술 커뮤니티 또는 내 글 목록)로 복귀 — 뒤로가기 버튼과 동일
                 navigate(-1)
@@ -175,13 +175,13 @@ export default function CommunityDetailPage() {
     // 미인증/빈 내용/전송 중에는 무시 (버튼도 동일 조건으로 비활성)
     if (!isAuthenticated || !text.trim() || isSubmitting) return
     createComment(
-      { postId: id, content: text.trim() },
+      { section: 'tech', postId: id, content: text.trim() },
       {
         onSuccess: () => {
           setText('')
           message.success('댓글이 등록되었습니다.')
           // 목록 무효화 → 작성한 댓글이 최신순 맨 위에 반영
-          queryClient.invalidateQueries({ queryKey: ['comments', id] })
+          queryClient.invalidateQueries({ queryKey: ['comments', 'tech', id] })
         },
         onError: () => {
           // reject를 남기면 unhandled rejection이 되므로 토스트만 띄우고 안전하게 종료
@@ -206,14 +206,14 @@ export default function CommunityDetailPage() {
     // 빈 내용/전송 중에는 무시 (저장 버튼도 동일 조건으로 비활성)
     if (!editText.trim() || isUpdating) return
     updateComment(
-      { commentId, content: editText.trim() },
+      { section: 'tech', commentId, content: editText.trim() },
       {
         onSuccess: () => {
           setEditingId(null)
           setEditText('')
           message.success('댓글이 수정되었습니다.')
           // 목록 무효화 → 수정 내용 반영
-          queryClient.invalidateQueries({ queryKey: ['comments', id] })
+          queryClient.invalidateQueries({ queryKey: ['comments', 'tech', id] })
         },
         onError: () => {
           // reject를 남기면 unhandled rejection이 되므로 토스트만 띄우고 안전하게 종료
@@ -234,12 +234,12 @@ export default function CommunityDetailPage() {
       onOk: () =>
         new Promise<void>((resolve) => {
           deleteComment(
-            { commentId },
+            { section: 'tech', commentId },
             {
               onSuccess: () => {
                 message.success('댓글이 삭제되었습니다.')
                 // 목록 무효화 → 삭제 반영
-                queryClient.invalidateQueries({ queryKey: ['comments', id] })
+                queryClient.invalidateQueries({ queryKey: ['comments', 'tech', id] })
                 resolve()
               },
               onError: () => {

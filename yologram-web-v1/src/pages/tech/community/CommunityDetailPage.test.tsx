@@ -94,7 +94,7 @@ describe('CommunityDetailPage', () => {
 
   it('센티넬 교차 시 다음 페이지를 불러온다 (무한스크롤)', async () => {
     server.use(
-      http.get('http://localhost:5001/api/v1/comments/posts/:postId', ({ request }) => {
+      http.get('http://localhost:5001/api/v1/comments/:section/posts/:postId', ({ request }) => {
         const cursor = new URL(request.url).searchParams.get('cursor')
         if (cursor) {
           // 두 번째 페이지 (마지막)
@@ -122,7 +122,7 @@ describe('CommunityDetailPage', () => {
 
   it('댓글이 없으면 빈 목록 안내를 표시한다', async () => {
     server.use(
-      http.get('http://localhost:5001/api/v1/comments/posts/:postId', () =>
+      http.get('http://localhost:5001/api/v1/comments/:section/posts/:postId', () =>
         HttpResponse.json({ data: [], nextCursor: null }),
       ),
     )
@@ -133,7 +133,7 @@ describe('CommunityDetailPage', () => {
 
   it('댓글 조회 실패 시 다시 시도 안내를 표시한다', async () => {
     server.use(
-      http.get('http://localhost:5001/api/v1/comments/posts/:postId', () =>
+      http.get('http://localhost:5001/api/v1/comments/:section/posts/:postId', () =>
         HttpResponse.json(
           { errorMessage: '서버 오류', errorCode: 'INTERNAL_SERVER_ERROR' },
           { status: 500 },
@@ -166,7 +166,7 @@ describe('CommunityDetailPage', () => {
     loginAs(1)
     let getCount = 0
     server.use(
-      http.get('http://localhost:5001/api/v1/comments/posts/:postId', ({ request }) => {
+      http.get('http://localhost:5001/api/v1/comments/:section/posts/:postId', ({ request }) => {
         const cursor = new URL(request.url).searchParams.get('cursor')
         if (cursor) return HttpResponse.json({ data: [], nextCursor: null })
         getCount += 1
@@ -212,7 +212,7 @@ describe('CommunityDetailPage', () => {
 
   it('댓글 등록 API 실패 시 에러 메시지를 표시하고 입력값을 유지한다', async () => {
     server.use(
-      http.post('http://localhost:5001/api/v1/comments/posts/:postId', () =>
+      http.post('http://localhost:5001/api/v1/comments/:section/posts/:postId', () =>
         HttpResponse.json(
           { errorMessage: '서버 오류', errorCode: 'INTERNAL_SERVER_ERROR' },
           { status: 500 },
@@ -315,7 +315,7 @@ describe('CommunityDetailPage', () => {
     await user.click(within(dialog).getByRole('button', { name: '삭제' }))
 
     await waitFor(() => {
-      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['comments', 1] })
+      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['comments', 'tech', 1] })
     })
     removeSpy.mockRestore()
   })
@@ -412,7 +412,7 @@ describe('CommunityDetailPage', () => {
     let getCount = 0
     let patchCalled = false
     server.use(
-      http.get('http://localhost:5001/api/v1/comments/posts/:postId', ({ request }) => {
+      http.get('http://localhost:5001/api/v1/comments/:section/posts/:postId', ({ request }) => {
         const cursor = new URL(request.url).searchParams.get('cursor')
         if (cursor) return HttpResponse.json({ data: [], nextCursor: null })
         getCount += 1
@@ -423,7 +423,7 @@ describe('CommunityDetailPage', () => {
           nextCursor: null,
         })
       }),
-      http.patch('http://localhost:5001/api/v1/comments/:commentId', async () => {
+      http.patch('http://localhost:5001/api/v1/comments/:section/:commentId', async () => {
         patchCalled = true
         return new HttpResponse(null, { status: 204 })
       }),
@@ -467,7 +467,7 @@ describe('CommunityDetailPage', () => {
 
   it('수정 API 실패 시 에러 메시지를 표시하고 편집 모드를 유지한다', async () => {
     server.use(
-      http.patch('http://localhost:5001/api/v1/comments/:commentId', () =>
+      http.patch('http://localhost:5001/api/v1/comments/:section/:commentId', () =>
         HttpResponse.json(
           { errorMessage: '권한이 없습니다.', errorCode: 'COMMENT_FORBIDDEN' },
           { status: 403 },
@@ -515,7 +515,7 @@ describe('CommunityDetailPage', () => {
     let getCount = 0
     let deleteCalled = false
     server.use(
-      http.get('http://localhost:5001/api/v1/comments/posts/:postId', ({ request }) => {
+      http.get('http://localhost:5001/api/v1/comments/:section/posts/:postId', ({ request }) => {
         const cursor = new URL(request.url).searchParams.get('cursor')
         if (cursor) return HttpResponse.json({ data: [], nextCursor: null })
         getCount += 1
@@ -526,7 +526,7 @@ describe('CommunityDetailPage', () => {
           nextCursor: null,
         })
       }),
-      http.delete('http://localhost:5001/api/v1/comments/:commentId', () => {
+      http.delete('http://localhost:5001/api/v1/comments/:section/:commentId', () => {
         deleteCalled = true
         return new HttpResponse(null, { status: 204 })
       }),
@@ -550,7 +550,7 @@ describe('CommunityDetailPage', () => {
     loginAs(1)
     let deleteCalled = false
     server.use(
-      http.delete('http://localhost:5001/api/v1/comments/:commentId', () => {
+      http.delete('http://localhost:5001/api/v1/comments/:section/:commentId', () => {
         deleteCalled = true
         return new HttpResponse(null, { status: 204 })
       }),
@@ -569,7 +569,7 @@ describe('CommunityDetailPage', () => {
 
   it('삭제 API 실패 시 에러 메시지를 표시한다', async () => {
     server.use(
-      http.delete('http://localhost:5001/api/v1/comments/:commentId', () =>
+      http.delete('http://localhost:5001/api/v1/comments/:section/:commentId', () =>
         HttpResponse.json(
           { errorMessage: '권한이 없습니다.', errorCode: 'COMMENT_FORBIDDEN' },
           { status: 403 },

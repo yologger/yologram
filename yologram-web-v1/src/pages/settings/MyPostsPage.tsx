@@ -79,7 +79,7 @@ export default function MyPostsPage() {
                 queryClient.invalidateQueries({ queryKey: ['my-posts'] })
                 queryClient.invalidateQueries({ queryKey: ['posts', postSection.toLowerCase()] })
                 // 삭제된 글은 다시 볼 일이 없으므로 댓글 캐시는 제거
-                queryClient.removeQueries({ queryKey: ['comments', id] })
+                queryClient.removeQueries({ queryKey: ['comments', postSection.toLowerCase(), id] })
                 message.success('글이 삭제되었습니다.')
                 resolve()
               },

@@ -3,7 +3,7 @@ import { Typography } from 'antd'
 import FilterChips, { type ChipItem } from '../../components/common/FilterChips'
 import usePostCategoriesQuery from '../../queries/usePostCategoriesQuery'
 
-export default function TechNewsPage() {
+export default function TechArticlesPage() {
   const { 
     data: categories = [],  // data(카테고리 배열)를 categories로 rename.
     isLoading, 
