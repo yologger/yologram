@@ -7,20 +7,19 @@ os.environ.setdefault("JWT_SECRET", "test-jwt-secret-key-for-testing")
 from fastapi.testclient import TestClient
 
 from app.config.database import get_db
-from app.domain.pms.model import Post, PostCategoryMapping
-from app.domain.cms.enum import Section
+from app.domain.tech.post.model import TechPost, TechPostCategoryMapping
 from app.domain.ums.auth_dependency import get_authenticated_user
 from app.domain.ums.auth_schema import AuthData
 from app.main import app
 
 
-def _saved_post(post_id: int = 10) -> Post:
-    post = Post(section=Section.TECH, user_id=1, content="내용")
+def _saved_post(post_id: int = 10) -> TechPost:
+    post = TechPost(user_id=1, content="내용")
     post.id = post_id
     return post
 
 
-class TestPmsRouter:
+class TestTechPostRouter:
 
     def setup_method(self):
         self.mock_db = MagicMock()
@@ -33,9 +32,9 @@ class TestPmsRouter:
     def _authenticate(self):
         app.dependency_overrides[get_authenticated_user] = lambda: AuthData(uid=1, access_token="t")
 
-    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
+    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
     def test_정상_작성_시_201(self, mock_post_repo_cls, mock_pc_repo_cls, mock_client_cls):
         self._authenticate()
         mock_post_repo = MagicMock()
@@ -43,7 +42,7 @@ class TestPmsRouter:
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo_cls.return_value = MagicMock()
         mock_client = MagicMock()
-        mock_client.all_active_in_section.return_value = True
+        mock_client.all_active.return_value = True
         mock_client_cls.return_value = mock_client
 
         response = self.client.post(
@@ -60,15 +59,15 @@ class TestPmsRouter:
         assert response.status_code == 401
         assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
 
-    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
-    def test_카테고리가_해당_section_것이_아니면_400(self, mock_post_repo_cls, mock_pc_repo_cls, mock_client_cls):
+    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
+    def test_카테고리가_테크_게시판_것이_아니면_400(self, mock_post_repo_cls, mock_pc_repo_cls, mock_client_cls):
         self._authenticate()
         mock_post_repo_cls.return_value = MagicMock()
         mock_pc_repo_cls.return_value = MagicMock()
         mock_client = MagicMock()
-        mock_client.all_active_in_section.return_value = False
+        mock_client.all_active.return_value = False
         mock_client_cls.return_value = mock_client
 
         response = self.client.post(
@@ -79,13 +78,14 @@ class TestPmsRouter:
         assert response.status_code == 400
         assert response.json()["errorCode"] == "INVALID_POST_CATEGORY"
 
-    def test_유효하지_않은_section이면_400(self):
+    def test_다른_section_경로면_404(self):
+        # 테이블 분리로 경로가 tech 고정 — 다른 섹션 경로는 라우트가 없어 404
         self._authenticate()
 
         response = self.client.post("/api/v2/pms/unknown/posts", json={"content": "내용", "categoryIds": [1]})
 
-        assert response.status_code == 400
-        assert response.json()["errorCode"] == "INVALID_SECTION"
+        assert response.status_code == 404
+        assert response.json()["errorCode"] == "NOT_FOUND"
 
     def test_내용_누락_시_400(self):
         self._authenticate()
@@ -114,9 +114,9 @@ class TestPmsRouter:
         assert response.status_code == 400
         assert response.json()["errorCode"] == "VALIDATION_ERROR"
 
-    @patch("app.domain.pms.service.LocalUserQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
+    @patch("app.domain.tech.post.service.LocalUserQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
     def test_상세_조회_시_200(self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls):
         post = _saved_post(1)
         post.user_id = 12
@@ -128,7 +128,7 @@ class TestPmsRouter:
         mock_post_repo.find_by_id.return_value = post
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
-        mock_pc_repo.find_by_post_id.return_value = [PostCategoryMapping(post_id=1, category_id=1)]
+        mock_pc_repo.find_by_post_id.return_value = [TechPostCategoryMapping(post_id=1, category_id=1)]
         mock_pc_repo_cls.return_value = mock_pc_repo
         mock_user = MagicMock()
         mock_user.find_nickname.return_value = "tester"
@@ -139,13 +139,14 @@ class TestPmsRouter:
         assert response.status_code == 200
         body = response.json()["data"]
         assert body["id"] == 1
+        assert body["section"] == "TECH"
         assert body["author"]["nickname"] == "tester"
         assert body["content"] == "내용"
         assert body["categoryIds"] == [1]
 
-    @patch("app.domain.pms.service.LocalUserQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
+    @patch("app.domain.tech.post.service.LocalUserQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
     def test_존재하지_않는_게시글이면_404(self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_by_id.return_value = None
@@ -156,9 +157,9 @@ class TestPmsRouter:
         assert response.status_code == 404
         assert response.json()["errorCode"] == "POST_NOT_FOUND"
 
-    @patch("app.domain.pms.service.LocalUserQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
+    @patch("app.domain.tech.post.service.LocalUserQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
     def test_목록_조회_시_200과_data_nextCursor(self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls):
         post = _saved_post(2)
         post.user_id = 12
@@ -167,10 +168,10 @@ class TestPmsRouter:
         post.comment_count = 0
         post.created_at = datetime(2026, 1, 1, 0, 0)
         mock_post_repo = MagicMock()
-        mock_post_repo.find_posts_by_section.return_value = [post]
+        mock_post_repo.find_posts.return_value = [post]
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
-        mock_pc_repo.find_by_post_ids.return_value = [PostCategoryMapping(post_id=2, category_id=1)]
+        mock_pc_repo.find_by_post_ids.return_value = [TechPostCategoryMapping(post_id=2, category_id=1)]
         mock_pc_repo_cls.return_value = mock_pc_repo
         mock_user = MagicMock()
         mock_user.find_nicknames.return_value = {12: "tester"}
@@ -181,19 +182,20 @@ class TestPmsRouter:
         assert response.status_code == 200
         body = response.json()
         assert body["data"][0]["id"] == 2
+        assert body["data"][0]["section"] == "TECH"
         assert body["data"][0]["author"]["nickname"] == "tester"
         assert body["data"][0]["categoryIds"] == [1]
         assert body["nextCursor"] is not None
 
-    def test_목록_조회_시_유효하지_않은_section이면_400(self):
+    def test_목록_조회_시_다른_section_경로면_404(self):
         response = self.client.get("/api/v2/pms/unknown/posts")
 
-        assert response.status_code == 400
-        assert response.json()["errorCode"] == "INVALID_SECTION"
+        assert response.status_code == 404
+        assert response.json()["errorCode"] == "NOT_FOUND"
 
-    @patch("app.domain.pms.service.LocalUserQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
+    @patch("app.domain.tech.post.service.LocalUserQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
     def test_내_글_목록_조회_시_200과_data_nextCursor(self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls):
         self._authenticate()
         post = _saved_post(5)
@@ -226,9 +228,17 @@ class TestPmsRouter:
         assert response.status_code == 401
         assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
 
-    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
+    def test_내_글_목록_조회_시_유효하지_않은_section이면_400(self):
+        self._authenticate()
+
+        response = self.client.get("/api/v2/pms/posts/me?section=unknown")
+
+        assert response.status_code == 400
+        assert response.json()["errorCode"] == "INVALID_SECTION"
+
+    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
     def test_게시글_수정_시_204(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
         self._authenticate()
         post = _saved_post(1)
@@ -238,7 +248,7 @@ class TestPmsRouter:
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo_cls.return_value = MagicMock()
         mock_cat = MagicMock()
-        mock_cat.all_active_in_section.return_value = True
+        mock_cat.all_active.return_value = True
         mock_cat_cls.return_value = mock_cat
 
         response = self.client.patch(
@@ -257,9 +267,9 @@ class TestPmsRouter:
         assert response.status_code == 401
         assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
 
-    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
+    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
     def test_본인_글이_아니면_403(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
         self._authenticate()
         post = _saved_post(1)
@@ -278,9 +288,9 @@ class TestPmsRouter:
         assert response.status_code == 403
         assert response.json()["errorCode"] == "POST_FORBIDDEN"
 
-    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
+    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
     def test_존재하지_않는_글_수정_시_404(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
         self._authenticate()
         mock_post_repo = MagicMock()
@@ -307,10 +317,11 @@ class TestPmsRouter:
         assert response.status_code == 400
         assert response.json()["errorCode"] == "VALIDATION_ERROR"
 
-    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
-    def test_게시글_삭제_시_204(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
+    @patch("app.domain.tech.post.service.LocalTechPostCommentCleanupClient")
+    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
+    def test_게시글_삭제_시_204(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_cleanup_cls):
         self._authenticate()
         post = _saved_post(1)
         post.user_id = 1
@@ -319,6 +330,7 @@ class TestPmsRouter:
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo_cls.return_value = MagicMock()
         mock_cat_cls.return_value = MagicMock()
+        mock_cleanup_cls.return_value = MagicMock()
 
         response = self.client.delete("/api/v2/pms/tech/posts/1")
 
@@ -330,10 +342,11 @@ class TestPmsRouter:
         assert response.status_code == 401
         assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
 
-    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
-    def test_본인_글이_아니면_삭제_403(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
+    @patch("app.domain.tech.post.service.LocalTechPostCommentCleanupClient")
+    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
+    def test_본인_글이_아니면_삭제_403(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_cleanup_cls):
         self._authenticate()
         post = _saved_post(1)
         post.user_id = 99
@@ -342,22 +355,25 @@ class TestPmsRouter:
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo_cls.return_value = MagicMock()
         mock_cat_cls.return_value = MagicMock()
+        mock_cleanup_cls.return_value = MagicMock()
 
         response = self.client.delete("/api/v2/pms/tech/posts/1")
 
         assert response.status_code == 403
         assert response.json()["errorCode"] == "POST_FORBIDDEN"
 
-    @patch("app.domain.pms.service.LocalPostCategoryQueryClient")
-    @patch("app.domain.pms.service.PostCategoryMappingRepository")
-    @patch("app.domain.pms.service.PostRepository")
-    def test_존재하지_않는_글_삭제_시_404(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
+    @patch("app.domain.tech.post.service.LocalTechPostCommentCleanupClient")
+    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.tech.post.service.TechPostRepository")
+    def test_존재하지_않는_글_삭제_시_404(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_cleanup_cls):
         self._authenticate()
         mock_post_repo = MagicMock()
         mock_post_repo.find_by_id.return_value = None
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo_cls.return_value = MagicMock()
         mock_cat_cls.return_value = MagicMock()
+        mock_cleanup_cls.return_value = MagicMock()
 
         response = self.client.delete("/api/v2/pms/tech/posts/99")
 

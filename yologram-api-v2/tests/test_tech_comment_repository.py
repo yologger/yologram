@@ -4,8 +4,8 @@ from sqlalchemy.orm import sessionmaker
 from testcontainers.mysql import MySqlContainer
 
 from app.config.database import Base
-from app.domain.comment.model import Comment
-from app.domain.comment.repository import CommentRepository
+from app.domain.tech.comment.model import TechPostComment
+from app.domain.tech.comment.repository import TechPostCommentRepository
 
 
 @pytest.fixture(scope="module")
@@ -21,15 +21,15 @@ def db_session():
         engine.dispose()
 
 
-class TestCommentRepository:
+class TestTechPostCommentRepository:
 
     class TestDeleteByPostId:
 
         def test_해당_글의_댓글만_전체_삭제되고_다른_글의_댓글은_보존(self, db_session):
-            repo = CommentRepository(db_session)
-            repo.save(Comment(post_id=1, user_id=1, content="글1 댓글1"))
-            repo.save(Comment(post_id=1, user_id=2, content="글1 댓글2"))
-            other = repo.save(Comment(post_id=2, user_id=1, content="글2 댓글"))
+            repo = TechPostCommentRepository(db_session)
+            repo.save(TechPostComment(post_id=1, user_id=1, content="글1 댓글1"))
+            repo.save(TechPostComment(post_id=1, user_id=2, content="글1 댓글2"))
+            other = repo.save(TechPostComment(post_id=2, user_id=1, content="글2 댓글"))
             db_session.commit()
 
             repo.delete_by_post_id(1)
@@ -40,7 +40,7 @@ class TestCommentRepository:
             assert repo.find_by_id(other.id) is not None
 
         def test_댓글이_없는_글이면_아무것도_삭제하지_않고_에러_없음(self, db_session):
-            repo = CommentRepository(db_session)
+            repo = TechPostCommentRepository(db_session)
             before = repo.count_by_post(2)
 
             repo.delete_by_post_id(999)

@@ -2,8 +2,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.domain.cms.enum import Section
-
 
 class CreatePostRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
@@ -61,10 +59,12 @@ class PostAuthor(BaseModel):
 
 
 class PostDetailResponse(BaseModel):
+    """상세 응답. section은 테이블 분리 후에도 응답 계약 유지를 위해 상수 "TECH"로 직렬화."""
+
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     id: int
-    section: Section
+    section: str = "TECH"
     author: PostAuthor
     title: str | None
     content: str
@@ -75,12 +75,13 @@ class PostDetailResponse(BaseModel):
 
 
 class PostSummaryResponse(BaseModel):
-    """목록 항목. 피드에서 본문 노출을 위해 content 전체 포함 (상세와 동일 필드)."""
+    """목록 항목. 피드에서 본문 노출을 위해 content 전체 포함 (상세와 동일 필드).
+    section은 응답 계약 유지를 위해 상수 "TECH"로 직렬화."""
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     id: int
-    section: Section
+    section: str = "TECH"
     author: PostAuthor
     title: str | None
     content: str

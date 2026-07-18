@@ -2,13 +2,13 @@ from typing import Protocol
 
 from sqlalchemy.orm import Session
 
-from app.domain.comment.repository import CommentRepository
+from app.domain.tech.comment.repository import TechPostCommentRepository
 
 
-class CommentCleanupClient(Protocol):
+class TechPostCommentCleanupClient(Protocol):
     """
-    pms → comment 도메인 경계 호출 추상화 (게시글 삭제 시 연관 댓글 정리).
-    모놀리식에서는 comment 리포지토리를 직접 호출(LocalCommentCleanupClient),
+    tech post → tech comment 도메인 경계 호출 추상화 (게시글 삭제 시 연관 댓글 정리).
+    모놀리식에서는 comment 리포지토리를 직접 호출(LocalTechPostCommentCleanupClient),
     MSA 분리 시 comment-api 호출 또는 post-deleted 이벤트 발행 구현으로 교체한다.
     """
 
@@ -17,10 +17,10 @@ class CommentCleanupClient(Protocol):
         ...
 
 
-class LocalCommentCleanupClient:
+class LocalTechPostCommentCleanupClient:
 
     def __init__(self, db: Session):
-        self.repository = CommentRepository(db)
+        self.repository = TechPostCommentRepository(db)
 
     def delete_by_post_id(self, post_id: int) -> None:
         self.repository.delete_by_post_id(post_id)

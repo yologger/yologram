@@ -3,9 +3,9 @@ import base64
 from app.core.exception import InvalidCursorException
 
 
-class PostCursor:
+class TechPostCursor:
     """
-    게시글 피드 cursor (keyset 페이지네이션).
+    테크 게시글 피드 cursor (keyset 페이지네이션).
     id desc 정렬 기준(id가 작성순=시간순). 마지막 글 id를 Base64(URL-safe)로 인코딩.
     """
 

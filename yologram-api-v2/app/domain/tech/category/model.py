@@ -1,14 +1,14 @@
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Enum, Integer, String, func
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, String, func
 
 from app.config.database import Base
-from app.domain.cms.enum import Section
 
 
-class PostCategory(Base):
-    __tablename__ = "post_category"
+class TechPostCategory(Base):
+    """테크 게시판 카테고리. 섹션은 테이블명(tech_post_category)이 담당 — section 컬럼 없음."""
+
+    __tablename__ = "tech_post_category"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    section = Column(Enum(Section), nullable=False)
     name = Column(String(50), nullable=False)
     sort_order = Column(Integer, nullable=False, default=0)
     is_active = Column(Boolean, nullable=False, default=True)

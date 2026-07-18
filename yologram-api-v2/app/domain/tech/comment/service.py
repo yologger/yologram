@@ -6,28 +6,28 @@ from app.core.exception import (
     TargetPostNotFoundException,
 )
 from app.core.response import ApiEnvelopCursorPage, ApiEnvelopPage
-from app.domain.comment.cursor import CommentCursor
-from app.domain.comment.model import Comment
-from app.domain.comment.post_query_client import LocalPostQueryClient, PostQueryClient
-from app.domain.comment.repository import CommentRepository
-from app.domain.comment.schema import (
+from app.domain.tech.comment.cursor import TechPostCommentCursor
+from app.domain.tech.comment.model import TechPostComment
+from app.domain.tech.comment.repository import TechPostCommentRepository
+from app.domain.tech.comment.schema import (
     CommentAuthor,
     CommentResponse,
     CreateCommentRequest,
     CreateCommentResponse,
     UpdateCommentRequest,
 )
-from app.domain.comment.sort import CommentSort
-from app.domain.comment.user_query_client import LocalUserQueryClient, UserQueryClient
+from app.domain.tech.comment.sort import CommentSort
+from app.domain.tech.comment.tech_post_query_client import LocalTechPostQueryClient, TechPostQueryClient
+from app.domain.tech.comment.user_query_client import LocalUserQueryClient, UserQueryClient
 
 MAX_PAGE_SIZE = 50
 
 
-class CommentService:
+class TechPostCommentService:
 
     def __init__(self, db: Session):
-        self.comment_repository = CommentRepository(db)
-        self.post_query_client: PostQueryClient = LocalPostQueryClient(db)
+        self.comment_repository = TechPostCommentRepository(db)
+        self.post_query_client: TechPostQueryClient = LocalTechPostQueryClient(db)
         self.user_query_client: UserQueryClient = LocalUserQueryClient(db)
 
     def create(self, post_id: int, user_id: int, request: CreateCommentRequest) -> CreateCommentResponse:
@@ -36,7 +36,7 @@ class CommentService:
             raise TargetPostNotFoundException()
 
         comment = self.comment_repository.save(
-            Comment(
+            TechPostComment(
                 post_id=post_id,
                 user_id=user_id,
                 content=request.content,
@@ -78,12 +78,12 @@ class CommentService:
         없는 post_id면 빈 목록을 반환한다(존재 검증은 작성 시에만)."""
         sort = CommentSort.from_param(sort_param)
         page_size = max(1, min(size, MAX_PAGE_SIZE))
-        cursor_id = CommentCursor.decode(cursor) if cursor else None
+        cursor_id = TechPostCommentCursor.decode(cursor) if cursor else None
 
         comments = self.comment_repository.find_by_post_cursor(post_id, sort, cursor_id, page_size)
 
         data = self._to_responses(comments)
-        next_cursor = CommentCursor.encode(comments[-1].id) if comments else None
+        next_cursor = TechPostCommentCursor.encode(comments[-1].id) if comments else None
         return ApiEnvelopCursorPage(data=data, next_cursor=next_cursor)
 
     def get_comments_by_offset(
@@ -111,7 +111,7 @@ class CommentService:
             last=(total_pages == 0 or page_number >= total_pages - 1),
         )
 
-    def _to_responses(self, comments: list[Comment]) -> list[CommentResponse]:
+    def _to_responses(self, comments: list[TechPostComment]) -> list[CommentResponse]:
         """댓글 목록 → CommentResponse. 작성자 닉네임 배치 조회(N+1 회피)를 공유."""
         nicknames = self.user_query_client.find_nicknames([c.user_id for c in comments])
         return [

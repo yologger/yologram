@@ -1,14 +1,16 @@
 from sqlalchemy.orm import Session
 
-from app.core.exception import InvalidPostCategoryException, PostForbiddenException, PostNotFoundException
+from app.core.exception import (
+    InvalidPostCategoryException,
+    InvalidSectionException,
+    PostForbiddenException,
+    PostNotFoundException,
+)
 from app.core.response import ApiEnvelopCursorPage, ApiEnvelopPage
-from app.domain.cms.enum import Section
-from app.domain.pms.comment_cleanup_client import CommentCleanupClient, LocalCommentCleanupClient
-from app.domain.pms.post_category_query_client import PostCategoryQueryClient, LocalPostCategoryQueryClient
-from app.domain.pms.cursor import PostCursor
-from app.domain.pms.model import Post, PostCategoryMapping
-from app.domain.pms.repository import PostCategoryMappingRepository, PostRepository
-from app.domain.pms.schema import (
+from app.domain.tech.post.cursor import TechPostCursor
+from app.domain.tech.post.model import TechPost, TechPostCategoryMapping
+from app.domain.tech.post.repository import TechPostCategoryMappingRepository, TechPostRepository
+from app.domain.tech.post.schema import (
     CreatePostRequest,
     CreatePostResponse,
     PostAuthor,
@@ -16,30 +18,37 @@ from app.domain.pms.schema import (
     PostSummaryResponse,
     UpdatePostRequest,
 )
-from app.domain.pms.user_query_client import LocalUserQueryClient, UserQueryClient
+from app.domain.tech.post.tech_post_category_query_client import (
+    LocalTechPostCategoryQueryClient,
+    TechPostCategoryQueryClient,
+)
+from app.domain.tech.post.tech_post_comment_cleanup_client import (
+    LocalTechPostCommentCleanupClient,
+    TechPostCommentCleanupClient,
+)
+from app.domain.tech.post.user_query_client import LocalUserQueryClient, UserQueryClient
 
 MAX_PAGE_SIZE = 50
+SECTION_PATH = "tech"
 
 
-class PostService:
+class TechPostService:
 
     def __init__(self, db: Session):
-        self.post_repository = PostRepository(db)
-        self.post_category_repository = PostCategoryMappingRepository(db)
-        self.post_category_query_client: PostCategoryQueryClient = LocalPostCategoryQueryClient(db)
-        self.comment_cleanup_client: CommentCleanupClient = LocalCommentCleanupClient(db)
+        self.post_repository = TechPostRepository(db)
+        self.post_category_repository = TechPostCategoryMappingRepository(db)
+        self.post_category_query_client: TechPostCategoryQueryClient = LocalTechPostCategoryQueryClient(db)
+        self.comment_cleanup_client: TechPostCommentCleanupClient = LocalTechPostCommentCleanupClient(db)
         self.user_query_client: UserQueryClient = LocalUserQueryClient(db)
 
-    def create(self, section_path: str, user_id: int, request: CreatePostRequest) -> CreatePostResponse:
-        section = Section.from_path(section_path)
+    def create(self, user_id: int, request: CreatePostRequest) -> CreatePostResponse:
         category_ids = list(dict.fromkeys(request.category_ids))  # 중복 제거(순서 유지)
 
-        if not self.post_category_query_client.all_active_in_section(section, category_ids):
+        if not self.post_category_query_client.all_active(category_ids):
             raise InvalidPostCategoryException()
 
         post = self.post_repository.save(
-            Post(
-                section=section,
+            TechPost(
                 user_id=user_id,
                 title=(request.title or None),
                 content=request.content,
@@ -47,26 +56,24 @@ class PostService:
         )
 
         for category_id in category_ids:
-            self.post_category_repository.save(PostCategoryMapping(post_id=post.id, category_id=category_id))
+            self.post_category_repository.save(TechPostCategoryMapping(post_id=post.id, category_id=category_id))
 
         return CreatePostResponse(id=post.id)
 
-    def update(self, section_path: str, post_id: int, user_id: int, request: UpdatePostRequest) -> None:
+    def update(self, post_id: int, user_id: int, request: UpdatePostRequest) -> None:
         """게시글 수정 (본인 글). 제목·내용 갱신 + 카테고리 매핑 전체 교체."""
-        section = Section.from_path(section_path)
-
-        # 없거나 다른 section의 글이면 404 (상세 조회와 동일 규칙)
+        # 없으면 404 (상세 조회와 동일 규칙)
         post = self.post_repository.find_by_id(post_id)
-        if post is None or post.section != section:
+        if post is None:
             raise PostNotFoundException()
 
         # 작성자 본인만 수정 가능 (아니면 403)
         if post.user_id != user_id:
             raise PostForbiddenException()
 
-        # 카테고리 검증 (작성과 동일: 해당 section 활성 카테고리 1~3개)
+        # 카테고리 검증 (작성과 동일: 테크 게시판 활성 카테고리 1~3개)
         category_ids = list(dict.fromkeys(request.category_ids))  # 중복 제거(순서 유지)
-        if not self.post_category_query_client.all_active_in_section(section, category_ids):
+        if not self.post_category_query_client.all_active(category_ids):
             raise InvalidPostCategoryException()
 
         # 제목·내용 갱신 (속성 변경 → get_db commit 시 flush, modified_date는 onupdate로 자동 갱신)
@@ -76,31 +83,28 @@ class PostService:
         # 카테고리 매핑은 전체 교체 (기존 제거 후 재생성)
         self.post_category_repository.delete_by_post_id(post.id)
         for category_id in category_ids:
-            self.post_category_repository.save(PostCategoryMapping(post_id=post.id, category_id=category_id))
+            self.post_category_repository.save(TechPostCategoryMapping(post_id=post.id, category_id=category_id))
 
-    def delete(self, section_path: str, post_id: int, user_id: int) -> None:
+    def delete(self, post_id: int, user_id: int) -> None:
         """게시글 삭제 (본인 글). 연관 데이터(카테고리 매핑·댓글) 정리 후 게시글 삭제 (한 트랜잭션)."""
-        section = Section.from_path(section_path)
-
-        # 없거나 다른 section의 글이면 404 (상세 조회와 동일 규칙)
+        # 없으면 404 (상세 조회와 동일 규칙)
         post = self.post_repository.find_by_id(post_id)
-        if post is None or post.section != section:
+        if post is None:
             raise PostNotFoundException()
 
         # 작성자 본인만 삭제 가능 (아니면 403)
         if post.user_id != user_id:
             raise PostForbiddenException()
 
-        # 연관 데이터 정리 후 게시글 삭제 — 카테고리 매핑 + 댓글(고아 방지, CommentCleanupClient로 경계 추상화).
+        # 연관 데이터 정리 후 게시글 삭제 — 카테고리 매핑 + 댓글(고아 방지, TechPostCommentCleanupClient로 경계 추상화).
         # get_db 세션(요청 단위 commit)이라 글·매핑·댓글 삭제가 원자적 (좋아요 도메인은 미구현)
         self.post_category_repository.delete_by_post_id(post.id)
         self.comment_cleanup_client.delete_by_post_id(post.id)
         self.post_repository.delete(post)
 
-    def get_post(self, section_path: str, id: int) -> PostDetailResponse:
-        section = Section.from_path(section_path)
+    def get_post(self, id: int) -> PostDetailResponse:
         post = self.post_repository.find_by_id(id)
-        if post is None or post.section != section:
+        if post is None:
             raise PostNotFoundException()
 
         category_ids = [pc.category_id for pc in self.post_category_repository.find_by_post_id(post.id)]
@@ -108,7 +112,6 @@ class PostService:
 
         return PostDetailResponse(
             id=post.id,
-            section=post.section,
             author=PostAuthor(uid=post.user_id, nickname=nickname),
             title=post.title,
             content=post.content,
@@ -118,33 +121,31 @@ class PostService:
             created_at=post.created_at,
         )
 
-    # --- 섹션 피드 ---
+    # --- 피드 ---
 
     def get_posts_by_cursor(
-        self, section_path: str, category_id: int | None, cursor: str | None, size: int
+        self, category_id: int | None, cursor: str | None, size: int
     ) -> ApiEnvelopCursorPage[PostSummaryResponse]:
-        """섹션 피드 (cursor 페이지네이션) — 실사용. id desc + keyset."""
-        section = Section.from_path(section_path)
+        """테크 피드 (cursor 페이지네이션) — 실사용. id desc + keyset."""
         page_size = max(1, min(size, MAX_PAGE_SIZE))
-        cursor_id = PostCursor.decode(cursor) if cursor else None
+        cursor_id = TechPostCursor.decode(cursor) if cursor else None
 
-        posts = self.post_repository.find_posts_by_section(section, category_id, cursor_id, page_size)
+        posts = self.post_repository.find_posts(category_id, cursor_id, page_size)
 
         data = self._to_summaries(posts)
-        next_cursor = PostCursor.encode(posts[-1].id) if posts else None
+        next_cursor = TechPostCursor.encode(posts[-1].id) if posts else None
         return ApiEnvelopCursorPage(data=data, next_cursor=next_cursor)
 
     def get_posts_by_offset(
-        self, section_path: str, category_id: int | None, page: int, size: int
+        self, category_id: int | None, page: int, size: int
     ) -> ApiEnvelopPage[PostSummaryResponse]:
-        """섹션 피드 (offset 페이지네이션) — 학습용. cursor 방식과 대비되는 offset+count 예시."""
-        section = Section.from_path(section_path)
+        """테크 피드 (offset 페이지네이션) — 학습용. cursor 방식과 대비되는 offset+count 예시."""
         page_number = max(0, page)
         page_size = max(1, min(size, MAX_PAGE_SIZE))
         offset = page_number * page_size
 
-        total_count = self.post_repository.count_posts_by_section(section, category_id)
-        posts = self.post_repository.find_posts_by_section_offset(section, category_id, offset, page_size)
+        total_count = self.post_repository.count_posts(category_id)
+        posts = self.post_repository.find_posts_offset(category_id, offset, page_size)
 
         data = self._to_summaries(posts)
         return self._to_page(data, page_number, page_size, total_count)
@@ -154,33 +155,40 @@ class PostService:
     def get_my_posts_by_cursor(
         self, user_id: int, section_path: str | None, cursor: str | None, size: int
     ) -> ApiEnvelopCursorPage[PostSummaryResponse]:
-        """내 글 목록 (cursor 페이지네이션) — 실사용. 피드와 동일 방식, 무한스크롤 적합."""
-        section = Section.from_path(section_path) if section_path else None
+        """내 글 목록 (cursor 페이지네이션) — 실사용. 피드와 동일 방식, 무한스크롤 적합.
+        section 쿼리 파라미터는 URL 호환용 — 생략 또는 tech만 허용(테이블 분리로 다른 섹션은 없음)."""
+        self._validate_section(section_path)
         page_size = max(1, min(size, MAX_PAGE_SIZE))
-        cursor_id = PostCursor.decode(cursor) if cursor else None
+        cursor_id = TechPostCursor.decode(cursor) if cursor else None
 
-        posts = self.post_repository.find_my_posts_by_cursor(user_id, section, cursor_id, page_size)
+        posts = self.post_repository.find_my_posts_by_cursor(user_id, cursor_id, page_size)
 
         data = self._to_summaries(posts)
-        next_cursor = PostCursor.encode(posts[-1].id) if posts else None
+        next_cursor = TechPostCursor.encode(posts[-1].id) if posts else None
         return ApiEnvelopCursorPage(data=data, next_cursor=next_cursor)
 
     def get_my_posts_by_offset(
         self, user_id: int, section_path: str | None, page: int, size: int
     ) -> ApiEnvelopPage[PostSummaryResponse]:
         """내 글 목록 (offset 페이지네이션) — 학습용. cursor 방식과 대비되는 offset+count 예시."""
-        section = Section.from_path(section_path) if section_path else None
+        self._validate_section(section_path)
         page_number = max(0, page)
         page_size = max(1, min(size, MAX_PAGE_SIZE))
         offset = page_number * page_size
 
-        total_count = self.post_repository.count_my_posts(user_id, section)
-        posts = self.post_repository.find_my_posts_by_offset(user_id, section, offset, page_size)
+        total_count = self.post_repository.count_my_posts(user_id)
+        posts = self.post_repository.find_my_posts_by_offset(user_id, offset, page_size)
 
         data = self._to_summaries(posts)
         return self._to_page(data, page_number, page_size, total_count)
 
-    def _to_summaries(self, posts: list[Post]) -> list[PostSummaryResponse]:
+    @staticmethod
+    def _validate_section(section_path: str | None) -> None:
+        """section 쿼리 파라미터 검증 (URL 호환). 생략 또는 tech(대소문자 무관)만 허용."""
+        if section_path is not None and section_path.lower() != SECTION_PATH:
+            raise InvalidSectionException()
+
+    def _to_summaries(self, posts: list[TechPost]) -> list[PostSummaryResponse]:
         """글 목록 → PostSummaryResponse. 닉네임·카테고리 배치 조회(N+1 회피)를 공유."""
         nicknames = self.user_query_client.find_nicknames([p.user_id for p in posts])
 
@@ -191,7 +199,6 @@ class PostService:
         return [
             PostSummaryResponse(
                 id=post.id,
-                section=post.section,
                 author=PostAuthor(uid=post.user_id, nickname=nicknames.get(post.user_id)),
                 title=post.title,
                 content=post.content,
