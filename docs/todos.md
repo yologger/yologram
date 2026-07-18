@@ -47,8 +47,8 @@
 - [ ] (PMS) 기술/정치/투자 섹션 게시글 분리
   - [x] tech 분리 — 테이블 tech_post/tech_post_category/tech_post_category_mapping/tech_post_comment + api-v1/v2 domain/tech/{post,category,comment} 완전 분리 (완료, done.md). invest/politics는 게시판 오픈 시 동일 세트 복제
   - [x] web-v1/v2 댓글 API 경로 전환 — section 인자 추가로 정식 경로(/comments/{section}/...) 사용, 쿼리키 [comments, section, postId]로 통일 (완료, done.md)
-  - [ ] api-v1 LegacyCommentResource·api-v2 legacy 댓글 라우터 제거 — web-v1/v2 prod 배포 확인 후 (배포 순서: api 먼저 → web)
-  - [ ] legacy 테이블 정리 — 배포 직전 델타 마이그레이션(INSERT IGNORE 재실행) → 배포·검증 후 post/post_category/post_category_mapping/post_comment를 *_legacy로 rename → 유예 후 DROP
+  - [x] api-v1 LegacyCommentResource·api-v2 legacy 댓글 라우터 제거 (완료 — web 신경로 배포 확인 후 즉시 제거, 비공개 서비스라 유예 생략)
+  - [x] legacy 테이블 정리 — 델타 마이그레이션 → 배포·검증 → *_legacy rename → DROP까지 완료
   - [ ] api-v2 createdAt UTC 저장 이슈 — 신규 작성 시 v1은 KST, v2는 UTC로 저장됨 (분리 전부터 존재하던 차이). v2 프로세스 타임존/DB 세션 타임존 정합 필요
 - [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
   - [ ] 도입 시점 판단
