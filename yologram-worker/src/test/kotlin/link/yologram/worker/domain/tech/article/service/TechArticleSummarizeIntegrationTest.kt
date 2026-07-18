@@ -3,8 +3,10 @@ package link.yologram.worker.domain.tech.article.service
 import link.yologram.worker.domain.tech.article.client.ArticleContentCrawler
 import link.yologram.worker.domain.tech.article.entity.TechArticle
 import link.yologram.worker.domain.tech.article.enums.TechArticleStatus
+import link.yologram.worker.domain.tech.article.entity.TechCategory
 import link.yologram.worker.domain.tech.article.repository.TechArticleCategoryMappingRepository
 import link.yologram.worker.domain.tech.article.repository.TechArticleRepository
+import link.yologram.worker.domain.tech.article.repository.TechCategoryRepository
 import link.yologram.worker.global.llm.LlmClient
 import link.yologram.worker.global.llm.LlmCompletion
 import org.junit.jupiter.api.AfterEach
@@ -36,11 +38,30 @@ class TechArticleSummarizeIntegrationTest {
     @Autowired
     lateinit var mappingRepository: TechArticleCategoryMappingRepository
 
+    @Autowired
+    lateinit var techCategoryRepository: TechCategoryRepository
+
     @MockitoBean
     lateinit var articleContentCrawler: ArticleContentCrawler
 
     @MockitoBean
     lateinit var llmClient: LlmClient
+
+    @org.junit.jupiter.api.BeforeEach
+    fun seedCategories() {
+        if (techCategoryRepository.count() == 0L) {
+            techCategoryRepository.saveAll(
+                listOf(
+                    TechCategory(id = 2, name = "Backend", sortOrder = 2),
+                    TechCategory(id = 4, name = "DevOps", sortOrder = 4),
+                    TechCategory(id = 5, name = "Cloud", sortOrder = 5),
+                    TechCategory(id = 6, name = "Security", sortOrder = 6),
+                    TechCategory(id = 1, name = "Frontend", sortOrder = 1),
+                    TechCategory(id = 7, name = "기타", sortOrder = 7),
+                )
+            )
+        }
+    }
 
     @AfterEach
     fun cleanUp() {
@@ -71,7 +92,7 @@ class TechArticleSummarizeIntegrationTest {
         val saved = techArticleRepository.findById(article.id).orElseThrow()
         assertEquals(TechArticleStatus.SUMMARIZED, saved.status)
         assertEquals("**📌 한 줄 요약**\n코루틴 해설.", saved.summary)
-        assertEquals(listOf("Backend", "DevOps"), mappingRepository.findByArticleId(article.id).map { it.category })
+        assertEquals(listOf(2L, 4L), mappingRepository.findByArticleId(article.id).map { it.categoryId })
     }
 
     @Test
@@ -91,7 +112,7 @@ class TechArticleSummarizeIntegrationTest {
             .thenReturn(LlmCompletion("gemini", "요약1\n\n**🏷️ 카테고리**\nCloud"))
 
         service.summarize()
-        assertEquals(listOf("Cloud"), mappingRepository.findByArticleId(article.id).map { it.category })
+        assertEquals(listOf(5L), mappingRepository.findByArticleId(article.id).map { it.categoryId })
 
         // 재요약 (상태 리셋 후 다른 분류)
         techArticleRepository.save(
@@ -110,8 +131,8 @@ class TechArticleSummarizeIntegrationTest {
         service.summarize()
 
         assertEquals(
-            listOf("Frontend", "Security"),
-            mappingRepository.findByArticleId(article.id).map { it.category }.sorted(),
+            listOf(1L, 6L),
+            mappingRepository.findByArticleId(article.id).map { it.categoryId }.sorted(),
         )
     }
 }

@@ -4,7 +4,9 @@ import link.yologram.worker.domain.tech.article.client.ArticleContentCrawler
 import link.yologram.worker.domain.tech.article.entity.TechArticle
 import link.yologram.worker.domain.tech.article.enums.TechArticleStatus
 import link.yologram.worker.domain.tech.article.entity.TechArticleCategoryMapping
+import link.yologram.worker.domain.tech.article.entity.TechCategory
 import link.yologram.worker.domain.tech.article.repository.TechArticleCategoryMappingRepository
+import link.yologram.worker.domain.tech.article.repository.TechCategoryRepository
 import link.yologram.worker.domain.tech.article.repository.TechArticleRepository
 import link.yologram.worker.global.discord.DiscordNotifier
 import link.yologram.worker.global.llm.LlmClient
@@ -28,6 +30,13 @@ class TechArticleSummarizeServiceTest {
 
     private val techArticleRepository: TechArticleRepository = mock()
     private val techArticleCategoryMappingRepository: TechArticleCategoryMappingRepository = mock()
+    private val techCategoryRepository: TechCategoryRepository = mock {
+        on { findByIsActiveTrueOrderBySortOrder() } doReturn listOf(
+            TechCategory(id = 2, name = "Backend", sortOrder = 2),
+            TechCategory(id = 4, name = "DevOps", sortOrder = 4),
+            TechCategory(id = 7, name = "기타", sortOrder = 7),
+        )
+    }
     private val articleContentCrawler: ArticleContentCrawler = mock()
     private val llmClient: LlmClient = mock {
         on { available } doReturn true
@@ -49,6 +58,7 @@ class TechArticleSummarizeServiceTest {
     private val service = TechArticleSummarizeService(
         techArticleRepository,
         techArticleCategoryMappingRepository,
+        techCategoryRepository,
         articleContentCrawler,
         llmClient,
         notifierProvider,
@@ -90,10 +100,10 @@ class TechArticleSummarizeServiceTest {
         assertEquals("한국어 요약", target.summary)
         assertEquals(TechArticleStatus.SUMMARIZED, target.status)
         verify(techArticleRepository).save(target)
-        // 카테고리 마커 없는 출력 → [기타] 폴백 매핑
+        // 카테고리 마커 없는 출력 → '기타'(id 7) 폴백 매핑
         verify(techArticleCategoryMappingRepository).deleteByArticleIdBulk(target.id)
         verify(techArticleCategoryMappingRepository).saveAll(org.mockito.kotlin.check<List<TechArticleCategoryMapping>> {
-            assertEquals(listOf("기타"), it.map { m -> m.category })
+            assertEquals(listOf(7L), it.map { m -> m.categoryId })
         })
     }
 
@@ -111,7 +121,7 @@ class TechArticleSummarizeServiceTest {
         assertEquals("**📌 한 줄 요약**\n코루틴 해설.", target.summary)
         verify(techArticleCategoryMappingRepository).deleteByArticleIdBulk(target.id)
         verify(techArticleCategoryMappingRepository).saveAll(org.mockito.kotlin.check<List<TechArticleCategoryMapping>> {
-            assertEquals(listOf("Backend", "DevOps"), it.map { m -> m.category })
+            assertEquals(listOf(2L, 4L), it.map { m -> m.categoryId })
             assertEquals(listOf(target.id, target.id), it.map { m -> m.articleId })
         })
     }
