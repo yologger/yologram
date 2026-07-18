@@ -246,6 +246,41 @@ export const handlers = [
     return HttpResponse.json({ data: categories[section] })
   }),
 
+  http.get('http://localhost:5001/api/v1/articles/tech', ({ request }) => {
+    const url = new URL(request.url)
+    const cursor = url.searchParams.get('cursor')
+    const categoryId = url.searchParams.get('categoryId')
+
+    if (cursor === 'invalid-cursor') {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 커서입니다.', errorCode: 'INVALID_CURSOR' },
+        { status: 400 },
+      )
+    }
+
+    // 커서가 있으면 마지막 페이지 (nextCursor 생략)
+    if (cursor) {
+      return HttpResponse.json({
+        data: [
+          { id: 3003, title: '다음 페이지 아티클', summary: '다음 페이지 요약', link: 'https://blog.example.com/a3', sourceName: '네이버', categories: ['DevOps'], publishedAt: '2026-06-08T00:00:00' },
+        ],
+      })
+    }
+
+    // 공용 카테고리 마스터(tech_category)와 동일 ID 매핑 (categories 핸들러의 TECH와 일치)
+    const categoryNameById: Record<number, string> = { 1: 'Frontend', 2: 'Backend', 3: 'AI/ML', 7: '기타' }
+
+    const all = [
+      { id: 3001, title: '첫 번째 아티클', summary: '**📌 한 줄 요약**\n\n첫 요약 본문\n\n**🔑 핵심 포인트**\n\n- 포인트 하나\n- 포인트 둘', link: 'https://blog.example.com/a1', sourceName: '우아한형제들', categories: ['Backend', 'Cloud'], publishedAt: '2026-06-10T00:00:00' },
+      { id: 3002, title: '두 번째 아티클', summary: '두 번째 요약 본문', link: 'https://blog.example.com/a2', sourceName: '카카오', categories: ['Frontend'], publishedAt: '2026-06-09T00:00:00' },
+      { id: 3004, title: 'AI 아티클', summary: 'AI 요약 본문', link: 'https://blog.example.com/a4', sourceName: '토스', categories: ['AI/ML'], publishedAt: '2026-06-07T00:00:00' },
+    ]
+    const name = categoryId ? categoryNameById[Number(categoryId)] : null
+    const data = name ? all.filter((a) => a.categories.includes(name)) : categoryId ? [] : all
+
+    return HttpResponse.json({ data, nextCursor: 'next-cursor' })
+  }),
+
   http.post('http://localhost:5001/api/v1/pms/:section/posts', async ({ request }) => {
     const body = await request.json() as { content?: string; categoryIds?: number[] }
 

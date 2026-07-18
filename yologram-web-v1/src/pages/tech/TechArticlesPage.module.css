@@ -1,0 +1,116 @@
+.feed {
+  padding-bottom: 24px;
+}
+
+.sentinel {
+  height: 1px;
+}
+
+.status {
+  padding: 24px 16px;
+  text-align: center;
+  color: #71717a;
+  font-size: 14px;
+}
+
+.status button {
+  margin-top: 8px;
+  padding: 6px 16px;
+  border: 1px solid #dfe4ea;
+  border-radius: 16px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.card {
+  padding: 16px 4px;
+  border-bottom: 1px solid #dfe4ea;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.source {
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.dot {
+  color: #a1a1aa;
+}
+
+.time {
+  color: #a1a1aa;
+  font-size: 12px;
+}
+
+.tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.tags :global(.ant-tag) {
+  margin-inline-end: 0;
+}
+
+.title {
+  display: block;
+  font-weight: 600;
+  font-size: 16px;
+  color: #18181b;
+  margin-bottom: 6px;
+}
+
+.title:hover {
+  color: #08979c;
+  text-decoration: underline;
+}
+
+/* summary 마크다운은 카드 안에서 과하지 않게 (볼드·리스트 정도) */
+.summary {
+  color: #3f3f46;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.summary p {
+  margin: 0 0 6px;
+}
+
+.summary p:last-child {
+  margin-bottom: 0;
+}
+
+.summary strong {
+  font-weight: 600;
+  color: #18181b;
+}
+
+.summary ul,
+.summary ol {
+  margin: 0 0 6px;
+  padding-left: 20px;
+}
+
+.summary li {
+  margin: 2px 0;
+}
+
+.summary h1,
+.summary h2,
+.summary h3,
+.summary h4,
+.summary h5,
+.summary h6 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 8px 0 4px;
+}
