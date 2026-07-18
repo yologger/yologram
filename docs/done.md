@@ -93,3 +93,13 @@
   - [x] 인프라: ECR + ECS Fargate SPOT(0.25/512, ecs-prod) + task role(SSM read 한정) + SSM OTLP 6종 — yologram-infra/aws/services/yologram-worker. 인바운드 없음: API GW·Cloud Map·portMappings 미사용, SG egress만(actuator는 ECS exec로 localhost 접근)
   - [x] CI: yologram-worker.yaml (경로 트리거 → Gradle build → ECR push → ECS 재배포, Discord 알림) — api-v1 워크플로 미러
   - 워커 작업 설계 원칙: Spot 중단 전제 멱등·재시도 가능하게. @Scheduled는 놓친 사이클 미소급(RSS류만 적합), 시각 민감 배치는 EventBridge→SQS 이관 기준 (todos 참조)
+- [x] (Article) 테크 아티클 파이프라인 — RSS 수집 → LLM 요약 → Discord 알림 (yologram-worker)
+  - [x] 도메인·테이블: tech_article_source(소스 관리) + tech_article(기사, link unique=중복 수집 방지 키, status COLLECTED/SUMMARIZED/FAILED + retry_count가 작업 큐 역할). domain/tech/article 패키지(섹션 최상위 — invest/politics는 별도 테이블·수집기로 추가 예정). description(원문)은 저장하지 않음 — 요약 입력은 link 원문 크롤링으로 확보
+  - [x] 수집(TechArticleCollectService, cron 10분): RssFeedClient(WebClient 바이트 로드 → Rome 파싱, 인코딩 자동 감지·리다이렉트 추적) → 피드 내 중복 제거 → 기존 link 배치 조회 제외 → saveAll. 소스 단위 실패 격리. 소스는 n8n 구독분 6개 승계(AWS What's New/AWS 한국 블로그/Velopers/44bits/개발자스럽다/GeekNews)
+  - [x] 요약(TechArticleSummarizeService, cron 5분·배치 10건): ArticleContentCrawler(WebClient 로드 + Readability 본문 추출, 20,000자 컷) → LlmClient(Gemini gemini-3.1-flash-lite 1순위 → Groq llama-3.3-70b-versatile fallback, Spring AI 1.1.8 OpenAI 호환) → SUMMARIZED. 실패 시 retry_count 5회 후 FAILED(터미널) + Discord 경고. 프롬프트는 n8n 요약 프롬프트 승계(구조화 출력: 한 줄 요약/핵심 포인트/왜 중요한가/핵심 개념)
+  - [x] Discord 알림(DiscordNotifier, 채널별 웹훅 webhooks.{tech,invest,politics}.url/enabled): 요약 완성 글만 embed 발송(제목=원문 링크, 본문=요약, 상단 소스명 — n8n 알림 포맷 대체). 발송 실패는 삼키고 로그만. 수집 단계는 무발송(완성본만 알림)
+  - 설계 근거: 수집·요약 분리 — 수집은 시간 민감(RSS 노출 창), 요약은 DB status 기준 무기한 재시도 가능. 합치면 LLM 장애가 수집을 막음. status가 큐라 Spot 중단·재기동 멱등
+  - 설계 근거: LLM 모델은 문서가 아닌 실측으로 확정 — gemini-3.5-flash는 무료 20 req/일(429 quotaValue 실측), llama-4-scout는 Groq에서 제거(404). 무료 티어는 lite 계열 + /models 실조회가 기준
+  - 설계 근거: tech_article FK 제거 — 같은 도메인이라 FK 허용했다가 TRUNCATE 불가 등 운영 불편으로 제거, 전 테이블 무FK로 일관(참조 정합성은 앱 레벨)
+  - 인프라: worker_prod SSM 15종(OTLP 6 + DB writer/reader 6 + LLM 키 2 + Discord 웹훅 3채널), DB는 api-v1 미러 master/slave 라우팅(CoreDatabaseConfig)
+  - n8n 완전 대체 — 소스 승계 + 요약 embed 알림까지 동일. n8n 정리는 todos의 (Infra) 항목

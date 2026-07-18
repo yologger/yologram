@@ -19,18 +19,17 @@
   - [ ] 어드민 인증 — 방식 확정: user.type에 ADMIN 추가 + JWT 검증 시 type 체크(@AdminUser 리졸버, api-v1/v2). 어드민 웹 로그인·가드 연동. News 어드민 API의 선행 작업
   - [ ] RSS 소스 관리 화면 (Article 연계)
   - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
-- [ ] (Article) 테크 아티클 (구 News) — RSS 수집(Worker) → LLM 요약 → TECH > News 표시. 구현 순서: ③worker 수집(진행 중) → ①Admin 인증 → ②소스 CRUD API+어드민 화면 → ④LLM 요약 → ⑤공개 조회 API+web → ⑥어드민 아티클 수정/삭제
+- [ ] (Article) 테크 아티클 (구 News) — RSS 수집(Worker) → LLM 요약 → TECH > News 표시. 남은 순서: ①Admin 인증 → ②소스 CRUD API+어드민 화면 → ⑤공개 조회 API+web → ⑥어드민 아티클 수정/삭제 (③수집·④요약은 완료 — done.md)
   - 명명 확정: News → Article (RSS 소스가 뉴스가 아닌 블로그 글. 도메인·테이블·클래스 전부 Article). 섹션별 테이블 분리 확정 — 투자/정치는 제공 방식 확정 시 invest_news/politics_news 등 별도 테이블+수집기로 추가 (post 섹션 분리는 별항)
-  - [ ] article 도메인·테이블 — tech_article_source(id, name, url, is_active) + tech_article(id, source_id — 같은 도메인이지만 FK 없이 컬럼+인덱스(전 테이블 무FK 일관, truncate 등 운영 편의), title, link unique=중복 수집 방지 키, summary, source_name, published_at, status COLLECTED/SUMMARIZED/FAILED, retry_count). description(원문)은 저장하지 않음 — 요약 입력은 link 원문 크롤링으로 확보. worker 수집+Discord 알림 구현 완료·검증 대기
+  - [x] article 도메인·테이블 + worker 수집·LLM 요약·Discord 채널별 알림 (완료, done.md — n8n 대체 검증됨)
   - [ ] 소스 CRUD API(어드민 전용, api-v1/v2) + admin-web 소스 관리 화면
-  - [ ] LLM 요약 스텝 — Spring AI 1.1.8(OpenAI 호환 ChatModel) + fallback: Gemini gemini-3.5-flash(1순위) → Groq llama-4-scout(2순위), Cerebras는 제외 결정. 키는 Parameter Store. 한국어 2~3문장 요약. 입력은 원문 크롤링(jsoup+Readability4J) — description 미저장 결정으로 크롤링 실패 시 폴백 없음, retry_count 3회 후 FAILED(화면 제외 또는 제목+링크만 노출). 구현 완료·키 발급 후 검증 대기
   - [ ] 새 아티클 유저 알림 — 요약 확정(SUMMARIZED/FAILED) + notified_at IS NULL 기준으로 발송 후 notified_at 기록(정확히 한 번·멱등). tech_article에 notified_at 컬럼 추가. 발송 채널(푸시/인앱)은 그때 결정
   - Discord 수집 알림은 개발자 모니터링용(임시) — 유저 알림 도입 후 yologram.discord.enabled=false로 비활성 또는 제거
   - [ ] 공개 아티클 목록 조회 API (api-v1/v2) — 발행순(published_at desc) + (published_at, id) 복합 keyset 커서
   - [ ] web TECH > News 더미 → 연동 (web-v1/v2, 무한스크롤, 원문 링크)
   - [ ] web/admin 표기 News → Articles 변경 (web-v1/v2 메뉴·라우트·문구 — 백엔드 Article rename에 맞춤, 나중에)
   - [ ] 어드민 아티클 수정(요약 교정)/삭제 API + 화면
-- [ ] (Infra) n8n 제거 — 현재 RSS 구독 → Discord 알림 역할만 수행 중. Article(RSS 수집)이 Worker로 대체되면 n8n 정리
+- [ ] (Infra) n8n 제거 — Worker가 소스 6개 승계 + 요약 embed 알림까지 완전 대체 완료. n8n 워크플로 비활성화·인스턴스 정리만 남음
 - [ ] (Comment) 댓글
   - [x] 댓글 작성 — post_comment 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/posts/{postId}), api-v1/v2, web-v1/v2 (완료, done.md)
   - [x] 댓글 조회 (최신순/오래된순 정렬, 최신이 위 기본) — sort=latest|oldest 양방향 cursor 무한스크롤(20개/페이지), 더미 → 연동, api-v1/v2 + web-v1/v2 (완료, done.md). cursor 실사용 + offset 학습용 보존

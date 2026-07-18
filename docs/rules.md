@@ -20,7 +20,7 @@
   -  UMS→yologram-user-api, PMS→yologram-post-api, CMS→yologram-cms-api, Comment→comment-api, Count→count-api, News→news-api
 -  분리 전략: 도메인 간 직접 JOIN·repository 교차 호출 금지
 -  경계 호출은 인터페이스(QueryClient/Protocol)로 추상화 → 분리 시 HTTP/gRPC 구현으로 교체 (예: PostCategoryQueryClient, UserQueryClient). 모놀리식은 Local*QueryClient(리포지토리 직접) 구현, self HTTP 호출 지양
--  경계 넘는 FK 지양(같은 도메인 내부만 FK). 경계 넘는 참조는 인덱스 + app-level 검증
+-  전 테이블 FK 미사용(같은 도메인 내부 포함 — tech_article에서 같은 도메인 FK 허용했다가 TRUNCATE 불가 등 운영 불편으로 제거). 참조는 컬럼+인덱스 + app-level 검증
 -  경계 넘는 동기 트랜잭션 의존 최소화 (count 갱신은 추후 이벤트/최종일관성)
 
 ### Worker (yologram-worker)
@@ -28,3 +28,5 @@
 - @Scheduled는 놓친 사이클을 소급하지 않음 — 다음 주기가 커버하는 작업(RSS류)만 사용. 시각 민감/누적형/중단 불가 배치는 EventBridge Scheduler → SQS로 이관(스케줄 발화를 인프라가 보장)
 - 주기 작업은 단일 인스턴스 전제 — 인스턴스 확장 시 ShedLock 도입
 - 워커는 인바운드 없음(API GW·Cloud Map 미사용) — actuator는 ECS exec로 localhost:5000 접근
+- LLM 무료 티어 모델 선정은 문서가 아닌 실측 기준 — 사용 가능 모델은 /v1/models 실조회, 쿼터는 429 응답의 quotaValue가 정답 (웹 문서는 낡음). 상위 모델(예: gemini-3.5-flash 20 req/일)은 무료 쿼터 극소량 — lite 계열 사용
+- 워커 HTTP 호출은 WebClient 통일(global/client WebClientFactory — bun-client-kotlin 미러). 단 라이브러리가 스트림을 요구하면 바이트로 받아 넘김(RSS→Rome), Spring AI는 자체 RestClient에 타임아웃 주입(LlmConfig)
