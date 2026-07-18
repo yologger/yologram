@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
-/** 테크 게시글 댓글 API (신규 경로: /comments/tech/...). 구경로 호환은 LegacyCommentResource 참조. */
+/** 테크 게시글 댓글 API (/comments/tech/...) */
 @Tag(name = "TechPostComment", description = "테크 게시글 댓글")
 @RestController
 @RequestMapping("/api/v1/comments")
