@@ -70,3 +70,16 @@ aws ecs execute-command \
   --profile yologram \
   --region ap-northeast-2
 ```
+
+## API Key
+Gemini (1순위)
+1. https://aistudio.google.com/apikey 접속 (구글 계정 로그인)
+2. 약관 동의하면 기본 프로젝트가 자동 생성됨
+3. "Create API key" 클릭 → 키 생성·복사 (무료 티어는 키 발급만으로 적용, 결제 설정 안 하면 자동으로 free tier)
+4. SSM Parameter: `/yologram/service/yologram-worker_prod/yologram.llm.gemini.api-key`
+
+Groq (2순위)
+1. https://console.groq.com 가입 (이메일 또는 구글/깃허브 로그인)
+2. https://console.groq.com/keys 에서 "Create API Key" 클릭
+3. 키는 생성 직후 한 번만 표시되므로 그 자리에서 복사
+4. SSM Parameter: `/yologram/service/yologram-worker_prod/yologram.llm.groq.api-key`
