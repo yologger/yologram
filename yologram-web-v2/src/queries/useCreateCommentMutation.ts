@@ -5,7 +5,7 @@ import { createComment } from '@/apis/pms'
 
 export default function useCreateCommentMutation() {
   return useMutation({
-    mutationFn: ({ postId, content }: { postId: number; content: string }) =>
-      createComment(postId, content),
+    mutationFn: ({ section, postId, content }: { section: string; postId: number; content: string }) =>
+      createComment(section, postId, content),
   })
 }

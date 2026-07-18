@@ -127,7 +127,7 @@ describe('MyPosts 내가 쓴 글', () => {
 
     await waitFor(() => {
       expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['post', 'tech', 3001] })
-      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['comments', 3001] })
+      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['comments', 'tech', 3001] })
     })
     removeSpy.mockRestore()
   })

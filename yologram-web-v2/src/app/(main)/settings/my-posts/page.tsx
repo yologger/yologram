@@ -70,7 +70,7 @@ export default function MyPosts() {
                 queryClient.invalidateQueries({ queryKey: ['posts', sectionParam] })
                 queryClient.removeQueries({ queryKey: ['post', sectionParam, post.id] })
                 // 삭제된 글은 다시 볼 일이 없으므로 댓글 캐시도 제거(백엔드도 함께 삭제)
-                queryClient.removeQueries({ queryKey: ['comments', post.id] })
+                queryClient.removeQueries({ queryKey: ['comments', sectionParam, post.id] })
                 message.success('글이 삭제되었습니다.')
                 resolve()
               },

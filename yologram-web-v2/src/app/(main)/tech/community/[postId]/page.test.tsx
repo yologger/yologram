@@ -64,7 +64,7 @@ describe('CommunityDetail', () => {
   it('정렬을 오래된순으로 전환하면 해당 정렬로 재조회한다', async () => {
     const sortValues: string[] = []
     server.use(
-      http.get('http://localhost:5002/api/v2/comments/posts/:postId', ({ request }) => {
+      http.get('http://localhost:5002/api/v2/comments/:section/posts/:postId', ({ request }) => {
         const sort = new URL(request.url).searchParams.get('sort') ?? 'latest'
         sortValues.push(sort)
         return HttpResponse.json({
@@ -101,7 +101,7 @@ describe('CommunityDetail', () => {
 
   it('댓글이 없으면 안내 문구를 표시한다', async () => {
     server.use(
-      http.get('http://localhost:5002/api/v2/comments/posts/:postId', () =>
+      http.get('http://localhost:5002/api/v2/comments/:section/posts/:postId', () =>
         HttpResponse.json({ data: [], nextCursor: null }),
       ),
     )
@@ -113,7 +113,7 @@ describe('CommunityDetail', () => {
 
   it('댓글 조회 실패 시 에러 안내를 표시한다', async () => {
     server.use(
-      http.get('http://localhost:5002/api/v2/comments/posts/:postId', () =>
+      http.get('http://localhost:5002/api/v2/comments/:section/posts/:postId', () =>
         HttpResponse.json(
           { errorMessage: '서버 오류가 발생했습니다.', errorCode: 'INTERNAL_SERVER_ERROR' },
           { status: 500 },
@@ -129,7 +129,7 @@ describe('CommunityDetail', () => {
   it('내용이 없으면 등록 버튼이 비활성화되고 클릭해도 요청하지 않는다', async () => {
     let called = false
     server.use(
-      http.post('http://localhost:5002/api/v2/comments/posts/:postId', () => {
+      http.post('http://localhost:5002/api/v2/comments/:section/posts/:postId', () => {
         called = true
         return HttpResponse.json({ data: { id: 7777 } }, { status: 201 })
       }),
@@ -147,7 +147,7 @@ describe('CommunityDetail', () => {
   it('로그인 상태에서 댓글을 입력하고 등록하면 성공 피드백·입력창 초기화·목록 재조회가 이뤄진다', async () => {
     let getCount = 0
     server.use(
-      http.get('http://localhost:5002/api/v2/comments/posts/:postId', () => {
+      http.get('http://localhost:5002/api/v2/comments/:section/posts/:postId', () => {
         getCount += 1
         return HttpResponse.json({
           data: [{ id: 401, postId: 1, author: { uid: 1, nickname: '최신유저' }, content: '가장 최근 댓글', createdAt: '2026-06-10T12:00:00' }],
@@ -175,7 +175,7 @@ describe('CommunityDetail', () => {
   it('비로그인 상태에서 등록하면 로그인 안내만 하고 요청하지 않는다', async () => {
     let called = false
     server.use(
-      http.post('http://localhost:5002/api/v2/comments/posts/:postId', () => {
+      http.post('http://localhost:5002/api/v2/comments/:section/posts/:postId', () => {
         called = true
         return HttpResponse.json({ data: { id: 7777 } }, { status: 201 })
       }),
@@ -194,7 +194,7 @@ describe('CommunityDetail', () => {
 
   it('댓글 등록 실패 시 에러 토스트를 표시한다', async () => {
     server.use(
-      http.post('http://localhost:5002/api/v2/comments/posts/:postId', () =>
+      http.post('http://localhost:5002/api/v2/comments/:section/posts/:postId', () =>
         HttpResponse.json(
           { errorMessage: '서버 오류가 발생했습니다.', errorCode: 'INTERNAL_SERVER_ERROR' },
           { status: 500 },
@@ -282,7 +282,7 @@ describe('CommunityDetail', () => {
 
     await waitFor(() => {
       expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['post', 'tech', 1] })
-      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['comments', 1] })
+      expect(removeSpy).toHaveBeenCalledWith({ queryKey: ['comments', 'tech', 1] })
     })
     removeSpy.mockRestore()
   })
@@ -325,12 +325,12 @@ describe('CommunityDetail', () => {
     let patched: { commentId: string; content: string } | null = null
     let getCount = 0
     server.use(
-      http.patch('http://localhost:5002/api/v2/comments/:commentId', async ({ request, params }) => {
+      http.patch('http://localhost:5002/api/v2/comments/:section/:commentId', async ({ request, params }) => {
         const body = await request.json() as { content: string }
         patched = { commentId: String(params.commentId), content: body.content }
         return new HttpResponse(null, { status: 204 })
       }),
-      http.get('http://localhost:5002/api/v2/comments/posts/:postId', () => {
+      http.get('http://localhost:5002/api/v2/comments/:section/posts/:postId', () => {
         getCount += 1
         return HttpResponse.json({
           data: [{ id: 401, postId: 1, author: { uid: 1, nickname: '최신유저' }, content: '가장 최근 댓글', createdAt: '2026-06-10T12:00:00' }],
@@ -364,7 +364,7 @@ describe('CommunityDetail', () => {
   it('편집 중 취소하면 요청 없이 원래 내용으로 돌아간다', async () => {
     let patchCalled = false
     server.use(
-      http.patch('http://localhost:5002/api/v2/comments/:commentId', () => {
+      http.patch('http://localhost:5002/api/v2/comments/:section/:commentId', () => {
         patchCalled = true
         return new HttpResponse(null, { status: 204 })
       }),
@@ -421,11 +421,11 @@ describe('CommunityDetail', () => {
     let deleted: string | null = null
     let getCount = 0
     server.use(
-      http.delete('http://localhost:5002/api/v2/comments/:commentId', ({ params }) => {
+      http.delete('http://localhost:5002/api/v2/comments/:section/:commentId', ({ params }) => {
         deleted = String(params.commentId)
         return new HttpResponse(null, { status: 204 })
       }),
-      http.get('http://localhost:5002/api/v2/comments/posts/:postId', () => {
+      http.get('http://localhost:5002/api/v2/comments/:section/posts/:postId', () => {
         getCount += 1
         return HttpResponse.json({
           data: [{ id: 401, postId: 1, author: { uid: 1, nickname: '최신유저' }, content: '가장 최근 댓글', createdAt: '2026-06-10T12:00:00' }],
@@ -457,7 +457,7 @@ describe('CommunityDetail', () => {
   it('삭제 확인 모달에서 취소하면 DELETE 요청이 발생하지 않는다', async () => {
     let deleteCalled = false
     server.use(
-      http.delete('http://localhost:5002/api/v2/comments/:commentId', () => {
+      http.delete('http://localhost:5002/api/v2/comments/:section/:commentId', () => {
         deleteCalled = true
         return new HttpResponse(null, { status: 204 })
       }),
@@ -479,7 +479,7 @@ describe('CommunityDetail', () => {
 
   it('댓글 삭제 실패 시 에러 토스트를 표시한다', async () => {
     server.use(
-      http.delete('http://localhost:5002/api/v2/comments/:commentId', () =>
+      http.delete('http://localhost:5002/api/v2/comments/:section/:commentId', () =>
         HttpResponse.json(
           { errorMessage: '서버 오류가 발생했습니다.', errorCode: 'INTERNAL_SERVER_ERROR' },
           { status: 500 },
@@ -502,7 +502,7 @@ describe('CommunityDetail', () => {
 
   it('댓글 수정 실패 시 에러 토스트를 표시한다', async () => {
     server.use(
-      http.patch('http://localhost:5002/api/v2/comments/:commentId', () =>
+      http.patch('http://localhost:5002/api/v2/comments/:section/:commentId', () =>
         HttpResponse.json(
           { errorMessage: '서버 오류가 발생했습니다.', errorCode: 'INTERNAL_SERVER_ERROR' },
           { status: 500 },

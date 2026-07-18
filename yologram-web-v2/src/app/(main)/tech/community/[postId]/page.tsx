@@ -54,7 +54,7 @@ export default function CommunityDetail() {
     isFetchingNextPage,
     isLoading: isCommentsLoading,
     isError: isCommentsError,
-  } = useCommentsQuery(id, sort)
+  } = useCommentsQuery('tech', id, sort)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -154,7 +154,7 @@ export default function CommunityDetail() {
                 queryClient.invalidateQueries({ queryKey: ['myPosts'] })
                 queryClient.removeQueries({ queryKey: ['post', 'tech', id] })
                 // 삭제된 글은 다시 볼 일이 없으므로 댓글 캐시도 제거(백엔드도 함께 삭제)
-                queryClient.removeQueries({ queryKey: ['comments', id] })
+                queryClient.removeQueries({ queryKey: ['comments', 'tech', id] })
                 message.success('글이 삭제되었습니다.')
                 // 진입 출처(기술 커뮤니티 또는 내 글 목록)로 복귀 — 뒤로가기 버튼과 동일
                 router.back()
@@ -182,11 +182,11 @@ export default function CommunityDetail() {
     }
 
     createComment(
-      { postId: id, content },
+      { section: 'tech', postId: id, content },
       {
         onSuccess: () => {
           // 작성 성공 시 해당 글의 댓글 목록 재조회(정렬 무관 전체 무효화)
-          queryClient.invalidateQueries({ queryKey: ['comments', id] })
+          queryClient.invalidateQueries({ queryKey: ['comments', 'tech', id] })
           setText('')
           message.success('댓글이 등록되었습니다.')
         },
@@ -214,11 +214,11 @@ export default function CommunityDetail() {
     if (editingId == null || !content || isUpdatePending) return
 
     updateComment(
-      { commentId: editingId, content },
+      { section: 'tech', commentId: editingId, content },
       {
         onSuccess: () => {
           // 수정 성공 시 해당 글의 댓글 목록 재조회(정렬 무관 전체 무효화)
-          queryClient.invalidateQueries({ queryKey: ['comments', id] })
+          queryClient.invalidateQueries({ queryKey: ['comments', 'tech', id] })
           setEditingId(null)
           setEditText('')
           message.success('댓글이 수정되었습니다.')
@@ -242,11 +242,11 @@ export default function CommunityDetail() {
       onOk: () =>
         new Promise<void>((resolve) => {
           deleteComment(
-            { commentId },
+            { section: 'tech', commentId },
             {
               onSuccess: () => {
                 // 삭제 성공 시 해당 글의 댓글 목록 재조회(정렬 무관 전체 무효화)
-                queryClient.invalidateQueries({ queryKey: ['comments', id] })
+                queryClient.invalidateQueries({ queryKey: ['comments', 'tech', id] })
                 // 편집 중이던 댓글을 삭제한 경우 편집 상태도 종료
                 if (editingId === commentId) {
                   setEditingId(null)

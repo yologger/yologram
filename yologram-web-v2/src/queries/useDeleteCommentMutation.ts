@@ -5,6 +5,7 @@ import { deleteComment } from '@/apis/pms'
 
 export default function useDeleteCommentMutation() {
   return useMutation({
-    mutationFn: ({ commentId }: { commentId: number }) => deleteComment(commentId),
+    mutationFn: ({ section, commentId }: { section: string; commentId: number }) =>
+      deleteComment(section, commentId),
   })
 }

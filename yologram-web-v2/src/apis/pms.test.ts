@@ -139,22 +139,22 @@ describe('createComment', () => {
   afterAll(() => store.set(authAtom, null))
 
   it('작성 성공 시 생성된 댓글 id를 반환한다 (201)', async () => {
-    const result = await createComment(1, '좋은 글이네요')
+    const result = await createComment('tech', 1, '좋은 글이네요')
     expect(result).toEqual({ id: 7777 })
   })
 
   it('내용이 비어 있으면 에러를 던진다 (400)', async () => {
-    await expect(createComment(1, '   ')).rejects.toThrow()
+    await expect(createComment('tech', 1, '   ')).rejects.toThrow()
   })
 
   it('존재하지 않는 글이면 에러를 던진다 (404)', async () => {
-    await expect(createComment(99999, '댓글')).rejects.toThrow()
+    await expect(createComment('tech', 99999, '댓글')).rejects.toThrow()
   })
 
   it('인증 토큰이 없으면 에러를 던진다 (401)', async () => {
     store.set(authAtom, null)
 
-    await expect(createComment(1, '댓글')).rejects.toThrow()
+    await expect(createComment('tech', 1, '댓글')).rejects.toThrow()
 
     store.set(authAtom, {
       uid: 1,

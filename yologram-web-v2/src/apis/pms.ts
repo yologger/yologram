@@ -100,20 +100,20 @@ export interface CreateCommentResponse {
   id: number
 }
 
-export async function createComment(postId: number, content: string): Promise<CreateCommentResponse> {
+export async function createComment(section: string, postId: number, content: string): Promise<CreateCommentResponse> {
   const response = await api.post<{ data: CreateCommentResponse }>(
-    `/api/v2/comments/posts/${postId}`,
+    `/api/v2/comments/${section}/posts/${postId}`,
     { content },
   )
   return response.data.data
 }
 
-export async function updateComment(commentId: number, content: string): Promise<void> {
-  await api.patch(`/api/v2/comments/${commentId}`, { content })
+export async function updateComment(section: string, commentId: number, content: string): Promise<void> {
+  await api.patch(`/api/v2/comments/${section}/${commentId}`, { content })
 }
 
-export async function deleteComment(commentId: number): Promise<void> {
-  await api.delete(`/api/v2/comments/${commentId}`)
+export async function deleteComment(section: string, commentId: number): Promise<void> {
+  await api.delete(`/api/v2/comments/${section}/${commentId}`)
 }
 
 export type CommentSort = 'latest' | 'oldest'
@@ -137,12 +137,12 @@ export interface GetCommentsParams {
   size?: number
 }
 
-export async function getComments(postId: number, params: GetCommentsParams = {}): Promise<CommentPage> {
+export async function getComments(section: string, postId: number, params: GetCommentsParams = {}): Promise<CommentPage> {
   const query: Record<string, string | number> = {}
   if (params.sort) query.sort = params.sort
   if (params.cursor) query.cursor = params.cursor
   if (params.size) query.size = params.size
 
-  const response = await api.get<CommentPage>(`/api/v2/comments/posts/${postId}`, { params: query })
+  const response = await api.get<CommentPage>(`/api/v2/comments/${section}/posts/${postId}`, { params: query })
   return response.data
 }

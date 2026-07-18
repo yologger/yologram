@@ -373,7 +373,7 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
-  http.post('http://localhost:5002/api/v2/comments/posts/:postId', async ({ request, params }) => {
+  http.post('http://localhost:5002/api/v2/comments/:section/posts/:postId', async ({ request, params }) => {
     const auth = request.headers.get('Authorization')
     if (!auth || !auth.startsWith('Bearer ')) {
       return HttpResponse.json(
@@ -401,7 +401,7 @@ export const handlers = [
     return HttpResponse.json({ data: { id: 7777 } }, { status: 201 })
   }),
 
-  http.patch('http://localhost:5002/api/v2/comments/:commentId', async ({ request, params }) => {
+  http.patch('http://localhost:5002/api/v2/comments/:section/:commentId', async ({ request, params }) => {
     const auth = request.headers.get('Authorization')
     if (!auth || !auth.startsWith('Bearer ')) {
       return HttpResponse.json(
@@ -435,7 +435,7 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
-  http.delete('http://localhost:5002/api/v2/comments/:commentId', ({ request, params }) => {
+  http.delete('http://localhost:5002/api/v2/comments/:section/:commentId', ({ request, params }) => {
     const auth = request.headers.get('Authorization')
     if (!auth || !auth.startsWith('Bearer ')) {
       return HttpResponse.json(
@@ -461,7 +461,7 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
-  http.get('http://localhost:5002/api/v2/comments/posts/:postId', ({ request, params }) => {
+  http.get('http://localhost:5002/api/v2/comments/:section/posts/:postId', ({ request, params }) => {
     const postId = Number(params.postId)
     const url = new URL(request.url)
     const sort = url.searchParams.get('sort') ?? 'latest'

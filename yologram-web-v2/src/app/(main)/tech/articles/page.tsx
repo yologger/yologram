@@ -5,7 +5,7 @@ import { Typography } from 'antd'
 import FilterChips, { type ChipItem } from '@/components/common/FilterChips'
 import usePostCategoriesQuery from '@/queries/usePostCategoriesQuery'
 
-export default function TechNews() {
+export default function TechArticles() {
   const { data: categories = [] } = usePostCategoriesQuery('tech')
   const [category, setCategory] = useState<number | null>(null)
 

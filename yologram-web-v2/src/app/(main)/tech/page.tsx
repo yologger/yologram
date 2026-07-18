@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default function TechPage() {
-  redirect('/tech/news')
+  redirect('/tech/articles')
 }
