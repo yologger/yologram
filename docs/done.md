@@ -101,7 +101,7 @@
   - 설계 근거: 수집·요약 분리 — 수집은 시간 민감(RSS 노출 창), 요약은 DB status 기준 무기한 재시도 가능. 합치면 LLM 장애가 수집을 막음. status가 큐라 Spot 중단·재기동 멱등
   - 설계 근거: LLM 모델은 문서가 아닌 실측으로 확정 — gemini-3.5-flash는 무료 20 req/일(429 quotaValue 실측), llama-4-scout는 Groq에서 제거(404). 무료 티어는 lite 계열 + /models 실조회가 기준
   - 설계 근거: tech_article FK 제거 — 같은 도메인이라 FK 허용했다가 TRUNCATE 불가 등 운영 불편으로 제거, 전 테이블 무FK로 일관(참조 정합성은 앱 레벨)
-  - 인프라: worker_prod SSM 15종(OTLP 6 + DB writer/reader 6 + LLM 키 2 + Discord 웹훅 3채널), DB는 api-v1 미러 master/slave 라우팅(CoreDatabaseConfig)
+  - 인프라: worker_prod SSM 17종(OTLP 6 + DB writer/reader 6 + LLM 키 2 + Discord 웹훅 3채널), DB는 api-v1 미러 master/slave 라우팅(CoreDatabaseConfig)
   - n8n 완전 대체 — 소스 승계 + 요약 embed 알림까지 동일. n8n 정리는 todos의 (Infra) 항목
 - [x] (PMS) 게시판 도메인 tech 섹션 분리 — post → tech_post (api-v1/v2)
   - [x] 테이블 분리: tech_post / tech_post_category / tech_post_category_mapping / tech_post_comment. section 컬럼·Section enum 소멸(테이블명이 섹션 담당), 전 테이블 무FK, id 보존 마이그레이션(INSERT IGNORE — 재실행 멱등, 전후 건수 검증). 구 테이블은 배포·검증 후 *_legacy rename → DROP 예정 (todos)
