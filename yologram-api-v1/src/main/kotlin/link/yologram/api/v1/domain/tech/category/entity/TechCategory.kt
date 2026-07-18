@@ -5,7 +5,7 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.LocalDateTime
 
-/** 테크 게시판 카테고리. 섹션은 테이블명(tech_post_category)이 담당 — section 컬럼 없음. */
+/** 테크 카테고리 마스터 (tech_category — 게시판·아티클 공용, 어드민 관리 대상) */
 @Entity
 @Table(name = "tech_category")
 @EntityListeners(AuditingEntityListener::class)

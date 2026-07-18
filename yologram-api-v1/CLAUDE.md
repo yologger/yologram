@@ -44,11 +44,10 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 
 ## 커뮤니티 (tech 게시판 코딩 규칙·함정)
 
-- 섹션별 완전 분리: domain/tech/{post,category,comment} — 테이블 tech_post/tech_post_category/tech_post_category_mapping/tech_post_comment (전 테이블 무FK, section 컬럼·Section enum 없음 — 테이블명·경로·패키지가 섹션 담당). invest/politics는 동일 세트 복제로 추가
+- 섹션별 완전 분리: domain/tech/{post,category,comment} — 테이블 tech_post/tech_post_category_mapping/tech_post_comment + tech_category(게시판·아티클 공용 마스터) + tech_article/tech_article_category_mapping(아티클 조회 전용) (전 테이블 무FK, section 컬럼·Section enum 없음 — 테이블명·경로·패키지가 섹션 담당). invest/politics는 동일 세트 복제로 추가
 - 경계 검증·조회는 QueryClient로 추상화 (LocalUserQueryClient, LocalTechPostCategoryQueryClient, LocalTechPostCommentCleanupClient, LocalTechPostQueryClient)
 - TechPostRepositoryImpl이 QueryDSL 사용처. N+1 회피 위해 닉네임(findNicknames)·카테고리(findByPostIds) 배치 조회
 - 카테고리 매핑 교체는 @Modifying 벌크 delete 후 재삽입 (derived delete는 flush 순서로 uk 충돌)
-- 댓글 구경로(/comments/posts/...)는 LegacyCommentResource가 tech로 위임(deprecated) — web 전환 후 제거 (todos)
 - 응답 DTO의 section 필드는 "TECH" 고정 문자열 (web 계약 유지)
 - 패키지명에 `enum`(Java 예약어) 금지 — QueryDSL APT가 import 생성 못 함. enums 사용
 - (데이터 모델·엔드포인트·설계 근거는 docs/done.md, QueryDSL 사용 기준·경로 규칙은 docs/rules.md 참조)
