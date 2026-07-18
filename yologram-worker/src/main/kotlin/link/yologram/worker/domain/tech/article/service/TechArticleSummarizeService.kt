@@ -19,7 +19,6 @@ class TechArticleSummarizeService(
     private val techArticleRepository: TechArticleRepository,
     private val articleContentCrawler: ArticleContentCrawler,
     private val llmClient: LlmClient,
-    // Discord 알림은 yologram.discord.enabled=true 일 때만 빈 존재 — 없으면 스킵
     private val discordNotifier: ObjectProvider<DiscordNotifier>,
 ) {
 
