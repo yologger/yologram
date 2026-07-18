@@ -2,7 +2,7 @@ package link.yologram.api.v1.domain.tech.post.service
 
 import link.yologram.api.v1.domain.tech.post.entity.TechPost
 import link.yologram.api.v1.domain.tech.post.entity.TechPostCategoryMapping
-import link.yologram.api.v1.domain.tech.post.exception.InvalidTechPostCategoryException
+import link.yologram.api.v1.domain.tech.post.exception.InvalidTechCategoryException
 import link.yologram.api.v1.domain.tech.post.exception.InvalidTechSectionException
 import link.yologram.api.v1.domain.tech.post.exception.TechPostForbiddenException
 import link.yologram.api.v1.domain.tech.post.exception.TechPostNotFoundException
@@ -49,7 +49,7 @@ class TechPostService(
         val categoryIds = request.categoryIds.toSet()
 
         if (!categoryQueryClient.allActive(categoryIds)) {
-            throw InvalidTechPostCategoryException()
+            throw InvalidTechCategoryException()
         }
 
         val post = postRepository.save(
@@ -79,7 +79,7 @@ class TechPostService(
         // 카테고리 검증 (작성과 동일: 테크 게시판 활성 카테고리 1~3개)
         val categoryIds = request.categoryIds.toSet()
         if (!categoryQueryClient.allActive(categoryIds)) {
-            throw InvalidTechPostCategoryException()
+            throw InvalidTechCategoryException()
         }
 
         // 제목·내용 갱신 (JPA 더티체킹 → flush 시 update, modifiedDate 자동 갱신)

@@ -14,7 +14,7 @@ data class TechArticleResponse(
     val link: String,
     @Schema(description = "출처 (소스명)")
     val sourceName: String,
-    @Schema(description = "카테고리 라벨 1~3개 (LLM 분류 — Frontend/Backend/AI\u002FML/DevOps/Cloud/Security/기타)")
+    @Schema(description = "카테고리 라벨 1~3개 (LLM 분류 — tech_category 마스터 기준)")
     val categories: List<String>,
     val publishedAt: LocalDateTime,
 ) {

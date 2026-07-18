@@ -1,7 +1,7 @@
 package link.yologram.api.v1.domain.tech.category.service
 
-import link.yologram.api.v1.domain.tech.category.entity.TechPostCategory
-import link.yologram.api.v1.domain.tech.category.repository.TechPostCategoryRepository
+import link.yologram.api.v1.domain.tech.category.entity.TechCategory
+import link.yologram.api.v1.domain.tech.category.repository.TechCategoryRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
@@ -13,16 +13,16 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
 
 @ExtendWith(MockitoExtension::class)
-class TechPostCategoryServiceTest {
+class TechCategoryServiceTest {
 
     @Mock
-    lateinit var categoryRepository: TechPostCategoryRepository
+    lateinit var categoryRepository: TechCategoryRepository
 
     @InjectMocks
-    lateinit var categoryService: TechPostCategoryService
+    lateinit var categoryService: TechCategoryService
 
     private fun category(id: Long, name: String, sortOrder: Int) =
-        TechPostCategory(id = id, name = name, sortOrder = sortOrder)
+        TechCategory(id = id, name = name, sortOrder = sortOrder)
 
     @Nested
     inner class 카테고리_조회 {

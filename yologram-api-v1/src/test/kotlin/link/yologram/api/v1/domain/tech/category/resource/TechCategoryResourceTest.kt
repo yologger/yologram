@@ -1,8 +1,8 @@
 package link.yologram.api.v1.domain.tech.category.resource
 
 import link.yologram.api.v1.config.JwtProperties
-import link.yologram.api.v1.domain.tech.category.model.TechPostCategoryResponse
-import link.yologram.api.v1.domain.tech.category.service.TechPostCategoryService
+import link.yologram.api.v1.domain.tech.category.model.TechCategoryResponse
+import link.yologram.api.v1.domain.tech.category.service.TechCategoryService
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import link.yologram.api.v1.global.exception.GlobalExceptionHandler
@@ -15,15 +15,15 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 
-@WebMvcTest(TechPostCategoryResource::class)
+@WebMvcTest(TechCategoryResource::class)
 @Import(GlobalExceptionHandler::class, AuthenticatedUserResolver::class)
-class TechPostCategoryResourceTest {
+class TechCategoryResourceTest {
 
     @Autowired
     lateinit var mockMvc: MockMvc
 
     @MockitoBean
-    lateinit var categoryService: TechPostCategoryService
+    lateinit var categoryService: TechCategoryService
 
     @MockitoBean
     lateinit var jwtUtil: JwtUtil
@@ -35,8 +35,8 @@ class TechPostCategoryResourceTest {
     fun `200과 카테고리 목록을 반환한다`() {
         whenever(categoryService.getCategories()).thenReturn(
             listOf(
-                TechPostCategoryResponse(id = 1L, name = "Frontend", sortOrder = 1),
-                TechPostCategoryResponse(id = 2L, name = "Backend", sortOrder = 2),
+                TechCategoryResponse(id = 1L, name = "Frontend", sortOrder = 1),
+                TechCategoryResponse(id = 2L, name = "Backend", sortOrder = 2),
             )
         )
 

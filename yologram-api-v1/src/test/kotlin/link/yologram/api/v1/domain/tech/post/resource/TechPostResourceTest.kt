@@ -2,7 +2,7 @@ package link.yologram.api.v1.domain.tech.post.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import link.yologram.api.v1.config.JwtProperties
-import link.yologram.api.v1.domain.tech.post.exception.InvalidTechPostCategoryException
+import link.yologram.api.v1.domain.tech.post.exception.InvalidTechCategoryException
 import link.yologram.api.v1.domain.tech.post.exception.InvalidTechPostCursorException
 import link.yologram.api.v1.domain.tech.post.exception.InvalidTechSectionException
 import link.yologram.api.v1.domain.tech.post.exception.TechPostExceptionHandler
@@ -132,7 +132,7 @@ class TechPostResourceTest {
     @Test
     fun `카테고리가 테크 게시판 것이 아니면 400 반환`() {
         whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(1L)
-        doThrow(InvalidTechPostCategoryException()).whenever(postService).create(any(), any())
+        doThrow(InvalidTechCategoryException()).whenever(postService).create(any(), any())
 
         mockMvc.post("/api/v1/pms/tech/posts") {
             header("Authorization", "Bearer valid-token")

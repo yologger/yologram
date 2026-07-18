@@ -34,13 +34,13 @@ class TechArticleResource(
         ApiResponse(responseCode = "400", description = "유효하지 않은 커서 (INVALID_CURSOR)"),
     )
     fun getArticles(
-        @Parameter(description = "카테고리 필터 (Frontend/Backend/AI\u002FML/DevOps/Cloud/Security/기타 — 생략 시 전체)")
-        @RequestParam(required = false) category: String?,
+        @Parameter(description = "카테고리 id 필터 (tech_category — /cms/tech/categories 응답의 id. 생략 시 전체)")
+        @RequestParam(required = false) categoryId: Long?,
         @Parameter(description = "이전 페이지 마지막 항목의 커서 (첫 페이지는 생략)")
         @RequestParam(required = false) cursor: String?,
         @Parameter(description = "페이지 크기 (기본 20, 최대 50)")
         @RequestParam(defaultValue = "20") size: Int,
     ): ApiEnvelopCursorPage<TechArticleResponse> {
-        return techArticleService.getArticlesByCursor(category, cursor, size)
+        return techArticleService.getArticlesByCursor(categoryId, cursor, size)
     }
 }

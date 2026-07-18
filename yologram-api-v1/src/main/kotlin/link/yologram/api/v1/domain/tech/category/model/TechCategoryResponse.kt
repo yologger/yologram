@@ -3,7 +3,7 @@ package link.yologram.api.v1.domain.tech.category.model
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(description = "테크 게시판 카테고리")
-data class TechPostCategoryResponse(
+data class TechCategoryResponse(
     @Schema(description = "카테고리 ID", example = "1")
     val id: Long,
 

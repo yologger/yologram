@@ -2,7 +2,7 @@ package link.yologram.api.v1.domain.tech.post.exception
 
 open class TechPostException(override val message: String, val errorCode: String) : RuntimeException(message)
 
-class InvalidTechPostCategoryException : TechPostException("해당 게시판의 카테고리가 아닙니다.", "INVALID_POST_CATEGORY")
+class InvalidTechCategoryException : TechPostException("해당 게시판의 카테고리가 아닙니다.", "INVALID_POST_CATEGORY")
 
 class TechPostNotFoundException : TechPostException("게시글을 찾을 수 없습니다.", "POST_NOT_FOUND")
 

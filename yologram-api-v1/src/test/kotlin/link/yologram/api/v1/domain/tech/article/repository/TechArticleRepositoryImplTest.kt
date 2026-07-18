@@ -100,26 +100,26 @@ class TechArticleRepositoryImplTest {
     }
 
     @Test
-    fun `category 필터는 해당 매핑이 있는 글만 반환한다`() {
+    fun `categoryId 필터는 해당 매핑이 있는 글만 반환한다`() {
         val backend = article(base)
         val cloudOnly = article(base.minusHours(1))
         mappingRepository.saveAll(
             listOf(
-                TechArticleCategoryMapping(id = 1, articleId = backend.id, category = "Backend"),
-                TechArticleCategoryMapping(id = 2, articleId = backend.id, category = "Cloud"),
-                TechArticleCategoryMapping(id = 3, articleId = cloudOnly.id, category = "Cloud"),
+                TechArticleCategoryMapping(id = 1, articleId = backend.id, categoryId = 2L),
+                TechArticleCategoryMapping(id = 2, articleId = backend.id, categoryId = 5L),
+                TechArticleCategoryMapping(id = 3, articleId = cloudOnly.id, categoryId = 5L),
             )
         )
 
-        val result = techArticleRepository.findSummarizedArticles("Backend", null, 10)
+        val result = techArticleRepository.findSummarizedArticles(2L, null, 10)
 
         assertEquals(listOf(backend.id), result.map { it.id })
     }
 
     @Test
-    fun `category 필터에 매칭이 없으면 빈 목록을 반환한다`() {
+    fun `categoryId 필터에 매칭이 없으면 빈 목록을 반환한다`() {
         article(base)
 
-        assertTrue(techArticleRepository.findSummarizedArticles("Security", null, 10).isEmpty())
+        assertTrue(techArticleRepository.findSummarizedArticles(6L, null, 10).isEmpty())
     }
 }

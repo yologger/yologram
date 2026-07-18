@@ -7,9 +7,9 @@ import java.time.LocalDateTime
 
 /** 테크 게시판 카테고리. 섹션은 테이블명(tech_post_category)이 담당 — section 컬럼 없음. */
 @Entity
-@Table(name = "tech_post_category")
+@Table(name = "tech_category")
 @EntityListeners(AuditingEntityListener::class)
-class TechPostCategory(
+class TechCategory(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,

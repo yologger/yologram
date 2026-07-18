@@ -77,12 +77,12 @@ class TechArticleResourceTest {
     }
 
     @Test
-    fun `category 파라미터가 서비스로 전달된다`() {
-        whenever(techArticleService.getArticlesByCursor(eq("Backend"), anyOrNull(), any())).thenReturn(
+    fun `categoryId 파라미터가 서비스로 전달된다`() {
+        whenever(techArticleService.getArticlesByCursor(eq(2L), anyOrNull(), any())).thenReturn(
             ApiEnvelopCursorPage(data = emptyList(), nextCursor = null)
         )
 
-        mockMvc.get("/api/v1/articles/tech?category=Backend")
+        mockMvc.get("/api/v1/articles/tech?categoryId=2")
             .andExpect { status { isOk() } }
     }
 

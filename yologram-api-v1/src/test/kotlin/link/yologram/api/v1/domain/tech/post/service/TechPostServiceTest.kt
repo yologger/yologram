@@ -2,7 +2,7 @@ package link.yologram.api.v1.domain.tech.post.service
 
 import link.yologram.api.v1.domain.tech.post.entity.TechPost
 import link.yologram.api.v1.domain.tech.post.entity.TechPostCategoryMapping
-import link.yologram.api.v1.domain.tech.post.exception.InvalidTechPostCategoryException
+import link.yologram.api.v1.domain.tech.post.exception.InvalidTechCategoryException
 import link.yologram.api.v1.domain.tech.post.exception.InvalidTechSectionException
 import link.yologram.api.v1.domain.tech.post.exception.TechPostForbiddenException
 import link.yologram.api.v1.domain.tech.post.exception.TechPostNotFoundException
@@ -69,10 +69,10 @@ class TechPostServiceTest {
         }
 
         @Test
-        fun `카테고리가 테크 게시판 것이 아니면 InvalidTechPostCategoryException을 던진다`() {
+        fun `카테고리가 테크 게시판 것이 아니면 InvalidTechCategoryException을 던진다`() {
             whenever(categoryQueryClient.allActive(setOf(99L))).thenReturn(false)
 
-            assertThrows<InvalidTechPostCategoryException> {
+            assertThrows<InvalidTechCategoryException> {
                 postService.create(1L, CreateTechPostRequest(content = "내용", categoryIds = listOf(99L)))
             }
 
@@ -115,11 +115,11 @@ class TechPostServiceTest {
         }
 
         @Test
-        fun `카테고리가 테크 게시판 것이 아니면 InvalidTechPostCategoryException을 던진다`() {
+        fun `카테고리가 테크 게시판 것이 아니면 InvalidTechCategoryException을 던진다`() {
             whenever(postRepository.findById(1L)).thenReturn(Optional.of(TechPost(id = 1L, userId = 1L, content = "내용")))
             whenever(categoryQueryClient.allActive(setOf(99L))).thenReturn(false)
 
-            assertThrows<InvalidTechPostCategoryException> {
+            assertThrows<InvalidTechCategoryException> {
                 postService.update(1L, 1L, UpdateTechPostRequest(content = "내용", categoryIds = listOf(99L)))
             }
 

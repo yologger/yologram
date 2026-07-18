@@ -4,8 +4,8 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import link.yologram.api.v1.domain.tech.category.model.TechPostCategoryResponse
-import link.yologram.api.v1.domain.tech.category.service.TechPostCategoryService
+import link.yologram.api.v1.domain.tech.category.model.TechCategoryResponse
+import link.yologram.api.v1.domain.tech.category.service.TechCategoryService
 import link.yologram.api.v1.global.model.ApiEnvelop
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.RestController
  * 테크 게시판 카테고리 API.
  * 구 /cms/{section}/categories의 section 경로변수를 tech 고정 매핑으로 전환 — URL 결과는 동일.
  */
-@Tag(name = "TechPostCategory", description = "테크 게시판 카테고리 (contents)")
+@Tag(name = "TechCategory", description = "테크 게시판 카테고리 (contents)")
 @RestController
 @RequestMapping("/api/v1/cms")
-class TechPostCategoryResource(
-    private val categoryService: TechPostCategoryService,
+class TechCategoryResource(
+    private val categoryService: TechCategoryService,
 ) {
 
     @GetMapping("/tech/categories")
@@ -27,7 +27,7 @@ class TechPostCategoryResource(
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "조회 성공"),
     )
-    fun getCategories(): ApiEnvelop<List<TechPostCategoryResponse>> {
+    fun getCategories(): ApiEnvelop<List<TechCategoryResponse>> {
         return ApiEnvelop(data = categoryService.getCategories())
     }
 }

@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class TechPostExceptionHandler {
 
-    @ExceptionHandler(InvalidTechPostCategoryException::class)
-    fun handleInvalidCategory(e: InvalidTechPostCategoryException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(InvalidTechCategoryException::class)
+    fun handleInvalidCategory(e: InvalidTechCategoryException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
 
