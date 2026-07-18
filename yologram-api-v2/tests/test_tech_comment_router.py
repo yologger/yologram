@@ -11,12 +11,8 @@ from app.domain.ums.auth_dependency import get_authenticated_user
 from app.domain.ums.auth_schema import AuthData
 from app.main import app
 
-# 신규 경로(/comments/tech/...)와 구경로(deprecated, /comments/...)가 동일하게 동작해야 하므로
-# 공용 케이스(mixin)를 경로 세트별로 실행한다.
 NEW_POSTS_PATH = "/api/v2/comments/tech/posts"
 NEW_COMMENT_PATH = "/api/v2/comments/tech"
-LEGACY_POSTS_PATH = "/api/v2/comments/posts"
-LEGACY_COMMENT_PATH = "/api/v2/comments"
 
 
 def _saved_comment(comment_id: int = 10) -> TechPostComment:
@@ -116,10 +112,6 @@ class TestTechCommentCreateRouter(_CreateCommentCases):
     POSTS_PATH = NEW_POSTS_PATH
 
 
-class TestTechCommentCreateRouterLegacyPath(_CreateCommentCases):
-    POSTS_PATH = LEGACY_POSTS_PATH
-
-
 class _UpdateCommentCases(_RouterTestBase):
     COMMENT_PATH: str
 
@@ -194,10 +186,6 @@ class TestTechCommentUpdateRouter(_UpdateCommentCases):
     COMMENT_PATH = NEW_COMMENT_PATH
 
 
-class TestTechCommentUpdateRouterLegacyPath(_UpdateCommentCases):
-    COMMENT_PATH = LEGACY_COMMENT_PATH
-
-
 class _DeleteCommentCases(_RouterTestBase):
     COMMENT_PATH: str
 
@@ -247,10 +235,6 @@ class _DeleteCommentCases(_RouterTestBase):
 
 class TestTechCommentDeleteRouter(_DeleteCommentCases):
     COMMENT_PATH = NEW_COMMENT_PATH
-
-
-class TestTechCommentDeleteRouterLegacyPath(_DeleteCommentCases):
-    COMMENT_PATH = LEGACY_COMMENT_PATH
 
 
 class _QueryCommentCases(_RouterTestBase):
@@ -367,7 +351,3 @@ class _QueryCommentCases(_RouterTestBase):
 
 class TestTechCommentQueryRouter(_QueryCommentCases):
     POSTS_PATH = NEW_POSTS_PATH
-
-
-class TestTechCommentQueryRouterLegacyPath(_QueryCommentCases):
-    POSTS_PATH = LEGACY_POSTS_PATH
