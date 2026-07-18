@@ -1,0 +1,23 @@
+.feed {
+  padding-bottom: 24px;
+}
+
+.sentinel {
+  height: 1px;
+}
+
+.status {
+  padding: 24px 16px;
+  text-align: center;
+  color: #71717a;
+  font-size: 14px;
+}
+
+.status button {
+  margin-top: 8px;
+  padding: 6px 16px;
+  border: 1px solid #dfe4ea;
+  border-radius: 16px;
+  background: #fff;
+  cursor: pointer;
+}

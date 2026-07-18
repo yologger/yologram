@@ -1,0 +1,80 @@
+.card {
+  padding: 16px 4px;
+  border-bottom: 1px solid #dfe4ea;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.source {
+  font-weight: 600;
+  font-size: 13px;
+  color: #3f3f46;
+}
+
+.dot {
+  color: #a1a1aa;
+  font-size: 12px;
+}
+
+.time {
+  color: #a1a1aa;
+  font-size: 12px;
+}
+
+.title {
+  display: inline-block;
+  font-weight: 600;
+  font-size: 16px;
+  color: #18181b;
+  margin-bottom: 4px;
+  text-decoration: none;
+}
+
+.title:hover {
+  color: #e7689a;
+  text-decoration: underline;
+}
+
+.summary {
+  color: #3f3f46;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.summary p {
+  margin: 0 0 6px;
+}
+
+.summary ul,
+.summary ol {
+  margin: 0 0 6px;
+  padding-left: 20px;
+}
+
+.summary li {
+  margin: 2px 0;
+}
+
+.summary :last-child {
+  margin-bottom: 0;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.badge {
+  font-size: 11px;
+  color: #e7689a;
+  background: #fff0f4;
+  border-radius: 10px;
+  padding: 2px 8px;
+}
