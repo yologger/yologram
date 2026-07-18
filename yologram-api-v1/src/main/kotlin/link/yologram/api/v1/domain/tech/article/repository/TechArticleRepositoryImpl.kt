@@ -1,8 +1,10 @@
 package link.yologram.api.v1.domain.tech.article.repository
 
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import link.yologram.api.v1.domain.tech.article.entity.QTechArticle
+import link.yologram.api.v1.domain.tech.article.entity.QTechArticleCategoryMapping
 import link.yologram.api.v1.domain.tech.article.entity.TechArticle
 import link.yologram.api.v1.domain.tech.article.enums.TechArticleStatus
 import link.yologram.api.v1.domain.tech.article.model.TechArticleCursor
@@ -11,11 +13,24 @@ class TechArticleRepositoryImpl(
     private val queryFactory: JPAQueryFactory,
 ) : TechArticleRepositoryCustom {
 
-    override fun findSummarizedArticles(cursor: TechArticleCursor?, limit: Int): List<TechArticle> {
+    override fun findSummarizedArticles(category: String?, cursor: TechArticleCursor?, limit: Int): List<TechArticle> {
         val article = QTechArticle.techArticle
+        val mapping = QTechArticleCategoryMapping.techArticleCategoryMapping
 
         // 요약 완료된 아티클만 노출 (COLLECTED는 요약 대기, FAILED는 요약 불가 — 화면 제외 결정)
         val builder = BooleanBuilder().and(article.status.eq(TechArticleStatus.SUMMARIZED))
+
+        // 카테고리 필터: 매핑에 해당 카테고리가 있는 글만 — EXISTS라 글:카테고리 1:N에서도 행 불어남 없음
+        // (게시판 카테고리 필터와 동일 패턴, idx (category, article_id) 커버)
+        if (category != null) {
+            builder.and(
+                JPAExpressions
+                    .selectOne()
+                    .from(mapping)
+                    .where(mapping.articleId.eq(article.id), mapping.category.eq(category))
+                    .exists()
+            )
+        }
 
         // (published_at, id) 복합 keyset: 발행 시각이 더 과거이거나, 같은 시각이면 id가 더 작은 글부터.
         // 동일 발행 시각 다건(AWS What's New 등)의 페이지 경계 누락·중복을 id tie-breaker로 방지

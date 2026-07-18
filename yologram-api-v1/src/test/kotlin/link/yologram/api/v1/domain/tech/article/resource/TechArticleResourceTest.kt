@@ -44,12 +44,13 @@ class TechArticleResourceTest {
         summary = "**📌 한 줄 요약** 코루틴 내부 구조 해설.",
         link = "https://tech.example.com/posts/$id",
         sourceName = "테크 블로그",
+        categories = listOf("Backend", "DevOps"),
         publishedAt = LocalDateTime.of(2026, 7, 18, 9, 0),
     )
 
     @Test
     fun `200과 아티클 목록을 반환한다`() {
-        whenever(techArticleService.getArticlesByCursor(anyOrNull(), any())).thenReturn(
+        whenever(techArticleService.getArticlesByCursor(anyOrNull(), anyOrNull(), any())).thenReturn(
             ApiEnvelopCursorPage(data = listOf(response(1)), nextCursor = "next")
         )
 
@@ -60,13 +61,14 @@ class TechArticleResourceTest {
                 jsonPath("$.data[0].title") { value("코틀린 코루틴 딥다이브") }
                 jsonPath("$.data[0].summary") { value("**📌 한 줄 요약** 코루틴 내부 구조 해설.") }
                 jsonPath("$.data[0].sourceName") { value("테크 블로그") }
+                jsonPath("$.data[0].categories[0]") { value("Backend") }
                 jsonPath("$.nextCursor") { value("next") }
             }
     }
 
     @Test
     fun `cursor·size 파라미터가 서비스로 전달된다`() {
-        whenever(techArticleService.getArticlesByCursor(eq("abc"), eq(10))).thenReturn(
+        whenever(techArticleService.getArticlesByCursor(anyOrNull(), eq("abc"), eq(10))).thenReturn(
             ApiEnvelopCursorPage(data = emptyList(), nextCursor = null)
         )
 
@@ -75,8 +77,18 @@ class TechArticleResourceTest {
     }
 
     @Test
+    fun `category 파라미터가 서비스로 전달된다`() {
+        whenever(techArticleService.getArticlesByCursor(eq("Backend"), anyOrNull(), any())).thenReturn(
+            ApiEnvelopCursorPage(data = emptyList(), nextCursor = null)
+        )
+
+        mockMvc.get("/api/v1/articles/tech?category=Backend")
+            .andExpect { status { isOk() } }
+    }
+
+    @Test
     fun `잘못된 커서면 400 INVALID_CURSOR를 반환한다`() {
-        whenever(techArticleService.getArticlesByCursor(anyOrNull(), any()))
+        whenever(techArticleService.getArticlesByCursor(anyOrNull(), anyOrNull(), any()))
             .thenThrow(InvalidTechArticleCursorException())
 
         mockMvc.get("/api/v1/articles/tech?cursor=broken")

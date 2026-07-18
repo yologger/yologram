@@ -2,6 +2,7 @@ package link.yologram.api.v1.domain.tech.article.service
 
 import link.yologram.api.v1.domain.tech.article.model.TechArticleCursor
 import link.yologram.api.v1.domain.tech.article.model.TechArticleResponse
+import link.yologram.api.v1.domain.tech.article.repository.TechArticleCategoryMappingRepository
 import link.yologram.api.v1.domain.tech.article.repository.TechArticleRepository
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import org.springframework.stereotype.Service
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class TechArticleService(
     private val techArticleRepository: TechArticleRepository,
+    private val techArticleCategoryMappingRepository: TechArticleCategoryMappingRepository,
 ) {
 
     /**
@@ -17,12 +19,18 @@ class TechArticleService(
      * worker가 요약을 마친(SUMMARIZED) 아티클만 노출 — COLLECTED는 몇 분 내 요약되는 일시 상태, FAILED는 제외.
      */
     @Transactional(readOnly = true)
-    fun getArticlesByCursor(cursor: String?, size: Int): ApiEnvelopCursorPage<TechArticleResponse> {
+    fun getArticlesByCursor(category: String?, cursor: String?, size: Int): ApiEnvelopCursorPage<TechArticleResponse> {
         val pageSize = size.coerceIn(1, MAX_PAGE_SIZE)
         val decodedCursor = cursor?.let { TechArticleCursor.decode(it) }
 
-        val articles = techArticleRepository.findSummarizedArticles(decodedCursor, pageSize)
-        val data = articles.map { TechArticleResponse.from(it) }
+        val articles = techArticleRepository.findSummarizedArticles(category, decodedCursor, pageSize)
+
+        // 카테고리 배치 조회 (N+1 회피 — 게시판 카테고리 조회 패턴)
+        val categoriesByArticle = techArticleCategoryMappingRepository
+            .findByArticleIdIn(articles.map { it.id })
+            .groupBy({ it.articleId }, { it.category })
+
+        val data = articles.map { TechArticleResponse.from(it, categoriesByArticle[it.id].orEmpty()) }
 
         val nextCursor = articles.lastOrNull()?.let { TechArticleCursor.encode(it.publishedAt, it.id) }
         return ApiEnvelopCursorPage(data = data, nextCursor = nextCursor)

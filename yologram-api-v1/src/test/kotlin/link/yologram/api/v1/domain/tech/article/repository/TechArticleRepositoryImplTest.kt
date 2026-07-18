@@ -1,6 +1,7 @@
 package link.yologram.api.v1.domain.tech.article.repository
 
 import link.yologram.api.v1.domain.tech.article.entity.TechArticle
+import link.yologram.api.v1.domain.tech.article.entity.TechArticleCategoryMapping
 import link.yologram.api.v1.domain.tech.article.enums.TechArticleStatus
 import link.yologram.api.v1.domain.tech.article.model.TechArticleCursor
 import org.junit.jupiter.api.Test
@@ -19,6 +20,9 @@ class TechArticleRepositoryImplTest {
 
     @Autowired
     lateinit var techArticleRepository: TechArticleRepository
+
+    @Autowired
+    lateinit var mappingRepository: TechArticleCategoryMappingRepository
 
     private var seq = 0L
 
@@ -50,7 +54,7 @@ class TechArticleRepositoryImplTest {
         article(base.minusDays(1), status = TechArticleStatus.COLLECTED)
         article(base.minusDays(1), status = TechArticleStatus.FAILED)
 
-        val result = techArticleRepository.findSummarizedArticles(null, 10)
+        val result = techArticleRepository.findSummarizedArticles(null, null, 10)
 
         assertEquals(listOf(recent.id, old.id), result.map { it.id })
     }
@@ -60,7 +64,7 @@ class TechArticleRepositoryImplTest {
         val first = article(base)
         val second = article(base)
 
-        val result = techArticleRepository.findSummarizedArticles(null, 10)
+        val result = techArticleRepository.findSummarizedArticles(null, null, 10)
 
         assertEquals(listOf(second.id, first.id), result.map { it.id })
     }
@@ -74,9 +78,9 @@ class TechArticleRepositoryImplTest {
             article(base.minusHours(1)),         // 가장 과거
         )
 
-        val page1 = techArticleRepository.findSummarizedArticles(null, 3)
+        val page1 = techArticleRepository.findSummarizedArticles(null, null, 3)
         val cursor = page1.last().let { TechArticleCursor(it.publishedAt, it.id) }
-        val page2 = techArticleRepository.findSummarizedArticles(cursor, 3)
+        val page2 = techArticleRepository.findSummarizedArticles(null, cursor, 3)
 
         val all = (page1 + page2).map { it.id }
         assertEquals(articles.map { it.id }.toSet(), all.toSet())   // 누락 없음
@@ -87,11 +91,35 @@ class TechArticleRepositoryImplTest {
     fun `limit만큼만 반환한다`() {
         repeat(5) { article(base.plusMinutes(it.toLong())) }
 
-        assertEquals(2, techArticleRepository.findSummarizedArticles(null, 2).size)
+        assertEquals(2, techArticleRepository.findSummarizedArticles(null, null, 2).size)
     }
 
     @Test
     fun `데이터가 없으면 빈 목록을 반환한다`() {
-        assertTrue(techArticleRepository.findSummarizedArticles(null, 10).isEmpty())
+        assertTrue(techArticleRepository.findSummarizedArticles(null, null, 10).isEmpty())
+    }
+
+    @Test
+    fun `category 필터는 해당 매핑이 있는 글만 반환한다`() {
+        val backend = article(base)
+        val cloudOnly = article(base.minusHours(1))
+        mappingRepository.saveAll(
+            listOf(
+                TechArticleCategoryMapping(id = 1, articleId = backend.id, category = "Backend"),
+                TechArticleCategoryMapping(id = 2, articleId = backend.id, category = "Cloud"),
+                TechArticleCategoryMapping(id = 3, articleId = cloudOnly.id, category = "Cloud"),
+            )
+        )
+
+        val result = techArticleRepository.findSummarizedArticles("Backend", null, 10)
+
+        assertEquals(listOf(backend.id), result.map { it.id })
+    }
+
+    @Test
+    fun `category 필터에 매칭이 없으면 빈 목록을 반환한다`() {
+        article(base)
+
+        assertTrue(techArticleRepository.findSummarizedArticles("Security", null, 10).isEmpty())
     }
 }

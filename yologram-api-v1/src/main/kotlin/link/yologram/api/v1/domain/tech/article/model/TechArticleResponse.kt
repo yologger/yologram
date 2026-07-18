@@ -14,16 +14,19 @@ data class TechArticleResponse(
     val link: String,
     @Schema(description = "출처 (소스명)")
     val sourceName: String,
+    @Schema(description = "카테고리 라벨 1~3개 (LLM 분류 — Frontend/Backend/AI\u002FML/DevOps/Cloud/Security/기타)")
+    val categories: List<String>,
     val publishedAt: LocalDateTime,
 ) {
     companion object {
         /** SUMMARIZED만 노출하므로 summary는 항상 존재 — 방어적으로 빈 문자열 폴백 */
-        fun from(article: TechArticle) = TechArticleResponse(
+        fun from(article: TechArticle, categories: List<String>) = TechArticleResponse(
             id = article.id,
             title = article.title,
             summary = article.summary.orEmpty(),
             link = article.link,
             sourceName = article.sourceName,
+            categories = categories,
             publishedAt = article.publishedAt,
         )
     }
