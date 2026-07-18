@@ -19,17 +19,17 @@ from app.domain.ums.email_sender import EmailSender, StubEmailSender
 from app.domain.ums.user_email_verification_service import UserEmailVerificationService
 from app.domain.ums.user_password_reset_service import UserPasswordResetService
 
-router = APIRouter(prefix="/api/v2/ums/auth")
+router = APIRouter(prefix="/api/v2/ums/auth", tags=["Auth"])
 
 
-@router.post("/login", response_model=ApiEnvelop)
+@router.post("/login", response_model=ApiEnvelop, summary="로그인 (JWT 발급)")
 def login(request: LoginRequest, db: Session = Depends(get_db)):
     service = AuthService(db)
     result = service.login(request)
     return ApiEnvelop(data=result)
 
 
-@router.post("/validate-token", response_model=ApiEnvelop)
+@router.post("/validate-token", summary="토큰 검증", response_model=ApiEnvelop)
 def validate_token(
     auth_data: AuthData = Depends(get_authenticated_user),
     db: Session = Depends(get_db),
@@ -39,7 +39,7 @@ def validate_token(
     return ApiEnvelop(data=result)
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", summary="로그아웃", status_code=status.HTTP_204_NO_CONTENT)
 def logout(
     auth_data: AuthData = Depends(get_authenticated_user),
     db: Session = Depends(get_db),

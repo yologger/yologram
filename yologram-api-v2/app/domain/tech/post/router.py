@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.core.response import ApiEnvelop, ApiEnvelopCursorPage, ApiEnvelopPage
+from app.core.response import ApiEnvelop, ApiEnvelopCursorPage
 from app.domain.tech.post.schema import CreatePostRequest, PostSummaryResponse, UpdatePostRequest
 from app.domain.tech.post.service import TechPostService
 from app.domain.ums.auth_dependency import get_authenticated_user

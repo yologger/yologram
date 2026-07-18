@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 from app.domain.test.schema import EchoResponse
 from app.domain.test.service import TestService
 
-router = APIRouter(prefix="/api/v2/test")
+router = APIRouter(prefix="/api/v2/test", tags=["Test"])
 service = TestService(settings=get_settings())
 
 
