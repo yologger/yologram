@@ -75,4 +75,6 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // 런타임(Application.kt에서 Asia/Seoul 고정)과 동일 타임존 — CI(UTC) 러너에서 시각 변환 테스트가 갈리지 않게
+    systemProperty("user.timezone", "Asia/Seoul")
 }
