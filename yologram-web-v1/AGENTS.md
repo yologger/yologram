@@ -28,7 +28,7 @@ React 기반 하이브리드 웹앱. 투자/정치/기술 서비스를 반응형
 
 ## 라우팅
 
-- / → /invest 리다이렉트
+- / → /tech 리다이렉트
 - /invest, /politics, /tech, /notifications, /settings 5개 탭
 - ResponsiveLayout이 모바일 탭바 / 데스크탑 사이드바 분기
 

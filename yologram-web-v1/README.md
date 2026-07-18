@@ -8,6 +8,7 @@ React 기반 하이브리드 웹 애플리케이션. 투자/정치/기술 서비
 - Vite + TypeScript
 - Ant Design + CSS Modules
 - Jotai (상태 관리), axios + TanStack Query (API 통신)
+- react-markdown (아티클 요약 렌더)
 - Yarn Berry (non-zero-install), Node 24
 
 ## React ↔ Next.js 비교 (학습 목적)
@@ -45,9 +46,9 @@ src/
 │   ├── layout/       → 반응형 레이아웃 (사이드바, 탭바)
 │   └── common/       → 공통 UI 컴포넌트 (SubTabLayout, FilterChips)
 ├── pages/
-│   ├── invest/       → 투자 (뉴스, 관심 뉴스, 커뮤니티, 정보)
-│   ├── politics/     → 정치 (뉴스, 관심 뉴스, 커뮤니티, 정보)
-│   ├── tech/         → 기술 (뉴스, 관심 뉴스)
+│   ├── invest/       → 투자 (아티클, 관심 아티클, 커뮤니티, 정보)
+│   ├── politics/     → 정치 (아티클, 관심 아티클, 커뮤니티, 정보)
+│   ├── tech/         → 기술 (아티클, 관심 아티클, 커뮤니티, 채용)
 │   ├── notifications/→ 알림
 │   └── settings/     → 설정
 ├── hooks/            → 커스텀 훅
