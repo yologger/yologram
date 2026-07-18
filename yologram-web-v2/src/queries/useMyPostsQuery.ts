@@ -6,7 +6,7 @@ const PAGE_SIZE = 20
 // section: null이면 전체, 그 외 소문자(tech/invest/politics)
 export default function useMyPostsQuery(section: string | null) {
   return useInfiniteQuery({
-    queryKey: ['myPosts', section],
+    queryKey: ['my-posts', section],
     queryFn: ({ pageParam }) =>
       getMyPosts({ section, cursor: pageParam, size: PAGE_SIZE }),
     initialPageParam: undefined as string | null | undefined,

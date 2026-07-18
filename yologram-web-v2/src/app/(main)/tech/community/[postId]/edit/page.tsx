@@ -72,7 +72,7 @@ function EditPageInner() {
           // 상세/목록 재조회로 수정 내용 반영
           queryClient.invalidateQueries({ queryKey: ['post', 'tech', id] })
           queryClient.invalidateQueries({ queryKey: ['posts', 'tech'] })
-          queryClient.invalidateQueries({ queryKey: ['myPosts'] })
+          queryClient.invalidateQueries({ queryKey: ['my-posts'] })
           message.success('글이 수정되었습니다.')
           router.push(`/tech/community/${id}`)
         },

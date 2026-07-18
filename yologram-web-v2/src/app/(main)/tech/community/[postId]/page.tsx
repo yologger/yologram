@@ -151,7 +151,7 @@ export default function CommunityDetail() {
               onSuccess: () => {
                 // 목록/내 글 재조회로 삭제 반영 후 목록으로 이동
                 queryClient.invalidateQueries({ queryKey: ['posts', 'tech'] })
-                queryClient.invalidateQueries({ queryKey: ['myPosts'] })
+                queryClient.invalidateQueries({ queryKey: ['my-posts'] })
                 queryClient.removeQueries({ queryKey: ['post', 'tech', id] })
                 // 삭제된 글은 다시 볼 일이 없으므로 댓글 캐시도 제거(백엔드도 함께 삭제)
                 queryClient.removeQueries({ queryKey: ['comments', 'tech', id] })

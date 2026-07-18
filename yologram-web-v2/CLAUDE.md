@@ -11,7 +11,7 @@ Next.js 16 기반 웹 프론트엔드. ECS Fargate에서 운영.
 - src/instrumentation.ts: Next.js instrumentation 진입점
 - src/instrumentation.node.ts: OpenTelemetry NodeSDK 초기화 (traces, metrics, logs)
 - src/lib/logger.ts: 서버사이드 로그 유틸 (logInfo, logError)
-- src/app/api/test/route.ts: 테스트 API Route
+- src/app/api/health/route.ts: 헬스체크 API Route
 
 ## 코드 컨벤션
 

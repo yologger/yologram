@@ -7,6 +7,7 @@ Next.js 16 기반 웹 애플리케이션.
 - Next.js 16 (App Router), TypeScript
 - Ant Design (@ant-design/cssinjs + Next.js registry)
 - Jotai (상태 관리), axios + TanStack Query (API 통신)
+- react-markdown (아티클 요약 렌더)
 - OpenTelemetry NodeSDK (server-side trace + metrics)
 - Yarn Berry (non-zero-install), 일반 next start (standalone 미사용)
 
@@ -22,7 +23,8 @@ src/
 ├── stores/       → Jotai 상태
 ├── styles/       → 스타일
 ├── types/        → 타입 정의
-└── utils/        → 유틸리티
+├── lib/          → 유틸리티 (api 클라이언트, 시간 포맷 등)
+└── test/         → msw 핸들러·테스트 셋업
 ```
 
 ## 실행

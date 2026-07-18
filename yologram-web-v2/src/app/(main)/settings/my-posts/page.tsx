@@ -66,7 +66,7 @@ export default function MyPosts() {
             {
               onSuccess: () => {
                 // 내 글 목록/피드/상세 재조회로 삭제 반영
-                queryClient.invalidateQueries({ queryKey: ['myPosts'] })
+                queryClient.invalidateQueries({ queryKey: ['my-posts'] })
                 queryClient.invalidateQueries({ queryKey: ['posts', sectionParam] })
                 queryClient.removeQueries({ queryKey: ['post', sectionParam, post.id] })
                 // 삭제된 글은 다시 볼 일이 없으므로 댓글 캐시도 제거(백엔드도 함께 삭제)
