@@ -3,6 +3,8 @@ package link.yologram.worker.domain.tech.article.service
 import link.yologram.worker.domain.tech.article.client.ArticleContentCrawler
 import link.yologram.worker.domain.tech.article.entity.TechArticle
 import link.yologram.worker.domain.tech.article.enums.TechArticleStatus
+import link.yologram.worker.domain.tech.article.entity.TechArticleCategoryMapping
+import link.yologram.worker.domain.tech.article.repository.TechArticleCategoryMappingRepository
 import link.yologram.worker.domain.tech.article.repository.TechArticleRepository
 import link.yologram.worker.global.discord.DiscordNotifier
 import link.yologram.worker.global.llm.LlmClient
@@ -24,6 +26,7 @@ import kotlin.test.assertNull
 class TechArticleSummarizeServiceTest {
 
     private val techArticleRepository: TechArticleRepository = mock()
+    private val techArticleCategoryMappingRepository: TechArticleCategoryMappingRepository = mock()
     private val articleContentCrawler: ArticleContentCrawler = mock()
     private val llmClient: LlmClient = mock {
         on { available } doReturn true
@@ -39,7 +42,13 @@ class TechArticleSummarizeServiceTest {
             .whenever(notifierProvider).ifAvailable(any())
     }
 
-    private val service = TechArticleSummarizeService(techArticleRepository, articleContentCrawler, llmClient, notifierProvider)
+    private val service = TechArticleSummarizeService(
+        techArticleRepository,
+        techArticleCategoryMappingRepository,
+        articleContentCrawler,
+        llmClient,
+        notifierProvider,
+    )
 
     private fun article(id: Long = 1, link: String = "https://a/$id", retryCount: Int = 0) = TechArticle(
         id = id,
@@ -76,6 +85,30 @@ class TechArticleSummarizeServiceTest {
         assertEquals("한국어 요약", target.summary)
         assertEquals(TechArticleStatus.SUMMARIZED, target.status)
         verify(techArticleRepository).save(target)
+        // 카테고리 마커 없는 출력 → [기타] 폴백 매핑
+        verify(techArticleCategoryMappingRepository).deleteByArticleIdBulk(target.id)
+        verify(techArticleCategoryMappingRepository).saveAll(org.mockito.kotlin.check<List<TechArticleCategoryMapping>> {
+            assertEquals(listOf("기타"), it.map { m -> m.category })
+        })
+    }
+
+    @Test
+    fun `LLM 출력의 카테고리 섹션을 분리해 매핑을 저장하고 summary에서 제거한다`() {
+        val target = article()
+        stubTargets(target)
+        whenever(articleContentCrawler.fetch(target.link)).thenReturn("본문")
+        whenever(llmClient.complete(any())).thenReturn(
+            LlmCompletion("gemini", "**📌 한 줄 요약**\n코루틴 해설.\n\n**🏷️ 카테고리**\nBackend, DevOps")
+        )
+
+        service.summarize()
+
+        assertEquals("**📌 한 줄 요약**\n코루틴 해설.", target.summary)
+        verify(techArticleCategoryMappingRepository).deleteByArticleIdBulk(target.id)
+        verify(techArticleCategoryMappingRepository).saveAll(org.mockito.kotlin.check<List<TechArticleCategoryMapping>> {
+            assertEquals(listOf("Backend", "DevOps"), it.map { m -> m.category })
+            assertEquals(listOf(target.id, target.id), it.map { m -> m.articleId })
+        })
     }
 
     @Test
@@ -109,6 +142,7 @@ class TechArticleSummarizeServiceTest {
         assertNull(target.summary)
         verify(llmClient, never()).complete(any())
         verify(techArticleRepository).save(target)
+        verify(techArticleCategoryMappingRepository, never()).saveAll(any<List<TechArticleCategoryMapping>>())
     }
 
     @Test

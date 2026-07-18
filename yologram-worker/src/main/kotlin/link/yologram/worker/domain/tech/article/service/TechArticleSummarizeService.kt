@@ -4,6 +4,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import link.yologram.worker.domain.tech.article.client.ArticleContentCrawler
 import link.yologram.worker.domain.tech.article.entity.TechArticle
 import link.yologram.worker.domain.tech.article.enums.TechArticleStatus
+import link.yologram.worker.domain.tech.article.entity.TechArticleCategoryMapping
+import link.yologram.worker.domain.tech.article.repository.TechArticleCategoryMappingRepository
 import link.yologram.worker.domain.tech.article.repository.TechArticleRepository
 import link.yologram.worker.global.discord.DiscordNotifier
 import link.yologram.worker.global.llm.LlmClient
@@ -17,6 +19,7 @@ private val logger = KotlinLogging.logger {}
 @Service
 class TechArticleSummarizeService(
     private val techArticleRepository: TechArticleRepository,
+    private val techArticleCategoryMappingRepository: TechArticleCategoryMappingRepository,
     private val articleContentCrawler: ArticleContentCrawler,
     private val llmClient: LlmClient,
     private val discordNotifier: ObjectProvider<DiscordNotifier>,
@@ -48,10 +51,16 @@ class TechArticleSummarizeService(
                 val content = articleContentCrawler.fetch(article.link)
                 llmClient.complete(buildPrompt(article.title, article.link, content))
             }.onSuccess { completion ->
-                article.summary = completion.content
+                // 요약 출력에서 카테고리 섹션 분리 (파싱 실패 시 [기타] 폴백 — 요약 저장을 막지 않음)
+                val parsed = TechArticleCategoryParser.parse(completion.content)
+                article.summary = parsed.summary
                 article.status = TechArticleStatus.SUMMARIZED
+                replaceCategories(article.id, parsed.categories.map { it.label })
                 summarized++
-                logger.info { "테크 아티클 요약 완료: id=${article.id} provider=${completion.provider}" }
+                logger.info {
+                    "테크 아티클 요약 완료: id=${article.id} provider=${completion.provider} " +
+                        "categories=${parsed.categories.map { it.label }}"
+                }
                 notifyDiscord(article)
             }.onFailure { e ->
                 failed++
@@ -70,6 +79,14 @@ class TechArticleSummarizeService(
 
         logger.info { "테크 아티클 요약 배치 완료: targets=${targets.size} summarized=$summarized failed=$failed" }
         return SummarizeResult(targetCount = targets.size, summarizedCount = summarized, failedCount = failed)
+    }
+
+    /** 재요약 대비 기존 매핑 교체 (벌크 delete 후 insert — 멱등) */
+    private fun replaceCategories(articleId: Long, categories: List<String>) {
+        techArticleCategoryMappingRepository.deleteByArticleIdBulk(articleId)
+        techArticleCategoryMappingRepository.saveAll(
+            categories.map { TechArticleCategoryMapping(articleId = articleId, category = it) }
+        )
     }
 
     /**
@@ -125,6 +142,9 @@ class TechArticleSummarizeService(
         **📖 핵심 개념 & 용어**
         - 글에서 가장 중요한 핵심개념 2~4개 정도로 설명.
 
+        **🏷️ 카테고리**
+        (Frontend, Backend, AI/ML, DevOps, Cloud, Security, 기타 — 이 중 해당하는 것만 1~3개를 쉼표로 구분해 한 줄로. 표기는 목록 그대로)
+
         # 작성 규칙
         - 전체 길이는 300자 이내로 제한
         - 추측이나 원문에 없는 정보는 절대 추가하지 말 것
@@ -133,6 +153,7 @@ class TechArticleSummarizeService(
         - 불확실한 내용은 "~로 알려졌다", "~할 전망" 등으로 표현
         - 한국어로 작성, 전문 용어는 영문 병기 (예: 쿠버네티스(Kubernetes))
         - ~입니다, ~에요, ~이다 같은 어미를 절대 붙이지 말고, 문장을 간결하게 마침표(.)로 표현
+        - 카테고리는 반드시 출력의 마지막 섹션으로, 위 7개 목록의 표기를 정확히 사용
 
         # 입력
         제목: $title
