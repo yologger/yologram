@@ -16,8 +16,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - src/main/kotlin/.../domain/ums/service/UserService.kt: 회원가입(이메일 인증 확인)·정보 수정·비밀번호 변경·회원탈퇴
 - src/main/kotlin/.../domain/ums/service/UserEmailVerificationService.kt + EmailSender(Stub/Ses)·SesConfig: 이메일 인증·발송
 - src/main/kotlin/.../domain/ums/service/UserPasswordResetService.kt: 비밀번호 찾기
-- src/main/kotlin/.../domain/cms: Section enum(cms/enums 패키지), PostCategoryService
-- src/main/kotlin/.../domain/pms: PostService(작성/상세/목록), PostRepositoryImpl(QueryDSL)
+- src/main/kotlin/.../domain/tech: tech 섹션 게시판 — post(TechPostService·TechPostRepositoryImpl QueryDSL), category(TechPostCategoryService), comment(TechPostCommentService + LegacyCommentResource 구경로 위임)
 
 ## 설정 관리
 
@@ -43,12 +42,15 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - 자격증명: ECS Task Role (prod), AWS_PROFILE 환경변수 (로컬)
 - 비밀번호 찾기도 동일 패턴/SES 재사용 (UserPasswordResetService)
 
-## 커뮤니티 (cms/pms 코딩 규칙·함정)
+## 커뮤니티 (tech 게시판 코딩 규칙·함정)
 
-- Section enum은 domain/cms/enums 패키지에 둔다 — 패키지명 `enum`(Java 예약어) 금지. QueryDSL APT가 import를 생성 못 해 Q클래스에서 enum 필드가 누락됨 (cms.enum → cms.enums)
-- 도메인 경계(ums user_id, cms category_id)를 넘는 참조는 FK 없이 컬럼+인덱스. 경계 검증·조회는 QueryClient로 추상화 (LocalPostCategoryQueryClient, UserQueryClient)
-- PostRepositoryImpl이 첫 QueryDSL 사용처. N+1 회피 위해 닉네임(findNicknames)·카테고리(findByPostIds) 배치 조회
-- 인덱스: post (section, id) = idx_post_section_id (id desc 정렬·커서 커버)
+- 섹션별 완전 분리: domain/tech/{post,category,comment} — 테이블 tech_post/tech_post_category/tech_post_category_mapping/tech_post_comment (전 테이블 무FK, section 컬럼·Section enum 없음 — 테이블명·경로·패키지가 섹션 담당). invest/politics는 동일 세트 복제로 추가
+- 경계 검증·조회는 QueryClient로 추상화 (LocalUserQueryClient, LocalTechPostCategoryQueryClient, LocalTechPostCommentCleanupClient, LocalTechPostQueryClient)
+- TechPostRepositoryImpl이 QueryDSL 사용처. N+1 회피 위해 닉네임(findNicknames)·카테고리(findByPostIds) 배치 조회
+- 카테고리 매핑 교체는 @Modifying 벌크 delete 후 재삽입 (derived delete는 flush 순서로 uk 충돌)
+- 댓글 구경로(/comments/posts/...)는 LegacyCommentResource가 tech로 위임(deprecated) — web 전환 후 제거 (todos)
+- 응답 DTO의 section 필드는 "TECH" 고정 문자열 (web 계약 유지)
+- 패키지명에 `enum`(Java 예약어) 금지 — QueryDSL APT가 import 생성 못 함. enums 사용
 - (데이터 모델·엔드포인트·설계 근거는 docs/done.md, QueryDSL 사용 기준·경로 규칙은 docs/rules.md 참조)
 
 ## 테스트

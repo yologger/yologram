@@ -44,7 +44,11 @@
   - [ ] web-v1 / web-v2 (로컬 임시 토글 → 연동)
   - [ ] 좋아요 수 / 댓글 수 조회·표시 (게시글 목록·상세 카운트, api-v1/v2 + web). 댓글 작성/삭제 시 post.commentCount 동기화 (현재 미증가 — 카운트 항상 0)
   - 1차는 post 컬럼 동기 보관, 분리 시 이벤트 기반 카운트 이관
-- [ ] (PMS) 기술/정치/투자 섹션 게시글 분리 (세부는 진행 시 결정)
+- [ ] (PMS) 기술/정치/투자 섹션 게시글 분리
+  - [x] tech 분리 — 테이블 tech_post/tech_post_category/tech_post_category_mapping/tech_post_comment + api-v1/v2 domain/tech/{post,category,comment} 완전 분리 (완료, done.md). invest/politics는 게시판 오픈 시 동일 세트 복제
+  - [ ] web-v1/v2 댓글 API 경로 전환 — /comments/posts/{postId} → /comments/tech/posts/{postId} (수정/삭제도 /comments/tech/{commentId}). 전환 후 api-v1 LegacyCommentResource·api-v2 legacy 라우터 제거
+  - [ ] legacy 테이블 정리 — 배포 직전 델타 마이그레이션(INSERT IGNORE 재실행) → 배포·검증 후 post/post_category/post_category_mapping/post_comment를 *_legacy로 rename → 유예 후 DROP
+  - [ ] api-v2 createdAt UTC 저장 이슈 — 신규 작성 시 v1은 KST, v2는 UTC로 저장됨 (분리 전부터 존재하던 차이). v2 프로세스 타임존/DB 세션 타임존 정합 필요
 - [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
   - [ ] 도입 시점 판단
   - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)

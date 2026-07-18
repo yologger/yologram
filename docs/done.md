@@ -103,3 +103,11 @@
   - 설계 근거: tech_article FK 제거 — 같은 도메인이라 FK 허용했다가 TRUNCATE 불가 등 운영 불편으로 제거, 전 테이블 무FK로 일관(참조 정합성은 앱 레벨)
   - 인프라: worker_prod SSM 15종(OTLP 6 + DB writer/reader 6 + LLM 키 2 + Discord 웹훅 3채널), DB는 api-v1 미러 master/slave 라우팅(CoreDatabaseConfig)
   - n8n 완전 대체 — 소스 승계 + 요약 embed 알림까지 동일. n8n 정리는 todos의 (Infra) 항목
+- [x] (PMS) 게시판 도메인 tech 섹션 분리 — post → tech_post (api-v1/v2)
+  - [x] 테이블 분리: tech_post / tech_post_category / tech_post_category_mapping / tech_post_comment. section 컬럼·Section enum 소멸(테이블명이 섹션 담당), 전 테이블 무FK, id 보존 마이그레이션(INSERT IGNORE — 재실행 멱등, 전후 건수 검증). 구 테이블은 배포·검증 후 *_legacy rename → DROP 예정 (todos)
+  - [x] api-v1: domain/pms·comment·cms(56파일) → domain/tech/{post(22)·category(5)·comment(19)} 완전 분리 — 섹션별 독립 코드(공통 베이스 없음, invest/politics는 세트 복제로 추가). 경계 클라이언트 tech 세트로 이동. QueryDSL Q클래스 재생성. 테스트 231개(tech 신규 113)
+  - [x] api-v2: 동일 구조 미러(app/domain/tech/{post,category,comment}, Protocol 클라이언트). ApiEnvelopCursorPage에 null 커서 생략 직렬화 추가(v1 @JsonInclude NON_NULL 정합). 테스트 212개
+  - [x] API 계약: 게시글(/pms/tech/posts)·카테고리(/cms/tech/categories)·내글(/pms/posts/me) URL 불변 — {section} 경로변수가 tech 고정 매핑으로. 댓글은 신규 /comments/tech/... + 구경로 deprecated 위임(web 전환 후 제거). 응답 JSON(section "TECH" 고정 직렬화)·에러코드 전부 불변 → web 게시글·카테고리 무영향
+  - 행동 변화 2건(의도됨): 비-tech 섹션 경로 400→404(라우트 소멸), /pms/posts/me의 section 파라미터는 tech만 허용
+  - 설계 근거: 섹션 = 도메인 경계 = 미래 MSA 경계 (워커 domain/{섹션}/{기능}과 정합). 완전 복제를 택한 이유는 섹션별 독립 진화 허용 — 단 게시판 CRUD 로직이 동일한 동안은 수정 시 섹션 간 동기화 필요(트레이드오프 인지하고 선택)
+  - 설계 근거: 참조 테이블(댓글·카테고리)까지 함께 분리 — post만 쪼개면 섹션별 독립 AUTO_INCREMENT 때문에 post_id 참조가 모호해짐. 검증: 조회 전수 + 쓰기 전 사이클(작성→댓글 신규·구경로→수정→삭제→정리) curl 확인, v1/v2 응답 동일성 diff 확인

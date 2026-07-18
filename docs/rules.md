@@ -2,7 +2,8 @@
 
 ### API 경로 규칙
 - /api/{v1|v2}/ums/ (유저), /pms/{section}/ (게시글), /cms/{section}/categories (카테고리)
-- /comments/ (댓글, 추후), /count/ (카운트, 예약), /news/ (뉴스, 추후)
+- /comments/{section}/ (댓글 — 테이블 분리로 섹션 필수. 구경로 /comments/는 deprecated 위임, web 전환 후 제거), /count/ (카운트, 예약)
+- 섹션(tech/invest/politics)은 경로 세그먼트이자 테이블 접두사이자 코드 패키지(domain/{섹션}/{기능}) — 게시판·아티클 공통 규약. 섹션별 코드는 완전 분리(공통 베이스 금지), 신규 섹션 = 테이블·코드 세트 복제
 - 어드민: 도메인 경로 뒤 admin 세그먼트 → /{domain}/admin/... (게이트웨이 라우팅과 일관)
 
 ### QueryDSL 사용 기준 (api-v1)

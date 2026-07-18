@@ -13,8 +13,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - app/config/database.py: engine, SessionLocal, get_db
 - app/config/logging.py · metrics.py · tracing.py: OTLP 로그/메트릭/트레이스
 - app/domain/ums: AuthService(JWT 로그인/로그아웃/검증), UserService(가입/수정/비번변경/탈퇴), UserEmailVerificationService + EmailSender(Stub/Ses), UserPasswordResetService
-- app/domain/cms: Section enum, PostCategoryService
-- app/domain/pms: PostService(작성/상세/목록), PostRepository
+- app/domain/tech: tech 섹션 게시판 — post(TechPostService·TechPostRepository), category(TechPostCategoryService), comment(TechPostCommentService + 구경로 deprecated 라우터)
 
 ## 설정 관리
 
@@ -49,13 +48,15 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - 자격증명: ECS Task Role (prod), AWS_PROFILE (로컬, scripts/run-prod.sh)
 - 비밀번호 찾기도 동일 패턴/SES 재사용 (UserPasswordResetService)
 
-## 커뮤니티 (cms/pms 코딩 규칙)
+## 커뮤니티 (tech 게시판 코딩 규칙)
 
-- post / post_category_mapping 테이블은 api-v1과 DB 공유. 경계 넘는 참조(user_id, category_id)는 FK 없이 인덱스
-- 경계 검증·조회는 QueryClient(Protocol)로 추상화 (LocalPostCategoryQueryClient, UserQueryClient)
+- 섹션별 완전 분리: app/domain/tech/{post,category,comment} — 테이블 tech_post/tech_post_category/tech_post_category_mapping/tech_post_comment (api-v1과 DB 공유, 전 테이블 무FK, section 컬럼·Section enum 없음). invest/politics는 동일 세트 복제로 추가
+- 경계 검증·조회는 QueryClient(Protocol)로 추상화 (LocalUserQueryClient, LocalTechPostCategoryQueryClient, LocalTechPostCommentCleanupClient, LocalTechPostQueryClient)
 - 검증 메시지는 api-v1과 동일 문구 ("내용을 입력해주세요.", "카테고리는 1~3개 선택해주세요.")
 - N+1 회피: find_nicknames·find_by_post_ids 배치 조회, categoryId 필터는 EXISTS
-- (데이터 모델·엔드포인트·설계 근거는 docs/done.md, 경로 규칙·검색 기준은 docs/rules.md 참조)
+- 댓글 구경로(/comments/posts/...)는 deprecated 라우터가 tech로 위임 — web 전환 후 제거 (todos)
+- 응답 스키마의 section 필드는 "TECH" 고정. ApiEnvelopCursorPage는 null 커서 필드 생략(v1 @JsonInclude NON_NULL 정합)
+- (데이터 모델·엔드포인트·설계 근거는 docs/done.md, 경로 규칙은 docs/rules.md 참조)
 
 ## 테스트
 
