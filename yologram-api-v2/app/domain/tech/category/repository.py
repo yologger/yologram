@@ -1,29 +1,35 @@
 from sqlalchemy.orm import Session
 
-from app.domain.tech.category.model import TechPostCategory
+from app.domain.tech.category.model import TechCategory
 
 
-class TechPostCategoryRepository:
+class TechCategoryRepository:
 
     def __init__(self, db: Session):
         self.db = db
 
-    def find_active(self) -> list[TechPostCategory]:
+    def find_active(self) -> list[TechCategory]:
         return (
-            self.db.query(TechPostCategory)
-            .filter(TechPostCategory.is_active.is_(True))
-            .order_by(TechPostCategory.sort_order.asc())
+            self.db.query(TechCategory)
+            .filter(TechCategory.is_active.is_(True))
+            .order_by(TechCategory.sort_order.asc())
             .all()
         )
+
+    def find_by_ids(self, ids: list[int]) -> list[TechCategory]:
+        """id 배치 조회 (아티클 카테고리 라벨 해석용 — api-v1 findAllById 대응, is_active 무관)"""
+        if not ids:
+            return []
+        return self.db.query(TechCategory).filter(TechCategory.id.in_(ids)).all()
 
     def count_active_by_ids(self, ids: list[int]) -> int:
         if not ids:
             return 0
         return (
-            self.db.query(TechPostCategory)
+            self.db.query(TechCategory)
             .filter(
-                TechPostCategory.id.in_(ids),
-                TechPostCategory.is_active.is_(True),
+                TechCategory.id.in_(ids),
+                TechCategory.is_active.is_(True),
             )
             .count()
         )

@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 
 from app.config.database import get_db
 from app.core.response import ApiEnvelop
-from app.domain.tech.category.service import TechPostCategoryService
+from app.domain.tech.category.service import TechCategoryService
 
 # 기존 /api/v2/cms/{section}/categories의 section 경로변수를 tech로 고정 (URL 결과 동일)
-router = APIRouter(prefix="/api/v2/cms", tags=["TechPostCategory"])
+router = APIRouter(prefix="/api/v2/cms", tags=["TechCategory"])
 
 
 @router.get(
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/v2/cms", tags=["TechPostCategory"])
         200: {"description": "조회 성공"},
     },
 )
-def get_post_categories(db: Session = Depends(get_db)):
-    service = TechPostCategoryService(db)
-    result = service.get_post_categories()
+def get_categories(db: Session = Depends(get_db)):
+    service = TechCategoryService(db)
+    result = service.get_categories()
     return ApiEnvelop(data=result)

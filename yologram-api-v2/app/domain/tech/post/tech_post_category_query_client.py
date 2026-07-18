@@ -3,7 +3,7 @@ from typing import Protocol
 
 from sqlalchemy.orm import Session
 
-from app.domain.tech.category.repository import TechPostCategoryRepository
+from app.domain.tech.category.repository import TechCategoryRepository
 
 
 class TechPostCategoryQueryClient(Protocol):
@@ -21,7 +21,7 @@ class TechPostCategoryQueryClient(Protocol):
 class LocalTechPostCategoryQueryClient:
 
     def __init__(self, db: Session):
-        self.repository = TechPostCategoryRepository(db)
+        self.repository = TechCategoryRepository(db)
 
     def all_active(self, category_ids: Collection[int]) -> bool:
         distinct_ids = list(set(category_ids))
