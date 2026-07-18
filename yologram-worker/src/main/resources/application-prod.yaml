@@ -17,6 +17,24 @@ database:
         username:
         password:
 
+yologram:
+  discord:
+    webhooks:
+      tech:  # yologram-news-tech 채널
+        url:  # Parameter Store 주입 (/yologram/service/yologram-worker_prod/yologram.discord.webhooks.tech.url)
+        enabled: true
+      invest:  # yologram-news-invest 채널
+        url:  # Parameter Store 주입 (/yologram/service/yologram-worker_prod/yologram.discord.webhooks.invest.url)
+        enabled: true
+      politics:  # yologram-news-politics 채널
+        url:  # Parameter Store 주입 (/yologram/service/yologram-worker_prod/yologram.discord.webhooks.politics.url)
+        enabled: true
+  llm:
+    gemini:
+      api-key:
+    groq:
+      api-key:
+
 # Parameter Store 주입 (/yologram/service/yologram-worker_prod/management.otlp.*)
 management:
   otlp:

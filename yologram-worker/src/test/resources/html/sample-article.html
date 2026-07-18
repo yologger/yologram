@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>코틀린 코루틴 딥다이브 - 샘플 테크 블로그</title>
+</head>
+<body>
+  <nav>
+    <a href="/">홈</a>
+    <a href="/about">소개</a>
+    <a href="/archive">아카이브</a>
+  </nav>
+  <header>
+    <h1>코틀린 코루틴 딥다이브</h1>
+  </header>
+  <article>
+    <p>코루틴은 코틀린의 대표적인 비동기 처리 도구입니다. 이 글에서는 코루틴의 내부 구조를 살펴보면서 suspend 함수가 어떻게 컴파일되는지 알아봅니다.</p>
+    <p>suspend 함수는 컴파일 시점에 Continuation을 파라미터로 받는 일반 함수로 변환됩니다. 이를 CPS(Continuation Passing Style) 변환이라고 부릅니다. 상태 머신으로 변환된 코드는 중단 지점마다 라벨을 갖게 됩니다.</p>
+    <p>디스패처는 코루틴이 실행될 스레드를 결정합니다. Dispatchers.IO는 블로킹 IO 작업에 최적화된 스레드 풀을 사용하고, Dispatchers.Default는 CPU 집약 작업에 적합합니다.</p>
+    <p>구조화된 동시성(Structured Concurrency)은 부모-자식 관계로 코루틴의 생명주기를 관리합니다. 부모 스코프가 취소되면 자식 코루틴도 함께 취소되어 리소스 누수를 방지합니다.</p>
+  </article>
+  <footer>
+    <p>Copyright 2026 샘플 테크 블로그. 무단 전재 금지.</p>
+    <a href="/rss">RSS 구독</a>
+  </footer>
+</body>
+</html>

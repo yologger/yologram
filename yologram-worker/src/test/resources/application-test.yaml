@@ -19,6 +19,8 @@ yologram:
   tech-article:
     collect:
       cron: "-"
+    summarize:
+      cron: "-"
 
 # 테스트: OTLP는 더미 엔드포인트로 exporter 생성만 통과시키고 전송은 비활성 (api-v1 패턴)
 management:

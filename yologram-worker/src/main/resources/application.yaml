@@ -40,6 +40,25 @@ yologram:
   tech-article:
     collect:
       cron: "0 0/10 * * * *"   # 10분마다 (매시 0,10,20,30,40,50분)
+    summarize:
+      cron: "0 0/5 * * * *"    # 5분마다
+  llm:
+    gemini:
+      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      completions-path: /chat/completions
+      model: gemini-3.5-flash
+      api-key:  # /yologram/service/yologram-worker_{ENV}/yologram.llm.gemini.api-key
+    groq:
+      base-url: https://api.groq.com/openai
+      completions-path: /v1/chat/completions
+      model: meta-llama/llama-4-scout-17b-16e-instruct
+      api-key:  # /yologram/service/yologram-worker_{ENV}/yologram.llm.groq.api-key
+  discord:
+    # 채널별 웹훅 — enabled=false거나 미등록이면 해당 채널 발송 스킵 (politics/invest는 도입 시 추가)
+    webhooks:
+      tech:
+        url:  # /yologram/service/yologram-worker_{ENV}/yologram.discord.webhooks.tech.url
+        enabled: false
 
 management:
   tracing:

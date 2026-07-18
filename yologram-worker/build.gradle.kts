@@ -36,6 +36,14 @@ dependencies {
     // RSS 파싱
     implementation("com.rometools:rome:2.1.0")
 
+    // LLM 요약 (Spring AI OpenAI 호환 ChatModel — Gemini/Groq, Boot 3.5 호환 1.1.x)
+    implementation(platform("org.springframework.ai:spring-ai-bom:1.1.8"))
+    implementation("org.springframework.ai:spring-ai-openai")
+
+    // 원문 본문 추출 (요약 입력 — 로드는 WebClient, 추출은 Readability. jsoup은 명시 버전 고정)
+    implementation("org.jsoup:jsoup:1.22.2")
+    implementation("net.dankito.readability4j:readability4j:1.0.8")
+
     // Logging
     implementation("io.github.oshai:kotlin-logging-jvm:6.0.3")
 
