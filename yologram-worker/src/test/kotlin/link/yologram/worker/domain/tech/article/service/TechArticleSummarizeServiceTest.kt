@@ -19,6 +19,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.transaction.support.TransactionOperations
 import java.time.LocalDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -36,6 +37,9 @@ class TechArticleSummarizeServiceTest {
     // ifAvailable 호출 시 mock notifier를 넘겨주는 provider (빈 존재 상황 재현)
     private val notifierProvider: ObjectProvider<DiscordNotifier> = mock()
 
+    // 콜백을 즉시 실행하는 트랜잭션 목 (실제 트랜잭션 경계는 통합 환경에서 검증)
+    private val transactionOperations: TransactionOperations = TransactionOperations.withoutTransaction()
+
     init {
         @Suppress("UNCHECKED_CAST")
         org.mockito.kotlin.doAnswer { (it.arguments[0] as java.util.function.Consumer<DiscordNotifier>).accept(notifier) }
@@ -48,6 +52,7 @@ class TechArticleSummarizeServiceTest {
         articleContentCrawler,
         llmClient,
         notifierProvider,
+        transactionOperations,
     )
 
     private fun article(id: Long = 1, link: String = "https://a/$id", retryCount: Int = 0) = TechArticle(

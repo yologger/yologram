@@ -13,6 +13,7 @@ import org.springframework.beans.factory.ObjectProvider
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import org.springframework.transaction.support.TransactionOperations
 
 private val logger = KotlinLogging.logger {}
 
@@ -23,6 +24,7 @@ class TechArticleSummarizeService(
     private val articleContentCrawler: ArticleContentCrawler,
     private val llmClient: LlmClient,
     private val discordNotifier: ObjectProvider<DiscordNotifier>,
+    private val transactionOperations: TransactionOperations,
 ) {
 
     /**
@@ -55,7 +57,12 @@ class TechArticleSummarizeService(
                 val parsed = TechArticleCategoryParser.parse(completion.content)
                 article.summary = parsed.summary
                 article.status = TechArticleStatus.SUMMARIZED
-                replaceCategories(article.id, parsed.categories.map { it.label })
+                // 글 저장 + 매핑 교체를 한 트랜잭션으로 — @Modifying delete는 활성 트랜잭션 필수이고,
+                // SUMMARIZED인데 매핑이 없는 부분 커밋도 방지 (알림은 트랜잭션 밖)
+                transactionOperations.executeWithoutResult {
+                    techArticleRepository.save(article)
+                    replaceCategories(article.id, parsed.categories.map { it.label })
+                }
                 summarized++
                 logger.info {
                     "테크 아티클 요약 완료: id=${article.id} provider=${completion.provider} " +
@@ -73,8 +80,8 @@ class TechArticleSummarizeService(
                     "테크 아티클 요약 실패: id=${article.id} link=${article.link} " +
                         "retryCount=${article.retryCount} status=${article.status}"
                 }
+                techArticleRepository.save(article)
             }
-            techArticleRepository.save(article)
         }
 
         logger.info { "테크 아티클 요약 배치 완료: targets=${targets.size} summarized=$summarized failed=$failed" }
