@@ -4,6 +4,42 @@ server:
 spring:
   application:
     name: yologram-worker
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
+database:
+  main:
+    writer:
+      datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        hikari:
+          # 워커는 주기 배치 위주 — 커넥션 최소 유지
+          maximum-pool-size: 2
+          minimum-idle: 1
+    reader:
+      datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        hikari:
+          maximum-pool-size: 2
+          minimum-idle: 1
+    jpa:
+      properties:
+        hibernate.jdbc.batch_size: 50
+        hibernate.order_inserts: true
+        hibernate.order_updates: true
+        hibernate.default_batch_fetch_size: 100
+        hibernate.jdbc.time_zone: Asia/Seoul
+        hibernate.cache.use_second_level_cache: false
+        hibernate.cache.use_query_cache: false
+        hibernate.hbm2ddl.auto: validate
+      show-sql: false
+      open-in-view: false
+
+yologram:
+  tech-article:
+    collect:
+      cron: "0 0/10 * * * *"   # 10분마다 (매시 0,10,20,30,40,50분)
 
 management:
   tracing:

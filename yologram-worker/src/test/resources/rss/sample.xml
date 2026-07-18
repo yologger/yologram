@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>샘플 테크 블로그</title>
+    <link>https://tech.example.com</link>
+    <description>테스트용 RSS 피드</description>
+    <item>
+      <title>코틀린 코루틴 딥다이브</title>
+      <link>https://tech.example.com/posts/1</link>
+      <description>코루틴 내부 구조를 살펴봅니다.</description>
+      <pubDate>Mon, 06 Jul 2026 09:00:00 +0900</pubDate>
+    </item>
+    <item>
+      <title>pubDate 없는 글</title>
+      <link>https://tech.example.com/posts/2</link>
+      <description>발행일이 누락된 항목.</description>
+    </item>
+    <item>
+      <title>link 없는 글 — 필터링 대상</title>
+      <description>링크가 없어 저장 불가.</description>
+      <pubDate>Tue, 07 Jul 2026 10:00:00 +0900</pubDate>
+    </item>
+    <item>
+      <title>  공백 트림 확인  </title>
+      <link> https://tech.example.com/posts/3 </link>
+      <pubDate>Wed, 08 Jul 2026 11:30:00 +0900</pubDate>
+    </item>
+    <item>
+      <title>description 없이 content:encoded만 있는 글</title>
+      <link>https://tech.example.com/posts/4</link>
+      <content:encoded><![CDATA[<p>Medium 스타일 본문입니다.</p>]]></content:encoded>
+      <pubDate>Thu, 09 Jul 2026 08:00:00 +0900</pubDate>
+    </item>
+  </channel>
+</rss>

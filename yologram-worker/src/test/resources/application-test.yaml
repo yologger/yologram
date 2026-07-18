@@ -1,3 +1,25 @@
+# 테스트: Testcontainers MySQL + 스키마 자동 생성 (create-drop, api-v1 패턴)
+database:
+  main:
+    writer:
+      datasource:
+        url: jdbc:tc:mysql:8.0:///yologram?useUnicode=true&charset=utf8mb4&characterEncoding=utf8&serverTimezone=Asia/Seoul
+        driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    reader:
+      datasource:
+        url: jdbc:tc:mysql:8.0:///yologram?useUnicode=true&charset=utf8mb4&characterEncoding=utf8&serverTimezone=Asia/Seoul
+        driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    jpa:
+      properties:
+        hibernate.hbm2ddl.auto: create-drop
+      show-sql: true
+
+# 스케줄러가 테스트 중 돌지 않도록 비활성화 ("-" = Scheduled.CRON_DISABLED)
+yologram:
+  tech-article:
+    collect:
+      cron: "-"
+
 # 테스트: OTLP는 더미 엔드포인트로 exporter 생성만 통과시키고 전송은 비활성 (api-v1 패턴)
 management:
   otlp:

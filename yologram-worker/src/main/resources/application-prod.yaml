@@ -2,3 +2,34 @@ spring:
   config:
     import:
       - 'aws-parameterstore:/yologram/service/yologram-worker_prod/'
+
+# Parameter Store 주입 (/yologram/service/yologram-worker_prod/database.main.*)
+database:
+  main:
+    writer:
+      datasource:
+        url:
+        username:
+        password:
+    reader:
+      datasource:
+        url:
+        username:
+        password:
+
+# Parameter Store 주입 (/yologram/service/yologram-worker_prod/management.otlp.*)
+management:
+  otlp:
+    tracing:
+      endpoint:
+      headers:
+        Authorization:
+    metrics:
+      export:
+        url:
+        headers:
+          Authorization:
+    logging:
+      endpoint:
+      headers:
+        Authorization:
