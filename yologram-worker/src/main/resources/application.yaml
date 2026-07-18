@@ -46,12 +46,14 @@ yologram:
     gemini:
       base-url: https://generativelanguage.googleapis.com/v1beta/openai
       completions-path: /chat/completions
-      model: gemini-3.5-flash
+      # flash-lite 계열 — 상위 모델(3.5-flash)은 무료 티어 20 req/일뿐이라 부적합. 쿼터는 모델별
+      model: gemini-3.1-flash-lite
       api-key:  # /yologram/service/yologram-worker_{ENV}/yologram.llm.gemini.api-key
     groq:
       base-url: https://api.groq.com/openai
       completions-path: /v1/chat/completions
-      model: meta-llama/llama-4-scout-17b-16e-instruct
+      # /v1/models 실조회 기준 (llama-4-scout는 Groq에서 내려감)
+      model: llama-3.3-70b-versatile
       api-key:  # /yologram/service/yologram-worker_{ENV}/yologram.llm.groq.api-key
   discord:
     # 채널별 웹훅 — enabled=false거나 미등록이면 해당 채널 발송 스킵 (politics/invest는 도입 시 추가)
