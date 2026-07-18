@@ -22,7 +22,7 @@ class TechArticleRepositoryTest {
     @Autowired
     lateinit var techArticleSourceRepository: TechArticleSourceRepository
 
-    private fun news(link: String) = TechArticle(
+    private fun article(link: String) = TechArticle(
         sourceId = 1,
         title = "제목",
         link = link,
@@ -32,7 +32,7 @@ class TechArticleRepositoryTest {
 
     @Test
     fun `findExistingLinks는 저장된 link만 반환한다`() {
-        techArticleRepository.saveAll(listOf(news("https://a/1"), news("https://a/2")))
+        techArticleRepository.saveAll(listOf(article("https://a/1"), article("https://a/2")))
 
         val existing = techArticleRepository.findExistingLinks(listOf("https://a/1", "https://a/2", "https://a/3"))
 

@@ -4,9 +4,8 @@ server:
 spring:
   config:
     import:
-      # 워커 Parameter Store 경로는 인프라 구성 시 생성 — 없어도 로컬 기동되도록 optional
+      # 로컬 설정은 worker_local만 — prod 파라미터 유입 방지 (DB·LLM 키는 worker_local에 등록)
       - 'optional:aws-parameterstore:/yologram/service/yologram-worker_local/'
-      - 'optional:aws-parameterstore:/yologram/service/yologram-worker_prod/'
 # Parameter Store 주입 (/yologram/service/yologram-worker_local/database.main.*)
 database:
   main:
