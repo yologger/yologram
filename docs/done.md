@@ -81,8 +81,8 @@
 - [x] (Admin) yologram-admin-web 프로젝트 부트스트랩 + 인프라 + CI
   - [x] 프로젝트 스캐폴드: web-v1 미러(React 19 + Vite + antd 6 + react-query/jotai/axios + react-router 7, Yarn Berry non-zero-install, Node 24). 로컬 포트 3003, API 대상은 api-v1(VITE_APP_API_URL — dev localhost:5001 / prod api.yologram.link)
   - 테마 컬러는 서비스별 구분: admin-web 파란 계열(#1677ff, hover #4096ff, active #0958d9) — web-v1 초록(#08979c), web-v2 핑크(#e7689a)
-  - [x] 데스크탑 전용 AdminLayout(antd Layout+Sider, 반응형 분기 없음 — 어드민은 모바일 미지원 결정). 메뉴 5개(대시보드/회원/카테고리/게시글/RSS 피드) 전부 ComingSoon 라우트 매핑(web-v1 미구현 섹션 패턴), 기능 구현 시 페이지 컴포넌트로 교체. / 및 미매칭 경로는 /dashboard 리다이렉트
-  - [x] 테스트 셋업(vitest + jsdom + RTL + msw, web-v1 동일) + 라우팅/레이아웃/ComingSoon 테스트 15개
+  - [x] AdminLayout — 처음엔 데스크탑 전용으로 갔다가 반응형으로 전환(useIsMobile 768px 분기, web-v1 동일 훅): 데스크탑 antd Layout+Sider 고정 사이드바 / 모바일 상단 헤더(햄버거 버튼) + antd Drawer 토글 사이드바. 어드민은 web-v1/v2와 달리 하단 탭바 대신 Drawer 채택(관리 메뉴는 상시 노출 불필요·메뉴 라벨이 길어 탭바 부적합). 메뉴 정의는 menu.tsx 공용 상수(사이드바·Drawer 공유). 메뉴 5개(대시보드/회원/카테고리/게시글/RSS 피드) 전부 ComingSoon 라우트 매핑(web-v1 미구현 섹션 패턴), 기능 구현 시 페이지 컴포넌트로 교체. / 및 미매칭 경로는 /dashboard 리다이렉트
+  - [x] 테스트 셋업(vitest + jsdom + RTL + msw, web-v1 동일) + 라우팅/레이아웃(데스크탑·모바일 Drawer)/useIsMobile/ComingSoon 테스트 25개
   - [x] 인프라: S3(yologram-admin-web) + CloudFront(OAC, SPA fallback 403/404→index.html) + ACM(us-east-1) + Route53 admin.yologram.link — yologram-infra/aws/services/yologram-admin-web, web-v1 tf 미러
   - [x] CI: yologram-admin-web.yaml (경로 트리거, test → build:prod → S3 sync, index.html no-cache, Discord 알림) — web-v1 워크플로 미러
   - 인증(로그인·AuthGate·RequireAuth)·API 클라이언트(lib/api, stores)는 부트스트랩에서 제외 — 어드민 인증 방식(앱 레벨 ADMIN role vs CloudFront/WAF) 결정 후 구현 (todos 참조)
@@ -129,3 +129,10 @@
   - [x] web-v1/v2: /tech/articles 더미 → 실연동. 카테고리 칩(API 로드) + 무한스크롤(useInfiniteQuery+IntersectionObserver) + 카드(소스명·상대시각·카테고리 태그·제목=원문 새 탭·summary 마크다운 렌더 — react-markdown 추가)
   - [x] worker LLM 분류: 요약 프롬프트에 카테고리 섹션(어휘 1~3개), TechArticleCategoryParser로 summary와 분리(파싱 실패 시 '기타' 폴백 — 요약 저장을 막지 않음), 저장+매핑 교체는 TransactionTemplate 단일 트랜잭션(@Modifying delete 트랜잭션 누락 버그 수정 — @Transactional 없는 통합 테스트로 재발 방지)
   - 기존 요약분은 status 리셋 백필로 재요약+분류 (prod 워커로 진행, Discord는 새 채널로 재발송)
+- [x] (Admin/UMS) 어드민 계정·인증 1단계 — 어드민 생성 + 로그인 (api-v1)
+  - admin_user 테이블: 고객 user와 완전 분리 — user.type=ADMIN 방식 대신 분리 테이블 채택(고객 플로우(가입·이메일 인증·탈퇴)와 섞이지 않고, 권한 체계·수명주기가 달라 컬럼 오염 없음)
+  - 어드민 전용 JWT: AdminJwtProperties/AdminJwtUtil(yologram.auth.admin-jwt.*, secret·audience=yologram.admin 분리) — 유저↔어드민 토큰 상호 혼용 원천 차단(테스트로 보장). @AuthenticatedAdminUser + AuthenticatedAdminUserResolver로 주입, WebConfig에 리졸버 추가 등록
+  - POST /api/v1/ums/admin/users — 어드민 생성(기존 어드민 토큰 필요, 이메일 인증 절차 없음), POST /api/v1/ums/admin/auth/login — 로그인. 예외는 UmsException 체계 재사용(ADMIN_USER_DUPLICATE 409, ADMIN_USER_NOT_FOUND 404)
+  - 첫 어드민은 DB 수동 seed(BCrypt 해시 직접 삽입) — 생성 API가 어드민 가드 뒤에 있어 부트스트랩은 seed로만
+  - Parameter Store yologram.auth.admin-jwt.secret 추가 완료 — prod는 infra tf(PLACEHOLDER+ignore_changes, 기존 jwt.secret 패턴), local은 tf 관리 밖이라 수동 put-parameter. admin_user 테이블은 local 재기동(hbm2ddl update)으로 자동 생성, prod는 배포 전 수동 DDL 실행
+  - prod hbm2ddl을 update → validate로 전환 — prod 스키마 변경은 수동 DDL 정책(자동 DDL의 의도치 않은 스키마 변형 방지, 정책·함정은 rules.md). local은 update 유지

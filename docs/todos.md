@@ -16,7 +16,12 @@
   - 기존 Client 인터페이스(CommentCleanupClient 등) 구현을 이벤트 발행으로 교체하는 지점
 - [ ] (Admin) 어드민 페이지 (yologram-admin-web)
   - [x] 프로젝트 부트스트랩 — React(web-v1 미러)·S3+CloudFront(admin.yologram.link)·CI (완료, done.md)
-  - [ ] 어드민 인증 — 방식 확정: user.type에 ADMIN 추가 + JWT 검증 시 type 체크(@AdminUser 리졸버, api-v1/v2). 어드민 웹 로그인·가드 연동. News 어드민 API의 선행 작업
+  - [ ] 어드민 인증 — 방식 확정(변경): user와 분리된 admin_user 테이블 + 어드민 전용 JWT(secret·audience 분리). 이메일 인증 없음, 기존 어드민이 신규 어드민 추가(첫 어드민은 DB 수동 seed). News 어드민 API의 선행 작업
+    - [x] api-v1 — 어드민 생성(POST /ums/admin/users, 어드민 토큰 가드) + 로그인(POST /ums/admin/auth/login) (완료, done.md)
+    - [ ] api-v2 미러링
+    - [x] Parameter Store에 yologram.auth.admin-jwt.secret 추가 — prod는 infra tf(PLACEHOLDER+ignore_changes) 경유, local은 수동 put-parameter (완료)
+    - [ ] prod DB에 admin_user 테이블 수동 DDL 실행 (prod=validate 전환으로 자동 생성 안 됨, 배포 전 필수)
+    - [ ] 어드민 웹 로그인·가드 연동
   - [ ] RSS 소스 관리 화면 (Article 연계)
   - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
 - [ ] (Article) 테크 아티클 (구 News) — RSS 수집(Worker) → LLM 요약 → TECH > News 표시. 남은 순서: ①Admin 인증 → ②소스 CRUD API+어드민 화면 → ⑤공개 조회 API+web → ⑥어드민 아티클 수정/삭제 (③수집·④요약은 완료 — done.md)

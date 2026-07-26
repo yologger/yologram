@@ -4,7 +4,12 @@
 - /api/{v1|v2}/ums/ (유저), /pms/{section}/ (게시글), /cms/{section}/categories (카테고리)
 - /comments/{section}/ (댓글 — 테이블 분리로 섹션 필수. 구경로 /comments/는 deprecated 위임, web 전환 후 제거), /count/ (카운트, 예약)
 - 섹션(tech/invest/politics)은 경로 세그먼트이자 테이블 접두사이자 코드 패키지(domain/{섹션}/{기능}) — 게시판·아티클 공통 규약. 섹션별 코드는 완전 분리(공통 베이스 금지), 신규 섹션 = 테이블·코드 세트 복제
-- 어드민: 도메인 경로 뒤 admin 세그먼트 → /{domain}/admin/... (게이트웨이 라우팅과 일관)
+- 어드민: 도메인 경로 뒤 admin 세그먼트 → /{domain}/admin/... (게이트웨이 라우팅과 일관). 톱레벨 domain/admin 금지 — 어드민은 역할이지 도메인이 아니며, 전 도메인 repository를 관통해 경계 규칙 위반. 코드는 별도 admin 하위 패키지 없이 각 도메인 평면 구조에 클래스명 Admin 접두사(AdminUserService 등)로 구분
+
+### DB DDL 정책
+- hbm2ddl: local=update(개발 편의 자동 반영), prod=validate(검증만) — prod 테이블 생성·변경은 사용자가 수동 DDL로 직접 수행 (api-v1·worker 공통)
+- 신규 엔티티 추가 시: Testcontainers 테스트(create-drop) 로그에서 Hibernate 생성 DDL을 확인해 그대로 prod에 수동 실행 후 배포 (테스트 리포트 XML system-out에 create 문 포함)
+- 함정: Hibernate 6.2+는 @Enumerated(STRING)을 MySQL 네이티브 ENUM 컬럼으로 생성(@Column length 무시) — 수동 DDL을 varchar로 만들면 validate 불일치 위험. Hibernate 생성문 기준으로 작성
 
 ### QueryDSL 사용 기준 (api-v1)
 - 단순 단건·고정 조건(findBy/existsBy)·기본 CRUD → Spring Data JpaRepository로 충분
