@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
  * 테크 게시판 카테고리 API.
  * 구 /cms/{section}/categories의 section 경로변수를 tech 고정 매핑으로 전환 — URL 결과는 동일.
  */
-@Tag(name = "TechCategory", description = "테크 카테고리 (게시판·아티클 공용 마스터)")
+@Tag(name = "TechCategory", description = "테크 카테고리 (게시판·뉴스 공용 마스터)")
 @RestController
 @RequestMapping("/api/v1/cms")
 class TechCategoryResource(
