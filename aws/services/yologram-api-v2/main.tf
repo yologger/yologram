@@ -141,6 +141,15 @@ resource "aws_ssm_parameter" "jwt_secret_prod" {
     ignore_changes = [value]
   }
 }
+resource "aws_ssm_parameter" "admin_jwt_secret_prod" {
+  name  = "/yologram/service/yologram-api-v2_prod/yologram.auth.admin-jwt.secret"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
 resource "aws_ssm_parameter" "otel_endpoint_prod" {
   name  = "/yologram/service/yologram-api-v2_prod/OTEL_EXPORTER_OTLP_ENDPOINT"
   type  = "SecureString"
@@ -298,6 +307,10 @@ resource "aws_ecs_task_definition" "this" {
         {
           name      = "JWT_SECRET"
           valueFrom = aws_ssm_parameter.jwt_secret_prod.arn
+        },
+        {
+          name      = "ADMIN_JWT_SECRET"
+          valueFrom = aws_ssm_parameter.admin_jwt_secret_prod.arn
         },
       ]
     }
