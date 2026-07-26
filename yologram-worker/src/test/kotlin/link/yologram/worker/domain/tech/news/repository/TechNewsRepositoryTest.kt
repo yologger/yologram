@@ -1,7 +1,7 @@
-package link.yologram.worker.domain.tech.article.repository
+package link.yologram.worker.domain.tech.news.repository
 
-import link.yologram.worker.domain.tech.article.entity.TechArticle
-import link.yologram.worker.domain.tech.article.entity.TechArticleSource
+import link.yologram.worker.domain.tech.news.entity.TechNews
+import link.yologram.worker.domain.tech.news.entity.TechNewsSource
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -14,15 +14,15 @@ import kotlin.test.assertTrue
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class TechArticleRepositoryTest {
+class TechNewsRepositoryTest {
 
     @Autowired
-    lateinit var techArticleRepository: TechArticleRepository
+    lateinit var techNewsRepository: TechNewsRepository
 
     @Autowired
-    lateinit var techArticleSourceRepository: TechArticleSourceRepository
+    lateinit var techNewsSourceRepository: TechNewsSourceRepository
 
-    private fun article(link: String) = TechArticle(
+    private fun news(link: String) = TechNews(
         sourceId = 1,
         title = "제목",
         link = link,
@@ -32,16 +32,16 @@ class TechArticleRepositoryTest {
 
     @Test
     fun `findExistingLinks는 저장된 link만 반환한다`() {
-        techArticleRepository.saveAll(listOf(article("https://a/1"), article("https://a/2")))
+        techNewsRepository.saveAll(listOf(news("https://a/1"), news("https://a/2")))
 
-        val existing = techArticleRepository.findExistingLinks(listOf("https://a/1", "https://a/2", "https://a/3"))
+        val existing = techNewsRepository.findExistingLinks(listOf("https://a/1", "https://a/2", "https://a/3"))
 
         assertEquals(setOf("https://a/1", "https://a/2"), existing.toSet())
     }
 
     @Test
     fun `findExistingLinks는 일치하는 link가 없으면 빈 목록을 반환한다`() {
-        val existing = techArticleRepository.findExistingLinks(listOf("https://none/1"))
+        val existing = techNewsRepository.findExistingLinks(listOf("https://none/1"))
 
         assertTrue(existing.isEmpty())
     }
@@ -52,11 +52,11 @@ class TechArticleRepositoryTest {
         techNewsRepositorySaveWith(link = "https://s/2", retryCount = 3) // 재시도 한도 도달 — 제외
         val a3 = techNewsRepositorySaveWith(link = "https://s/3", retryCount = 2)
         val summarized = techNewsRepositorySaveWith(link = "https://s/4", retryCount = 0)
-        summarized.status = link.yologram.worker.domain.tech.article.enums.TechArticleStatus.SUMMARIZED
-        techArticleRepository.save(summarized) // 이미 요약됨 — 제외
+        summarized.status = link.yologram.worker.domain.tech.news.enums.TechNewsStatus.SUMMARIZED
+        techNewsRepository.save(summarized) // 이미 요약됨 — 제외
 
-        val targets = techArticleRepository.findByStatusAndRetryCountLessThan(
-            link.yologram.worker.domain.tech.article.enums.TechArticleStatus.COLLECTED,
+        val targets = techNewsRepository.findByStatusAndRetryCountLessThan(
+            link.yologram.worker.domain.tech.news.enums.TechNewsStatus.COLLECTED,
             3,
             org.springframework.data.domain.PageRequest.of(0, 10, org.springframework.data.domain.Sort.by("id")),
         )
@@ -65,8 +65,8 @@ class TechArticleRepositoryTest {
     }
 
     private fun techNewsRepositorySaveWith(link: String, retryCount: Int) =
-        techArticleRepository.save(
-            TechArticle(
+        techNewsRepository.save(
+            TechNews(
                 sourceId = 1,
                 title = "제목",
                 link = link,
@@ -78,14 +78,14 @@ class TechArticleRepositoryTest {
 
     @Test
     fun `findByIsActiveTrue는 활성 소스만 반환한다`() {
-        techArticleSourceRepository.saveAll(
+        techNewsSourceRepository.saveAll(
             listOf(
-                TechArticleSource(name = "활성", url = "https://a/feed"),
-                TechArticleSource(name = "비활성", url = "https://b/feed", isActive = false),
+                TechNewsSource(name = "활성", url = "https://a/feed"),
+                TechNewsSource(name = "비활성", url = "https://b/feed", isActive = false),
             )
         )
 
-        val active = techArticleSourceRepository.findByIsActiveTrue()
+        val active = techNewsSourceRepository.findByIsActiveTrue()
 
         assertEquals(listOf("활성"), active.map { it.name })
     }

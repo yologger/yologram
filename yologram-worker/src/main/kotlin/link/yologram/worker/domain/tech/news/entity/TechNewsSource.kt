@@ -1,4 +1,4 @@
-package link.yologram.worker.domain.tech.article.entity
+package link.yologram.worker.domain.tech.news.entity
 
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
@@ -7,9 +7,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "tech_article_source")
+@Table(name = "tech_news_source")
 @EntityListeners(AuditingEntityListener::class)
-class TechArticleSource(
+class TechNewsSource(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,

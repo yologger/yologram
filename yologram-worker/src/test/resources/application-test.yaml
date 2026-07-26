@@ -16,7 +16,7 @@ database:
 
 # 스케줄러가 테스트 중 돌지 않도록 비활성화 ("-" = Scheduled.CRON_DISABLED)
 yologram:
-  tech-article:
+  tech-news:
     collect:
       cron: "-"
     summarize:

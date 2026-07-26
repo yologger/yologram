@@ -3,7 +3,7 @@
 ## 프로젝트 개요
 
 Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 배치 소비는 예정. 번개장터 bun-ums-worker 패턴을 미러링한 구조.
-현재 테크 아티클 파이프라인(RSS 수집 → LLM 요약 → Discord 알림) 운영 중.
+현재 테크 뉴스 파이프라인(RSS 수집 → LLM 요약 → Discord 알림) 운영 중.
 
 > 기술 스택은 README.md, 구현 기능·설계 근거는 루트 docs/done.md, 구현 시 따라야 할 제약·참고는 docs/rules.md 참조.
 
@@ -16,15 +16,15 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 
 - global/client/WebClientFactory.kt·HttpClientConfig.kt: 공용 WebClient (타임아웃·리다이렉트, 수집용 outboundWebClient 빈)
 - global/llm/: LlmClient(Gemini→Groq fallback)·LlmConfig(Spring AI OpenAI 호환, read timeout 60초)·LlmProperties(yologram.llm.*)
 - global/discord/: DiscordNotifier(채널별 웹훅 send/sendEmbed)·DiscordConfig·DiscordProperties(yologram.discord.webhooks.{채널}.url/enabled)
-- domain/tech/article/: 테크 아티클 도메인 — client(RssFeedClient·ArticleContentCrawler), service(Collect·Summarize·CategoryParser), scheduler(cron 수집 10분·요약 5분). LLM 분류 어휘는 tech_category(활성)를 배치마다 로드 — 어드민 카테고리 변경 자동 반영, 매핑은 categoryId
+- domain/tech/news/: 테크 뉴스 도메인 — client(RssFeedClient·NewsContentCrawler), service(Collect·Summarize·CategoryParser), scheduler(cron 수집 10분·요약 5분). LLM 분류 어휘는 tech_category(활성)를 배치마다 로드 — 어드민 카테고리 변경 자동 반영, 매핑은 categoryId
 - src/main/resources/application.yaml: 공통 설정 (database.main, cron, LLM 모델, Discord 채널)
 - src/main/resources/logback-spring.xml: 로깅 (콘솔 + prod OTEL appender)
 
 ## 도메인 구조
 
-- domain/{섹션}/{기능} — tech/article(운영 중), invest·politics(추후 별도 테이블·수집기), pms/search/ums(기능 도메인, 예정)
-- 클래스명은 섹션 접두사 유지(TechArticle...) — 추후 InvestNews/PoliticsNews와 JPA 엔티티 단순명 충돌 방지
-- 테이블: tech_article_source + tech_article + tech_article_category_mapping(categoryId) + tech_category(공용 마스터, 조회 전용). 전 테이블 FK 미사용(같은 도메인 포함), status(COLLECTED/SUMMARIZED/FAILED)+retry_count가 작업 큐
+- domain/{섹션}/{기능} — tech/news(운영 중), invest·politics(추후 별도 테이블·수집기), pms/search/ums(기능 도메인, 예정)
+- 클래스명은 섹션 접두사 유지(TechNews...) — 추후 InvestNews/PoliticsNews와 JPA 엔티티 단순명 충돌 방지
+- 테이블: tech_news_source + tech_news + tech_news_category_mapping(categoryId) + tech_category(공용 마스터, 조회 전용). 전 테이블 FK 미사용(같은 도메인 포함), status(COLLECTED/SUMMARIZED/FAILED)+retry_count가 작업 큐
 
 ## 작업 규칙
 

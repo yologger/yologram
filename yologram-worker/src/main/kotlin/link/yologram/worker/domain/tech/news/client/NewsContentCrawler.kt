@@ -1,4 +1,4 @@
-package link.yologram.worker.domain.tech.article.client
+package link.yologram.worker.domain.tech.news.client
 
 import net.dankito.readability4j.Readability4J
 import org.springframework.beans.factory.annotation.Qualifier
@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 
 @Component
-class ArticleContentCrawler(
+class NewsContentCrawler(
     @Qualifier("outboundWebClient") private val webClient: WebClient,
 ) {
 
@@ -23,8 +23,8 @@ class ArticleContentCrawler(
 
     /** Readability로 광고·내비 등 제거 후 본문 텍스트 추출. 요약 입력 한도로 절단 */
     fun extract(url: String, html: String): String {
-        val article = Readability4J(url, html).parse()
-        val text = article.textContent
+        val parsed = Readability4J(url, html).parse()
+        val text = parsed.textContent
             ?.replace(WHITESPACE, " ")
             ?.trim()
         check(!text.isNullOrBlank()) { "본문 추출 실패: $url" }

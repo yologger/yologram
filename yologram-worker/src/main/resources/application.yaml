@@ -37,7 +37,7 @@ database:
       open-in-view: false
 
 yologram:
-  tech-article:
+  tech-news:
     collect:
       cron: "0 0/10 * * * *"   # 10분마다 (매시 0,10,20,30,40,50분)
     summarize:

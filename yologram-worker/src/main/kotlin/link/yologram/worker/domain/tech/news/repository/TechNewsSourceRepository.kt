@@ -1,8 +1,8 @@
-package link.yologram.worker.domain.tech.article.repository
+package link.yologram.worker.domain.tech.news.repository
 
-import link.yologram.worker.domain.tech.article.entity.TechArticleSource
+import link.yologram.worker.domain.tech.news.entity.TechNewsSource
 import org.springframework.data.jpa.repository.JpaRepository
 
-interface TechArticleSourceRepository : JpaRepository<TechArticleSource, Long> {
-    fun findByIsActiveTrue(): List<TechArticleSource>
+interface TechNewsSourceRepository : JpaRepository<TechNewsSource, Long> {
+    fun findByIsActiveTrue(): List<TechNewsSource>
 }

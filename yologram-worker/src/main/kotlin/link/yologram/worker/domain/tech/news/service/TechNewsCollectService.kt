@@ -1,19 +1,19 @@
-package link.yologram.worker.domain.tech.article.service
+package link.yologram.worker.domain.tech.news.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import link.yologram.worker.domain.tech.article.client.RssFeedClient
-import link.yologram.worker.domain.tech.article.entity.TechArticle
-import link.yologram.worker.domain.tech.article.entity.TechArticleSource
-import link.yologram.worker.domain.tech.article.repository.TechArticleRepository
-import link.yologram.worker.domain.tech.article.repository.TechArticleSourceRepository
+import link.yologram.worker.domain.tech.news.client.RssFeedClient
+import link.yologram.worker.domain.tech.news.entity.TechNews
+import link.yologram.worker.domain.tech.news.entity.TechNewsSource
+import link.yologram.worker.domain.tech.news.repository.TechNewsRepository
+import link.yologram.worker.domain.tech.news.repository.TechNewsSourceRepository
 import org.springframework.stereotype.Service
 
 private val logger = KotlinLogging.logger {}
 
 @Service
-class TechArticleCollectService(
-    private val techArticleSourceRepository: TechArticleSourceRepository,
-    private val techArticleRepository: TechArticleRepository,
+class TechNewsCollectService(
+    private val techNewsSourceRepository: TechNewsSourceRepository,
+    private val techNewsRepository: TechNewsRepository,
     private val rssFeedClient: RssFeedClient,
 ) {
 
@@ -23,38 +23,38 @@ class TechArticleCollectService(
      * link UNIQUE(DDL) + 저장 전 기존 link 배치 조회로 중복 수집 방지 (재실행 멱등).
      */
     fun collect(): CollectResult {
-        val sources = techArticleSourceRepository.findByIsActiveTrue()
-        val savedArticles = mutableListOf<TechArticle>()
+        val sources = techNewsSourceRepository.findByIsActiveTrue()
+        val savedNewsList = mutableListOf<TechNews>()
         var failed = 0
 
         for (source in sources) {
             runCatching { collectFrom(source) }
-                .onSuccess { savedArticles += it }
+                .onSuccess { savedNewsList += it }
                 .onFailure {
                     failed++
-                    logger.error(it) { "테크 아티클 수집 실패: source=${source.name}(${source.id}) url=${source.url}" }
+                    logger.error(it) { "테크 뉴스 수집 실패: source=${source.name}(${source.id}) url=${source.url}" }
                 }
         }
 
-        logger.info { "테크 아티클 수집 완료: sources=${sources.size} saved=${savedArticles.size} failedSources=$failed" }
-        return CollectResult(sourceCount = sources.size, savedCount = savedArticles.size, failedSourceCount = failed)
+        logger.info { "테크 뉴스 수집 완료: sources=${sources.size} saved=${savedNewsList.size} failedSources=$failed" }
+        return CollectResult(sourceCount = sources.size, savedCount = savedNewsList.size, failedSourceCount = failed)
     }
 
-    private fun collectFrom(source: TechArticleSource): List<TechArticle> {
+    private fun collectFrom(source: TechNewsSource): List<TechNews> {
         // ① RSS 조회
-        val articles = rssFeedClient.fetch(source.url)
-        if (articles.isEmpty()) return emptyList()
+        val newsItems = rssFeedClient.fetch(source.url)
+        if (newsItems.isEmpty()) return emptyList()
 
         // ② 피드 내 중복 제거
-        val distinct = articles.distinctBy { it.link }
-        val existingLinks = techArticleRepository.findExistingLinks(distinct.map { it.link }).toSet()
+        val distinct = newsItems.distinctBy { it.link }
+        val existingLinks = techNewsRepository.findExistingLinks(distinct.map { it.link }).toSet()
         val fresh = distinct.filter { it.link !in existingLinks }  // ③ 기존 저장분 제외
         if (fresh.isEmpty()) return emptyList()
 
         // ④ DB 저장
-        val saved = techArticleRepository.saveAll(
+        val saved = techNewsRepository.saveAll(
             fresh.map {
-                TechArticle(
+                TechNews(
                     sourceId = source.id,
                     title = it.title,
                     link = it.link,
@@ -63,7 +63,7 @@ class TechArticleCollectService(
                 )
             }
         )
-        logger.info { "테크 아티클 수집: source=${source.name} fetched=${articles.size} saved=${saved.size}" }
+        logger.info { "테크 뉴스 수집: source=${source.name} fetched=${newsItems.size} saved=${saved.size}" }
         return saved
     }
 

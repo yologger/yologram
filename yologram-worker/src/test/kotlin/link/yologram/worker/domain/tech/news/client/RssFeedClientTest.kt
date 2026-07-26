@@ -1,4 +1,4 @@
-package link.yologram.worker.domain.tech.article.client
+package link.yologram.worker.domain.tech.news.client
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -32,11 +32,11 @@ class RssFeedClientTest {
     fun `RSS 피드를 로드·파싱해 기사 목록을 반환한다`() {
         val client = clientRespondingWith(HttpStatus.OK, fixture("/rss/sample.xml"))
 
-        val articles = client.fetch("https://tech.example.com/feed")
+        val newsItems = client.fetch("https://tech.example.com/feed")
 
         // link 없는 항목은 제외되어 4건
-        assertEquals(4, articles.size)
-        val first = articles[0]
+        assertEquals(4, newsItems.size)
+        val first = newsItems[0]
         assertEquals("코틀린 코루틴 딥다이브", first.title)
         assertEquals("https://tech.example.com/posts/1", first.link)
         assertEquals(LocalDateTime.of(2026, Month.JULY, 6, 9, 0, 0), first.publishedAt)
@@ -47,20 +47,20 @@ class RssFeedClientTest {
         val client = clientRespondingWith(HttpStatus.OK, fixture("/rss/sample.xml"))
         val before = LocalDateTime.now()
 
-        val articles = client.fetch("https://tech.example.com/feed")
+        val newsItems = client.fetch("https://tech.example.com/feed")
 
         val after = LocalDateTime.now()
-        val noPubDate = articles.first { it.link == "https://tech.example.com/posts/2" }
+        val noPubDate = newsItems.first { it.link == "https://tech.example.com/posts/2" }
         kotlin.test.assertFalse(noPubDate.publishedAt.isBefore(before))
         kotlin.test.assertFalse(noPubDate.publishedAt.isAfter(after))
     }
 
     @Test
     fun `title과 link의 공백을 트림한다`() {
-        val articles = clientRespondingWith(HttpStatus.OK, fixture("/rss/sample.xml"))
+        val newsItems = clientRespondingWith(HttpStatus.OK, fixture("/rss/sample.xml"))
             .fetch("https://tech.example.com/feed")
 
-        val trimmed = articles.first { it.link == "https://tech.example.com/posts/3" }
+        val trimmed = newsItems.first { it.link == "https://tech.example.com/posts/3" }
         assertEquals("공백 트림 확인", trimmed.title)
     }
 

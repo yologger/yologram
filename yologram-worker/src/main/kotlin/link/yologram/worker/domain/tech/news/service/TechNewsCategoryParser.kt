@@ -1,6 +1,6 @@
-package link.yologram.worker.domain.tech.article.service
+package link.yologram.worker.domain.tech.news.service
 
-import link.yologram.worker.domain.tech.article.entity.TechCategory
+import link.yologram.worker.domain.tech.news.entity.TechCategory
 
 /**
  * LLM 요약 출력에서 카테고리 섹션(**🏷️ 카테고리**)을 분리한다.
@@ -9,7 +9,7 @@ import link.yologram.worker.domain.tech.article.entity.TechCategory
  * - categoryIds: 어휘 매칭 1~3개. 마커 누락·파싱 실패·목록 외 값뿐이면 폴백('기타', 없으면 빈 목록)
  *   — 분류 실패가 요약 저장을 막지 않는다
  */
-object TechArticleCategoryParser {
+object TechNewsCategoryParser {
 
     private const val MARKER = "🏷️"
     private const val MAX_CATEGORIES = 3

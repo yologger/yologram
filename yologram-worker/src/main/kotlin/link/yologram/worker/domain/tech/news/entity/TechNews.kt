@@ -1,21 +1,21 @@
-package link.yologram.worker.domain.tech.article.entity
+package link.yologram.worker.domain.tech.news.entity
 
 import jakarta.persistence.*
-import link.yologram.worker.domain.tech.article.enums.TechArticleStatus
+import link.yologram.worker.domain.tech.news.enums.TechNewsStatus
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "tech_article")
+@Table(name = "tech_news")
 @EntityListeners(AuditingEntityListener::class)
-class TechArticle(
+class TechNews(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-    // 수집 소스 (tech_article_source.id — 프로젝트 관례대로 FK 없이 컬럼+인덱스)
+    // 수집 소스 (tech_news_source.id — 프로젝트 관례대로 FK 없이 컬럼+인덱스)
     @Column(nullable = false)
     val sourceId: Long,
 
@@ -38,7 +38,7 @@ class TechArticle(
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    var status: TechArticleStatus = TechArticleStatus.COLLECTED,
+    var status: TechNewsStatus = TechNewsStatus.COLLECTED,
 
     @Column(nullable = false)
     var retryCount: Int = 0,

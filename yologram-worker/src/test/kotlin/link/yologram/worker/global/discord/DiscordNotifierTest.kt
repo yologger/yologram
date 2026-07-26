@@ -31,7 +31,7 @@ class DiscordNotifierTest {
     fun `메시지를 웹훅으로 1회 발송한다`() {
         val counter = AtomicInteger()
 
-        notifierCountingRequests(counter).send("tech", "새 테크 아티클 1건")
+        notifierCountingRequests(counter).send("tech", "새 테크 뉴스 1건")
 
         assertEquals(1, counter.get())
     }

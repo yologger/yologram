@@ -1,12 +1,12 @@
-package link.yologram.worker.domain.tech.article.service
+package link.yologram.worker.domain.tech.news.service
 
-import link.yologram.worker.domain.tech.article.client.ArticleContentCrawler
-import link.yologram.worker.domain.tech.article.entity.TechArticle
-import link.yologram.worker.domain.tech.article.enums.TechArticleStatus
-import link.yologram.worker.domain.tech.article.entity.TechCategory
-import link.yologram.worker.domain.tech.article.repository.TechArticleCategoryMappingRepository
-import link.yologram.worker.domain.tech.article.repository.TechArticleRepository
-import link.yologram.worker.domain.tech.article.repository.TechCategoryRepository
+import link.yologram.worker.domain.tech.news.client.NewsContentCrawler
+import link.yologram.worker.domain.tech.news.entity.TechNews
+import link.yologram.worker.domain.tech.news.enums.TechNewsStatus
+import link.yologram.worker.domain.tech.news.entity.TechCategory
+import link.yologram.worker.domain.tech.news.repository.TechNewsCategoryMappingRepository
+import link.yologram.worker.domain.tech.news.repository.TechNewsRepository
+import link.yologram.worker.domain.tech.news.repository.TechCategoryRepository
 import link.yologram.worker.global.llm.LlmClient
 import link.yologram.worker.global.llm.LlmCompletion
 import org.junit.jupiter.api.AfterEach
@@ -27,22 +27,22 @@ import kotlin.test.assertEquals
  */
 @SpringBootTest
 @ActiveProfiles("test")
-class TechArticleSummarizeIntegrationTest {
+class TechNewsSummarizeIntegrationTest {
 
     @Autowired
-    lateinit var service: TechArticleSummarizeService
+    lateinit var service: TechNewsSummarizeService
 
     @Autowired
-    lateinit var techArticleRepository: TechArticleRepository
+    lateinit var techNewsRepository: TechNewsRepository
 
     @Autowired
-    lateinit var mappingRepository: TechArticleCategoryMappingRepository
+    lateinit var mappingRepository: TechNewsCategoryMappingRepository
 
     @Autowired
     lateinit var techCategoryRepository: TechCategoryRepository
 
     @MockitoBean
-    lateinit var articleContentCrawler: ArticleContentCrawler
+    lateinit var newsContentCrawler: NewsContentCrawler
 
     @MockitoBean
     lateinit var llmClient: LlmClient
@@ -66,13 +66,13 @@ class TechArticleSummarizeIntegrationTest {
     @AfterEach
     fun cleanUp() {
         mappingRepository.deleteAll()
-        techArticleRepository.deleteAll()
+        techNewsRepository.deleteAll()
     }
 
     @Test
     fun `요약 성공 시 실제 트랜잭션 경계에서 SUMMARIZED 전환과 매핑 교체가 커밋된다`() {
-        val article = techArticleRepository.save(
-            TechArticle(
+        val news = techNewsRepository.save(
+            TechNews(
                 sourceId = 1,
                 title = "코루틴 딥다이브",
                 link = "https://tech.example.com/posts/1",
@@ -81,7 +81,7 @@ class TechArticleSummarizeIntegrationTest {
             )
         )
         whenever(llmClient.available).thenReturn(true)
-        whenever(articleContentCrawler.fetch(article.link)).thenReturn("본문 텍스트")
+        whenever(newsContentCrawler.fetch(news.link)).thenReturn("본문 텍스트")
         whenever(llmClient.complete(any())).thenReturn(
             LlmCompletion("gemini", "**📌 한 줄 요약**\n코루틴 해설.\n\n**🏷️ 카테고리**\nBackend, DevOps")
         )
@@ -89,16 +89,16 @@ class TechArticleSummarizeIntegrationTest {
         val result = service.summarize()
 
         assertEquals(1, result.summarizedCount)
-        val saved = techArticleRepository.findById(article.id).orElseThrow()
-        assertEquals(TechArticleStatus.SUMMARIZED, saved.status)
+        val saved = techNewsRepository.findById(news.id).orElseThrow()
+        assertEquals(TechNewsStatus.SUMMARIZED, saved.status)
         assertEquals("**📌 한 줄 요약**\n코루틴 해설.", saved.summary)
-        assertEquals(listOf(2L, 4L), mappingRepository.findByArticleId(article.id).map { it.categoryId })
+        assertEquals(listOf(2L, 4L), mappingRepository.findByNewsId(news.id).map { it.categoryId })
     }
 
     @Test
     fun `재요약 시 기존 매핑이 교체된다 (트랜잭션 내 벌크 delete + insert)`() {
-        val article = techArticleRepository.save(
-            TechArticle(
+        val news = techNewsRepository.save(
+            TechNews(
                 sourceId = 1,
                 title = "재요약 대상",
                 link = "https://tech.example.com/posts/2",
@@ -107,20 +107,20 @@ class TechArticleSummarizeIntegrationTest {
             )
         )
         whenever(llmClient.available).thenReturn(true)
-        whenever(articleContentCrawler.fetch(article.link)).thenReturn("본문")
+        whenever(newsContentCrawler.fetch(news.link)).thenReturn("본문")
         whenever(llmClient.complete(any()))
             .thenReturn(LlmCompletion("gemini", "요약1\n\n**🏷️ 카테고리**\nCloud"))
 
         service.summarize()
-        assertEquals(listOf(5L), mappingRepository.findByArticleId(article.id).map { it.categoryId })
+        assertEquals(listOf(5L), mappingRepository.findByNewsId(news.id).map { it.categoryId })
 
         // 재요약 (상태 리셋 후 다른 분류)
-        techArticleRepository.save(
-            techArticleRepository.findById(article.id).orElseThrow().let {
-                TechArticle(
+        techNewsRepository.save(
+            techNewsRepository.findById(news.id).orElseThrow().let {
+                TechNews(
                     id = it.id, sourceId = it.sourceId, title = it.title, link = it.link,
                     sourceName = it.sourceName, publishedAt = it.publishedAt,
-                    status = TechArticleStatus.COLLECTED, retryCount = 0,
+                    status = TechNewsStatus.COLLECTED, retryCount = 0,
                     createdAt = it.createdAt,
                 )
             }
@@ -132,7 +132,7 @@ class TechArticleSummarizeIntegrationTest {
 
         assertEquals(
             listOf(1L, 6L),
-            mappingRepository.findByArticleId(article.id).map { it.categoryId }.sorted(),
+            mappingRepository.findByNewsId(news.id).map { it.categoryId }.sorted(),
         )
     }
 }

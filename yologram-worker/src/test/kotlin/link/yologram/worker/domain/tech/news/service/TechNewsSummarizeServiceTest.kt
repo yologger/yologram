@@ -1,13 +1,13 @@
-package link.yologram.worker.domain.tech.article.service
+package link.yologram.worker.domain.tech.news.service
 
-import link.yologram.worker.domain.tech.article.client.ArticleContentCrawler
-import link.yologram.worker.domain.tech.article.entity.TechArticle
-import link.yologram.worker.domain.tech.article.enums.TechArticleStatus
-import link.yologram.worker.domain.tech.article.entity.TechArticleCategoryMapping
-import link.yologram.worker.domain.tech.article.entity.TechCategory
-import link.yologram.worker.domain.tech.article.repository.TechArticleCategoryMappingRepository
-import link.yologram.worker.domain.tech.article.repository.TechCategoryRepository
-import link.yologram.worker.domain.tech.article.repository.TechArticleRepository
+import link.yologram.worker.domain.tech.news.client.NewsContentCrawler
+import link.yologram.worker.domain.tech.news.entity.TechNews
+import link.yologram.worker.domain.tech.news.enums.TechNewsStatus
+import link.yologram.worker.domain.tech.news.entity.TechNewsCategoryMapping
+import link.yologram.worker.domain.tech.news.entity.TechCategory
+import link.yologram.worker.domain.tech.news.repository.TechNewsCategoryMappingRepository
+import link.yologram.worker.domain.tech.news.repository.TechCategoryRepository
+import link.yologram.worker.domain.tech.news.repository.TechNewsRepository
 import link.yologram.worker.global.discord.DiscordNotifier
 import link.yologram.worker.global.llm.LlmClient
 import link.yologram.worker.global.llm.LlmCompletion
@@ -26,10 +26,10 @@ import java.time.LocalDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class TechArticleSummarizeServiceTest {
+class TechNewsSummarizeServiceTest {
 
-    private val techArticleRepository: TechArticleRepository = mock()
-    private val techArticleCategoryMappingRepository: TechArticleCategoryMappingRepository = mock()
+    private val techNewsRepository: TechNewsRepository = mock()
+    private val techNewsCategoryMappingRepository: TechNewsCategoryMappingRepository = mock()
     private val techCategoryRepository: TechCategoryRepository = mock {
         on { findByIsActiveTrueOrderBySortOrder() } doReturn listOf(
             TechCategory(id = 2, name = "Backend", sortOrder = 2),
@@ -37,7 +37,7 @@ class TechArticleSummarizeServiceTest {
             TechCategory(id = 7, name = "기타", sortOrder = 7),
         )
     }
-    private val articleContentCrawler: ArticleContentCrawler = mock()
+    private val newsContentCrawler: NewsContentCrawler = mock()
     private val llmClient: LlmClient = mock {
         on { available } doReturn true
     }
@@ -55,17 +55,17 @@ class TechArticleSummarizeServiceTest {
             .whenever(notifierProvider).ifAvailable(any())
     }
 
-    private val service = TechArticleSummarizeService(
-        techArticleRepository,
-        techArticleCategoryMappingRepository,
+    private val service = TechNewsSummarizeService(
+        techNewsRepository,
+        techNewsCategoryMappingRepository,
         techCategoryRepository,
-        articleContentCrawler,
+        newsContentCrawler,
         llmClient,
         notifierProvider,
         transactionOperations,
     )
 
-    private fun article(id: Long = 1, link: String = "https://a/$id", retryCount: Int = 0) = TechArticle(
+    private fun news(id: Long = 1, link: String = "https://a/$id", retryCount: Int = 0) = TechNews(
         id = id,
         sourceId = 1,
         title = "제목 $id",
@@ -75,21 +75,21 @@ class TechArticleSummarizeServiceTest {
         retryCount = retryCount,
     )
 
-    private fun stubTargets(vararg articles: TechArticle) {
+    private fun stubTargets(vararg newsItems: TechNews) {
         whenever(
-            techArticleRepository.findByStatusAndRetryCountLessThan(
-                eq(TechArticleStatus.COLLECTED),
-                eq(TechArticleSummarizeService.MAX_RETRY),
+            techNewsRepository.findByStatusAndRetryCountLessThan(
+                eq(TechNewsStatus.COLLECTED),
+                eq(TechNewsSummarizeService.MAX_RETRY),
                 any(),
             )
-        ).thenReturn(articles.toList())
+        ).thenReturn(newsItems.toList())
     }
 
     @Test
     fun `크롤링한 본문을 요약해 SUMMARIZED로 전환한다`() {
-        val target = article()
+        val target = news()
         stubTargets(target)
-        whenever(articleContentCrawler.fetch(target.link)).thenReturn("본문 텍스트")
+        whenever(newsContentCrawler.fetch(target.link)).thenReturn("본문 텍스트")
         whenever(llmClient.complete(any())).thenReturn(LlmCompletion("gemini", "한국어 요약"))
 
         val result = service.summarize()
@@ -98,20 +98,20 @@ class TechArticleSummarizeServiceTest {
         assertEquals(1, result.summarizedCount)
         assertEquals(0, result.failedCount)
         assertEquals("한국어 요약", target.summary)
-        assertEquals(TechArticleStatus.SUMMARIZED, target.status)
-        verify(techArticleRepository).save(target)
+        assertEquals(TechNewsStatus.SUMMARIZED, target.status)
+        verify(techNewsRepository).save(target)
         // 카테고리 마커 없는 출력 → '기타'(id 7) 폴백 매핑
-        verify(techArticleCategoryMappingRepository).deleteByArticleIdBulk(target.id)
-        verify(techArticleCategoryMappingRepository).saveAll(org.mockito.kotlin.check<List<TechArticleCategoryMapping>> {
+        verify(techNewsCategoryMappingRepository).deleteByNewsIdBulk(target.id)
+        verify(techNewsCategoryMappingRepository).saveAll(org.mockito.kotlin.check<List<TechNewsCategoryMapping>> {
             assertEquals(listOf(7L), it.map { m -> m.categoryId })
         })
     }
 
     @Test
     fun `LLM 출력의 카테고리 섹션을 분리해 매핑을 저장하고 summary에서 제거한다`() {
-        val target = article()
+        val target = news()
         stubTargets(target)
-        whenever(articleContentCrawler.fetch(target.link)).thenReturn("본문")
+        whenever(newsContentCrawler.fetch(target.link)).thenReturn("본문")
         whenever(llmClient.complete(any())).thenReturn(
             LlmCompletion("gemini", "**📌 한 줄 요약**\n코루틴 해설.\n\n**🏷️ 카테고리**\nBackend, DevOps")
         )
@@ -119,18 +119,18 @@ class TechArticleSummarizeServiceTest {
         service.summarize()
 
         assertEquals("**📌 한 줄 요약**\n코루틴 해설.", target.summary)
-        verify(techArticleCategoryMappingRepository).deleteByArticleIdBulk(target.id)
-        verify(techArticleCategoryMappingRepository).saveAll(org.mockito.kotlin.check<List<TechArticleCategoryMapping>> {
+        verify(techNewsCategoryMappingRepository).deleteByNewsIdBulk(target.id)
+        verify(techNewsCategoryMappingRepository).saveAll(org.mockito.kotlin.check<List<TechNewsCategoryMapping>> {
             assertEquals(listOf(2L, 4L), it.map { m -> m.categoryId })
-            assertEquals(listOf(target.id, target.id), it.map { m -> m.articleId })
+            assertEquals(listOf(target.id, target.id), it.map { m -> m.newsId })
         })
     }
 
     @Test
     fun `프롬프트에 제목과 본문이 포함된다`() {
-        val target = article()
+        val target = news()
         stubTargets(target)
-        whenever(articleContentCrawler.fetch(target.link)).thenReturn("본문 텍스트")
+        whenever(newsContentCrawler.fetch(target.link)).thenReturn("본문 텍스트")
         whenever(llmClient.complete(any())).thenReturn(LlmCompletion("gemini", "요약"))
 
         service.summarize()
@@ -145,38 +145,38 @@ class TechArticleSummarizeServiceTest {
 
     @Test
     fun `크롤링 실패 시 retryCount가 증가하고 COLLECTED로 남는다`() {
-        val target = article()
+        val target = news()
         stubTargets(target)
-        whenever(articleContentCrawler.fetch(target.link)).doThrow(RuntimeException("403 Forbidden"))
+        whenever(newsContentCrawler.fetch(target.link)).doThrow(RuntimeException("403 Forbidden"))
 
         val result = service.summarize()
 
         assertEquals(1, result.failedCount)
         assertEquals(1, target.retryCount)
-        assertEquals(TechArticleStatus.COLLECTED, target.status)
+        assertEquals(TechNewsStatus.COLLECTED, target.status)
         assertNull(target.summary)
         verify(llmClient, never()).complete(any())
-        verify(techArticleRepository).save(target)
-        verify(techArticleCategoryMappingRepository, never()).saveAll(any<List<TechArticleCategoryMapping>>())
+        verify(techNewsRepository).save(target)
+        verify(techNewsCategoryMappingRepository, never()).saveAll(any<List<TechNewsCategoryMapping>>())
     }
 
     @Test
     fun `재시도 한도에 도달하면 FAILED로 전환한다`() {
-        val target = article(retryCount = TechArticleSummarizeService.MAX_RETRY - 1)
+        val target = news(retryCount = TechNewsSummarizeService.MAX_RETRY - 1)
         stubTargets(target)
-        whenever(articleContentCrawler.fetch(target.link)).doThrow(RuntimeException("403 Forbidden"))
+        whenever(newsContentCrawler.fetch(target.link)).doThrow(RuntimeException("403 Forbidden"))
 
         service.summarize()
 
-        assertEquals(TechArticleSummarizeService.MAX_RETRY, target.retryCount)
-        assertEquals(TechArticleStatus.FAILED, target.status)
+        assertEquals(TechNewsSummarizeService.MAX_RETRY, target.retryCount)
+        assertEquals(TechNewsStatus.FAILED, target.status)
     }
 
     @Test
     fun `FAILED 확정 시 Discord로 경고를 발송한다`() {
-        val target = article(retryCount = TechArticleSummarizeService.MAX_RETRY - 1)
+        val target = news(retryCount = TechNewsSummarizeService.MAX_RETRY - 1)
         stubTargets(target)
-        whenever(articleContentCrawler.fetch(target.link)).doThrow(RuntimeException("403 Forbidden"))
+        whenever(newsContentCrawler.fetch(target.link)).doThrow(RuntimeException("403 Forbidden"))
 
         service.summarize()
 
@@ -189,9 +189,9 @@ class TechArticleSummarizeServiceTest {
 
     @Test
     fun `재시도가 남아 있는 실패는 Discord 경고를 발송하지 않는다`() {
-        val target = article(retryCount = 0)
+        val target = news(retryCount = 0)
         stubTargets(target)
-        whenever(articleContentCrawler.fetch(target.link)).doThrow(RuntimeException("timeout"))
+        whenever(newsContentCrawler.fetch(target.link)).doThrow(RuntimeException("timeout"))
 
         service.summarize()
 
@@ -200,25 +200,25 @@ class TechArticleSummarizeServiceTest {
 
     @Test
     fun `LLM 실패도 재시도 대상으로 처리한다`() {
-        val target = article()
+        val target = news()
         stubTargets(target)
-        whenever(articleContentCrawler.fetch(target.link)).thenReturn("본문")
+        whenever(newsContentCrawler.fetch(target.link)).thenReturn("본문")
         whenever(llmClient.complete(any())).doThrow(IllegalStateException("모든 LLM 제공자 호출 실패"))
 
         val result = service.summarize()
 
         assertEquals(1, result.failedCount)
         assertEquals(1, target.retryCount)
-        assertEquals(TechArticleStatus.COLLECTED, target.status)
+        assertEquals(TechNewsStatus.COLLECTED, target.status)
     }
 
     @Test
     fun `한 건이 실패해도 나머지는 계속 처리한다`() {
-        val failing = article(id = 1)
-        val healthy = article(id = 2)
+        val failing = news(id = 1)
+        val healthy = news(id = 2)
         stubTargets(failing, healthy)
-        whenever(articleContentCrawler.fetch(failing.link)).doThrow(RuntimeException("timeout"))
-        whenever(articleContentCrawler.fetch(healthy.link)).thenReturn("본문")
+        whenever(newsContentCrawler.fetch(failing.link)).doThrow(RuntimeException("timeout"))
+        whenever(newsContentCrawler.fetch(healthy.link)).thenReturn("본문")
         whenever(llmClient.complete(any())).thenReturn(LlmCompletion("groq", "요약"))
 
         val result = service.summarize()
@@ -226,14 +226,14 @@ class TechArticleSummarizeServiceTest {
         assertEquals(2, result.targetCount)
         assertEquals(1, result.summarizedCount)
         assertEquals(1, result.failedCount)
-        assertEquals(TechArticleStatus.SUMMARIZED, healthy.status)
+        assertEquals(TechNewsStatus.SUMMARIZED, healthy.status)
     }
 
     @Test
     fun `요약 성공한 글은 Discord embed로 발송한다`() {
-        val target = article()
+        val target = news()
         stubTargets(target)
-        whenever(articleContentCrawler.fetch(target.link)).thenReturn("본문")
+        whenever(newsContentCrawler.fetch(target.link)).thenReturn("본문")
         whenever(llmClient.complete(any())).thenReturn(LlmCompletion("gemini", "한국어 요약"))
 
         service.summarize()
@@ -249,9 +249,9 @@ class TechArticleSummarizeServiceTest {
 
     @Test
     fun `요약 실패한 글은 Discord 발송을 하지 않는다`() {
-        val target = article()
+        val target = news()
         stubTargets(target)
-        whenever(articleContentCrawler.fetch(target.link)).doThrow(RuntimeException("403"))
+        whenever(newsContentCrawler.fetch(target.link)).doThrow(RuntimeException("403"))
 
         service.summarize()
 
@@ -265,7 +265,7 @@ class TechArticleSummarizeServiceTest {
         val result = service.summarize()
 
         assertEquals(0, result.targetCount)
-        verify(techArticleRepository, never()).save(any())
+        verify(techNewsRepository, never()).save(any())
     }
 
     @Test
@@ -275,6 +275,6 @@ class TechArticleSummarizeServiceTest {
         val result = service.summarize()
 
         assertEquals(0, result.targetCount)
-        verify(techArticleRepository, never()).findByStatusAndRetryCountLessThan(any(), any(), any())
+        verify(techNewsRepository, never()).findByStatusAndRetryCountLessThan(any(), any(), any())
     }
 }

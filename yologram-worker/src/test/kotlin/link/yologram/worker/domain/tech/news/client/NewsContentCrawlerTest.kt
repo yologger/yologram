@@ -1,4 +1,4 @@
-package link.yologram.worker.domain.tech.article.client
+package link.yologram.worker.domain.tech.news.client
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -14,20 +14,20 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ArticleContentCrawlerTest {
+class NewsContentCrawlerTest {
 
     private val url = "https://tech.example.com/posts/1"
 
-    private fun fixtureHtml() = javaClass.getResource("/html/sample-article.html")!!.readText()
+    private fun fixtureHtml() = javaClass.getResource("/html/sample-news.html")!!.readText()
 
-    private fun crawlerRespondingWith(status: HttpStatus, body: String? = null): ArticleContentCrawler {
+    private fun crawlerRespondingWith(status: HttpStatus, body: String? = null): NewsContentCrawler {
         val exchange = ExchangeFunction {
             val builder = ClientResponse.create(status)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_HTML_VALUE)
             body?.let { builder.body(it) }
             Mono.just(builder.build())
         }
-        return ArticleContentCrawler(WebClient.builder().exchangeFunction(exchange).build())
+        return NewsContentCrawler(WebClient.builder().exchangeFunction(exchange).build())
     }
 
     private val crawler = crawlerRespondingWith(HttpStatus.OK)
@@ -63,7 +63,7 @@ class ArticleContentCrawlerTest {
 
         val text = crawler.extract(url, html)
 
-        assertEquals(ArticleContentCrawler.MAX_CONTENT_CHARS, text.length)
+        assertEquals(NewsContentCrawler.MAX_CONTENT_CHARS, text.length)
     }
 
     @Test

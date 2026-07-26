@@ -1,14 +1,14 @@
-package link.yologram.worker.domain.tech.article.service
+package link.yologram.worker.domain.tech.news.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import link.yologram.worker.domain.tech.article.client.ArticleContentCrawler
-import link.yologram.worker.domain.tech.article.entity.TechArticle
-import link.yologram.worker.domain.tech.article.enums.TechArticleStatus
-import link.yologram.worker.domain.tech.article.entity.TechArticleCategoryMapping
-import link.yologram.worker.domain.tech.article.entity.TechCategory
-import link.yologram.worker.domain.tech.article.repository.TechArticleCategoryMappingRepository
-import link.yologram.worker.domain.tech.article.repository.TechArticleRepository
-import link.yologram.worker.domain.tech.article.repository.TechCategoryRepository
+import link.yologram.worker.domain.tech.news.client.NewsContentCrawler
+import link.yologram.worker.domain.tech.news.entity.TechNews
+import link.yologram.worker.domain.tech.news.enums.TechNewsStatus
+import link.yologram.worker.domain.tech.news.entity.TechNewsCategoryMapping
+import link.yologram.worker.domain.tech.news.entity.TechCategory
+import link.yologram.worker.domain.tech.news.repository.TechNewsCategoryMappingRepository
+import link.yologram.worker.domain.tech.news.repository.TechNewsRepository
+import link.yologram.worker.domain.tech.news.repository.TechCategoryRepository
 import link.yologram.worker.global.discord.DiscordNotifier
 import link.yologram.worker.global.llm.LlmClient
 import org.springframework.beans.factory.ObjectProvider
@@ -20,18 +20,18 @@ import org.springframework.transaction.support.TransactionOperations
 private val logger = KotlinLogging.logger {}
 
 @Service
-class TechArticleSummarizeService(
-    private val techArticleRepository: TechArticleRepository,
-    private val techArticleCategoryMappingRepository: TechArticleCategoryMappingRepository,
+class TechNewsSummarizeService(
+    private val techNewsRepository: TechNewsRepository,
+    private val techNewsCategoryMappingRepository: TechNewsCategoryMappingRepository,
     private val techCategoryRepository: TechCategoryRepository,
-    private val articleContentCrawler: ArticleContentCrawler,
+    private val newsContentCrawler: NewsContentCrawler,
     private val llmClient: LlmClient,
     private val discordNotifier: ObjectProvider<DiscordNotifier>,
     private val transactionOperations: TransactionOperations,
 ) {
 
     /**
-     * COLLECTED 상태 아티클을 배치로 요약: 원문 크롤링 → LLM(Gemini→Groq fallback) → SUMMARIZED.
+     * COLLECTED 상태 뉴스를 배치로 요약: 원문 크롤링 → LLM(Gemini→Groq fallback) → SUMMARIZED.
      * 실패 시 retry_count 증가, 한도(MAX_RETRY) 도달 시 FAILED(터미널).
      * status가 작업 큐 역할 — RSS 재노출과 무관하게 DB 기준으로 재시도 (멱등).
      */
@@ -41,8 +41,8 @@ class TechArticleSummarizeService(
             return SummarizeResult(targetCount = 0, summarizedCount = 0, failedCount = 0)
         }
 
-        val targets = techArticleRepository.findByStatusAndRetryCountLessThan(
-            TechArticleStatus.COLLECTED,
+        val targets = techNewsRepository.findByStatusAndRetryCountLessThan(
+            TechNewsStatus.COLLECTED,
             MAX_RETRY,
             PageRequest.of(0, BATCH_SIZE, Sort.by(Sort.Direction.ASC, "id")),
         )
@@ -54,51 +54,51 @@ class TechArticleSummarizeService(
         var summarized = 0
         var failed = 0
 
-        for (article in targets) {
+        for (news in targets) {
             runCatching {
-                val content = articleContentCrawler.fetch(article.link)
-                llmClient.complete(buildPrompt(article.title, article.link, content, vocabulary))
+                val content = newsContentCrawler.fetch(news.link)
+                llmClient.complete(buildPrompt(news.title, news.link, content, vocabulary))
             }.onSuccess { completion ->
                 // 요약 출력에서 카테고리 섹션 분리 (파싱 실패 시 '기타' 폴백 — 요약 저장을 막지 않음)
-                val parsed = TechArticleCategoryParser.parse(completion.content, vocabulary)
-                article.summary = parsed.summary
-                article.status = TechArticleStatus.SUMMARIZED
+                val parsed = TechNewsCategoryParser.parse(completion.content, vocabulary)
+                news.summary = parsed.summary
+                news.status = TechNewsStatus.SUMMARIZED
                 // 글 저장 + 매핑 교체를 한 트랜잭션으로 — @Modifying delete는 활성 트랜잭션 필수이고,
                 // SUMMARIZED인데 매핑이 없는 부분 커밋도 방지 (알림은 트랜잭션 밖)
                 transactionOperations.executeWithoutResult {
-                    techArticleRepository.save(article)
-                    replaceCategories(article.id, parsed.categoryIds)
+                    techNewsRepository.save(news)
+                    replaceCategories(news.id, parsed.categoryIds)
                 }
                 summarized++
                 logger.info {
-                    "테크 아티클 요약 완료: id=${article.id} provider=${completion.provider} " +
+                    "테크 뉴스 요약 완료: id=${news.id} provider=${completion.provider} " +
                         "categoryIds=${parsed.categoryIds}"
                 }
-                notifyDiscord(article)
+                notifyDiscord(news)
             }.onFailure { e ->
                 failed++
-                article.retryCount += 1
-                if (article.retryCount >= MAX_RETRY) {
-                    article.status = TechArticleStatus.FAILED
-                    notifyFailed(article, e)
+                news.retryCount += 1
+                if (news.retryCount >= MAX_RETRY) {
+                    news.status = TechNewsStatus.FAILED
+                    notifyFailed(news, e)
                 }
                 logger.error(e) {
-                    "테크 아티클 요약 실패: id=${article.id} link=${article.link} " +
-                        "retryCount=${article.retryCount} status=${article.status}"
+                    "테크 뉴스 요약 실패: id=${news.id} link=${news.link} " +
+                        "retryCount=${news.retryCount} status=${news.status}"
                 }
-                techArticleRepository.save(article)
+                techNewsRepository.save(news)
             }
         }
 
-        logger.info { "테크 아티클 요약 배치 완료: targets=${targets.size} summarized=$summarized failed=$failed" }
+        logger.info { "테크 뉴스 요약 배치 완료: targets=${targets.size} summarized=$summarized failed=$failed" }
         return SummarizeResult(targetCount = targets.size, summarizedCount = summarized, failedCount = failed)
     }
 
     /** 재요약 대비 기존 매핑 교체 (벌크 delete 후 insert — 멱등) */
-    private fun replaceCategories(articleId: Long, categoryIds: List<Long>) {
-        techArticleCategoryMappingRepository.deleteByArticleIdBulk(articleId)
-        techArticleCategoryMappingRepository.saveAll(
-            categoryIds.map { TechArticleCategoryMapping(articleId = articleId, categoryId = it) }
+    private fun replaceCategories(newsId: Long, categoryIds: List<Long>) {
+        techNewsCategoryMappingRepository.deleteByNewsIdBulk(newsId)
+        techNewsCategoryMappingRepository.saveAll(
+            categoryIds.map { TechNewsCategoryMapping(newsId = newsId, categoryId = it) }
         )
     }
 
@@ -106,26 +106,26 @@ class TechArticleSummarizeService(
      * 재시도 소진으로 FAILED 확정된 순간 개발자 경고 — FAILED는 터미널이라 자가 회복이 멈추는 유일한 지점.
      * (재시도 중 실패는 다음 주기가 커버하므로 알리지 않음)
      */
-    private fun notifyFailed(article: TechArticle, cause: Throwable) {
+    private fun notifyFailed(news: TechNews, cause: Throwable) {
         discordNotifier.ifAvailable {
             it.send(
                 DiscordNotifier.CHANNEL_TECH,
-                "⚠️ 요약 최종 실패(FAILED): [${article.sourceName}] ${article.title}\n" +
-                    "<${article.link}>\n" +
+                "⚠️ 요약 최종 실패(FAILED): [${news.sourceName}] ${news.title}\n" +
+                    "<${news.link}>\n" +
                     "사유: ${cause.message}"
             )
         }
     }
 
     /** 요약이 완성된 글만 Discord embed로 발송 (n8n 알림 대체). 발송 실패는 DiscordNotifier가 삼킴 */
-    private fun notifyDiscord(article: TechArticle) {
+    private fun notifyDiscord(news: TechNews) {
         discordNotifier.ifAvailable {
             it.sendEmbed(
                 channel = DiscordNotifier.CHANNEL_TECH,
-                title = article.title,
-                url = article.link,
-                description = article.summary.orEmpty(),
-                sourceName = article.sourceName,
+                title = news.title,
+                url = news.link,
+                description = news.summary.orEmpty(),
+                sourceName = news.sourceName,
             )
         }
     }

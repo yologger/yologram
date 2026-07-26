@@ -1,9 +1,9 @@
-package link.yologram.worker.domain.tech.article.entity
+package link.yologram.worker.domain.tech.news.entity
 
 import jakarta.persistence.*
 
 /**
- * 테크 카테고리 마스터 (tech_category — 게시판·아티클 공용, 어드민이 관리).
+ * 테크 카테고리 마스터 (tech_category — 게시판·뉴스 공용, 어드민이 관리).
  * worker는 조회 전용: 활성 카테고리가 LLM 분류 어휘가 된다.
  */
 @Entity

@@ -1,16 +1,16 @@
-package link.yologram.worker.domain.tech.article.repository
+package link.yologram.worker.domain.tech.news.repository
 
-import link.yologram.worker.domain.tech.article.entity.TechArticleCategoryMapping
+import link.yologram.worker.domain.tech.news.entity.TechNewsCategoryMapping
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
-interface TechArticleCategoryMappingRepository : JpaRepository<TechArticleCategoryMapping, Long> {
+interface TechNewsCategoryMappingRepository : JpaRepository<TechNewsCategoryMapping, Long> {
 
-    fun findByArticleId(articleId: Long): List<TechArticleCategoryMapping>
+    fun findByNewsId(newsId: Long): List<TechNewsCategoryMapping>
 
     /** 재요약 시 매핑 교체용 — @Modifying 벌크 delete (derived delete는 flush 순서로 uk 충돌 위험) */
     @Modifying
-    @Query("delete from TechArticleCategoryMapping m where m.articleId = :articleId")
-    fun deleteByArticleIdBulk(articleId: Long)
+    @Query("delete from TechNewsCategoryMapping m where m.newsId = :newsId")
+    fun deleteByNewsIdBulk(newsId: Long)
 }
