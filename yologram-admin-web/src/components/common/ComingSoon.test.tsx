@@ -9,8 +9,8 @@ describe('ComingSoon', () => {
   })
 
   it('title이 있으면 상단 헤더에 페이지명을 렌더한다', () => {
-    render(<ComingSoon title="회원 관리" />)
-    expect(screen.getByText('회원 관리')).toBeInTheDocument()
+    render(<ComingSoon title="유저 관리" />)
+    expect(screen.getByText('유저 관리')).toBeInTheDocument()
   })
 
   it('title이 없으면 헤더 없이 안내만 렌더한다', () => {

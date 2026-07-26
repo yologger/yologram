@@ -13,6 +13,12 @@ React 기반 어드민 웹. 회원/카테고리/게시글/RSS 피드 관리 기�
 - src/components/layout/AdminLayout.tsx: 어드민 공통 레이아웃 (반응형 분기 — 데스크탑 고정 사이드바 / 모바일 햄버거 버튼 + Drawer 사이드바)
 - src/components/layout/menu.tsx: 메뉴 정의 공용 상수 (사이드바·Drawer 공유)
 - src/hooks/useIsMobile.ts: 모바일 판별 훅
+- src/lib/api.ts: axios 인스턴스 + Bearer 인터셉터 (401 전역 인증 초기화 — /ums/admin/auth/ 경로 제외)
+- src/stores/auth.ts: authAtom(jotai atomWithStorage — uid/email/name/accessToken)
+- src/apis/auth.ts: login/validateToken/logout/createAdminUser (api-v1 /ums/admin/*)
+- src/components/auth/: AuthGate(시작 시 저장 토큰 검증), RequireAuth(미인증 /login 리다이렉트)
+- src/pages/auth/LoginPage.tsx: 로그인 (어드민은 회원가입·비밀번호찾기 없음)
+- src/pages/ums/UmsPage.tsx + components/common/SubTabLayout.tsx: 유저 메뉴 서브탭(유저 관리/어드민 관리)
 
 ## 작업 규칙
 
@@ -27,13 +33,17 @@ React 기반 어드민 웹. 회원/카테고리/게시글/RSS 피드 관리 기�
 
 ## 라우팅
 
-- / → /dashboard 리다이렉트
-- /dashboard, /users, /categories, /posts, /feeds 5개 메뉴 (전부 준비 중)
-- 알 수 없는 경로는 /dashboard로 리다이렉트
+- /login만 비보호, 나머지 전체는 RequireAuth > AdminLayout 하위 보호
+- / → /dashboard 리다이렉트, 알 수 없는 경로도 /dashboard
+- /ums → /ums/users 리다이렉트, 서브탭 /ums/users(유저 관리)·/ums/admin-users(어드민 관리) — 백엔드 /api/v1/ums/admin/users·admin-users와 대응, 목록 화면은 placeholder. 메뉴 선택 유지는 menu.tsx MENU_MATCH_PREFIXES
+- /dashboard, /categories, /posts, /feeds는 준비 중
+- 메뉴 라벨: 대시보드/유저 관리/카테고리/게시글/RSS 피드 — 유저 관련 용어는 '회원'이 아닌 '유저' 사용
 
 ## 인증
 
-- 미구현. 어드민 인증 방식(앱 레벨 ADMIN role vs WAF/CloudFront 레벨) 결정 후 구현 예정 (docs/todos.md 참조)
+- 어드민 전용 JWT (api-v1 /ums/admin/auth/login·validate-token·logout — 유저 토큰과 분리)
+- authAtom(localStorage) + AuthGate(앱 시작 시 validate-token 검증) + RequireAuth(전 메뉴 인증 필수) — web-v1 미러
+- 로그아웃은 AdminLayout(사이드바 하단/Drawer footer)에서 modal.confirm 후 API 호출, 성공/실패 무관 토큰 폐기
 
 ## 테스트
 
@@ -41,6 +51,7 @@ React 기반 어드민 웹. 회원/카테고리/게시글/RSS 피드 관리 기�
 - vitest + jsdom + @testing-library/react + msw
 - 테스트 유틸리티: src/test/ (setup.ts, handlers.ts, server.ts, utils.tsx)
 - 테스트 파일은 소스 파일 옆에 배치 (colocation)
+- setup.ts에 ResizeObserver 스텁 (antd 6 Tabs가 요구, jsdom 미제공)
 - yarn test (단일 실행), yarn test:watch (감시 모드)
 
 ## 로컬 개발

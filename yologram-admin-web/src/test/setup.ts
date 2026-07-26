@@ -36,6 +36,18 @@ Object.defineProperty(globalThis, 'localStorage', {
   value: localStorageMock,
 })
 
+// antd 6 Tabs(@rc-component/resize-observer)가 요구하는 ResizeObserver를 jsdom에 스텁으로 제공한다.
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+Object.defineProperty(globalThis, 'ResizeObserver', {
+  writable: true,
+  value: ResizeObserverMock,
+})
+
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: (query: string) => ({
