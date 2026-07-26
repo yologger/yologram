@@ -8,9 +8,9 @@ from app.config.metrics import setup_metrics
 from app.config.settings import get_settings
 from app.config.tracing import setup_tracing
 from app.core.exception import register_exception_handlers
-from app.domain.tech.article.router import router as tech_article_router
 from app.domain.tech.category.router import router as tech_category_router
 from app.domain.tech.comment.router import router as tech_comment_router
+from app.domain.tech.news.router import router as tech_news_router
 from app.domain.tech.post.router import router as tech_post_router
 from app.domain.test.router import router as test_router
 from app.domain.ums.admin_router import router as admin_router
@@ -40,7 +40,7 @@ app.include_router(test_router)
 app.include_router(ums_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
-app.include_router(tech_article_router)
+app.include_router(tech_news_router)
 app.include_router(tech_category_router)
 app.include_router(tech_post_router)
 app.include_router(tech_comment_router)

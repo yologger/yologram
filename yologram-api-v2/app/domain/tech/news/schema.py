@@ -2,11 +2,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.domain.tech.article.model import TechArticle
+from app.domain.tech.news.model import TechNews
 
 
-class TechArticleResponse(BaseModel):
-    """테크 아티클 (RSS 수집 + LLM 요약)"""
+class TechNewsResponse(BaseModel):
+    """테크 뉴스 (RSS 수집 + LLM 요약)"""
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -21,14 +21,14 @@ class TechArticleResponse(BaseModel):
     published_at: datetime = Field(serialization_alias="publishedAt")
 
     @classmethod
-    def from_article(cls, article: TechArticle, categories: list[str]) -> "TechArticleResponse":
+    def from_news(cls, news: TechNews, categories: list[str]) -> "TechNewsResponse":
         """SUMMARIZED만 노출하므로 summary는 항상 존재 — 방어적으로 빈 문자열 폴백"""
         return cls(
-            id=article.id,
-            title=article.title,
-            summary=article.summary or "",
-            link=article.link,
-            source_name=article.source_name,
+            id=news.id,
+            title=news.title,
+            summary=news.summary or "",
+            link=news.link,
+            source_name=news.source_name,
             categories=categories,
-            published_at=article.published_at,
+            published_at=news.published_at,
         )

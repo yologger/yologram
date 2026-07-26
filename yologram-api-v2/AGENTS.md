@@ -14,7 +14,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - app/config/logging.py · metrics.py · tracing.py: OTLP 로그/메트릭/트레이스
 - app/domain/ums: AuthService(JWT 로그인/로그아웃/검증), UserService(가입/수정/비번변경/탈퇴), UserEmailVerificationService + EmailSender(Stub/Ses), UserPasswordResetService
 - app/domain/ums의 admin_* 세트: 어드민 인증 (admin_schema/admin_jwt_util/admin_auth_dependency/admin_service/admin_router — /api/v2/ums/admin, api-v1 미러)
-- app/domain/tech: tech 섹션 — post(TechPostService), category(TechCategoryService — tech_category 공용 마스터), comment(TechPostCommentService), article(TechArticleService — 공개 조회: 복합 커서·categoryId 필터·라벨 조인)
+- app/domain/tech: tech 섹션 — post(TechPostService), category(TechCategoryService — tech_category 공용 마스터), comment(TechPostCommentService), news(TechNewsService — 공개 조회: 복합 커서·categoryId 필터·라벨 조인)
 
 ## 설정 관리
 
@@ -52,7 +52,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 
 ## 커뮤니티 (tech 게시판 코딩 규칙)
 
-- 섹션별 완전 분리: app/domain/tech/{post,category,comment} — 테이블 tech_post/tech_post_category_mapping/tech_post_comment + tech_category(게시판·아티클 공용 마스터) + tech_article/tech_article_category_mapping(아티클 조회 전용) (api-v1과 DB 공유, 전 테이블 무FK, section 컬럼·Section enum 없음). invest/politics는 동일 세트 복제로 추가
+- 섹션별 완전 분리: app/domain/tech/{post,category,comment} — 테이블 tech_post/tech_post_category_mapping/tech_post_comment + tech_category(게시판·뉴스 공용 마스터) + tech_news/tech_news_category_mapping(뉴스 조회 전용) (api-v1과 DB 공유, 전 테이블 무FK, section 컬럼·Section enum 없음). invest/politics는 동일 세트 복제로 추가
 - 경계 검증·조회는 QueryClient(Protocol)로 추상화 (LocalUserQueryClient, LocalTechPostCategoryQueryClient, LocalTechPostCommentCleanupClient, LocalTechPostQueryClient)
 - 검증 메시지는 api-v1과 동일 문구 ("내용을 입력해주세요.", "카테고리는 1~3개 선택해주세요.")
 - N+1 회피: find_nicknames·find_by_post_ids 배치 조회, categoryId 필터는 EXISTS

@@ -8,29 +8,29 @@ _DELIMITER = "|"
 
 
 @dataclass(frozen=True)
-class TechArticleCursor:
+class TechNewsCursor:
     """
-    테크 아티클 피드 cursor (keyset 페이지네이션).
+    테크 뉴스 피드 cursor (keyset 페이지네이션).
     정렬 기준이 published_at desc라 유일하지 않음 — (publishedAt, id) 복합 커서로
     동일 발행 시각의 페이지 경계 누락·중복을 방지 (id가 tie-breaker).
-    "ISO발행시각|id"를 Base64(URL-safe)로 인코딩 — api-v1 TechArticleCursor와 동일 인코딩(상호 호환).
+    "ISO발행시각|id"를 Base64(URL-safe)로 인코딩 — api-v1 TechNewsCursor와 동일 인코딩(상호 호환).
     """
 
     published_at: datetime
     id: int
 
     @staticmethod
-    def encode(published_at: datetime, article_id: int) -> str:
-        raw = f"{_format_iso_local_date_time(published_at)}{_DELIMITER}{article_id}"
+    def encode(published_at: datetime, news_id: int) -> str:
+        raw = f"{_format_iso_local_date_time(published_at)}{_DELIMITER}{news_id}"
         return base64.urlsafe_b64encode(raw.encode()).decode().rstrip("=")
 
     @staticmethod
-    def decode(value: str) -> "TechArticleCursor":
+    def decode(value: str) -> "TechNewsCursor":
         try:
             padded = value + "=" * (-len(value) % 4)
             raw = base64.urlsafe_b64decode(padded).decode()
             published_at_raw, id_raw = raw.split(_DELIMITER, 1)
-            return TechArticleCursor(published_at=datetime.fromisoformat(published_at_raw), id=int(id_raw))
+            return TechNewsCursor(published_at=datetime.fromisoformat(published_at_raw), id=int(id_raw))
         except InvalidCursorException:
             raise
         except Exception as e:

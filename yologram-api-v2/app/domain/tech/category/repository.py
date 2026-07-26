@@ -17,7 +17,7 @@ class TechCategoryRepository:
         )
 
     def find_by_ids(self, ids: list[int]) -> list[TechCategory]:
-        """id 배치 조회 (아티클 카테고리 라벨 해석용 — api-v1 findAllById 대응, is_active 무관)"""
+        """id 배치 조회 (뉴스 카테고리 라벨 해석용 — api-v1 findAllById 대응, is_active 무관)"""
         if not ids:
             return []
         return self.db.query(TechCategory).filter(TechCategory.id.in_(ids)).all()
