@@ -17,11 +17,13 @@
 - [ ] (Admin) 어드민 페이지 (yologram-admin-web)
   - [x] 프로젝트 부트스트랩 — React(web-v1 미러)·S3+CloudFront(admin.yologram.link)·CI (완료, done.md)
   - [ ] 어드민 인증 — 방식 확정(변경): user와 분리된 admin_user 테이블 + 어드민 전용 JWT(secret·audience 분리). 이메일 인증 없음, 기존 어드민이 신규 어드민 추가(첫 어드민은 DB 수동 seed). News 어드민 API의 선행 작업
-    - [x] api-v1 — 어드민 생성(POST /ums/admin/admin-users, 어드민 토큰 가드) + 로그인(POST /ums/admin/auth/login) (완료, done.md)
-    - [ ] api-v2 미러링
+    - [x] api-v1 — 어드민 생성(POST /ums/admin/admin-users, 어드민 토큰 가드) + 로그인·validate-token·logout(/ums/admin/auth/*) (완료, done.md)
+    - [x] api-v2 미러링 — 생성·로그인·validate-token·logout + 전용 JWT(ADMIN_JWT_SECRET) (완료, done.md)
+    - [x] api-v2 prod 인프라 — SSM 파라미터 + task definition secrets(ADMIN_JWT_SECRET) tf apply, api-v1과 동일 secret 값 복사, ECS 롤아웃 완료 (완료)
     - [x] Parameter Store에 yologram.auth.admin-jwt.secret 추가 — prod는 infra tf(PLACEHOLDER+ignore_changes) 경유, local은 수동 put-parameter (완료)
     - [x] prod DB에 admin_user 테이블 수동 DDL 실행 (완료)
-    - [ ] 어드민 웹 로그인·가드 연동
+    - [x] 어드민 웹 로그인·가드 연동 — LoginPage·AuthGate·RequireAuth(전 메뉴 보호)·로그아웃 + 유저 메뉴 서브탭(/ums/users 유저 관리·/ums/admin-users 어드민 관리) 골격 (완료, done.md)
+    - [ ] 어드민 웹 실서버 연동 검증 (api-v1 재기동 후 로그인 플로우 수동 확인)
   - [ ] RSS 소스 관리 화면 (Article 연계)
   - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
 - [ ] (Article) 테크 아티클 (구 News) — RSS 수집(Worker) → LLM 요약 → TECH > News 표시. 남은 순서: ①Admin 인증 → ②소스 CRUD API+어드민 화면 → ⑤공개 조회 API+web → ⑥어드민 아티클 수정/삭제 (③수집·④요약은 완료 — done.md)

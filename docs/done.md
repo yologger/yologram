@@ -137,3 +137,10 @@
   - 첫 어드민은 DB 수동 seed(BCrypt 해시 직접 삽입) — 생성 API가 어드민 가드 뒤에 있어 부트스트랩은 seed로만
   - Parameter Store yologram.auth.admin-jwt.secret 추가 완료 — prod는 infra tf(PLACEHOLDER+ignore_changes, 기존 jwt.secret 패턴), local은 tf 관리 밖이라 수동 put-parameter. admin_user 테이블은 local 재기동(hbm2ddl update)으로 자동 생성, prod는 배포 전 수동 DDL 실행
   - prod hbm2ddl을 update → validate로 전환 — prod 스키마 변경은 수동 DDL 정책(자동 DDL의 의도치 않은 스키마 변형 방지, 정책·함정은 rules.md). local은 update 유지
+- [x] (Admin/UMS) 어드민 인증 2단계 — validate-token·logout(api-v1) + api-v2 전체 미러 + admin-web 로그인·가드
+  - [x] api-v1: POST /ums/admin/auth/validate-token(readOnly 트랜잭션, AdminValidateTokenResponse uid·email·name)·logout(204 no-op) — 유저 AuthService 패턴 미러
+  - [x] api-v2: app/domain/ums에 admin_* 파일 세트(schema/jwt_util/auth_dependency/service/router) — 생성·로그인·validate-token·logout 4개 엔드포인트(/api/v2/ums/admin), admin_user 기존 테이블 매핑만(DDL 생성 없음), 설정 admin_jwt_secret(ADMIN_JWT_SECRET env)·audience yologram.admin, 유저↔어드민 토큰 양방향 거부 테스트. run-prod.sh에 SSM 조회 추가
+  - [x] admin-web: web-v1 미러로 lib/api(Bearer 인터셉터, 401 전역 처리에서 /ums/admin/auth/ 제외)·stores/auth(atomWithStorage)·apis/auth·AuthGate·RequireAuth·LoginPage(회원가입·비번찾기 링크 없음)·로그아웃(AdminLayout 사이드바 하단/Drawer footer, modal.confirm). 라우팅은 /login만 비보호, 전 메뉴 RequireAuth 보호
+  - [x] admin-web 유저 메뉴 서브탭 골격: /ums → /ums/users 리다이렉트, [유저 관리|어드민 관리] 서브탭(pages/ums/UmsPage + SubTabLayout — web-v1 미러), 목록 화면은 placeholder(목록 API 후속). 서브탭 하위 경로에서 메뉴 선택 유지는 menu.tsx MENU_MATCH_PREFIXES
+  - 어드민 계정 관리를 유저 메뉴의 서브탭으로 넣은 근거: 둘 다 UMS 계정 관리(API /ums/admin/users vs /ums/admin/admin-users, 웹 라우트 /ums/users·/ums/admin-users로 1:1 대응), 저빈도 화면이라 톱레벨 메뉴 승격은 과함, 추후 role 도입 시 어드민 관리 탭만 권한 가드 가능. UI 용어는 '회원' 대신 '유저'로 통일
+  - 어드민 JWT secret은 유저 JWT처럼 api-v1·v2 동일 값 공유(토큰 양쪽 통용). api-v2 prod는 task definition secrets(ADMIN_JWT_SECRET ← SSM valueFrom) 주입 — infra tf 반영 필요(todos)
