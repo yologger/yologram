@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.domain.ums.model import UserEmailVerification, UserPasswordResetCode, User
+from app.domain.ums.model import AdminUser, UserEmailVerification, UserPasswordResetCode, User
 
 
 class UserRepository:
@@ -28,6 +28,24 @@ class UserRepository:
     def delete(self, user: User) -> None:
         self.db.delete(user)
         self.db.flush()
+
+
+class AdminUserRepository:
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def find_by_id(self, uid: int) -> AdminUser | None:
+        return self.db.query(AdminUser).filter(AdminUser.id == uid).first()
+
+    def find_by_email(self, email: str) -> AdminUser | None:
+        return self.db.query(AdminUser).filter(AdminUser.email == email).first()
+
+    def save(self, admin: AdminUser) -> AdminUser:
+        self.db.add(admin)
+        self.db.flush()
+        self.db.refresh(admin)
+        return admin
 
 
 class UserEmailVerificationRepository:

@@ -22,6 +22,18 @@ class User(Base):
     modified_date = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
 
+class AdminUser(Base):
+    __tablename__ = "admin_user"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    email = Column(String(200), nullable=False, unique=True)
+    name = Column(String(200), nullable=False)
+    password = Column(String(200), nullable=False)
+    status = Column(Enum(UserStatus), nullable=False, default=UserStatus.ACTIVE)
+    joined_date = Column(DateTime, nullable=False, default=func.now())
+    modified_date = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
+
+
 class UserEmailVerification(Base):
     __tablename__ = "user_email_verification"
 

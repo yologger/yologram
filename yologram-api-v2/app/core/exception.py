@@ -25,6 +25,16 @@ class UserNotFoundException(AppException):
         super().__init__(404, "존재하지 않는 사용자입니다.", "USER_NOT_FOUND")
 
 
+class AdminUserDuplicateException(AppException):
+    def __init__(self):
+        super().__init__(409, "이미 등록된 어드민 이메일입니다.", "ADMIN_USER_DUPLICATE")
+
+
+class AdminUserNotFoundException(AppException):
+    def __init__(self):
+        super().__init__(404, "어드민 사용자를 찾을 수 없습니다.", "ADMIN_USER_NOT_FOUND")
+
+
 class AuthWrongPasswordException(AppException):
     def __init__(self):
         super().__init__(401, "비밀번호가 일치하지 않습니다.", "AUTH_WRONG_PASSWORD")

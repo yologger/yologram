@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     jwt_issuer: str = "yologram.link"
     jwt_audience: str = "yologram.client"
 
+    # 어드민 JWT 설정 (유저 JWT와 secret·audience 분리, ADMIN_JWT_SECRET은 ECS secrets 또는 환경변수로 주입)
+    admin_jwt_secret: str = ""
+    admin_jwt_expire: int = 86400
+    admin_jwt_issuer: str = "yologram.link"
+    admin_jwt_audience: str = "yologram.admin"
+
     # SES
     ses_from_address: str = "no-reply@yologram.link"
 

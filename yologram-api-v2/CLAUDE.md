@@ -13,13 +13,14 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - app/config/database.py: engine, SessionLocal, get_db
 - app/config/logging.py · metrics.py · tracing.py: OTLP 로그/메트릭/트레이스
 - app/domain/ums: AuthService(JWT 로그인/로그아웃/검증), UserService(가입/수정/비번변경/탈퇴), UserEmailVerificationService + EmailSender(Stub/Ses), UserPasswordResetService
+- app/domain/ums의 admin_* 세트: 어드민 인증 (admin_schema/admin_jwt_util/admin_auth_dependency/admin_service/admin_router — /api/v2/ums/admin, api-v1 미러)
 - app/domain/tech: tech 섹션 — post(TechPostService), category(TechCategoryService — tech_category 공용 마스터), comment(TechPostCommentService), article(TechArticleService — 공개 조회: 복합 커서·categoryId 필터·라벨 조인)
 
 ## 설정 관리
 
 - .env 파일로 로컬 설정
 - ECS secrets (Parameter Store)에서 환경변수로 주입
-- DB 환경변수: DB_URL, DB_USERNAME, DB_PASSWORD / JWT: JWT_SECRET
+- DB 환경변수: DB_URL, DB_USERNAME, DB_PASSWORD / JWT: JWT_SECRET, ADMIN_JWT_SECRET
 - OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS는 OpenTelemetry SDK가 자동으로 읽음
 - SES 발신 주소: ses_from_address (기본 no-reply@yologram.link)
 - 자격증명: prod ECS Task Role, 로컬 AWS_PROFILE (scripts/run-prod.sh에서 export)
@@ -38,6 +39,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - JWT: PyJWT (HMAC256), api-v1과 동일한 secret/issuer/audience. 인증 헤더 Authorization: Bearer {token}
 - 설정: jwt_secret(JWT_SECRET), jwt_expire(86400), jwt_issuer(yologram.link), jwt_audience(yologram.client)
 - get_authenticated_user 의존성으로 인증 정보 주입 (FastAPI Depends)
+- 어드민: admin_user 테이블 + 전용 JWT(admin_jwt_secret — api-v1과 동일 secret 공유, audience yologram.admin). get_authenticated_admin 의존성, 유저↔어드민 토큰 상호 불인정
 - access token은 stateless (서버 미저장). 서버측 강제 무효화는 refresh token 도입 시 함께 구현
 - (동작·정책은 docs/done.md, docs/todos.md 참조)
 
