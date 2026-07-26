@@ -132,7 +132,8 @@
 - [x] (Admin/UMS) 어드민 계정·인증 1단계 — 어드민 생성 + 로그인 (api-v1)
   - admin_user 테이블: 고객 user와 완전 분리 — user.type=ADMIN 방식 대신 분리 테이블 채택(고객 플로우(가입·이메일 인증·탈퇴)와 섞이지 않고, 권한 체계·수명주기가 달라 컬럼 오염 없음)
   - 어드민 전용 JWT: AdminJwtProperties/AdminJwtUtil(yologram.auth.admin-jwt.*, secret·audience=yologram.admin 분리) — 유저↔어드민 토큰 상호 혼용 원천 차단(테스트로 보장). @AuthenticatedAdminUser + AuthenticatedAdminUserResolver로 주입, WebConfig에 리졸버 추가 등록
-  - POST /api/v1/ums/admin/users — 어드민 생성(기존 어드민 토큰 필요, 이메일 인증 절차 없음), POST /api/v1/ums/admin/auth/login — 로그인. 예외는 UmsException 체계 재사용(ADMIN_USER_DUPLICATE 409, ADMIN_USER_NOT_FOUND 404)
+  - POST /api/v1/ums/admin/admin-users — 어드민 생성(기존 어드민 토큰 필요, 이메일 인증 절차 없음), POST /api/v1/ums/admin/auth/login — 로그인. 예외는 UmsException 체계 재사용(ADMIN_USER_DUPLICATE 409, ADMIN_USER_NOT_FOUND 404)
+  - 경로를 /ums/admin/users 대신 admin-users로 한 근거: /ums/admin/users는 회원 관리(어드민이 고객 user 관리, todos의 GET /ums/admin/users) 몫 — 어드민 계정 리소스와 경로 충돌 방지, 엔티티(AdminUser)·테이블(admin_user) 명명과 1:1
   - 첫 어드민은 DB 수동 seed(BCrypt 해시 직접 삽입) — 생성 API가 어드민 가드 뒤에 있어 부트스트랩은 seed로만
   - Parameter Store yologram.auth.admin-jwt.secret 추가 완료 — prod는 infra tf(PLACEHOLDER+ignore_changes, 기존 jwt.secret 패턴), local은 tf 관리 밖이라 수동 put-parameter. admin_user 테이블은 local 재기동(hbm2ddl update)으로 자동 생성, prod는 배포 전 수동 DDL 실행
   - prod hbm2ddl을 update → validate로 전환 — prod 스키마 변경은 수동 DDL 정책(자동 DDL의 의도치 않은 스키마 변형 방지, 정책·함정은 rules.md). local은 update 유지

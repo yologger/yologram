@@ -17,10 +17,10 @@
 - [ ] (Admin) 어드민 페이지 (yologram-admin-web)
   - [x] 프로젝트 부트스트랩 — React(web-v1 미러)·S3+CloudFront(admin.yologram.link)·CI (완료, done.md)
   - [ ] 어드민 인증 — 방식 확정(변경): user와 분리된 admin_user 테이블 + 어드민 전용 JWT(secret·audience 분리). 이메일 인증 없음, 기존 어드민이 신규 어드민 추가(첫 어드민은 DB 수동 seed). News 어드민 API의 선행 작업
-    - [x] api-v1 — 어드민 생성(POST /ums/admin/users, 어드민 토큰 가드) + 로그인(POST /ums/admin/auth/login) (완료, done.md)
+    - [x] api-v1 — 어드민 생성(POST /ums/admin/admin-users, 어드민 토큰 가드) + 로그인(POST /ums/admin/auth/login) (완료, done.md)
     - [ ] api-v2 미러링
     - [x] Parameter Store에 yologram.auth.admin-jwt.secret 추가 — prod는 infra tf(PLACEHOLDER+ignore_changes) 경유, local은 수동 put-parameter (완료)
-    - [ ] prod DB에 admin_user 테이블 수동 DDL 실행 (prod=validate 전환으로 자동 생성 안 됨, 배포 전 필수)
+    - [x] prod DB에 admin_user 테이블 수동 DDL 실행 (완료)
     - [ ] 어드민 웹 로그인·가드 연동
   - [ ] RSS 소스 관리 화면 (Article 연계)
   - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
