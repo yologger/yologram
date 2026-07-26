@@ -24,18 +24,19 @@
     - [x] prod DB에 admin_user 테이블 수동 DDL 실행 (완료)
     - [x] 어드민 웹 로그인·가드 연동 — LoginPage·AuthGate·RequireAuth(전 메뉴 보호)·로그아웃 + 유저 메뉴 서브탭(/ums/users 유저 관리·/ums/admin-users 어드민 관리) 골격 (완료, done.md)
     - [ ] 어드민 웹 실서버 연동 검증 (api-v1 재기동 후 로그인 플로우 수동 확인)
-  - [ ] RSS 소스 관리 화면 (Article 연계)
+  - [ ] RSS 소스 관리 화면 (News 연계)
   - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
-- [ ] (Article) 테크 아티클 (구 News) — RSS 수집(Worker) → LLM 요약 → TECH > News 표시. 남은 순서: ①Admin 인증 → ②소스 CRUD API+어드민 화면 → ⑤공개 조회 API+web → ⑥어드민 아티클 수정/삭제 (③수집·④요약은 완료 — done.md)
-  - 명명 확정: News → Article (RSS 소스가 뉴스가 아닌 블로그 글. 도메인·테이블·클래스 전부 Article). 섹션별 테이블 분리 확정 — 투자/정치는 제공 방식 확정 시 invest_news/politics_news 등 별도 테이블+수집기로 추가 (post 섹션 분리는 별항)
-  - [x] article 도메인·테이블 + worker 수집·LLM 요약·Discord 채널별 알림 (완료, done.md — n8n 대체 검증됨)
+- [ ] (News) 테크 뉴스 — RSS 수집(Worker) → LLM 요약 → TECH > 뉴스 표시. 남은 순서: ①Admin 인증 → ②소스 CRUD API+어드민 화면 → ⑤공개 조회 API+web → ⑥어드민 뉴스 수정/삭제 (③수집·④요약은 완료 — done.md)
+  - 명명 재확정(2026-07-26): Article → News 회귀 통일 (도메인·테이블·클래스·경로 전부 News — tech_news로 통일, 어드민 메뉴 '뉴스 관리'·서비스 표기와 일치. 과거 News→Article 변경을 되돌림, 경위는 done.md). 섹션별 테이블 분리 확정 — 투자/정치는 제공 방식 확정 시 invest_news/politics_news 등 별도 테이블+수집기로 추가 (post 섹션 분리는 별항)
+  - [ ] (News) 마이그레이션 잔여: ①DDL — ALTER TABLE tech_news_category_mapping RENAME COLUMN article_id TO news_id + CREATE TABLE tech_news_source LIKE tech_article_source·INSERT SELECT (local·prod) ②배포(push→CI) ③구 worker 종료 확인 후 차분 copy ④건수 검증 후 tech_article·tech_article_category_mapping·tech_article_source drop
+  - [x] news 도메인·테이블 + worker 수집·LLM 요약·Discord 채널별 알림 (완료, done.md — n8n 대체 검증됨)
   - [ ] 소스 CRUD API(어드민 전용, api-v1/v2) + admin-web 소스 관리 화면
-  - [ ] 새 아티클 유저 알림 — 요약 확정(SUMMARIZED/FAILED) + notified_at IS NULL 기준으로 발송 후 notified_at 기록(정확히 한 번·멱등). tech_article에 notified_at 컬럼 추가. 발송 채널(푸시/인앱)은 그때 결정
+  - [ ] 새 뉴스 유저 알림 — 요약 확정(SUMMARIZED/FAILED) + notified_at IS NULL 기준으로 발송 후 notified_at 기록(정확히 한 번·멱등). tech_news에 notified_at 컬럼 추가. 발송 채널(푸시/인앱)은 그때 결정
   - Discord 수집 알림은 개발자 모니터링용(임시) — 유저 알림 도입 후 yologram.discord.enabled=false로 비활성 또는 제거
-  - [x] 공개 아티클 목록 조회 API (api-v1/v2) + 카테고리 마스터 통합·LLM 분류 (완료, done.md)
-  - [x] web TECH > 아티클 더미 → 실연동 (web-v1/v2 — 칩·무한스크롤·마크다운 요약, 완료 done.md)
-  - [x] web 표기 News → Articles 변경 — web-v1/v2 라우트(/tech/articles)·컴포넌트·메뉴 라벨(아티클) 완료 (admin은 해당 화면 구현 시)
-  - [ ] 어드민 아티클 수정(요약 교정)/삭제 API + 화면
+  - [x] 공개 뉴스 목록 조회 API (api-v1/v2) + 카테고리 마스터 통합·LLM 분류 (완료, done.md)
+  - [x] web TECH > 뉴스 더미 → 실연동 (web-v1/v2 — 칩·무한스크롤·마크다운 요약, 완료 done.md)
+  - [x] web 표기·라우트는 뉴스 기준 — web-v1/v2 라우트(/tech/news)·컴포넌트·메뉴 라벨(뉴스) (한때 뉴스 표기로 갔다가 2026-07-26 뉴스로 회귀)
+  - [ ] 어드민 뉴스 수정(요약 교정)/삭제 API + 화면
 - [ ] (Infra) n8n 제거 — Worker가 소스 6개 승계 + 요약 embed 알림까지 완전 대체 완료. n8n 워크플로 비활성화·인스턴스 정리만 남음
 - [ ] (Comment) 댓글
   - [x] 댓글 작성 — post_comment 테이블(post_id FK 없이 인덱스 + app-level 검증, /comments/posts/{postId}), api-v1/v2, web-v1/v2 (완료, done.md)
@@ -79,9 +80,9 @@
 - [ ] (UMS/Admin) 회원 관리
   - [ ] api-v1 / api-v2 (GET /ums/admin/users, GET/PATCH/DELETE /{uid}, ADMIN 권한, 테스트/Swagger)
   - [ ] web-admin (회원정보 조회 등)
-- [ ] (CMS/Admin) 카테고리 관리 — tech_category 단일 마스터 (게시판·아티클·LLM 어휘·칩 공용)
+- [ ] (CMS/Admin) 카테고리 관리 — tech_category 단일 마스터 (게시판·뉴스·LLM 어휘·칩 공용)
   - [ ] api-v1 / api-v2 (POST/DELETE/GET /cms/admin/{section}/categories)
-  - 삭제 정책 확정: 기본 is_active=false 비활성(칩·작성·LLM 어휘 제외, 기존 표시 유지). hard delete는 post/article 매핑 벌크 정리 동반(무FK — 앱 책임). done.md 설계 근거 참조
+  - 삭제 정책 확정: 기본 is_active=false 비활성(칩·작성·LLM 어휘 제외, 기존 표시 유지). hard delete는 post/news 매핑 벌크 정리 동반(무FK — 앱 책임). done.md 설계 근거 참조
 - [ ] (PMS/Admin) 게시글 관리
   - [ ] api-v1 / api-v2 (GET /admin/posts, GET/DELETE /{id})
 - [ ] (web) 설정 — 알림 설정 페이지 (web-v1 / web-v2)

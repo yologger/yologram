@@ -93,14 +93,14 @@
   - [x] 인프라: ECR + ECS Fargate SPOT(0.25/512, ecs-prod) + task role(SSM read 한정) + SSM OTLP 6종 — yologram-infra/aws/services/yologram-worker. 인바운드 없음: API GW·Cloud Map·portMappings 미사용, SG egress만(actuator는 ECS exec로 localhost 접근)
   - [x] CI: yologram-worker.yaml (경로 트리거 → Gradle build → ECR push → ECS 재배포, Discord 알림) — api-v1 워크플로 미러
   - 워커 작업 설계 원칙: Spot 중단 전제 멱등·재시도 가능하게. @Scheduled는 놓친 사이클 미소급(RSS류만 적합), 시각 민감 배치는 EventBridge→SQS 이관 기준 (todos 참조)
-- [x] (Article) 테크 아티클 파이프라인 — RSS 수집 → LLM 요약 → Discord 알림 (yologram-worker)
-  - [x] 도메인·테이블: tech_article_source(소스 관리) + tech_article(기사, link unique=중복 수집 방지 키, status COLLECTED/SUMMARIZED/FAILED + retry_count가 작업 큐 역할). domain/tech/article 패키지(섹션 최상위 — invest/politics는 별도 테이블·수집기로 추가 예정). description(원문)은 저장하지 않음 — 요약 입력은 link 원문 크롤링으로 확보
-  - [x] 수집(TechArticleCollectService, cron 10분): RssFeedClient(WebClient 바이트 로드 → Rome 파싱, 인코딩 자동 감지·리다이렉트 추적) → 피드 내 중복 제거 → 기존 link 배치 조회 제외 → saveAll. 소스 단위 실패 격리. 소스는 n8n 구독분 6개 승계(AWS What's New/AWS 한국 블로그/Velopers/44bits/개발자스럽다/GeekNews)
-  - [x] 요약(TechArticleSummarizeService, cron 5분·배치 10건): ArticleContentCrawler(WebClient 로드 + Readability 본문 추출, 20,000자 컷) → LlmClient(Gemini gemini-3.1-flash-lite 1순위 → Groq llama-3.3-70b-versatile fallback, Spring AI 1.1.8 OpenAI 호환) → SUMMARIZED. 실패 시 retry_count 5회 후 FAILED(터미널) + Discord 경고. 프롬프트는 n8n 요약 프롬프트 승계(구조화 출력: 한 줄 요약/핵심 포인트/왜 중요한가/핵심 개념)
+- [x] (News) 테크 뉴스 파이프라인 — RSS 수집 → LLM 요약 → Discord 알림 (yologram-worker)
+  - [x] 도메인·테이블: tech_news_source(소스 관리) + tech_news(기사, link unique=중복 수집 방지 키, status COLLECTED/SUMMARIZED/FAILED + retry_count가 작업 큐 역할). domain/tech/news 패키지(섹션 최상위 — invest/politics는 별도 테이블·수집기로 추가 예정). description(원문)은 저장하지 않음 — 요약 입력은 link 원문 크롤링으로 확보
+  - [x] 수집(TechNewsCollectService, cron 10분): RssFeedClient(WebClient 바이트 로드 → Rome 파싱, 인코딩 자동 감지·리다이렉트 추적) → 피드 내 중복 제거 → 기존 link 배치 조회 제외 → saveAll. 소스 단위 실패 격리. 소스는 n8n 구독분 6개 승계(AWS What's New/AWS 한국 블로그/Velopers/44bits/개발자스럽다/GeekNews)
+  - [x] 요약(TechNewsSummarizeService, cron 5분·배치 10건): NewsContentCrawler(WebClient 로드 + Readability 본문 추출, 20,000자 컷) → LlmClient(Gemini gemini-3.1-flash-lite 1순위 → Groq llama-3.3-70b-versatile fallback, Spring AI 1.1.8 OpenAI 호환) → SUMMARIZED. 실패 시 retry_count 5회 후 FAILED(터미널) + Discord 경고. 프롬프트는 n8n 요약 프롬프트 승계(구조화 출력: 한 줄 요약/핵심 포인트/왜 중요한가/핵심 개념)
   - [x] Discord 알림(DiscordNotifier, 채널별 웹훅 webhooks.{tech,invest,politics}.url/enabled): 요약 완성 글만 embed 발송(제목=원문 링크, 본문=요약, 상단 소스명 — n8n 알림 포맷 대체). 발송 실패는 삼키고 로그만. 수집 단계는 무발송(완성본만 알림)
   - 설계 근거: 수집·요약 분리 — 수집은 시간 민감(RSS 노출 창), 요약은 DB status 기준 무기한 재시도 가능. 합치면 LLM 장애가 수집을 막음. status가 큐라 Spot 중단·재기동 멱등
   - 설계 근거: LLM 모델은 문서가 아닌 실측으로 확정 — gemini-3.5-flash는 무료 20 req/일(429 quotaValue 실측), llama-4-scout는 Groq에서 제거(404). 무료 티어는 lite 계열 + /models 실조회가 기준
-  - 설계 근거: tech_article FK 제거 — 같은 도메인이라 FK 허용했다가 TRUNCATE 불가 등 운영 불편으로 제거, 전 테이블 무FK로 일관(참조 정합성은 앱 레벨)
+  - 설계 근거: tech_news FK 제거 — 같은 도메인이라 FK 허용했다가 TRUNCATE 불가 등 운영 불편으로 제거, 전 테이블 무FK로 일관(참조 정합성은 앱 레벨)
   - 인프라: worker_prod SSM 17종(OTLP 6 + DB writer/reader 6 + LLM 키 2 + Discord 웹훅 3채널), DB는 api-v1 미러 master/slave 라우팅(CoreDatabaseConfig)
   - n8n 완전 대체 — 소스 승계 + 요약 embed 알림까지 동일. n8n 정리는 todos의 (Infra) 항목
 - [x] (PMS) 게시판 도메인 tech 섹션 분리 — post → tech_post (api-v1/v2)
@@ -111,23 +111,23 @@
   - 행동 변화 2건(의도됨): 비-tech 섹션 경로 400→404(라우트 소멸), /pms/posts/me의 section 파라미터는 tech만 허용
   - 설계 근거: 섹션 = 도메인 경계 = 미래 MSA 경계 (워커 domain/{섹션}/{기능}과 정합). 완전 복제를 택한 이유는 섹션별 독립 진화 허용 — 단 게시판 CRUD 로직이 동일한 동안은 수정 시 섹션 간 동기화 필요(트레이드오프 인지하고 선택)
   - 설계 근거: 참조 테이블(댓글·카테고리)까지 함께 분리 — post만 쪼개면 섹션별 독립 AUTO_INCREMENT 때문에 post_id 참조가 모호해짐. 검증: 조회 전수 + 쓰기 전 사이클(작성→댓글 신규·구경로→수정→삭제→정리) curl 확인, v1/v2 응답 동일성 diff 확인
-- [x] (PMS/Article) web-v1/v2 — 댓글 API 섹션 경로 전환 + News→Article 표기 변경
+- [x] (PMS/News) web-v1/v2 — 댓글 API 섹션 경로 전환 + 뉴스 표기·라우트 정리
   - [x] 댓글 API 4함수(create/get/update/delete)에 section 인자 추가 → 정식 경로 /comments/{section}/posts/{postId}·/comments/{section}/{commentId} 사용 (게시글 API의 section 변수 패턴과 통일, deprecated 구경로 탈피)
   - [x] react-query 키 ['comments', section, postId, sort]로 통일 — 게시글 키(['posts', section, ...])와 일관, 무효화·게시글 삭제 시 캐시 제거 지점 전부 갱신
-  - [x] News→Article rename: 페이지 6개(각 웹)·컴포넌트명·라우트(/tech/articles, /tech/favorite-articles — web-v2는 디렉토리 rename)·메뉴 라벨('아티클'/'관심 아티클')·redirect. 잔존 표기 grep 0건
+  - [x] 표기·라우트 rename: 페이지 6개(각 웹)·컴포넌트명·라우트(/tech/news, /tech/favorite-news — web-v2는 디렉토리 rename)·메뉴 라벨('뉴스'/'관심 뉴스')·redirect. 잔존 표기 grep 0건 (당시 News→Article로 갔다가 2026-07-26 News로 재회귀 — 아래 명명 회귀 항목)
   - 검증: web-v1 테스트 143·web-v2 138 통과 + 양쪽 프로덕션 빌드, dev 서버 실동작(댓글 CRUD·라우팅) 확인
   - 남은 것: web prod 배포 확인 후 api-v1 LegacyCommentResource·api-v2 legacy 라우터 제거 (todos). 배포 순서는 api 먼저 → web
-- [x] (Article/CMS) 카테고리 마스터 통합 — tech_category (게시판·아티클 공용)
-  - [x] 테이블: tech_post_category → tech_category rename(호환 뷰로 무중단 전환 후 제거), tech_article_category_mapping은 라벨 문자열 → category_id 참조로 마이그레이션 (라벨 JOIN UPDATE, 전건 매칭 검증)
-  - [x] worker: TechArticleCategory enum 삭제 → 요약 배치마다 tech_category(활성)를 로드해 LLM 프롬프트 어휘·파싱 매칭으로 사용. 어드민 카테고리 변경이 분류에 자동 반영, 매핑은 categoryId 저장
-  - [x] api-v1/v2: TechPostCategory→TechCategory rename(경로 /cms/tech/categories·응답 불변), 아티클 필터 ?category=(라벨) → ?categoryId=(id), 응답 categories는 마스터 조인 라벨(삭제된 카테고리 매핑은 표시 제외)
-  - [x] web-v1/v2: 아티클 칩을 고정 7개 상수 → 카테고리 API 로드('전체'+id 기반, 커뮤니티와 동일 패턴), 쿼리키 [articles, tech, categoryId]
-  - 설계 근거: 단일 마스터로 게시판·아티클·LLM 어휘·칩이 한 소스 — id 참조라 카테고리 rename에 안전(문자열 방식은 rename 시 기존 매핑 전부 어긋남), 어드민 카테고리 관리(예정)가 두 도메인을 한 번에 커버
-  - 카테고리 삭제 정책(어드민 구현 시): 기본은 is_active=false 비활성(칩·작성·LLM 어휘에서 제외, 기존 표시 유지). hard delete는 같은 트랜잭션에서 post/article 매핑 벌크 정리 동반(무FK — 앱 책임). 삭제된 카테고리의 잔여 매핑은 라벨 해석에서 자동 제외
-- [x] (Article) 테크 아티클 공개 조회 + web 연동 — TECH > 아티클 실화면
-  - [x] api-v1/v2: GET /articles/{section=tech} — SUMMARIZED만, 발행순(published_at desc, id desc), (publishedAt|id) 복합 keyset 커서(v1·v2 바이트 호환 — Java ISO 초 생략 형식 통일), categoryId 필터(EXISTS), categories 라벨 배치 조인, size 1~50, 400 INVALID_CURSOR
-  - [x] web-v1/v2: /tech/articles 더미 → 실연동. 카테고리 칩(API 로드) + 무한스크롤(useInfiniteQuery+IntersectionObserver) + 카드(소스명·상대시각·카테고리 태그·제목=원문 새 탭·summary 마크다운 렌더 — react-markdown 추가)
-  - [x] worker LLM 분류: 요약 프롬프트에 카테고리 섹션(어휘 1~3개), TechArticleCategoryParser로 summary와 분리(파싱 실패 시 '기타' 폴백 — 요약 저장을 막지 않음), 저장+매핑 교체는 TransactionTemplate 단일 트랜잭션(@Modifying delete 트랜잭션 누락 버그 수정 — @Transactional 없는 통합 테스트로 재발 방지)
+- [x] (News/CMS) 카테고리 마스터 통합 — tech_category (게시판·뉴스 공용)
+  - [x] 테이블: tech_post_category → tech_category rename(호환 뷰로 무중단 전환 후 제거), tech_news_category_mapping은 라벨 문자열 → category_id 참조로 마이그레이션 (라벨 JOIN UPDATE, 전건 매칭 검증)
+  - [x] worker: TechNewsCategory enum 삭제 → 요약 배치마다 tech_category(활성)를 로드해 LLM 프롬프트 어휘·파싱 매칭으로 사용. 어드민 카테고리 변경이 분류에 자동 반영, 매핑은 categoryId 저장
+  - [x] api-v1/v2: TechPostCategory→TechCategory rename(경로 /cms/tech/categories·응답 불변), 뉴스 필터 ?category=(라벨) → ?categoryId=(id), 응답 categories는 마스터 조인 라벨(삭제된 카테고리 매핑은 표시 제외)
+  - [x] web-v1/v2: 뉴스 칩을 고정 7개 상수 → 카테고리 API 로드('전체'+id 기반, 커뮤니티와 동일 패턴), 쿼리키 [news, tech, categoryId]
+  - 설계 근거: 단일 마스터로 게시판·뉴스·LLM 어휘·칩이 한 소스 — id 참조라 카테고리 rename에 안전(문자열 방식은 rename 시 기존 매핑 전부 어긋남), 어드민 카테고리 관리(예정)가 두 도메인을 한 번에 커버
+  - 카테고리 삭제 정책(어드민 구현 시): 기본은 is_active=false 비활성(칩·작성·LLM 어휘에서 제외, 기존 표시 유지). hard delete는 같은 트랜잭션에서 post/news 매핑 벌크 정리 동반(무FK — 앱 책임). 삭제된 카테고리의 잔여 매핑은 라벨 해석에서 자동 제외
+- [x] (News) 테크 뉴스 공개 조회 + web 연동 — TECH > 뉴스 실화면
+  - [x] api-v1/v2: GET /news/{section=tech} — SUMMARIZED만, 발행순(published_at desc, id desc), (publishedAt|id) 복합 keyset 커서(v1·v2 바이트 호환 — Java ISO 초 생략 형식 통일), categoryId 필터(EXISTS), categories 라벨 배치 조인, size 1~50, 400 INVALID_CURSOR
+  - [x] web-v1/v2: /tech/news 더미 → 실연동. 카테고리 칩(API 로드) + 무한스크롤(useInfiniteQuery+IntersectionObserver) + 카드(소스명·상대시각·카테고리 태그·제목=원문 새 탭·summary 마크다운 렌더 — react-markdown 추가)
+  - [x] worker LLM 분류: 요약 프롬프트에 카테고리 섹션(어휘 1~3개), TechNewsCategoryParser로 summary와 분리(파싱 실패 시 '기타' 폴백 — 요약 저장을 막지 않음), 저장+매핑 교체는 TransactionTemplate 단일 트랜잭션(@Modifying delete 트랜잭션 누락 버그 수정 — @Transactional 없는 통합 테스트로 재발 방지)
   - 기존 요약분은 status 리셋 백필로 재요약+분류 (prod 워커로 진행, Discord는 새 채널로 재발송)
 - [x] (Admin/UMS) 어드민 계정·인증 1단계 — 어드민 생성 + 로그인 (api-v1)
   - admin_user 테이블: 고객 user와 완전 분리 — user.type=ADMIN 방식 대신 분리 테이블 채택(고객 플로우(가입·이메일 인증·탈퇴)와 섞이지 않고, 권한 체계·수명주기가 달라 컬럼 오염 없음)
@@ -143,4 +143,9 @@
   - [x] admin-web: web-v1 미러로 lib/api(Bearer 인터셉터, 401 전역 처리에서 /ums/admin/auth/ 제외)·stores/auth(atomWithStorage)·apis/auth·AuthGate·RequireAuth·LoginPage(회원가입·비번찾기 링크 없음)·로그아웃(AdminLayout 사이드바 하단/Drawer footer, modal.confirm). 라우팅은 /login만 비보호, 전 메뉴 RequireAuth 보호
   - [x] admin-web 유저 메뉴 서브탭 골격: /ums → /ums/users 리다이렉트, [유저 관리|어드민 관리] 서브탭(pages/ums/UmsPage + SubTabLayout — web-v1 미러), 목록 화면은 placeholder(목록 API 후속). 서브탭 하위 경로에서 메뉴 선택 유지는 menu.tsx MENU_MATCH_PREFIXES
   - 어드민 계정 관리를 유저 메뉴의 서브탭으로 넣은 근거: 둘 다 UMS 계정 관리(API /ums/admin/users vs /ums/admin/admin-users, 웹 라우트 /ums/users·/ums/admin-users로 1:1 대응), 저빈도 화면이라 톱레벨 메뉴 승격은 과함, 추후 role 도입 시 어드민 관리 탭만 권한 가드 가능. UI 용어는 '회원' 대신 '유저'로 통일
-  - 어드민 JWT secret은 유저 JWT처럼 api-v1·v2 동일 값 공유(토큰 양쪽 통용). api-v2 prod는 task definition secrets(ADMIN_JWT_SECRET ← SSM valueFrom) 주입 — infra tf 반영 필요(todos)
+  - 어드민 JWT secret은 유저 JWT처럼 api-v1·v2 동일 값 공유(토큰 양쪽 통용). api-v2 prod는 task definition secrets(ADMIN_JWT_SECRET ← SSM valueFrom) 주입 — infra tf 반영 완료
+- [x] (News) 명명 회귀 통일 — article → news 전면 리네이밍 (전 프로젝트)
+  - 테이블: tech_article / tech_article_category_mapping / tech_article_source → tech_news / tech_news_category_mapping / tech_news_source. 무중단 이전 절차: CREATE TABLE LIKE + INSERT 초기 copy → 새 코드 배포 → 차분 copy(id LEFT JOIN) → 검증 후 구테이블 drop. 매핑 컬럼 article_id → news_id (RENAME COLUMN)
+  - 코드: api-v1·v2 domain/tech/news(TechNews*, 공개 조회 GET /api/v{n}/news/{section} — deprecated 위임 없이 전환), worker 파이프라인 TechNews*(설정 키 yologram.tech-news.* — SSM 비주입 인라인 값이라 안전), web-v1/v2 라우트 /tech/news·/tech/favorite-news(invest/politics 동일)·NewsCard·useNewsQuery·쿼리키 ['news']·표기 '뉴스'
+  - 근거: 어드민 메뉴(뉴스 관리)·서비스 표기와 명명 일치, News/Article 혼용 제거 — 과거 News→Article 결정 회귀. 크롤러 테스트의 시맨틱 HTML &lt;article&gt; 태그는 도메인 명명이 아니라 유지
+  - 테스트: api-v1 283 / api-v2 258 / worker 74 / web-v1 156 / web-v2 153 전부 통과, 전 프로젝트 article 잔여 참조 0
