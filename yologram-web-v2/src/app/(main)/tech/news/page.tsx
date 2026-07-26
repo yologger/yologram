@@ -3,26 +3,26 @@
 import { useEffect, useRef, useState } from 'react'
 import FilterChips, { type ChipItem } from '@/components/common/FilterChips'
 import ScrollToTopButton from '@/components/common/ScrollToTopButton'
-import ArticleCard from '@/components/articles/ArticleCard'
+import NewsCard from '@/components/news/NewsCard'
 import usePostCategoriesQuery from '@/queries/usePostCategoriesQuery'
-import useArticlesQuery from '@/queries/useArticlesQuery'
-import styles from './TechArticles.module.css'
+import useNewsQuery from '@/queries/useNewsQuery'
+import styles from './TechNews.module.css'
 
-export default function TechArticles() {
-  // 카테고리 마스터는 게시판·아티클 공용 (tech 카테고리 API가 단일 소스)
+export default function TechNews() {
+  // 카테고리 마스터는 게시판·뉴스 공용 (tech 카테고리 API가 단일 소스)
   const { data: categories = [] } = usePostCategoriesQuery('tech')
   const [categoryId, setCategoryId] = useState<number | null>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
   const {
-    data: articles = [],
+    data: news = [],
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
     isLoading,
     isError,
     refetch,
-  } = useArticlesQuery(categoryId)
+  } = useNewsQuery(categoryId)
 
   const filterItems: Array<ChipItem<number | null>> = [
     { label: '전체', value: null },
@@ -51,17 +51,17 @@ export default function TechArticles() {
 
       {isError && (
         <div className={styles.status}>
-          <p>아티클을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
+          <p>뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
           <button onClick={() => refetch()}>다시 시도</button>
         </div>
       )}
 
-      {!isLoading && !isError && articles.length === 0 && (
-        <div className={styles.status}>아직 아티클이 없어요.</div>
+      {!isLoading && !isError && news.length === 0 && (
+        <div className={styles.status}>아직 뉴스가 없어요.</div>
       )}
 
-      {articles.map((article) => (
-        <ArticleCard key={article.id} article={article} />
+      {news.map((item) => (
+        <NewsCard key={item.id} news={item} />
       ))}
       {hasNextPage && <div ref={sentinelRef} className={styles.sentinel} />}
 

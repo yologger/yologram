@@ -7,5 +7,5 @@ export default function InvestPage() {
 // import { redirect } from 'next/navigation'
 //
 // export default function InvestPage() {
-//   redirect('/invest/articles')
+//   redirect('/invest/news')
 // }

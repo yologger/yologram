@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { renderWithProviders } from '../../../../test/utils'
 import { server } from '../../../../test/server'
-import TechArticles from './page'
+import TechNews from './page'
 
 type IOCallback = (entries: Array<{ isIntersecting: boolean }>) => void
 let ioCallbacks: IOCallback[] = []
@@ -29,9 +29,9 @@ beforeEach(() => {
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-describe('TechArticles 목록', () => {
-  it('API에서 받은 아티클 카드(출처·카테고리 태그·제목 링크)가 렌더링된다', async () => {
-    renderWithProviders(<TechArticles />)
+describe('TechNews 목록', () => {
+  it('API에서 받은 뉴스 카드(출처·카테고리 태그·제목 링크)가 렌더링된다', async () => {
+    renderWithProviders(<TechNews />)
 
     expect(await screen.findByText('Kotlin 코루틴 구조화된 동시성 정리')).toBeInTheDocument()
     expect(screen.getByText('LLM 프롬프트 엔지니어링 가이드')).toBeInTheDocument()
@@ -46,13 +46,13 @@ describe('TechArticles 목록', () => {
 
     // 제목은 원문 링크로 새 탭 열기
     const link = screen.getByRole('link', { name: 'Kotlin 코루틴 구조화된 동시성 정리' })
-    expect(link).toHaveAttribute('href', 'https://example.com/articles/101')
+    expect(link).toHaveAttribute('href', 'https://example.com/news/101')
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
   it('summary 마크다운(볼드·리스트)이 렌더링된다', async () => {
-    renderWithProviders(<TechArticles />)
+    renderWithProviders(<TechNews />)
 
     await screen.findByText('Kotlin 코루틴 구조화된 동시성 정리')
 
@@ -66,7 +66,7 @@ describe('TechArticles 목록', () => {
   })
 
   it('카테고리 API 기반 칩(전체 + 카테고리 목록)이 표시된다', async () => {
-    renderWithProviders(<TechArticles />)
+    renderWithProviders(<TechNews />)
 
     await screen.findByText('Kotlin 코루틴 구조화된 동시성 정리')
 
@@ -78,9 +78,9 @@ describe('TechArticles 목록', () => {
     expect(screen.getAllByText('AI/ML').length).toBeGreaterThan(0)
   })
 
-  it('카테고리 칩 선택 시 해당 categoryId로 아티클을 조회한다', async () => {
+  it('카테고리 칩 선택 시 해당 categoryId로 뉴스를 조회한다', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<TechArticles />)
+    renderWithProviders(<TechNews />)
 
     await screen.findByText('Kotlin 코루틴 구조화된 동시성 정리')
 
@@ -93,7 +93,7 @@ describe('TechArticles 목록', () => {
   })
 
   it('스크롤 센티널 노출 시 다음 페이지를 이어서 불러온다 (무한스크롤)', async () => {
-    renderWithProviders(<TechArticles />)
+    renderWithProviders(<TechNews />)
 
     await screen.findByText('Kotlin 코루틴 구조화된 동시성 정리')
 
@@ -102,26 +102,26 @@ describe('TechArticles 목록', () => {
       ioCallbacks.at(-1)?.([{ isIntersecting: true }])
     })
 
-    expect(await screen.findByText('커서 이후 아티클')).toBeInTheDocument()
-    // 기존 페이지 아티클 유지
+    expect(await screen.findByText('커서 이후 뉴스')).toBeInTheDocument()
+    // 기존 페이지 뉴스 유지
     expect(screen.getByText('Kotlin 코루틴 구조화된 동시성 정리')).toBeInTheDocument()
   })
 
-  it('아티클이 없으면 빈 상태 문구를 보여준다', async () => {
+  it('뉴스가 없으면 빈 상태 문구를 보여준다', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<TechArticles />)
+    renderWithProviders(<TechNews />)
 
     await screen.findByText('Kotlin 코루틴 구조화된 동시성 정리')
 
-    // fixture 1페이지에 Frontend(id=1) 아티클 없음 → 빈 목록
+    // fixture 1페이지에 Frontend(id=1) 뉴스 없음 → 빈 목록
     await user.click(await screen.findByText('Frontend'))
 
-    expect(await screen.findByText('아직 아티클이 없어요.')).toBeInTheDocument()
+    expect(await screen.findByText('아직 뉴스가 없어요.')).toBeInTheDocument()
   })
 
   it('조회 실패 시 에러 문구와 다시 시도 버튼을 보여준다', async () => {
     server.use(
-      http.get('http://localhost:5002/api/v2/articles/tech', () =>
+      http.get('http://localhost:5002/api/v2/news/tech', () =>
         HttpResponse.json(
           { errorMessage: '서버 오류', errorCode: 'INTERNAL_SERVER_ERROR' },
           { status: 500 },
@@ -129,10 +129,10 @@ describe('TechArticles 목록', () => {
       ),
     )
 
-    renderWithProviders(<TechArticles />)
+    renderWithProviders(<TechNews />)
 
     expect(
-      await screen.findByText('아티클을 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
+      await screen.findByText('뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument()
   })
@@ -143,7 +143,7 @@ describe('TechArticles 목록', () => {
     // 첫 요청만 실패, 이후 기본 핸들러로 복구
     server.use(
       http.get(
-        'http://localhost:5002/api/v2/articles/tech',
+        'http://localhost:5002/api/v2/news/tech',
         () =>
           HttpResponse.json(
             { errorMessage: '서버 오류', errorCode: 'INTERNAL_SERVER_ERROR' },
@@ -153,9 +153,9 @@ describe('TechArticles 목록', () => {
       ),
     )
 
-    renderWithProviders(<TechArticles />)
+    renderWithProviders(<TechNews />)
 
-    await screen.findByText('아티클을 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
+    await screen.findByText('뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
     await user.click(screen.getByRole('button', { name: '다시 시도' }))
 
     expect(await screen.findByText('Kotlin 코루틴 구조화된 동시성 정리')).toBeInTheDocument()

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 // 모든 페이지를 감싸는 최상위 레이아웃 (서버 컴포넌트)
 // children: Next.js가 URL에 맞는 페이지를 자동으로 주입
-// 예: /invest/articles 접근 시 → (main)/layout → invest/layout → invest/articles/page 순으로 중첩
+// 예: /invest/news 접근 시 → (main)/layout → invest/layout → invest/news/page 순으로 중첩
 export default function RootLayout({
   children,
 }: {

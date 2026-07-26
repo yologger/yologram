@@ -1,12 +1,12 @@
 import { http, HttpResponse } from 'msw'
 
-// 테크 아티클 fixture (1페이지)
-const techArticles = [
+// 테크 뉴스 fixture (1페이지)
+const techNews = [
   {
     id: 101,
     title: 'Kotlin 코루틴 구조화된 동시성 정리',
     summary: '🔍 **핵심 요약**\n\n- 구조화된 동시성으로 누수 방지\n- **Dispatcher** 선택 기준 정리',
-    link: 'https://example.com/articles/101',
+    link: 'https://example.com/news/101',
     sourceName: '카카오 기술블로그',
     categories: ['Backend', 'Cloud'],
     publishedAt: '2026-06-10T09:00:00',
@@ -15,27 +15,27 @@ const techArticles = [
     id: 102,
     title: 'LLM 프롬프트 엔지니어링 가이드',
     summary: '**RAG** 파이프라인 개선 사례 소개',
-    link: 'https://example.com/articles/102',
+    link: 'https://example.com/news/102',
     sourceName: '네이버 D2',
     categories: ['AI/ML'],
     publishedAt: '2026-06-09T09:00:00',
   },
 ]
 
-// 테크 아티클 fixture (2페이지 = 마지막 페이지)
-const techArticlesSecondPage = [
+// 테크 뉴스 fixture (2페이지 = 마지막 페이지)
+const techNewsSecondPage = [
   {
     id: 103,
-    title: '커서 이후 아티클',
+    title: '커서 이후 뉴스',
     summary: '두 번째 페이지 요약',
-    link: 'https://example.com/articles/103',
+    link: 'https://example.com/news/103',
     sourceName: '우아한형제들',
     categories: ['Frontend'],
     publishedAt: '2026-06-08T09:00:00',
   },
 ]
 
-// 테크 카테고리 마스터 (cms 카테고리 핸들러의 TECH fixture와 동일 — 아티클 categoryId 필터에 사용)
+// 테크 카테고리 마스터 (cms 카테고리 핸들러의 TECH fixture와 동일 — 뉴스 categoryId 필터에 사용)
 const techCategoryNameById: Record<number, string> = {
   1: 'Frontend',
   2: 'Backend',
@@ -43,30 +43,30 @@ const techCategoryNameById: Record<number, string> = {
 }
 
 export const handlers = [
-  http.get('http://localhost:5002/api/v2/articles/tech', ({ request }) => {
+  http.get('http://localhost:5002/api/v2/news/tech', ({ request }) => {
     const url = new URL(request.url)
     const cursor = url.searchParams.get('cursor')
     const categoryId = url.searchParams.get('categoryId')
 
     if (cursor) {
-      if (cursor !== 'article-next-cursor') {
+      if (cursor !== 'news-next-cursor') {
         return HttpResponse.json(
           { errorMessage: '유효하지 않은 커서입니다.', errorCode: 'INVALID_CURSOR' },
           { status: 400 },
         )
       }
       // 마지막 페이지: nextCursor 필드 생략
-      return HttpResponse.json({ data: techArticlesSecondPage })
+      return HttpResponse.json({ data: techNewsSecondPage })
     }
 
     if (categoryId) {
       // 카테고리 필터 시 단일 페이지로 종료 (nextCursor 생략)
       const name = techCategoryNameById[Number(categoryId)]
-      const data = techArticles.filter((a) => name && a.categories.includes(name))
+      const data = techNews.filter((a) => name && a.categories.includes(name))
       return HttpResponse.json({ data })
     }
 
-    return HttpResponse.json({ data: techArticles, nextCursor: 'article-next-cursor' })
+    return HttpResponse.json({ data: techNews, nextCursor: 'news-next-cursor' })
   }),
 
   http.post('http://localhost:5002/api/v2/ums/user/join', async ({ request }) => {

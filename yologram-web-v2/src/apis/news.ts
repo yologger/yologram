@@ -1,6 +1,6 @@
 import api from '../lib/api'
 
-export interface Article {
+export interface News {
   id: number
   title: string
   summary: string
@@ -10,24 +10,24 @@ export interface Article {
   publishedAt: string
 }
 
-export interface ArticlePage {
-  data: Article[]
+export interface NewsPage {
+  data: News[]
   nextCursor?: string | null
 }
 
-export interface GetArticlesParams {
-  // 카테고리 ID (게시판·아티클 공용 카테고리 마스터 기준)
+export interface GetNewsParams {
+  // 카테고리 ID (게시판·뉴스 공용 카테고리 마스터 기준)
   categoryId?: number | null
   cursor?: string | null
   size?: number
 }
 
-export async function getArticles(params: GetArticlesParams = {}): Promise<ArticlePage> {
+export async function getNews(params: GetNewsParams = {}): Promise<NewsPage> {
   const query: Record<string, string | number> = {}
   if (params.categoryId != null) query.categoryId = params.categoryId
   if (params.cursor) query.cursor = params.cursor
   if (params.size) query.size = params.size
 
-  const response = await api.get<ArticlePage>('/api/v2/articles/tech', { params: query })
+  const response = await api.get<NewsPage>('/api/v2/news/tech', { params: query })
   return response.data
 }

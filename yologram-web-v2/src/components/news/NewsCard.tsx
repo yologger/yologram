@@ -1,36 +1,36 @@
 'use client'
 
 import ReactMarkdown from 'react-markdown'
-import type { Article } from '@/apis/articles'
+import type { News } from '@/apis/news'
 import { formatRelativeTime } from '@/lib/date'
-import styles from './ArticleCard.module.css'
+import styles from './NewsCard.module.css'
 
 interface Props {
-  article: Article
+  news: News
 }
 
-export default function ArticleCard({ article }: Props) {
+export default function NewsCard({ news }: Props) {
   return (
     <div className={styles.card}>
       <div className={styles.head}>
-        <span className={styles.source}>{article.sourceName}</span>
+        <span className={styles.source}>{news.sourceName}</span>
         <span className={styles.dot}>·</span>
-        <span className={styles.time}>{formatRelativeTime(article.publishedAt)}</span>
+        <span className={styles.time}>{formatRelativeTime(news.publishedAt)}</span>
       </div>
       <a
         className={styles.title}
-        href={article.link}
+        href={news.link}
         target="_blank"
         rel="noopener noreferrer"
       >
-        {article.title}
+        {news.title}
       </a>
       <div className={styles.summary}>
-        <ReactMarkdown>{article.summary}</ReactMarkdown>
+        <ReactMarkdown>{news.summary}</ReactMarkdown>
       </div>
-      {article.categories.length > 0 && (
+      {news.categories.length > 0 && (
         <div className={styles.badges}>
-          {article.categories.map((c) => (
+          {news.categories.map((c) => (
             <span key={c} className={styles.badge}>{c}</span>
           ))}
         </div>
