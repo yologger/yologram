@@ -80,7 +80,7 @@ class AdminUserResourceTest {
                 whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
                 whenever(adminUserService.create(any())).thenReturn(AdminUserCreateResponse(uid = 2L))
 
-                mockMvc.post("/api/v1/ums/admin/users") {
+                mockMvc.post("/api/v1/ums/admin/admin-users") {
                     header("Authorization", "Bearer admin-token")
                     contentType = MediaType.APPLICATION_JSON
                     content = objectMapper.writeValueAsString(createRequest())
@@ -96,7 +96,7 @@ class AdminUserResourceTest {
 
             @Test
             fun `Authorization 헤더가 없으면 401을 반환한다`() {
-                mockMvc.post("/api/v1/ums/admin/users") {
+                mockMvc.post("/api/v1/ums/admin/admin-users") {
                     contentType = MediaType.APPLICATION_JSON
                     content = objectMapper.writeValueAsString(createRequest())
                 }.andExpect {
@@ -109,7 +109,7 @@ class AdminUserResourceTest {
             fun `만료된 어드민 토큰이면 401을 반환한다`() {
                 whenever(adminJwtUtil.validateAndGetUid("expired-token")).thenThrow(AuthTokenExpiredException())
 
-                mockMvc.post("/api/v1/ums/admin/users") {
+                mockMvc.post("/api/v1/ums/admin/admin-users") {
                     header("Authorization", "Bearer expired-token")
                     contentType = MediaType.APPLICATION_JSON
                     content = objectMapper.writeValueAsString(createRequest())
@@ -123,7 +123,7 @@ class AdminUserResourceTest {
             fun `유효하지 않은 어드민 토큰이면 401을 반환한다`() {
                 whenever(adminJwtUtil.validateAndGetUid("invalid-token")).thenThrow(AuthTokenInvalidException())
 
-                mockMvc.post("/api/v1/ums/admin/users") {
+                mockMvc.post("/api/v1/ums/admin/admin-users") {
                     header("Authorization", "Bearer invalid-token")
                     contentType = MediaType.APPLICATION_JSON
                     content = objectMapper.writeValueAsString(createRequest())
@@ -142,7 +142,7 @@ class AdminUserResourceTest {
                 whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
                 whenever(adminUserService.create(any())).thenThrow(AdminUserDuplicateException())
 
-                mockMvc.post("/api/v1/ums/admin/users") {
+                mockMvc.post("/api/v1/ums/admin/admin-users") {
                     header("Authorization", "Bearer admin-token")
                     contentType = MediaType.APPLICATION_JSON
                     content = objectMapper.writeValueAsString(createRequest())
@@ -156,7 +156,7 @@ class AdminUserResourceTest {
             fun `이메일 형식이 아니면 400을 반환한다`() {
                 whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
 
-                mockMvc.post("/api/v1/ums/admin/users") {
+                mockMvc.post("/api/v1/ums/admin/admin-users") {
                     header("Authorization", "Bearer admin-token")
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"email":"invalid-email","name":"새어드민","password":"password123"}"""
@@ -169,7 +169,7 @@ class AdminUserResourceTest {
             fun `이름이 2자 미만이면 400을 반환한다`() {
                 whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
 
-                mockMvc.post("/api/v1/ums/admin/users") {
+                mockMvc.post("/api/v1/ums/admin/admin-users") {
                     header("Authorization", "Bearer admin-token")
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"email":"new-admin@yologram.link","name":"a","password":"password123"}"""
@@ -182,7 +182,7 @@ class AdminUserResourceTest {
             fun `비밀번호가 8자 미만이면 400을 반환한다`() {
                 whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
 
-                mockMvc.post("/api/v1/ums/admin/users") {
+                mockMvc.post("/api/v1/ums/admin/admin-users") {
                     header("Authorization", "Bearer admin-token")
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"email":"new-admin@yologram.link","name":"새어드민","password":"short"}"""

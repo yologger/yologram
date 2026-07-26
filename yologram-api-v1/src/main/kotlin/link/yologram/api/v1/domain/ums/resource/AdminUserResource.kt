@@ -23,7 +23,7 @@ class AdminUserResource(
     private val adminUserService: AdminUserService,
 ) {
 
-    @PostMapping("/users")
+    @PostMapping("/admin-users")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "어드민 유저 생성", description = "기존 어드민이 새 어드민 계정을 추가 (어드민 토큰 필요)")
     @ApiResponses(
