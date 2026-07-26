@@ -1,6 +1,7 @@
 package link.yologram.api.v1.domain.ums.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import link.yologram.api.v1.config.AdminJwtProperties
 import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.ums.exception.*
 import link.yologram.api.v1.domain.ums.model.LoginRequest
@@ -11,10 +12,12 @@ import link.yologram.api.v1.domain.ums.model.UserEmailVerificationVerifyRequest
 import link.yologram.api.v1.domain.ums.model.UserPasswordResetSendRequest
 import link.yologram.api.v1.domain.ums.model.UserPasswordResetVerifyRequest
 import link.yologram.api.v1.domain.ums.model.UserPasswordResetConfirmRequest
+import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUserResolver
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.service.AuthService
 import link.yologram.api.v1.domain.ums.service.UserEmailVerificationService
 import link.yologram.api.v1.domain.ums.service.UserPasswordResetService
+import link.yologram.api.v1.domain.ums.util.AdminJwtUtil
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -30,7 +33,7 @@ import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 
 @WebMvcTest(AuthResource::class)
-@Import(AuthenticatedUserResolver::class)
+@Import(AuthenticatedUserResolver::class, AuthenticatedAdminUserResolver::class)
 class AuthResourceTest {
 
     @Autowired
@@ -53,6 +56,12 @@ class AuthResourceTest {
 
     @MockitoBean
     lateinit var jwtProperties: JwtProperties
+
+    @MockitoBean
+    lateinit var adminJwtUtil: AdminJwtUtil
+
+    @MockitoBean
+    lateinit var adminJwtProperties: AdminJwtProperties
 
     @Nested
     inner class 로그인 {

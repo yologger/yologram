@@ -1,6 +1,7 @@
 package link.yologram.api.v1.domain.tech.post.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import link.yologram.api.v1.config.AdminJwtProperties
 import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.tech.post.exception.InvalidTechCategoryException
 import link.yologram.api.v1.domain.tech.post.exception.InvalidTechPostCursorException
@@ -14,7 +15,9 @@ import link.yologram.api.v1.domain.tech.post.model.TechPostDetailResponse
 import link.yologram.api.v1.domain.tech.post.model.TechPostSummaryResponse
 import link.yologram.api.v1.domain.tech.post.model.UpdateTechPostRequest
 import link.yologram.api.v1.domain.tech.post.service.TechPostService
+import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUserResolver
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
+import link.yologram.api.v1.domain.ums.util.AdminJwtUtil
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import link.yologram.api.v1.global.exception.GlobalExceptionHandler
 import link.yologram.api.v1.global.exception.ValidationExceptionHandler
@@ -43,6 +46,7 @@ import java.time.LocalDateTime
     ValidationExceptionHandler::class,
     GlobalExceptionHandler::class,
     AuthenticatedUserResolver::class,
+    AuthenticatedAdminUserResolver::class,
 )
 class TechPostResourceTest {
 
@@ -60,6 +64,12 @@ class TechPostResourceTest {
 
     @MockitoBean
     lateinit var jwtProperties: JwtProperties
+
+    @MockitoBean
+    lateinit var adminJwtUtil: AdminJwtUtil
+
+    @MockitoBean
+    lateinit var adminJwtProperties: AdminJwtProperties
 
     @Test
     fun `정상 작성 시 201과 게시글 id를 반환한다`() {

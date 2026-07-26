@@ -16,6 +16,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - src/main/kotlin/.../domain/ums/service/UserService.kt: 회원가입(이메일 인증 확인)·정보 수정·비밀번호 변경·회원탈퇴
 - src/main/kotlin/.../domain/ums/service/UserEmailVerificationService.kt + EmailSender(Stub/Ses)·SesConfig: 이메일 인증·발송
 - src/main/kotlin/.../domain/ums/service/UserPasswordResetService.kt: 비밀번호 찾기
+- src/main/kotlin/.../domain/ums/service/AdminUserService.kt: 어드민 생성(어드민 토큰 가드)·로그인 — admin_user 테이블, 전용 JWT
 - src/main/kotlin/.../domain/tech: tech 섹션 — post(TechPostService·QueryDSL), category(TechCategoryService — tech_category 공용 마스터), comment(TechPostCommentService), article(TechArticleService — 공개 조회: 복합 커서·categoryId 필터·라벨 조인)
 
 ## 설정 관리
@@ -24,12 +25,14 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - application-local.yaml: 로컬 개발 (AWS Parameter Store)
 - application-prod.yaml: 프로덕션 (AWS Parameter Store, instance-profile)
 - 설정값은 AWS Parameter Store에서 주입 (/yologram/service/yologram-api-v1_{ENV}/)
+- hbm2ddl: local=update, prod=validate — prod 테이블 생성·변경은 수동 DDL (정책·ENUM 함정은 docs/rules.md)
 
 ## 인증 (코딩 규칙)
 
 - JWT: Auth0 java-jwt (HMAC256), 인증 헤더 Authorization: Bearer {token}
 - 설정: yologram.auth.jwt.secret/expire/issuer/audience (Parameter Store + application.yaml)
 - @AuthenticatedUser + AuthenticatedUserResolver로 인증 정보 주입
+- 어드민: admin_user 분리 테이블 + 전용 JWT(yologram.auth.admin-jwt.*, audience yologram.admin). @AuthenticatedAdminUser + AuthenticatedAdminUserResolver 주입. 유저↔어드민 토큰 상호 불인정
 - 인증 예외(AuthToken*)는 GlobalExceptionHandler에서 전역 처리 (ums 외 도메인 컨트롤러에서도 401 보장)
 - access token은 stateless JWT (서버 미저장). validate-token은 로그인 직후 replica lag 회피 위해 master DB 트랜잭션으로 조회
 - (동작·정책·refresh token 계획은 docs/done.md, docs/todos.md 참조)
@@ -57,6 +60,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - 신규 기능 구현 시 모든 케이스(정상/예외/엣지)에 대해 테스트코드 작성
 - Testcontainers (MySQL) 통합 테스트
 - Mockito + MockMvc 슬라이스 테스트
+- @WebMvcTest는 WebConfig(WebMvcConfigurer)를 로드하므로 AuthenticatedUserResolver·AuthenticatedAdminUserResolver @Import + JwtUtil/JwtProperties·AdminJwtUtil/AdminJwtProperties @MockitoBean 필요
 
 ## Swagger
 

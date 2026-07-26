@@ -17,5 +17,5 @@ database:
         password:
     jpa:
       properties:
-        hibernate.hbm2ddl.auto: update
+        hibernate.hbm2ddl.auto: validate
       show-sql: false

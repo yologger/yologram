@@ -1,9 +1,12 @@
 package link.yologram.api.v1.domain.tech.category.resource
 
+import link.yologram.api.v1.config.AdminJwtProperties
 import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.tech.category.model.TechCategoryResponse
 import link.yologram.api.v1.domain.tech.category.service.TechCategoryService
+import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUserResolver
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
+import link.yologram.api.v1.domain.ums.util.AdminJwtUtil
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import link.yologram.api.v1.global.exception.GlobalExceptionHandler
 import org.junit.jupiter.api.Test
@@ -16,7 +19,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 
 @WebMvcTest(TechCategoryResource::class)
-@Import(GlobalExceptionHandler::class, AuthenticatedUserResolver::class)
+@Import(GlobalExceptionHandler::class, AuthenticatedUserResolver::class, AuthenticatedAdminUserResolver::class)
 class TechCategoryResourceTest {
 
     @Autowired
@@ -30,6 +33,12 @@ class TechCategoryResourceTest {
 
     @MockitoBean
     lateinit var jwtProperties: JwtProperties
+
+    @MockitoBean
+    lateinit var adminJwtUtil: AdminJwtUtil
+
+    @MockitoBean
+    lateinit var adminJwtProperties: AdminJwtProperties
 
     @Test
     fun `200과 카테고리 목록을 반환한다`() {

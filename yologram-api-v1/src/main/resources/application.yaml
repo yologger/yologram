@@ -38,6 +38,11 @@ yologram:
       expire: 86400
       issuer: yologram.link
       audience: yologram.client
+    admin-jwt:
+      secret:   # /yologram/service/yologram-api-v1_{ENV}/yologram.auth.admin-jwt.secret
+      expire: 86400
+      issuer: yologram.link
+      audience: yologram.admin
 
 springdoc:
   swagger-ui:

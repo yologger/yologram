@@ -1,6 +1,7 @@
 package link.yologram.api.v1.domain.ums.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import link.yologram.api.v1.config.AdminJwtProperties
 import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.ums.enum.UserType
 import link.yologram.api.v1.domain.ums.exception.UmsExceptionHandler
@@ -12,8 +13,10 @@ import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.JoinResponse
 import link.yologram.api.v1.domain.ums.model.UpdateProfileRequest
 import link.yologram.api.v1.domain.ums.model.UserMeResponse
+import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUserResolver
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.service.UserService
+import link.yologram.api.v1.domain.ums.util.AdminJwtUtil
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import link.yologram.api.v1.global.exception.GlobalExceptionHandler
 import link.yologram.api.v1.global.exception.ValidationExceptionHandler
@@ -36,7 +39,7 @@ import org.springframework.test.web.servlet.post
 import java.time.LocalDateTime
 
 @WebMvcTest(UserResource::class)
-@Import(UmsExceptionHandler::class, ValidationExceptionHandler::class, GlobalExceptionHandler::class, AuthenticatedUserResolver::class)
+@Import(UmsExceptionHandler::class, ValidationExceptionHandler::class, GlobalExceptionHandler::class, AuthenticatedUserResolver::class, AuthenticatedAdminUserResolver::class)
 class UserResourceTest {
 
     @Autowired
@@ -53,6 +56,12 @@ class UserResourceTest {
 
     @MockitoBean
     lateinit var jwtProperties: JwtProperties
+
+    @MockitoBean
+    lateinit var adminJwtUtil: AdminJwtUtil
+
+    @MockitoBean
+    lateinit var adminJwtProperties: AdminJwtProperties
 
     private fun joinRequest(
         email: String = "test@yologram.link",

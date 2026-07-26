@@ -1,5 +1,6 @@
 package link.yologram.api.v1.config
 
+import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUserResolver
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
@@ -9,6 +10,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 @Configuration
 class WebConfig(
     private val authenticatedUserResolver: AuthenticatedUserResolver,
+    private val authenticatedAdminResolver: AuthenticatedAdminUserResolver,
 ) : WebMvcConfigurer {
 
     override fun addCorsMappings(registry: CorsRegistry) {
@@ -20,5 +22,6 @@ class WebConfig(
 
     override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
         resolvers.add(authenticatedUserResolver)
+        resolvers.add(authenticatedAdminResolver)
     }
 }

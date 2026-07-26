@@ -1,11 +1,14 @@
 package link.yologram.api.v1.domain.tech.article.resource
 
+import link.yologram.api.v1.config.AdminJwtProperties
 import link.yologram.api.v1.config.JwtProperties
 import link.yologram.api.v1.domain.tech.article.exception.InvalidTechArticleCursorException
 import link.yologram.api.v1.domain.tech.article.exception.TechArticleExceptionHandler
 import link.yologram.api.v1.domain.tech.article.model.TechArticleResponse
 import link.yologram.api.v1.domain.tech.article.service.TechArticleService
+import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUserResolver
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
+import link.yologram.api.v1.domain.ums.util.AdminJwtUtil
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import link.yologram.api.v1.global.exception.GlobalExceptionHandler
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
@@ -23,7 +26,7 @@ import org.springframework.test.web.servlet.get
 import java.time.LocalDateTime
 
 @WebMvcTest(TechArticleResource::class)
-@Import(GlobalExceptionHandler::class, TechArticleExceptionHandler::class, AuthenticatedUserResolver::class)
+@Import(GlobalExceptionHandler::class, TechArticleExceptionHandler::class, AuthenticatedUserResolver::class, AuthenticatedAdminUserResolver::class)
 class TechArticleResourceTest {
 
     @Autowired
@@ -37,6 +40,12 @@ class TechArticleResourceTest {
 
     @MockitoBean
     lateinit var jwtProperties: JwtProperties
+
+    @MockitoBean
+    lateinit var adminJwtUtil: AdminJwtUtil
+
+    @MockitoBean
+    lateinit var adminJwtProperties: AdminJwtProperties
 
     private fun response(id: Long) = TechArticleResponse(
         id = id,

@@ -22,6 +22,16 @@ class UmsExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(e.message, e.errorCode))
     }
 
+    @ExceptionHandler(AdminUserDuplicateException::class)
+    fun handleAdminUserDuplicate(e: AdminUserDuplicateException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse(e.message, e.errorCode))
+    }
+
+    @ExceptionHandler(AdminUserNotFoundException::class)
+    fun handleAdminUserNotFound(e: AdminUserNotFoundException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(e.message, e.errorCode))
+    }
+
     @ExceptionHandler(AuthWrongPasswordException::class)
     fun handleWrongPassword(e: AuthWrongPasswordException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ErrorResponse(e.message, e.errorCode))
