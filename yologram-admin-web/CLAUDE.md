@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 
-React 기반 어드민 웹. 회원/카테고리/게시글/RSS 피드 관리 기능을 반응형(데스크탑 고정 사이드바 + 모바일 토글 Drawer 사이드바)으로 제공 예정 (현재 부트스트랩 — 전 메뉴 준비 중).
+React 기반 어드민 웹. 유저/카테고리/게시글/뉴스 관리 기능을 반응형(데스크탑 고정 사이드바 + 모바일 토글 Drawer 사이드바)으로 제공 예정 (어드민 로그인·인증 가드 구현, 관리 화면은 준비 중).
 
 > 기술 스택은 README.md, 구현 기능·설계 근거는 루트 docs/done.md, 구현 시 따라야 할 제약·참고는 docs/rules.md 참조.
 
@@ -36,8 +36,8 @@ React 기반 어드민 웹. 회원/카테고리/게시글/RSS 피드 관리 기�
 - /login만 비보호, 나머지 전체는 RequireAuth > AdminLayout 하위 보호
 - / → /dashboard 리다이렉트, 알 수 없는 경로도 /dashboard
 - /ums → /ums/users 리다이렉트, 서브탭 /ums/users(유저 관리)·/ums/admin-users(어드민 관리) — 백엔드 /api/v1/ums/admin/users·admin-users와 대응, 목록 화면은 placeholder. 메뉴 선택 유지는 menu.tsx MENU_MATCH_PREFIXES
-- /dashboard, /categories, /posts, /feeds는 준비 중
-- 메뉴 라벨: 대시보드/유저 관리/카테고리/게시글/RSS 피드 — 유저 관련 용어는 '회원'이 아닌 '유저' 사용
+- /dashboard, /categories, /posts, /news는 준비 중
+- 메뉴 라벨: 대시보드/유저 관리/카테고리/게시글/뉴스 관리 — 유저 관련 용어는 '회원'이 아닌 '유저' 사용
 
 ## 인증
 

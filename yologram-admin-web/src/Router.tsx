@@ -24,7 +24,7 @@ export default function Router() {
           </Route>
           <Route path="/categories" element={<ComingSoon title="카테고리 관리" />} />
           <Route path="/posts" element={<ComingSoon title="게시글 관리" />} />
-          <Route path="/feeds" element={<ComingSoon title="RSS 피드 관리" />} />
+          <Route path="/news" element={<ComingSoon title="뉴스 관리" />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Route>

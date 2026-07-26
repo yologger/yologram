@@ -12,7 +12,7 @@ export const MENU_ITEMS = [
   { key: '/ums/users', icon: <UserOutlined />, label: '유저 관리' },
   { key: '/categories', icon: <TagsOutlined />, label: '카테고리 관리' },
   { key: '/posts', icon: <FileTextOutlined />, label: '게시글 관리' },
-  { key: '/feeds', icon: <NotificationOutlined />, label: 'RSS 피드 관리' },
+  { key: '/news', icon: <NotificationOutlined />, label: '뉴스 관리' },
 ]
 
 /** 메뉴 선택 매칭용 경로 프리픽스 — 메뉴 key와 다른 하위 경로(서브탭 등)를 해당 메뉴에 매핑한다. */

@@ -46,7 +46,7 @@ function renderLayout(initialPath = '/dashboard') {
         <Route path="/ums/admin-users" element={<div>admin-users content</div>} />
         <Route path="/categories" element={<div>categories content</div>} />
         <Route path="/posts" element={<div>posts content</div>} />
-        <Route path="/feeds" element={<div>feeds content</div>} />
+        <Route path="/news" element={<div>news content</div>} />
       </Route>
     </Routes>,
     { wrapperOptions: { routerProps: { initialEntries: [initialPath] } } },
@@ -65,7 +65,7 @@ describe('AdminLayout (데스크탑)', () => {
     expect(screen.getByText('유저 관리')).toBeInTheDocument()
     expect(screen.getByText('카테고리 관리')).toBeInTheDocument()
     expect(screen.getByText('게시글 관리')).toBeInTheDocument()
-    expect(screen.getByText('RSS 피드 관리')).toBeInTheDocument()
+    expect(screen.getByText('뉴스 관리')).toBeInTheDocument()
   })
 
   it('현재 경로의 콘텐츠를 Outlet으로 렌더한다', () => {
@@ -133,7 +133,7 @@ describe('AdminLayout (모바일)', () => {
     expect(screen.getByText('유저 관리')).toBeInTheDocument()
     expect(screen.getByText('카테고리 관리')).toBeInTheDocument()
     expect(screen.getByText('게시글 관리')).toBeInTheDocument()
-    expect(screen.getByText('RSS 피드 관리')).toBeInTheDocument()
+    expect(screen.getByText('뉴스 관리')).toBeInTheDocument()
   })
 
   it('Drawer에서 현재 경로의 메뉴가 선택 상태다', async () => {

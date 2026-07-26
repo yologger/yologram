@@ -35,7 +35,7 @@ describe('Router (미인증)', () => {
     expect(screen.getByRole('button', { name: '로그인' })).toBeInTheDocument()
   })
 
-  it.each(['/', '/dashboard', '/ums', '/categories', '/posts', '/feeds'])(
+  it.each(['/', '/dashboard', '/ums', '/categories', '/posts', '/news'])(
     '미인증으로 %s 진입 시 로그인 페이지로 리다이렉트한다',
     async (path) => {
       renderRouter(path)
@@ -56,7 +56,7 @@ describe('Router (인증)', () => {
     ['/dashboard', '대시보드'],
     ['/categories', '카테고리 관리'],
     ['/posts', '게시글 관리'],
-    ['/feeds', 'RSS 피드 관리'],
+    ['/news', '뉴스 관리'],
   ])('%s 진입 시 "%s" 준비 중 화면을 렌더한다', (path, title) => {
     renderRouterAuthenticated(path)
     expect(screen.getByRole('heading', { level: 3, name: title })).toBeInTheDocument()
