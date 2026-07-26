@@ -8,6 +8,7 @@ import link.yologram.api.v1.domain.ums.model.AdminLoginRequest
 import link.yologram.api.v1.domain.ums.model.AdminLoginResponse
 import link.yologram.api.v1.domain.ums.model.AdminUserCreateRequest
 import link.yologram.api.v1.domain.ums.model.AdminUserCreateResponse
+import link.yologram.api.v1.domain.ums.model.AdminValidateTokenResponse
 import link.yologram.api.v1.domain.ums.repository.AdminUserRepository
 import link.yologram.api.v1.domain.ums.util.AdminJwtUtil
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -53,5 +54,21 @@ class AdminUserService(
             email = admin.email,
             name = admin.name,
         )
+    }
+
+    @Transactional(readOnly = true)
+    fun validateToken(token: String): AdminValidateTokenResponse {
+        val uid = adminJwtUtil.validateAndGetUid(token)
+        val admin = adminUserRepository.findById(uid)
+            .orElseThrow { AdminUserNotFoundException() }
+
+        return AdminValidateTokenResponse(
+            uid = admin.id,
+            email = admin.email,
+            name = admin.name,
+        )
+    }
+
+    fun logout(uid: Long) {
     }
 }

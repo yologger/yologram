@@ -21,6 +21,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.transaction.annotation.Transactional
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
@@ -162,6 +163,54 @@ class AdminUserServiceTest {
             }
 
             assertEquals("AUTH_WRONG_PASSWORD", exception.errorCode)
+        }
+    }
+
+    @Nested
+    inner class 토큰_검증 {
+
+        @Test
+        fun `토큰 검증은 readOnly true 트랜잭션을 사용한다`() {
+            val method = AdminUserService::class.java.getMethod("validateToken", String::class.java)
+            val transactional = method.getAnnotation(Transactional::class.java)
+
+            assertNotNull(transactional)
+            assertTrue(transactional.readOnly)
+        }
+
+        @Test
+        fun `JWT가 유효하면 어드민 정보를 반환한다`() {
+            val admin = testAdminUser()
+
+            whenever(adminJwtUtil.validateAndGetUid("valid-admin-token")).thenReturn(1L)
+            whenever(adminUserRepository.findById(1L)).thenReturn(Optional.of(admin))
+
+            val result = adminUserService.validateToken("valid-admin-token")
+
+            assertEquals(1L, result.uid)
+            assertEquals("admin@yologram.link", result.email)
+            assertEquals("어드민", result.name)
+        }
+
+        @Test
+        fun `존재하지 않는 어드민이면 AdminUserNotFoundException을 던진다`() {
+            whenever(adminJwtUtil.validateAndGetUid("valid-admin-token")).thenReturn(999L)
+            whenever(adminUserRepository.findById(999L)).thenReturn(Optional.empty())
+
+            val exception = assertThrows<AdminUserNotFoundException> {
+                adminUserService.validateToken("valid-admin-token")
+            }
+
+            assertEquals("ADMIN_USER_NOT_FOUND", exception.errorCode)
+        }
+    }
+
+    @Nested
+    inner class 로그아웃 {
+
+        @Test
+        fun `로그아웃은 아무 동작 없이 성공한다`() {
+            adminUserService.logout(1L)
         }
     }
 }

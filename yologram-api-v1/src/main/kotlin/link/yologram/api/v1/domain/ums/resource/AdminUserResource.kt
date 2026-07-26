@@ -9,6 +9,7 @@ import link.yologram.api.v1.domain.ums.model.AdminLoginRequest
 import link.yologram.api.v1.domain.ums.model.AdminLoginResponse
 import link.yologram.api.v1.domain.ums.model.AdminUserCreateRequest
 import link.yologram.api.v1.domain.ums.model.AdminUserCreateResponse
+import link.yologram.api.v1.domain.ums.model.AdminValidateTokenResponse
 import link.yologram.api.v1.domain.ums.resolver.AdminAuthData
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUser
 import link.yologram.api.v1.domain.ums.service.AdminUserService
@@ -49,5 +50,27 @@ class AdminUserResource(
     )
     fun login(@Valid @RequestBody request: AdminLoginRequest): ApiEnvelop<AdminLoginResponse> {
         return ApiEnvelop(data = adminUserService.login(request))
+    }
+
+    @PostMapping("/auth/validate-token")
+    @Operation(summary = "어드민 토큰 검증")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "검증 성공"),
+        ApiResponse(responseCode = "401", description = "인증 실패 (어드민 토큰 없음/만료/유효하지 않음)"),
+        ApiResponse(responseCode = "404", description = "어드민 사용자를 찾을 수 없음"),
+    )
+    fun validateToken(@AuthenticatedAdminUser authData: AdminAuthData): ApiEnvelop<AdminValidateTokenResponse> {
+        return ApiEnvelop(data = adminUserService.validateToken(authData.accessToken))
+    }
+
+    @PostMapping("/auth/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "어드민 로그아웃")
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "로그아웃 성공"),
+        ApiResponse(responseCode = "401", description = "인증 실패 (어드민 토큰 없음/만료/유효하지 않음)"),
+    )
+    fun logout(@AuthenticatedAdminUser authData: AdminAuthData) {
+        adminUserService.logout(authData.uid)
     }
 }

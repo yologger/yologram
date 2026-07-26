@@ -13,6 +13,7 @@ import link.yologram.api.v1.domain.ums.model.AdminLoginRequest
 import link.yologram.api.v1.domain.ums.model.AdminLoginResponse
 import link.yologram.api.v1.domain.ums.model.AdminUserCreateRequest
 import link.yologram.api.v1.domain.ums.model.AdminUserCreateResponse
+import link.yologram.api.v1.domain.ums.model.AdminValidateTokenResponse
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUserResolver
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.service.AdminUserService
@@ -254,6 +255,99 @@ class AdminUserResourceTest {
                 }.andExpect {
                     status { isBadRequest() }
                 }
+            }
+        }
+    }
+
+    @Nested
+    inner class 토큰_검증 {
+
+        @Test
+        fun `유효한 어드민 토큰이면 200과 어드민 정보를 반환한다`() {
+            val response = AdminValidateTokenResponse(1L, "admin@yologram.link", "어드민")
+            whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
+            whenever(adminUserService.validateToken("admin-token")).thenReturn(response)
+
+            mockMvc.post("/api/v1/ums/admin/auth/validate-token") {
+                header("Authorization", "Bearer admin-token")
+            }.andExpect {
+                status { isOk() }
+                jsonPath("$.data.uid") { value(1) }
+                jsonPath("$.data.email") { value("admin@yologram.link") }
+                jsonPath("$.data.name") { value("어드민") }
+            }
+        }
+
+        @Test
+        fun `만료된 어드민 토큰이면 401을 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("expired-token")).thenThrow(AuthTokenExpiredException())
+
+            mockMvc.post("/api/v1/ums/admin/auth/validate-token") {
+                header("Authorization", "Bearer expired-token")
+            }.andExpect {
+                status { isUnauthorized() }
+                jsonPath("$.errorCode") { value("AUTH_EXPIRED_TOKEN") }
+            }
+        }
+
+        @Test
+        fun `유효하지 않은 어드민 토큰이면 401을 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("invalid-token")).thenThrow(AuthTokenInvalidException())
+
+            mockMvc.post("/api/v1/ums/admin/auth/validate-token") {
+                header("Authorization", "Bearer invalid-token")
+            }.andExpect {
+                status { isUnauthorized() }
+                jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+            }
+        }
+
+        @Test
+        fun `Authorization 헤더가 없으면 401을 반환한다`() {
+            mockMvc.post("/api/v1/ums/admin/auth/validate-token")
+                .andExpect {
+                    status { isUnauthorized() }
+                    jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+                }
+        }
+
+        @Test
+        fun `존재하지 않는 어드민이면 404를 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(999L)
+            whenever(adminUserService.validateToken("admin-token")).thenThrow(AdminUserNotFoundException())
+
+            mockMvc.post("/api/v1/ums/admin/auth/validate-token") {
+                header("Authorization", "Bearer admin-token")
+            }.andExpect {
+                status { isNotFound() }
+                jsonPath("$.errorCode") { value("ADMIN_USER_NOT_FOUND") }
+            }
+        }
+    }
+
+    @Nested
+    inner class 로그아웃 {
+
+        @Test
+        fun `유효한 어드민 토큰으로 로그아웃하면 204를 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
+
+            mockMvc.post("/api/v1/ums/admin/auth/logout") {
+                header("Authorization", "Bearer admin-token")
+            }.andExpect {
+                status { isNoContent() }
+            }
+        }
+
+        @Test
+        fun `만료된 어드민 토큰으로 로그아웃하면 401을 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("expired-token")).thenThrow(AuthTokenExpiredException())
+
+            mockMvc.post("/api/v1/ums/admin/auth/logout") {
+                header("Authorization", "Bearer expired-token")
+            }.andExpect {
+                status { isUnauthorized() }
+                jsonPath("$.errorCode") { value("AUTH_EXPIRED_TOKEN") }
             }
         }
     }
