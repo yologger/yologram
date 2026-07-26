@@ -246,7 +246,7 @@ export const handlers = [
     return HttpResponse.json({ data: categories[section] })
   }),
 
-  http.get('http://localhost:5001/api/v1/articles/tech', ({ request }) => {
+  http.get('http://localhost:5001/api/v1/news/tech', ({ request }) => {
     const url = new URL(request.url)
     const cursor = url.searchParams.get('cursor')
     const categoryId = url.searchParams.get('categoryId')
@@ -262,7 +262,7 @@ export const handlers = [
     if (cursor) {
       return HttpResponse.json({
         data: [
-          { id: 3003, title: '다음 페이지 아티클', summary: '다음 페이지 요약', link: 'https://blog.example.com/a3', sourceName: '네이버', categories: ['DevOps'], publishedAt: '2026-06-08T00:00:00' },
+          { id: 3003, title: '다음 페이지 뉴스', summary: '다음 페이지 요약', link: 'https://blog.example.com/a3', sourceName: '네이버', categories: ['DevOps'], publishedAt: '2026-06-08T00:00:00' },
         ],
       })
     }
@@ -271,9 +271,9 @@ export const handlers = [
     const categoryNameById: Record<number, string> = { 1: 'Frontend', 2: 'Backend', 3: 'AI/ML', 7: '기타' }
 
     const all = [
-      { id: 3001, title: '첫 번째 아티클', summary: '**📌 한 줄 요약**\n\n첫 요약 본문\n\n**🔑 핵심 포인트**\n\n- 포인트 하나\n- 포인트 둘', link: 'https://blog.example.com/a1', sourceName: '우아한형제들', categories: ['Backend', 'Cloud'], publishedAt: '2026-06-10T00:00:00' },
-      { id: 3002, title: '두 번째 아티클', summary: '두 번째 요약 본문', link: 'https://blog.example.com/a2', sourceName: '카카오', categories: ['Frontend'], publishedAt: '2026-06-09T00:00:00' },
-      { id: 3004, title: 'AI 아티클', summary: 'AI 요약 본문', link: 'https://blog.example.com/a4', sourceName: '토스', categories: ['AI/ML'], publishedAt: '2026-06-07T00:00:00' },
+      { id: 3001, title: '첫 번째 뉴스', summary: '**📌 한 줄 요약**\n\n첫 요약 본문\n\n**🔑 핵심 포인트**\n\n- 포인트 하나\n- 포인트 둘', link: 'https://blog.example.com/a1', sourceName: '우아한형제들', categories: ['Backend', 'Cloud'], publishedAt: '2026-06-10T00:00:00' },
+      { id: 3002, title: '두 번째 뉴스', summary: '두 번째 요약 본문', link: 'https://blog.example.com/a2', sourceName: '카카오', categories: ['Frontend'], publishedAt: '2026-06-09T00:00:00' },
+      { id: 3004, title: 'AI 뉴스', summary: 'AI 요약 본문', link: 'https://blog.example.com/a4', sourceName: '토스', categories: ['AI/ML'], publishedAt: '2026-06-07T00:00:00' },
     ]
     const name = categoryId ? categoryNameById[Number(categoryId)] : null
     const data = name ? all.filter((a) => a.categories.includes(name)) : categoryId ? [] : all

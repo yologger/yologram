@@ -1,8 +1,8 @@
 import SubTabLayout from '../../components/common/SubTabLayout'
 
 const tabs = [
-  { key: 'articles', label: '아티클' },
-  { key: 'favorite-articles', label: '관심 아티클' },
+  { key: 'news', label: '뉴스' },
+  { key: 'favorite-news', label: '관심 뉴스' },
   { key: 'community', label: '커뮤니티' },
   { key: 'jobs', label: '채용' },
 ]

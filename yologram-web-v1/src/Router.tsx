@@ -7,18 +7,18 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import ComingSoon from './components/common/ComingSoon'
 // TODO(invest/politics): 섹션 구현 시작 시 아래 import 주석 해제 + ComingSoon 라우트 제거
 // import InvestPage from './pages/invest/InvestPage'
-// import InvestArticlesPage from './pages/invest/InvestArticlesPage'
-// import InvestFavoriteArticlesPage from './pages/invest/InvestFavoriteArticlesPage'
+// import InvestNewsPage from './pages/invest/InvestNewsPage'
+// import InvestFavoriteNewsPage from './pages/invest/InvestFavoriteNewsPage'
 // import InvestCommunityPage from './pages/invest/InvestCommunityPage'
 // import InvestInfoPage from './pages/invest/InvestInfoPage'
 // import PoliticsPage from './pages/politics/PoliticsPage'
-// import PoliticsArticlesPage from './pages/politics/PoliticsArticlesPage'
-// import PoliticsFavoriteArticlesPage from './pages/politics/PoliticsFavoriteArticlesPage'
+// import PoliticsNewsPage from './pages/politics/PoliticsNewsPage'
+// import PoliticsFavoriteNewsPage from './pages/politics/PoliticsFavoriteNewsPage'
 // import PoliticsCommunityPage from './pages/politics/PoliticsCommunityPage'
 // import PoliticsInfoPage from './pages/politics/PoliticsInfoPage'
 import TechPage from './pages/tech/TechPage'
-import TechArticlesPage from './pages/tech/TechArticlesPage'
-import TechFavoriteArticlesPage from './pages/tech/TechFavoriteArticlesPage'
+import TechNewsPage from './pages/tech/TechNewsPage'
+import TechFavoriteNewsPage from './pages/tech/TechFavoriteNewsPage'
 import TechCommunityPage from './pages/tech/TechCommunityPage'
 // TODO(tech/jobs): 채용 구현 시작 시 주석 해제 + ComingSoon 라우트 제거
 // import TechJobsPage from './pages/tech/TechJobsPage'
@@ -49,33 +49,33 @@ export default function Router() {
         <Route path="/politics/*" element={<ComingSoon title="정치" />} />
         {/*
         <Route path="/invest" element={<InvestPage />}>
-          <Route index element={<Navigate to="/invest/articles" replace />} />
-          <Route path="articles" element={<InvestArticlesPage />} />
+          <Route index element={<Navigate to="/invest/news" replace />} />
+          <Route path="news" element={<InvestNewsPage />} />
           <Route path="community" element={<InvestCommunityPage />} />
           <Route path="info" element={<InvestInfoPage />} />
           <Route element={<RequireAuth />}>
-            <Route path="favorite-articles" element={<InvestFavoriteArticlesPage />} />
+            <Route path="favorite-news" element={<InvestFavoriteNewsPage />} />
           </Route>
         </Route>
         <Route path="/politics" element={<PoliticsPage />}>
-          <Route index element={<Navigate to="/politics/articles" replace />} />
-          <Route path="articles" element={<PoliticsArticlesPage />} />
+          <Route index element={<Navigate to="/politics/news" replace />} />
+          <Route path="news" element={<PoliticsNewsPage />} />
           <Route path="community" element={<PoliticsCommunityPage />} />
           <Route path="info" element={<PoliticsInfoPage />} />
           <Route element={<RequireAuth />}>
-            <Route path="favorite-articles" element={<PoliticsFavoriteArticlesPage />} />
+            <Route path="favorite-news" element={<PoliticsFavoriteNewsPage />} />
           </Route>
         </Route>
         */}
         <Route path="/tech" element={<TechPage />}>
-          <Route index element={<Navigate to="/tech/articles" replace />} />
-          <Route path="articles" element={<TechArticlesPage />} />
+          <Route index element={<Navigate to="/tech/news" replace />} />
+          <Route path="news" element={<TechNewsPage />} />
           <Route path="community" element={<TechCommunityPage />} />
           {/* 채용 준비 중: 구현 시작 시 ComingSoon 제거하고 아래 주석 복구 */}
           <Route path="jobs" element={<ComingSoon />} />
           {/* <Route path="jobs" element={<TechJobsPage />} /> */}
           <Route element={<RequireAuth />}>
-            <Route path="favorite-articles" element={<TechFavoriteArticlesPage />} />
+            <Route path="favorite-news" element={<TechFavoriteNewsPage />} />
           </Route>
         </Route>
 
