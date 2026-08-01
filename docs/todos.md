@@ -24,13 +24,15 @@
     - [x] prod DB에 admin_user 테이블 수동 DDL 실행 (완료)
     - [x] 어드민 웹 로그인·가드 연동 — LoginPage·AuthGate·RequireAuth(전 메뉴 보호)·로그아웃 + 유저 메뉴 서브탭(/ums/users 유저 관리·/ums/admin-users 어드민 관리) 골격 (완료, done.md)
     - [x] 어드민 웹 실서버 연동 검증 — 로그인/리다이렉트/서브탭/로그아웃/토큰 복원 브라우저 수동 확인 (완료)
-  - [ ] RSS 소스 관리 화면 (News 연계)
   - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
 - [ ] (News) 테크 뉴스 — RSS 수집(Worker) → LLM 요약 → TECH > 뉴스 표시. 남은 순서: ①Admin 인증 → ②소스 CRUD API+어드민 화면 → ⑤공개 조회 API+web → ⑥어드민 뉴스 수정/삭제 (③수집·④요약은 완료 — done.md)
   - 명명 재확정(2026-07-26): Article → News 회귀 통일 (도메인·테이블·클래스·경로 전부 News — tech_news로 통일, 어드민 메뉴 '뉴스 관리'·서비스 표기와 일치. 과거 News→Article 변경을 되돌림, 경위는 done.md). 섹션별 테이블 분리 확정 — 투자/정치는 제공 방식 확정 시 invest_news/politics_news 등 별도 테이블+수집기로 추가 (post 섹션 분리는 별항)
   - [x] (News) 테이블 마이그레이션 완료(2026-07-26): CREATE LIKE+copy → 컬럼 rename(news_id)·tech_news_source 생성 → 배포(CI 5종 성공, prod /news 200·/articles 404 확인) → 차분 copy·건수 검증 → tech_article 3종 drop
   - [x] news 도메인·테이블 + worker 수집·LLM 요약·Discord 채널별 알림 (완료, done.md — n8n 대체 검증됨)
-  - [ ] 소스 CRUD API(어드민 전용, api-v1/v2) + admin-web 소스 관리 화면
+  - [ ] 소스 CRUD API(어드민 전용) + admin-web 소스 관리 화면
+    - [x] api-v1 — /news/admin/tech/sources GET/POST/PATCH/DELETE, AdminTechNewsSource* (완료, done.md)
+    - [x] admin-web — 뉴스 관리 > 기술 뉴스 > 소스 관리(/news/tech/sources) 화면: 목록·추가/수정 모달·삭제·활성 토글 (완료, done.md)
+    - [ ] api-v2 미러링
   - [ ] 새 뉴스 유저 알림 — 요약 확정(SUMMARIZED/FAILED) + notified_at IS NULL 기준으로 발송 후 notified_at 기록(정확히 한 번·멱등). tech_news에 notified_at 컬럼 추가. 발송 채널(푸시/인앱)은 그때 결정
   - Discord 수집 알림은 개발자 모니터링용(임시) — 유저 알림 도입 후 yologram.discord.enabled=false로 비활성 또는 제거
   - [x] 공개 뉴스 목록 조회 API (api-v1/v2) + 카테고리 마스터 통합·LLM 분류 (완료, done.md)
