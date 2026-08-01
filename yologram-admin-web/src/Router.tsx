@@ -15,8 +15,8 @@ export default function Router() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<AdminLayout />}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<ComingSoon title="대시보드" />} />
+          <Route path="/" element={<Navigate to="/notices" replace />} />
+          <Route path="/notices" element={<ComingSoon title="공지 관리" />} />
           <Route path="/ums" element={<Navigate to="/ums/users" replace />} />
           <Route path="/ums/users" element={<ComingSoon title="유저 관리" />} />
           <Route path="/ums/admin-users" element={<ComingSoon title="어드민 관리" />} />
@@ -27,7 +27,7 @@ export default function Router() {
           <Route path="/news/invest" element={<ComingSoon title="투자 뉴스 관리" />} />
           <Route path="/news/politics" element={<ComingSoon title="정치 뉴스 관리" />} />
           <Route path="/news/tech/sources" element={<NewsSourcesPage />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/notices" replace />} />
         </Route>
       </Route>
     </Routes>

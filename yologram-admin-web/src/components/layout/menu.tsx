@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { MenuProps } from 'antd'
 import {
-  DashboardOutlined,
+  SoundOutlined,
   UserOutlined,
   TagsOutlined,
   FileTextOutlined,
@@ -31,10 +31,10 @@ export interface MenuSection {
  */
 export const MENU_SECTIONS: MenuSection[] = [
   {
-    key: '/dashboard',
-    icon: <DashboardOutlined />,
-    label: '대시보드',
-    children: [{ key: '/dashboard', label: '대시보드' }],
+    key: '/notices',
+    icon: <SoundOutlined />,
+    label: '공지',
+    children: [{ key: '/notices', label: '공지 관리' }],
   },
   {
     key: '/ums',
@@ -44,12 +44,6 @@ export const MENU_SECTIONS: MenuSection[] = [
       { key: '/ums/users', label: '유저 관리' },
       { key: '/ums/admin-users', label: '어드민 관리' },
     ],
-  },
-  {
-    key: '/categories',
-    icon: <TagsOutlined />,
-    label: '카테고리 관리',
-    children: [{ key: '/categories', label: '카테고리 관리' }],
   },
   {
     key: '/posts',
@@ -73,6 +67,12 @@ export const MENU_SECTIONS: MenuSection[] = [
       { key: '/news/invest', label: '투자 뉴스' },
       { key: '/news/politics', label: '정치 뉴스' },
     ],
+  },
+  {
+    key: '/categories',
+    icon: <TagsOutlined />,
+    label: '카테고리 관리',
+    children: [{ key: '/categories', label: '카테고리 관리' }],
   },
 ]
 

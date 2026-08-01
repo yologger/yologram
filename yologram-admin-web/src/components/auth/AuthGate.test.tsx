@@ -32,7 +32,7 @@ describe('AuthGate', () => {
       </AuthGate>,
       {
         wrapperOptions: {
-          routerProps: { initialEntries: ['/dashboard'] },
+          routerProps: { initialEntries: ['/notices'] },
         },
       },
     )
@@ -40,7 +40,7 @@ describe('AuthGate', () => {
     expect(screen.getByRole('status', { name: '인증 확인 중' })).toBeInTheDocument()
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { level: 3, name: '대시보드' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 3, name: '공지 관리' })).toBeInTheDocument()
     })
     expect(screen.getByText('관리자')).toBeInTheDocument()
   })
@@ -57,7 +57,7 @@ describe('AuthGate', () => {
       </AuthGate>,
       {
         wrapperOptions: {
-          routerProps: { initialEntries: ['/dashboard'] },
+          routerProps: { initialEntries: ['/notices'] },
         },
       },
     )
@@ -78,7 +78,7 @@ describe('AuthGate', () => {
       </AuthGate>,
       {
         wrapperOptions: {
-          routerProps: { initialEntries: ['/dashboard'] },
+          routerProps: { initialEntries: ['/notices'] },
         },
       },
     )

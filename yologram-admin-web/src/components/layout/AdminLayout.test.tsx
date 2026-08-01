@@ -47,11 +47,11 @@ async function findConfirmModal() {
   return document.querySelector('.ant-modal-confirm') as HTMLElement
 }
 
-function renderLayout(initialPath = '/dashboard') {
+function renderLayout(initialPath = '/notices') {
   return renderWithProviders(
     <Routes>
       <Route element={<AdminLayout />}>
-        <Route path="/dashboard" element={<div>dashboard content</div>} />
+        <Route path="/notices" element={<div>notices content</div>} />
         <Route path="/ums/users" element={<div>users content</div>} />
         <Route path="/ums/admin-users" element={<div>admin-users content</div>} />
         <Route path="/categories" element={<div>categories content</div>} />
@@ -71,15 +71,12 @@ describe('AdminLayout (데스크탑)', () => {
     mockUseIsMobile.mockReturnValue(false)
   })
 
-  it('상단 바에 로고와 최상위 메뉴 5개를 렌더한다', () => {
+  it('상단 바에 로고와 최상위 메뉴 5개를 순서대로 렌더한다', () => {
     renderLayout()
     const header = getHeader()
     expect(within(header).getByText('yologram admin')).toBeInTheDocument()
-    expect(within(header).getByText('대시보드')).toBeInTheDocument()
-    expect(within(header).getByText('유저 관리')).toBeInTheDocument()
-    expect(within(header).getByText('카테고리 관리')).toBeInTheDocument()
-    expect(within(header).getByText('게시글 관리')).toBeInTheDocument()
-    expect(within(header).getByText('뉴스 관리')).toBeInTheDocument()
+    const topLabels = Array.from(header.querySelectorAll('li.ant-menu-item')).map((li) => li.textContent)
+    expect(topLabels).toEqual(['공지', '유저 관리', '게시글 관리', '뉴스 관리', '카테고리 관리'])
   })
 
   it('현재 경로가 속한 최상위 메뉴가 상단 바에서 선택 상태다', () => {
@@ -92,14 +89,14 @@ describe('AdminLayout (데스크탑)', () => {
     const sider = getSider()
     expect(within(sider).getByText('유저 관리')).toBeInTheDocument()
     expect(within(sider).getByText('어드민 관리')).toBeInTheDocument()
-    expect(within(sider).queryByText('대시보드')).not.toBeInTheDocument()
+    expect(within(sider).queryByText('공지 관리')).not.toBeInTheDocument()
     expect(within(sider).queryByText('기술 뉴스')).not.toBeInTheDocument()
   })
 
-  it('단일 하위 분류 섹션(대시보드)은 사이드바에 해당 항목 하나만 렌더한다', () => {
-    renderLayout('/dashboard')
+  it('단일 하위 분류 섹션(공지)은 사이드바에 해당 항목 하나만 렌더한다', () => {
+    renderLayout('/notices')
     const sider = getSider()
-    expect(within(sider).getByText('대시보드')).toBeInTheDocument()
+    expect(within(sider).getByText('공지 관리')).toBeInTheDocument()
     expect(sider.querySelectorAll('li.ant-menu-item')).toHaveLength(1)
   })
 
@@ -110,14 +107,14 @@ describe('AdminLayout (데스크탑)', () => {
 
   it('상단 메뉴 클릭 시 해당 섹션의 첫 하위 경로로 이동하고 사이드바가 바뀐다', async () => {
     const user = userEvent.setup()
-    renderLayout('/dashboard')
+    renderLayout('/notices')
     await user.click(within(getHeader()).getByText('뉴스 관리'))
     expect(screen.getByText('news tech content')).toBeInTheDocument()
     const sider = getSider()
     expect(within(sider).getByText('기술 뉴스')).toBeInTheDocument()
     expect(within(sider).getByText('투자 뉴스')).toBeInTheDocument()
     expect(within(sider).getByText('정치 뉴스')).toBeInTheDocument()
-    expect(within(sider).queryByText('대시보드')).not.toBeInTheDocument()
+    expect(within(sider).queryByText('공지 관리')).not.toBeInTheDocument()
   })
 
   it('/news/tech/sources 경로에서 상단 뉴스 관리·사이드바 소스 관리가 선택 상태다', () => {
@@ -146,8 +143,8 @@ describe('AdminLayout (데스크탑)', () => {
   })
 
   it('현재 경로의 콘텐츠를 Outlet으로 렌더한다', () => {
-    renderLayout('/dashboard')
-    expect(screen.getByText('dashboard content')).toBeInTheDocument()
+    renderLayout('/notices')
+    expect(screen.getByText('notices content')).toBeInTheDocument()
   })
 
   it('모바일 헤더(햄버거 버튼)는 렌더하지 않는다', () => {
@@ -190,8 +187,10 @@ describe('AdminLayout (모바일)', () => {
     const user = userEvent.setup()
     renderLayout()
     await user.click(screen.getByLabelText('메뉴 열기'))
+    // 공지는 그룹 라벨(공지)과 하위 항목(공지 관리) 라벨이 다르다
+    expect(screen.getByText('공지')).toBeInTheDocument()
+    expect(screen.getByText('공지 관리')).toBeInTheDocument()
     // 그룹 라벨과 하위 항목 라벨이 같은 섹션은 두 번 렌더된다
-    expect(screen.getAllByText('대시보드')).toHaveLength(2)
     expect(screen.getAllByText('유저 관리')).toHaveLength(2)
     expect(screen.getAllByText('카테고리 관리')).toHaveLength(2)
     expect(screen.getAllByText('게시글 관리')).toHaveLength(2)
@@ -214,7 +213,7 @@ describe('AdminLayout (모바일)', () => {
 
   it('Drawer 하위 메뉴(SubMenu 내부 리프) 클릭 시 해당 경로로 이동하고 Drawer가 닫힌다', async () => {
     const user = userEvent.setup()
-    renderLayout('/dashboard')
+    renderLayout('/notices')
     await user.click(screen.getByLabelText('메뉴 열기'))
     await user.click(screen.getByText('소스 관리'))
     expect(screen.getByText('news sources content')).toBeInTheDocument()

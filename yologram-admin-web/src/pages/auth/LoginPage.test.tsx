@@ -61,7 +61,7 @@ describe('LoginPage', () => {
   })
 
   describe('로그인 성공', () => {
-    it('성공 시 인증 상태를 저장하고 대시보드로 이동한다', async () => {
+    it('성공 시 인증 상태를 저장하고 공지 관리로 이동한다', async () => {
       const user = userEvent.setup()
       renderWithProviders(<LoginPage />)
 
@@ -70,7 +70,7 @@ describe('LoginPage', () => {
       await user.click(screen.getByRole('button', { name: '로그인' }))
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/dashboard')
+        expect(mockNavigate).toHaveBeenCalledWith('/notices')
       })
       expect(getDefaultStore().get(authAtom)).toEqual({
         uid: 1,

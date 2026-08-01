@@ -17,7 +17,7 @@ export default function useLoginMutation() {
     onSuccess: (data) => {
       setAuth(data)
       message.success(`${data.name}님, 반갑습니다.`)
-      navigate('/dashboard')
+      navigate('/notices')
     },
     onError: (error) => {
       message.error(getErrorMessage(error))

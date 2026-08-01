@@ -39,7 +39,7 @@ describe('Router (미인증)', () => {
     expect(screen.getByRole('button', { name: '로그인' })).toBeInTheDocument()
   })
 
-  it.each(['/', '/dashboard', '/ums', '/categories', '/posts', '/news'])(
+  it.each(['/', '/notices', '/ums', '/categories', '/posts', '/news'])(
     '미인증으로 %s 진입 시 로그인 페이지로 리다이렉트한다',
     async (path) => {
       renderRouter(path)
@@ -51,13 +51,13 @@ describe('Router (미인증)', () => {
 })
 
 describe('Router (인증)', () => {
-  it('/ 진입 시 /dashboard로 리다이렉트한다', () => {
+  it('/ 진입 시 /notices로 리다이렉트한다', () => {
     renderRouterAuthenticated('/')
-    expect(screen.getByRole('heading', { level: 3, name: '대시보드' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: '공지 관리' })).toBeInTheDocument()
   })
 
   it.each([
-    ['/dashboard', '대시보드'],
+    ['/notices', '공지 관리'],
     ['/ums/users', '유저 관리'],
     ['/ums/admin-users', '어드민 관리'],
     ['/categories', '카테고리 관리'],
@@ -89,8 +89,8 @@ describe('Router (인증)', () => {
     expect(screen.getByText('페이지 준비 중입니다')).toBeInTheDocument()
   })
 
-  it('알 수 없는 경로는 /dashboard로 리다이렉트한다', () => {
+  it('알 수 없는 경로는 /notices로 리다이렉트한다', () => {
     renderRouterAuthenticated('/unknown-path')
-    expect(screen.getByRole('heading', { level: 3, name: '대시보드' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: '공지 관리' })).toBeInTheDocument()
   })
 })
