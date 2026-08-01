@@ -1,5 +1,6 @@
 import os
 import time
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import bcrypt
@@ -12,6 +13,7 @@ from app.config.database import get_db
 from app.config.settings import get_settings
 from app.domain.ums.admin_jwt_util import create_admin_token
 from app.domain.ums.jwt_util import create_token
+from app.domain.ums.enum import UserStatus
 from app.domain.ums.model import AdminUser
 from app.main import app
 
@@ -337,6 +339,237 @@ class TestAdminRouter:
 
         def test_헤더_없음_401(self):
             response = self.client.post("/api/v2/ums/admin/auth/logout")
+
+            assert response.status_code == 401
+            assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
+
+    class TestGetAdminUsers:
+
+        def setup_method(self):
+            self.mock_db = MagicMock()
+            app.dependency_overrides[get_db] = lambda: self.mock_db
+            self.client = TestClient(app)
+            self.token = create_admin_token(1)
+
+        def teardown_method(self):
+            app.dependency_overrides.clear()
+
+        @staticmethod
+        def _admin(uid: int) -> AdminUser:
+            admin = AdminUser(
+                email=f"admin{uid}@yologram.link", name=f"어드민{uid}", password="hashed"
+            )
+            admin.id = uid
+            admin.status = UserStatus.ACTIVE
+            admin.joined_date = datetime(2026, 7, uid, 9, 0)
+            return admin
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_첫_페이지_200__camelCase_페이지_메타(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.count.return_value = 3
+            mock_repo.find_page_order_by_id_asc.return_value = [self._admin(1), self._admin(2)]
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.get(
+                "/api/v2/ums/admin/admin-users?page=0&size=2",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 200
+            body = response.json()
+            assert [a["uid"] for a in body["data"]] == [1, 2]
+            assert body["data"][0]["email"] == "admin1@yologram.link"
+            assert body["data"][0]["name"] == "어드민1"
+            assert body["data"][0]["status"] == "ACTIVE"  # enum 문자열 직렬화
+            assert body["data"][0]["joinedDate"] == "2026-07-01T09:00:00"
+            assert "password" not in body["data"][0]  # 비밀번호 미노출
+            assert body["page"] == 0
+            assert body["size"] == 2
+            assert body["totalPages"] == 2
+            assert body["totalCount"] == 3
+            assert body["first"] is True
+            assert body["last"] is False
+            mock_repo.find_page_order_by_id_asc.assert_called_once_with(0, 2)
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_둘째_페이지_200__last_true(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.count.return_value = 3
+            mock_repo.find_page_order_by_id_asc.return_value = [self._admin(3)]
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.get(
+                "/api/v2/ums/admin/admin-users?page=1&size=2",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 200
+            body = response.json()
+            assert [a["uid"] for a in body["data"]] == [3]
+            assert body["page"] == 1
+            assert body["totalPages"] == 2
+            assert body["totalCount"] == 3
+            assert body["first"] is False
+            assert body["last"] is True
+            mock_repo.find_page_order_by_id_asc.assert_called_once_with(2, 2)  # offset=page*size
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_빈_페이지_200__totalPages_0_first_last_true(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.count.return_value = 0
+            mock_repo.find_page_order_by_id_asc.return_value = []
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.get(
+                "/api/v2/ums/admin/admin-users",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 200
+            body = response.json()
+            assert body["data"] == []
+            assert body["page"] == 0
+            assert body["size"] == 10  # 기본값
+            assert body["totalPages"] == 0
+            assert body["totalCount"] == 0
+            assert body["first"] is True
+            assert body["last"] is True
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_파라미터_생략_시_기본값_page_0_size_10(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.count.return_value = 1
+            mock_repo.find_page_order_by_id_asc.return_value = [self._admin(1)]
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.get(
+                "/api/v2/ums/admin/admin-users",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 200
+            body = response.json()
+            assert body["page"] == 0
+            assert body["size"] == 10
+            mock_repo.find_page_order_by_id_asc.assert_called_once_with(0, 10)
+
+        def test_page_음수_400(self):
+            response = self.client.get(
+                "/api/v2/ums/admin/admin-users?page=-1",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 400
+            assert response.json()["errorCode"] == "VALIDATION_ERROR"
+
+        def test_size_0_400(self):
+            response = self.client.get(
+                "/api/v2/ums/admin/admin-users?size=0",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 400
+            assert response.json()["errorCode"] == "VALIDATION_ERROR"
+
+        def test_size_101_400(self):
+            response = self.client.get(
+                "/api/v2/ums/admin/admin-users?size=101",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 400
+            assert response.json()["errorCode"] == "VALIDATION_ERROR"
+
+        def test_토큰_없음_401(self):
+            response = self.client.get("/api/v2/ums/admin/admin-users")
+
+            assert response.status_code == 401
+            assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
+
+        def test_유저_토큰_401(self):
+            user_token = create_token(1)
+
+            response = self.client.get(
+                "/api/v2/ums/admin/admin-users",
+                headers={"Authorization": f"Bearer {user_token}"},
+            )
+
+            assert response.status_code == 401
+            assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
+
+    class TestDeleteAdminUser:
+
+        def setup_method(self):
+            self.mock_db = MagicMock()
+            app.dependency_overrides[get_db] = lambda: self.mock_db
+            self.client = TestClient(app)
+            self.token = create_admin_token(1)  # 요청 어드민 uid=1
+
+        def teardown_method(self):
+            app.dependency_overrides.clear()
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_삭제_성공_204(self, mock_repo_cls):
+            target = AdminUser(email="target@yologram.link", name="대상", password="hashed")
+            target.id = 2
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.return_value = target
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.delete(
+                "/api/v2/ums/admin/admin-users/2",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 204
+            assert response.content == b""
+            mock_repo.delete.assert_called_once_with(target)
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_자기_자신_삭제_400(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.delete(
+                "/api/v2/ums/admin/admin-users/1",  # 토큰 uid와 동일
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 400
+            body = response.json()
+            assert body["errorCode"] == "ADMIN_USER_SELF_DELETE"
+            assert body["errorMessage"] == "자기 자신은 삭제할 수 없습니다."
+            mock_repo.delete.assert_not_called()
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_없는_id_404(self, mock_repo_cls):
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.return_value = None
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.delete(
+                "/api/v2/ums/admin/admin-users/999",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 404
+            assert response.json()["errorCode"] == "ADMIN_USER_NOT_FOUND"
+            mock_repo.delete.assert_not_called()
+
+        def test_토큰_없음_401(self):
+            response = self.client.delete("/api/v2/ums/admin/admin-users/2")
+
+            assert response.status_code == 401
+            assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
+
+        def test_유저_토큰_401(self):
+            user_token = create_token(2)
+
+            response = self.client.delete(
+                "/api/v2/ums/admin/admin-users/2",
+                headers={"Authorization": f"Bearer {user_token}"},
+            )
 
             assert response.status_code == 401
             assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"

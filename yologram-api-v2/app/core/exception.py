@@ -35,6 +35,11 @@ class AdminUserNotFoundException(AppException):
         super().__init__(404, "어드민 사용자를 찾을 수 없습니다.", "ADMIN_USER_NOT_FOUND")
 
 
+class AdminUserSelfDeleteException(AppException):
+    def __init__(self):
+        super().__init__(400, "자기 자신은 삭제할 수 없습니다.", "ADMIN_USER_SELF_DELETE")
+
+
 class AuthWrongPasswordException(AppException):
     def __init__(self):
         super().__init__(401, "비밀번호가 일치하지 않습니다.", "AUTH_WRONG_PASSWORD")

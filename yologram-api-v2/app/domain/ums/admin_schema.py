@@ -1,4 +1,8 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.domain.ums.enum import UserStatus
 
 
 class AdminUserCreateRequest(BaseModel):
@@ -9,6 +13,18 @@ class AdminUserCreateRequest(BaseModel):
 
 class AdminUserCreateResponse(BaseModel):
     uid: int
+
+
+class AdminUserResponse(BaseModel):
+    """어드민 계정 목록 항목"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    uid: int
+    email: str
+    name: str
+    status: UserStatus = Field(description="계정 상태 (ACTIVE 등)")
+    joined_date: datetime = Field(serialization_alias="joinedDate")
 
 
 class AdminLoginRequest(BaseModel):

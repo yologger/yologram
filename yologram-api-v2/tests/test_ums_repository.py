@@ -4,8 +4,9 @@ from sqlalchemy.orm import sessionmaker
 from testcontainers.mysql import MySqlContainer
 
 from app.config.database import Base
-from app.domain.ums.model import User
-from app.domain.ums.repository import UserRepository
+from app.domain.ums.enum import UserStatus
+from app.domain.ums.model import AdminUser, User
+from app.domain.ums.repository import AdminUserRepository, UserRepository
 
 
 @pytest.fixture(scope="module")
@@ -65,3 +66,66 @@ class TestUserRepository:
             found = repo.find_by_email("notexist@yologram.link")
 
             assert found is None
+
+
+class TestAdminUserRepository:
+
+    class TestFindPageOrderByIdAsc:
+
+        def test_offset_limit으로_id_오름차순_페이지를_반환한다(self, db_session):
+            db_session.query(AdminUser).delete()
+            repo = AdminUserRepository(db_session)
+            first = repo.save(AdminUser(email="a1@yologram.link", name="어드민1", password="hashed"))
+            second = repo.save(AdminUser(email="a2@yologram.link", name="어드민2", password="hashed"))
+            third = repo.save(AdminUser(email="a3@yologram.link", name="어드민3", password="hashed"))
+            db_session.commit()
+            ids = sorted([first.id, second.id, third.id])
+
+            page1 = repo.find_page_order_by_id_asc(0, 2)
+            page2 = repo.find_page_order_by_id_asc(2, 2)
+
+            assert [a.id for a in page1] == ids[:2]  # 첫 페이지 id asc
+            assert [a.id for a in page2] == ids[2:]  # 둘째 페이지 잔여분
+            assert page1[0].status == UserStatus.ACTIVE  # 기본 상태
+            assert page1[0].joined_date is not None
+
+        def test_범위_밖_offset이면_빈_목록을_반환한다(self, db_session):
+            db_session.query(AdminUser).delete()
+            repo = AdminUserRepository(db_session)
+            repo.save(AdminUser(email="a1@yologram.link", name="어드민1", password="hashed"))
+            db_session.commit()
+
+            assert repo.find_page_order_by_id_asc(10, 2) == []
+
+    class TestCount:
+
+        def test_전체_어드민_수를_반환한다(self, db_session):
+            db_session.query(AdminUser).delete()
+            repo = AdminUserRepository(db_session)
+            repo.save(AdminUser(email="c1@yologram.link", name="어드민1", password="hashed"))
+            repo.save(AdminUser(email="c2@yologram.link", name="어드민2", password="hashed"))
+            db_session.commit()
+
+            assert repo.count() == 2
+
+        def test_어드민이_없으면_0을_반환한다(self, db_session):
+            db_session.query(AdminUser).delete()
+            db_session.commit()
+            repo = AdminUserRepository(db_session)
+
+            assert repo.count() == 0
+
+    class TestDelete:
+
+        def test_삭제하면_조회되지_않는다(self, db_session):
+            db_session.query(AdminUser).delete()
+            repo = AdminUserRepository(db_session)
+            saved = repo.save(AdminUser(email="del@yologram.link", name="삭제대상", password="hashed"))
+            db_session.commit()
+            admin_id = saved.id
+
+            repo.delete(saved)
+            db_session.commit()
+
+            assert repo.find_by_id(admin_id) is None
+            assert repo.count() == 0

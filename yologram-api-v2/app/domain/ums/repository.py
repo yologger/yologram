@@ -41,11 +41,26 @@ class AdminUserRepository:
     def find_by_email(self, email: str) -> AdminUser | None:
         return self.db.query(AdminUser).filter(AdminUser.email == email).first()
 
+    def count(self) -> int:
+        return self.db.query(AdminUser).count()
+
+    def find_page_order_by_id_asc(self, offset: int, limit: int) -> list[AdminUser]:
+        return (
+            self.db.query(AdminUser)
+            .order_by(AdminUser.id.asc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+
     def save(self, admin: AdminUser) -> AdminUser:
         self.db.add(admin)
         self.db.flush()
         self.db.refresh(admin)
         return admin
+
+    def delete(self, admin: AdminUser) -> None:
+        self.db.delete(admin)
 
 
 class UserEmailVerificationRepository:
