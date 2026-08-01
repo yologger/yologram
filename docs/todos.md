@@ -23,7 +23,7 @@
     - [x] Parameter Store에 yologram.auth.admin-jwt.secret 추가 — prod는 infra tf(PLACEHOLDER+ignore_changes) 경유, local은 수동 put-parameter (완료)
     - [x] prod DB에 admin_user 테이블 수동 DDL 실행 (완료)
     - [x] 어드민 웹 로그인·가드 연동 — LoginPage·AuthGate·RequireAuth(전 메뉴 보호)·로그아웃 + 유저 메뉴 서브탭(/ums/users 유저 관리·/ums/admin-users 어드민 관리) 골격 (완료, done.md)
-    - [ ] 어드민 웹 실서버 연동 검증 (api-v1 재기동 후 로그인 플로우 수동 확인)
+    - [x] 어드민 웹 실서버 연동 검증 — 로그인/리다이렉트/서브탭/로그아웃/토큰 복원 브라우저 수동 확인 (완료)
   - [ ] RSS 소스 관리 화면 (News 연계)
   - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
 - [ ] (News) 테크 뉴스 — RSS 수집(Worker) → LLM 요약 → TECH > 뉴스 표시. 남은 순서: ①Admin 인증 → ②소스 CRUD API+어드민 화면 → ⑤공개 조회 API+web → ⑥어드민 뉴스 수정/삭제 (③수집·④요약은 완료 — done.md)

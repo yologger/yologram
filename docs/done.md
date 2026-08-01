@@ -144,6 +144,11 @@
   - [x] admin-web 유저 메뉴 서브탭 골격: /ums → /ums/users 리다이렉트, [유저 관리|어드민 관리] 서브탭(pages/ums/UmsPage + SubTabLayout — web-v1 미러), 목록 화면은 placeholder(목록 API 후속). 서브탭 하위 경로에서 메뉴 선택 유지는 menu.tsx MENU_MATCH_PREFIXES
   - 어드민 계정 관리를 유저 메뉴의 서브탭으로 넣은 근거: 둘 다 UMS 계정 관리(API /ums/admin/users vs /ums/admin/admin-users, 웹 라우트 /ums/users·/ums/admin-users로 1:1 대응), 저빈도 화면이라 톱레벨 메뉴 승격은 과함, 추후 role 도입 시 어드민 관리 탭만 권한 가드 가능. UI 용어는 '회원' 대신 '유저'로 통일
   - 어드민 JWT secret은 유저 JWT처럼 api-v1·v2 동일 값 공유(토큰 양쪽 통용). api-v2 prod는 task definition secrets(ADMIN_JWT_SECRET ← SSM valueFrom) 주입 — infra tf 반영 완료
+- [x] (Admin) 어드민 웹 레이아웃 개편 — 상단 바(최상위) + 사이드바(하위) 2단 내비게이션
+  - 번개장터 어드민 문법 미러: Header(로고 + 최상위 Menu horizontal + Avatar·Dropdown 로그아웃) + Sider(현재 섹션의 하위 항목만 Menu inline). 모바일은 Drawer 2단 그룹 유지. 전부 antd 조합(신규 라이브러리 없음)
+  - 서브탭(SubTabLayout·UmsPage) 제거 — 사이드바가 하위 분류를 대체. URL은 전부 유지, /news → /news/tech 리다이렉트 + 뉴스 하위 3섹션(기술/투자/정치 — 서비스 웹처럼 기술만 실구현 예정, 나머지 placeholder)
+  - menu.tsx MENU_SECTIONS 2단 상수 + findSelectedSection/findSelectedChildKey로 상단·사이드바 선택 동기화, 상단 클릭 시 섹션 첫 하위로 이동
+  - 뉴스 관리 하위를 섹션(기술/투자/정치)으로 나눈 근거: 섹션=경로 세그먼트=테이블 접두사 규칙과 정합, 백엔드 /news/{section}과 1:1. RSS 소스 관리는 추후 뉴스 관리 하위 항목으로 추가 예정
 - [x] (News) 명명 회귀 통일 — article → news 전면 리네이밍 (전 프로젝트)
   - 테이블: tech_article / tech_article_category_mapping / tech_article_source → tech_news / tech_news_category_mapping / tech_news_source. 무중단 이전 절차: CREATE TABLE LIKE + INSERT 초기 copy → 새 코드 배포 → 차분 copy(id LEFT JOIN) → 검증 후 구테이블 drop. 매핑 컬럼 article_id → news_id (RENAME COLUMN)
   - 코드: api-v1·v2 domain/tech/news(TechNews*, 공개 조회 GET /api/v{n}/news/{section} — deprecated 위임 없이 전환), worker 파이프라인 TechNews*(설정 키 yologram.tech-news.* — SSM 비주입 인라인 값이라 안전), web-v1/v2 라우트 /tech/news·/tech/favorite-news(invest/politics 동일)·NewsCard·useNewsQuery·쿼리키 ['news']·표기 '뉴스'
