@@ -66,6 +66,7 @@ aws/
     yologram-admin-web/     # 어드민 웹, S3 + CloudFront (SPA)
   tools/
     n8n/                    # n8n 워크플로우 자동화 (Lightsail)
+    yologger-blog/          # 기술 블로그 (S3 + CloudFront, blog.yologram.link)
 ```
 
 ## 요금
