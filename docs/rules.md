@@ -3,7 +3,7 @@
 ### API 경로 규칙
 - /api/{v1|v2}/ums/ (유저), /pms/{section}/ (게시글), /cms/{section}/categories (카테고리)
 - /comments/{section}/ (댓글 — 테이블 분리로 섹션 필수. 구경로 /comments/는 deprecated 위임, web 전환 후 제거), /count/ (카운트, 예약)
-- 섹션(tech/invest/politics)은 경로 세그먼트이자 테이블 접두사이자 코드 패키지(domain/{섹션}/{기능}) — 게시판·뉴스 공통 규약. 섹션별 코드는 완전 분리(공통 베이스 금지), 신규 섹션 = 테이블·코드 세트 복제
+- 코드 패키지는 도메인 우선: domain/{도메인}/{섹션} (예: pms/tech, cms/tech, comment/tech, news/tech — MSA 분리 시 도메인 패키지째 이관, API 경로 /pms/{section}과 정합). 섹션(tech/invest/politics)은 경로 세그먼트이자 테이블 접두사이자 패키지의 섹션 세그먼트. 섹션별 코드는 완전 분리(공통 베이스 금지), 신규 섹션 = 테이블·코드 세트 복제(예: domain/pms/invest + InvestPostResource + /pms/invest/posts)
 - 어드민: 도메인 경로 뒤 admin 세그먼트 → /{domain}/admin/... (게이트웨이 라우팅과 일관). 톱레벨 domain/admin 금지 — 어드민은 역할이지 도메인이 아니며, 전 도메인 repository를 관통해 경계 규칙 위반. 코드는 별도 admin 하위 패키지 없이 각 도메인 평면 구조에 클래스명 Admin 접두사(AdminUserService 등)로 구분
 
 ### DB DDL 정책

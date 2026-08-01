@@ -16,7 +16,7 @@
   - 기존 Client 인터페이스(CommentCleanupClient 등) 구현을 이벤트 발행으로 교체하는 지점
 - [ ] (Admin) 어드민 페이지 (yologram-admin-web)
   - [x] 프로젝트 부트스트랩 — React(web-v1 미러)·S3+CloudFront(admin.yologram.link)·CI (완료, done.md)
-  - [ ] 어드민 인증 — 방식 확정(변경): user와 분리된 admin_user 테이블 + 어드민 전용 JWT(secret·audience 분리). 이메일 인증 없음, 기존 어드민이 신규 어드민 추가(첫 어드민은 DB 수동 seed). News 어드민 API의 선행 작업
+  - [x] 어드민 인증 — 방식 확정(변경): user와 분리된 admin_user 테이블 + 어드민 전용 JWT(secret·audience 분리). 이메일 인증 없음, 기존 어드민이 신규 어드민 추가(첫 어드민은 DB 수동 seed). News 어드민 API의 선행 작업 (하위 전체 완료)
     - [x] api-v1 — 어드민 생성(POST /ums/admin/admin-users, 어드민 토큰 가드) + 로그인·validate-token·logout(/ums/admin/auth/*) (완료, done.md)
     - [x] api-v2 미러링 — 생성·로그인·validate-token·logout + 전용 JWT(ADMIN_JWT_SECRET) (완료, done.md)
     - [x] api-v2 prod 인프라 — SSM 파라미터 + task definition secrets(ADMIN_JWT_SECRET) tf apply, api-v1과 동일 secret 값 복사, ECS 롤아웃 완료 (완료)
@@ -53,7 +53,7 @@
   - [ ] 좋아요 수 / 댓글 수 조회·표시 (게시글 목록·상세 카운트, api-v1/v2 + web). 댓글 작성/삭제 시 post.commentCount 동기화 (현재 미증가 — 카운트 항상 0)
   - 1차는 post 컬럼 동기 보관, 분리 시 이벤트 기반 카운트 이관
 - [ ] (PMS) 기술/정치/투자 섹션 게시글 분리
-  - [x] tech 분리 — 테이블 tech_post/tech_post_category/tech_post_category_mapping/tech_post_comment + api-v1/v2 domain/tech/{post,category,comment} 완전 분리 (완료, done.md). invest/politics는 게시판 오픈 시 동일 세트 복제
+  - [x] tech 분리 — 테이블 tech_post/tech_post_category/tech_post_category_mapping/tech_post_comment + api-v1/v2 섹션별 완전 분리 (완료, done.md — 이후 domain/{도메인}/{섹션} 구조로 재배치). invest/politics는 게시판 오픈 시 동일 세트 복제
   - [x] web-v1/v2 댓글 API 경로 전환 — section 인자 추가로 정식 경로(/comments/{section}/...) 사용, 쿼리키 [comments, section, postId]로 통일 (완료, done.md)
   - [x] api-v1 LegacyCommentResource·api-v2 legacy 댓글 라우터 제거 (완료 — web 신경로 배포 확인 후 즉시 제거, 비공개 서비스라 유예 생략)
   - [x] legacy 테이블 정리 — 델타 마이그레이션 → 배포·검증 → *_legacy rename → DROP까지 완료

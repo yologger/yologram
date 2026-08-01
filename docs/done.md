@@ -144,6 +144,12 @@
   - [x] admin-web 유저 메뉴 서브탭 골격: /ums → /ums/users 리다이렉트, [유저 관리|어드민 관리] 서브탭(pages/ums/UmsPage + SubTabLayout — web-v1 미러), 목록 화면은 placeholder(목록 API 후속). 서브탭 하위 경로에서 메뉴 선택 유지는 menu.tsx MENU_MATCH_PREFIXES
   - 어드민 계정 관리를 유저 메뉴의 서브탭으로 넣은 근거: 둘 다 UMS 계정 관리(API /ums/admin/users vs /ums/admin/admin-users, 웹 라우트 /ums/users·/ums/admin-users로 1:1 대응), 저빈도 화면이라 톱레벨 메뉴 승격은 과함, 추후 role 도입 시 어드민 관리 탭만 권한 가드 가능. UI 용어는 '회원' 대신 '유저'로 통일
   - 어드민 JWT secret은 유저 JWT처럼 api-v1·v2 동일 값 공유(토큰 양쪽 통용). api-v2 prod는 task definition secrets(ADMIN_JWT_SECRET ← SSM valueFrom) 주입 — infra tf 반영 완료
+- [x] (구조) 백엔드 패키지 도메인 우선 재배치 — domain/{도메인}/{섹션} (api-v1·api-v2·worker)
+  - api-v1·v2: domain/tech/{post,category,comment,news} → domain/{pms,cms,comment,news}/tech (api-v1 70파일·api-v2 32파일 git mv). worker: domain/tech/news → domain/news/tech (23파일). 순수 패키지 이동 — 클래스명·API 경로·테이블·동작 무변경 (부수 수정: basePackages 3곳·import·main.py 라우터 import)
+  - 근거: MSA 분리 계획(UMS→user-api, PMS→post-api, News→news-api...)이 기능 단위라 도메인 패키지째 이관 가능해야 하고, API 경로(/pms/{section})·어드민 메뉴 구조와도 정합. 섹션별 완전 분리 원칙(공통 베이스 금지·세트 복제)은 트리 순서와 무관하게 유지 — invest 추가 시 domain/pms/invest + InvestPostResource + /pms/invest/posts 세트 복제
+  - 구조 변천 기록: domain/pms 평면(초기) → domain/tech/{기능}(섹션 우선, 2026-07) → domain/{도메인}/{섹션}(현행) — 아래 과거 항목들의 패키지 표기는 당시 기준
+  - 함정: 패키지 대량 이동 직후 kapt 증분 캐시가 구 패키지 스텁을 물고 Q클래스 미생성 컴파일 실패 가능 — gradlew --stop + build/ 삭제 후 재빌드로 해소
+  - 테스트: api-v1 283 / api-v2 258 / worker 전체 통과, domain.tech 잔여 참조 0
 - [x] (Admin) 어드민 웹 레이아웃 개편 — 상단 바(최상위) + 사이드바(하위) 2단 내비게이션
   - 번개장터 어드민 문법 미러: Header(로고 + 최상위 Menu horizontal + Avatar·Dropdown 로그아웃) + Sider(현재 섹션의 하위 항목만 Menu inline). 모바일은 Drawer 2단 그룹 유지. 전부 antd 조합(신규 라이브러리 없음)
   - 서브탭(SubTabLayout·UmsPage) 제거 — 사이드바가 하위 분류를 대체. URL은 전부 유지, /news → /news/tech 리다이렉트 + 뉴스 하위 3섹션(기술/투자/정치 — 서비스 웹처럼 기술만 실구현 예정, 나머지 placeholder)
