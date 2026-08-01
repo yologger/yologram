@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router'
 import AdminLayout from './components/layout/AdminLayout'
 import RequireAuth from './components/auth/RequireAuth'
 import LoginPage from './pages/auth/LoginPage'
+import AdminUsersPage from './pages/ums/AdminUsersPage'
 import NewsSourcesPage from './pages/news/NewsSourcesPage'
 import ComingSoon from './components/common/ComingSoon'
 
@@ -19,7 +20,7 @@ export default function Router() {
           <Route path="/notices" element={<ComingSoon title="공지 관리" />} />
           <Route path="/ums" element={<Navigate to="/ums/users" replace />} />
           <Route path="/ums/users" element={<ComingSoon title="유저 관리" />} />
-          <Route path="/ums/admin-users" element={<ComingSoon title="어드민 관리" />} />
+          <Route path="/ums/admin-users" element={<AdminUsersPage />} />
           <Route path="/categories" element={<ComingSoon title="카테고리 관리" />} />
           <Route path="/posts" element={<ComingSoon title="게시글 관리" />} />
           <Route path="/news" element={<Navigate to="/news/tech" replace />} />

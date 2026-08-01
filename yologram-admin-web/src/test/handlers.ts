@@ -1,5 +1,45 @@
 import { http, HttpResponse } from 'msw'
 
+/** 어드민 계정 목킹 데이터 — uid 1은 로그인 테스트 어드민 본인. 총 12명(기본 size 10 기준 2페이지) */
+export const mockAdminUsers = [
+  {
+    uid: 1,
+    email: 'admin@yologram.link',
+    name: '관리자',
+    status: 'ACTIVE',
+    joinedDate: '2026-06-01T09:00:00',
+  },
+  {
+    uid: 2,
+    email: 'second@yologram.link',
+    name: '부관리자',
+    status: 'INACTIVE',
+    joinedDate: '2026-06-15T09:00:00',
+  },
+  ...Array.from({ length: 10 }, (_, index) => ({
+    uid: index + 3,
+    email: `admin${index + 3}@yologram.link`,
+    name: `운영자${index + 3}`,
+    status: 'ACTIVE',
+    joinedDate: '2026-06-20T09:00:00',
+  })),
+]
+
+/** 어드민 목록 페이지 응답 생성 (0-based page) */
+export function buildAdminUsersPage(source: typeof mockAdminUsers, page: number, size: number) {
+  const totalCount = source.length
+  const totalPages = Math.max(1, Math.ceil(totalCount / size))
+  return {
+    data: source.slice(page * size, page * size + size),
+    page,
+    size,
+    totalPages,
+    totalCount,
+    first: page === 0,
+    last: page >= totalPages - 1,
+  }
+}
+
 /** 뉴스 소스 목킹 데이터 — 테스트에서 목록·수정·삭제 대상 기준값으로 사용 */
 export const mockNewsSources = [
   {
@@ -120,12 +160,45 @@ export const handlers = [
 
     if (body.email === 'duplicate@yologram.link') {
       return HttpResponse.json(
-        { errorMessage: '이미 등록된 어드민입니다.', errorCode: 'ADMIN_USER_DUPLICATE' },
+        { errorMessage: '이미 등록된 이메일입니다.', errorCode: 'ADMIN_USER_DUPLICATE' },
         { status: 409 },
       )
     }
 
     return HttpResponse.json({ data: { uid: 2 } }, { status: 201 })
+  }),
+
+  http.get('http://localhost:5001/api/v1/ums/admin/admin-users', ({ request }) => {
+    if (!hasBearer(request)) return unauthorized()
+
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 10)
+
+    return HttpResponse.json(buildAdminUsersPage(mockAdminUsers, page, size))
+  }),
+
+  http.delete('http://localhost:5001/api/v1/ums/admin/admin-users/:id', ({ request, params }) => {
+    if (!hasBearer(request)) return unauthorized()
+
+    const id = Number(params.id)
+
+    // uid 1 = 로그인 테스트 어드민 본인
+    if (id === 1) {
+      return HttpResponse.json(
+        { errorMessage: '자기 자신은 삭제할 수 없습니다.', errorCode: 'ADMIN_USER_SELF_DELETE' },
+        { status: 400 },
+      )
+    }
+
+    if (id === 99999) {
+      return HttpResponse.json(
+        { errorMessage: '어드민을 찾을 수 없습니다.', errorCode: 'ADMIN_USER_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
   }),
 
   http.get('http://localhost:5001/api/v1/news/admin/tech/sources', ({ request }) => {

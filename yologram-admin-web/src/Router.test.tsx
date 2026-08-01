@@ -59,7 +59,6 @@ describe('Router (인증)', () => {
   it.each([
     ['/notices', '공지 관리'],
     ['/ums/users', '유저 관리'],
-    ['/ums/admin-users', '어드민 관리'],
     ['/categories', '카테고리 관리'],
     ['/posts', '게시글 관리'],
     ['/news/tech', '기술 뉴스 관리'],
@@ -75,6 +74,12 @@ describe('Router (인증)', () => {
     renderRouterAuthenticated('/ums')
     expect(screen.getByRole('heading', { level: 3, name: '유저 관리' })).toBeInTheDocument()
     expect(screen.getByText('페이지 준비 중입니다')).toBeInTheDocument()
+  })
+
+  it('/ums/admin-users 진입 시 어드민 관리 화면을 렌더한다', async () => {
+    renderRouterAuthenticated('/ums/admin-users')
+    expect(screen.getByRole('heading', { level: 3, name: '어드민 관리' })).toBeInTheDocument()
+    expect(await screen.findByText('admin@yologram.link')).toBeInTheDocument()
   })
 
   it('/news/tech/sources 진입 시 소스 관리 화면을 렌더한다', async () => {
