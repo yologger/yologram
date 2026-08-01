@@ -115,6 +115,16 @@ class CommentForbiddenException(AppException):
         super().__init__(403, "본인 댓글만 수정·삭제할 수 있습니다.", "COMMENT_FORBIDDEN")
 
 
+class TechNewsSourceNotFoundException(AppException):
+    def __init__(self):
+        super().__init__(404, "뉴스 소스를 찾을 수 없습니다.", "NEWS_SOURCE_NOT_FOUND")
+
+
+class TechNewsSourceDuplicateException(AppException):
+    def __init__(self):
+        super().__init__(409, "이미 등록된 뉴스 소스 URL입니다.", "NEWS_SOURCE_DUPLICATE")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:

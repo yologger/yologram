@@ -2,7 +2,7 @@ from sqlalchemy import exists
 from sqlalchemy.orm import Session
 
 from app.domain.news.tech.cursor import TechNewsCursor
-from app.domain.news.tech.model import TechNews, TechNewsCategoryMapping, TechNewsStatus
+from app.domain.news.tech.model import TechNews, TechNewsCategoryMapping, TechNewsSource, TechNewsStatus
 
 
 class TechNewsRepository:
@@ -53,3 +53,36 @@ class TechNewsCategoryMappingRepository:
             .filter(TechNewsCategoryMapping.news_id.in_(news_ids))
             .all()
         )
+
+
+class TechNewsSourceRepository:
+    """tech_news_source 어드민 CRUD 리포지토리 (api-v1 TechNewsSourceRepository 미러)"""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def save(self, source: TechNewsSource) -> TechNewsSource:
+        # api-v1 saveAndFlush 미러 — modified_date(onupdate)·default가 응답에 반영되도록 즉시 flush 후 refresh
+        self.db.add(source)
+        self.db.flush()
+        self.db.refresh(source)
+        return source
+
+    def find_all_order_by_id_asc(self) -> list[TechNewsSource]:
+        return self.db.query(TechNewsSource).order_by(TechNewsSource.id.asc()).all()
+
+    def find_by_id(self, id: int) -> TechNewsSource | None:
+        return self.db.query(TechNewsSource).filter(TechNewsSource.id == id).first()
+
+    def exists_by_url(self, url: str) -> bool:
+        return bool(self.db.query(exists().where(TechNewsSource.url == url)).scalar())
+
+    def exists_by_url_and_id_not(self, url: str, id: int) -> bool:
+        return bool(
+            self.db.query(
+                exists().where((TechNewsSource.url == url) & (TechNewsSource.id != id))
+            ).scalar()
+        )
+
+    def delete(self, source: TechNewsSource) -> None:
+        self.db.delete(source)

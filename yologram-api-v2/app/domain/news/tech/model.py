@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import BigInteger, Column, DateTime, String, Text, func
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, String, Text, func
 
 from app.config.database import Base
 
@@ -42,3 +42,20 @@ class TechNewsCategoryMapping(Base):
     news_id = Column(BigInteger, nullable=False)
     # 카테고리 마스터 tech_category.id (무FK — 라벨은 조회 시 조인 해석)
     category_id = Column(BigInteger, nullable=False)
+
+
+class TechNewsSource(Base):
+    """
+    테크 뉴스 소스 (RSS 피드) — 기존 tech_news_source 테이블 매핑만 (DDL 생성 없음, worker 엔티티와 동일 매핑).
+    수집은 worker 소관, api-v2는 어드민 CRUD 담당 (api-v1 TechNewsSource 미러).
+    """
+
+    __tablename__ = "tech_news_source"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    # RSS 피드 URL
+    url = Column(String(500), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, nullable=False, default=func.now())
+    modified_date = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())

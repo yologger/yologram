@@ -10,6 +10,7 @@ from app.config.tracing import setup_tracing
 from app.core.exception import register_exception_handlers
 from app.domain.cms.tech.router import router as tech_category_router
 from app.domain.comment.tech.router import router as tech_comment_router
+from app.domain.news.tech.admin_router import router as admin_tech_news_source_router
 from app.domain.news.tech.router import router as tech_news_router
 from app.domain.pms.tech.router import router as tech_post_router
 from app.domain.test.router import router as test_router
@@ -41,6 +42,7 @@ app.include_router(ums_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(tech_news_router)
+app.include_router(admin_tech_news_source_router)
 app.include_router(tech_category_router)
 app.include_router(tech_post_router)
 app.include_router(tech_comment_router)
