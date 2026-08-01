@@ -1,7 +1,7 @@
-package link.yologram.worker.domain.tech.news.entity
+package link.yologram.worker.domain.news.tech.entity
 
 import jakarta.persistence.*
-import link.yologram.worker.domain.tech.news.enums.TechNewsStatus
+import link.yologram.worker.domain.news.tech.enums.TechNewsStatus
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener

@@ -1,6 +1,6 @@
-package link.yologram.worker.domain.tech.news.repository
+package link.yologram.worker.domain.news.tech.repository
 
-import link.yologram.worker.domain.tech.news.entity.TechCategory
+import link.yologram.worker.domain.news.tech.entity.TechCategory
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface TechCategoryRepository : JpaRepository<TechCategory, Long> {

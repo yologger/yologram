@@ -1,4 +1,4 @@
-package link.yologram.worker.domain.tech.news.client
+package link.yologram.worker.domain.news.tech.client
 
 import net.dankito.readability4j.Readability4J
 import org.springframework.beans.factory.annotation.Qualifier

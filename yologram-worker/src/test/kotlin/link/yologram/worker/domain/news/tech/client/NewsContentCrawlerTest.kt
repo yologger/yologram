@@ -1,4 +1,4 @@
-package link.yologram.worker.domain.tech.news.client
+package link.yologram.worker.domain.news.tech.client
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

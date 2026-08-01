@@ -1,11 +1,11 @@
-package link.yologram.worker.domain.tech.news.service
+package link.yologram.worker.domain.news.tech.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import link.yologram.worker.domain.tech.news.client.RssFeedClient
-import link.yologram.worker.domain.tech.news.entity.TechNews
-import link.yologram.worker.domain.tech.news.entity.TechNewsSource
-import link.yologram.worker.domain.tech.news.repository.TechNewsRepository
-import link.yologram.worker.domain.tech.news.repository.TechNewsSourceRepository
+import link.yologram.worker.domain.news.tech.client.RssFeedClient
+import link.yologram.worker.domain.news.tech.entity.TechNews
+import link.yologram.worker.domain.news.tech.entity.TechNewsSource
+import link.yologram.worker.domain.news.tech.repository.TechNewsRepository
+import link.yologram.worker.domain.news.tech.repository.TechNewsSourceRepository
 import org.springframework.stereotype.Service
 
 private val logger = KotlinLogging.logger {}

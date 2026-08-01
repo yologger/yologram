@@ -1,6 +1,6 @@
-package link.yologram.worker.domain.tech.news.scheduler
+package link.yologram.worker.domain.news.tech.scheduler
 
-import link.yologram.worker.domain.tech.news.service.TechNewsSummarizeService
+import link.yologram.worker.domain.news.tech.service.TechNewsSummarizeService
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 

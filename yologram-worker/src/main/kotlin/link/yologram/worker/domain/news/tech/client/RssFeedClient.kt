@@ -1,4 +1,4 @@
-package link.yologram.worker.domain.tech.news.client
+package link.yologram.worker.domain.news.tech.client
 
 import com.rometools.rome.io.SyndFeedInput
 import com.rometools.rome.io.XmlReader

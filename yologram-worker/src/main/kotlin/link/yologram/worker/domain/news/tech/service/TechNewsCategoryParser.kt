@@ -1,6 +1,6 @@
-package link.yologram.worker.domain.tech.news.service
+package link.yologram.worker.domain.news.tech.service
 
-import link.yologram.worker.domain.tech.news.entity.TechCategory
+import link.yologram.worker.domain.news.tech.entity.TechCategory
 
 /**
  * LLM 요약 출력에서 카테고리 섹션(**🏷️ 카테고리**)을 분리한다.

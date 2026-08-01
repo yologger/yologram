@@ -1,6 +1,6 @@
-package link.yologram.worker.domain.tech.news.service
+package link.yologram.worker.domain.news.tech.service
 
-import link.yologram.worker.domain.tech.news.entity.TechCategory
+import link.yologram.worker.domain.news.tech.entity.TechCategory
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

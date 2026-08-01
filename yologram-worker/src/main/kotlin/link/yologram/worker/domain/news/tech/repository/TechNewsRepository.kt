@@ -1,7 +1,7 @@
-package link.yologram.worker.domain.tech.news.repository
+package link.yologram.worker.domain.news.tech.repository
 
-import link.yologram.worker.domain.tech.news.entity.TechNews
-import link.yologram.worker.domain.tech.news.enums.TechNewsStatus
+import link.yologram.worker.domain.news.tech.entity.TechNews
+import link.yologram.worker.domain.news.tech.enums.TechNewsStatus
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query

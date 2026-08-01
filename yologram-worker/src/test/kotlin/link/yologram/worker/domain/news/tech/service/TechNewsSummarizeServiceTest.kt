@@ -1,13 +1,13 @@
-package link.yologram.worker.domain.tech.news.service
+package link.yologram.worker.domain.news.tech.service
 
-import link.yologram.worker.domain.tech.news.client.NewsContentCrawler
-import link.yologram.worker.domain.tech.news.entity.TechNews
-import link.yologram.worker.domain.tech.news.enums.TechNewsStatus
-import link.yologram.worker.domain.tech.news.entity.TechNewsCategoryMapping
-import link.yologram.worker.domain.tech.news.entity.TechCategory
-import link.yologram.worker.domain.tech.news.repository.TechNewsCategoryMappingRepository
-import link.yologram.worker.domain.tech.news.repository.TechCategoryRepository
-import link.yologram.worker.domain.tech.news.repository.TechNewsRepository
+import link.yologram.worker.domain.news.tech.client.NewsContentCrawler
+import link.yologram.worker.domain.news.tech.entity.TechNews
+import link.yologram.worker.domain.news.tech.enums.TechNewsStatus
+import link.yologram.worker.domain.news.tech.entity.TechNewsCategoryMapping
+import link.yologram.worker.domain.news.tech.entity.TechCategory
+import link.yologram.worker.domain.news.tech.repository.TechNewsCategoryMappingRepository
+import link.yologram.worker.domain.news.tech.repository.TechCategoryRepository
+import link.yologram.worker.domain.news.tech.repository.TechNewsRepository
 import link.yologram.worker.global.discord.DiscordNotifier
 import link.yologram.worker.global.llm.LlmClient
 import link.yologram.worker.global.llm.LlmCompletion

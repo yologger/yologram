@@ -1,6 +1,6 @@
-package link.yologram.worker.domain.tech.news.repository
+package link.yologram.worker.domain.news.tech.repository
 
-import link.yologram.worker.domain.tech.news.entity.TechNewsCategoryMapping
+import link.yologram.worker.domain.news.tech.entity.TechNewsCategoryMapping
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query

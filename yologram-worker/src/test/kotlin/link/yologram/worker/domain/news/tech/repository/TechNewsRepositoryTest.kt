@@ -1,7 +1,7 @@
-package link.yologram.worker.domain.tech.news.repository
+package link.yologram.worker.domain.news.tech.repository
 
-import link.yologram.worker.domain.tech.news.entity.TechNews
-import link.yologram.worker.domain.tech.news.entity.TechNewsSource
+import link.yologram.worker.domain.news.tech.entity.TechNews
+import link.yologram.worker.domain.news.tech.entity.TechNewsSource
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -52,11 +52,11 @@ class TechNewsRepositoryTest {
         techNewsRepositorySaveWith(link = "https://s/2", retryCount = 3) // 재시도 한도 도달 — 제외
         val a3 = techNewsRepositorySaveWith(link = "https://s/3", retryCount = 2)
         val summarized = techNewsRepositorySaveWith(link = "https://s/4", retryCount = 0)
-        summarized.status = link.yologram.worker.domain.tech.news.enums.TechNewsStatus.SUMMARIZED
+        summarized.status = link.yologram.worker.domain.news.tech.enums.TechNewsStatus.SUMMARIZED
         techNewsRepository.save(summarized) // 이미 요약됨 — 제외
 
         val targets = techNewsRepository.findByStatusAndRetryCountLessThan(
-            link.yologram.worker.domain.tech.news.enums.TechNewsStatus.COLLECTED,
+            link.yologram.worker.domain.news.tech.enums.TechNewsStatus.COLLECTED,
             3,
             org.springframework.data.domain.PageRequest.of(0, 10, org.springframework.data.domain.Sort.by("id")),
         )

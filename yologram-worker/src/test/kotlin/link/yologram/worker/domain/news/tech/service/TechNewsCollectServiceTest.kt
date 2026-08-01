@@ -1,12 +1,12 @@
-package link.yologram.worker.domain.tech.news.service
+package link.yologram.worker.domain.news.tech.service
 
-import link.yologram.worker.domain.tech.news.client.CollectedNews
-import link.yologram.worker.domain.tech.news.client.RssFeedClient
-import link.yologram.worker.domain.tech.news.entity.TechNews
-import link.yologram.worker.domain.tech.news.entity.TechNewsSource
-import link.yologram.worker.domain.tech.news.enums.TechNewsStatus
-import link.yologram.worker.domain.tech.news.repository.TechNewsRepository
-import link.yologram.worker.domain.tech.news.repository.TechNewsSourceRepository
+import link.yologram.worker.domain.news.tech.client.CollectedNews
+import link.yologram.worker.domain.news.tech.client.RssFeedClient
+import link.yologram.worker.domain.news.tech.entity.TechNews
+import link.yologram.worker.domain.news.tech.entity.TechNewsSource
+import link.yologram.worker.domain.news.tech.enums.TechNewsStatus
+import link.yologram.worker.domain.news.tech.repository.TechNewsRepository
+import link.yologram.worker.domain.news.tech.repository.TechNewsSourceRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor

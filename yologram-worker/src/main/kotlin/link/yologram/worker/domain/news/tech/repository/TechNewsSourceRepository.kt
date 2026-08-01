@@ -1,6 +1,6 @@
-package link.yologram.worker.domain.tech.news.repository
+package link.yologram.worker.domain.news.tech.repository
 
-import link.yologram.worker.domain.tech.news.entity.TechNewsSource
+import link.yologram.worker.domain.news.tech.entity.TechNewsSource
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface TechNewsSourceRepository : JpaRepository<TechNewsSource, Long> {
