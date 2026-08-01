@@ -144,9 +144,10 @@
   - [x] admin-web 유저 메뉴 서브탭 골격: /ums → /ums/users 리다이렉트, [유저 관리|어드민 관리] 서브탭(pages/ums/UmsPage + SubTabLayout — web-v1 미러), 목록 화면은 placeholder(목록 API 후속). 서브탭 하위 경로에서 메뉴 선택 유지는 menu.tsx MENU_MATCH_PREFIXES
   - 어드민 계정 관리를 유저 메뉴의 서브탭으로 넣은 근거: 둘 다 UMS 계정 관리(API /ums/admin/users vs /ums/admin/admin-users, 웹 라우트 /ums/users·/ums/admin-users로 1:1 대응), 저빈도 화면이라 톱레벨 메뉴 승격은 과함, 추후 role 도입 시 어드민 관리 탭만 권한 가드 가능. UI 용어는 '회원' 대신 '유저'로 통일
   - 어드민 JWT secret은 유저 JWT처럼 api-v1·v2 동일 값 공유(토큰 양쪽 통용). api-v2 prod는 task definition secrets(ADMIN_JWT_SECRET ← SSM valueFrom) 주입 — infra tf 반영 완료
-- [x] (News/Admin) 뉴스 소스 CRUD — api-v1 + admin-web 소스 관리 화면 (api-v2 미러 잔여)
+- [x] (News/Admin) 뉴스 소스 CRUD — api-v1·api-v2 + admin-web 소스 관리 화면
   - [x] api-v1: /api/v1/news/admin/tech/sources GET(목록 id asc)/POST(201)/PATCH(부분 수정, 널=미변경)/DELETE(204) — 전부 @AuthenticatedAdminUser 가드. 400 VALIDATION_ERROR(name 1~100·url http/https ≤500)/404 NEWS_SOURCE_NOT_FOUND/409 NEWS_SOURCE_DUPLICATE(수정 시 자기 자신 제외). 클래스는 AdminTechNewsSource* 명명(admin 세그먼트 경로 + Admin 접두 규칙). 테스트 55개, curl 생성→수정→삭제 실검증
   - [x] admin-web: 뉴스 관리 > 기술 뉴스 > 소스 관리(/news/tech/sources — 소스는 섹션 종속 리소스라 기술 뉴스 하위, 사이드바 SubMenu 2단·기본 펼침·최장 프리픽스 매칭. 투자/정치 오픈 시 동일 세트 복제) — Table(URL 새 탭·활성 Switch 토글 즉시 PATCH·실패 시 쿼리 기반 원복)·추가/수정 공용 Modal(백엔드 검증 미러)·삭제 confirm("수집 이력은 유지"). 쿼리키 ['newsSources']. 테스트 23개 신규(총 93)
+  - [x] api-v2 미러: admin_schema/admin_service/admin_router(AdminTechNewsSource* 대칭), TechNewsSourceRepository(save=flush+refresh — api-v1 saveAndFlush 미러). 동일 에러코드·검증 문구. 테스트 34개(총 292)
   - 설계: 엔티티는 워커와 같은 tech_news_source 테이블 매핑만(prod validate 안전, DDL 없음). hard delete 채택 — tech_news가 sourceId를 무FK 참조하지만 표시는 sourceName 스냅샷이라 고아 참조 무해, 수집 중지는 isActive=false가 담당
 - [x] (구조) 백엔드 패키지 도메인 우선 재배치 — domain/{도메인}/{섹션} (api-v1·api-v2·worker)
   - api-v1·v2: domain/tech/{post,category,comment,news} → domain/{pms,cms,comment,news}/tech (api-v1 70파일·api-v2 32파일 git mv). worker: domain/tech/news → domain/news/tech (23파일). 순수 패키지 이동 — 클래스명·API 경로·테이블·동작 무변경 (부수 수정: basePackages 3곳·import·main.py 라우터 import)

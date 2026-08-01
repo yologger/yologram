@@ -32,7 +32,7 @@
   - [ ] 소스 CRUD API(어드민 전용) + admin-web 소스 관리 화면
     - [x] api-v1 — /news/admin/tech/sources GET/POST/PATCH/DELETE, AdminTechNewsSource* (완료, done.md)
     - [x] admin-web — 뉴스 관리 > 기술 뉴스 > 소스 관리(/news/tech/sources) 화면: 목록·추가/수정 모달·삭제·활성 토글 (완료, done.md)
-    - [ ] api-v2 미러링
+    - [x] api-v2 미러링 — /api/v2/news/admin/tech/sources 4종 (완료, done.md)
   - [ ] 새 뉴스 유저 알림 — 요약 확정(SUMMARIZED/FAILED) + notified_at IS NULL 기준으로 발송 후 notified_at 기록(정확히 한 번·멱등). tech_news에 notified_at 컬럼 추가. 발송 채널(푸시/인앱)은 그때 결정
   - Discord 수집 알림은 개발자 모니터링용(임시) — 유저 알림 도입 후 yologram.discord.enabled=false로 비활성 또는 제거
   - [x] 공개 뉴스 목록 조회 API (api-v1/v2) + 카테고리 마스터 통합·LLM 분류 (완료, done.md)
