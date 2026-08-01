@@ -40,6 +40,26 @@ class AdminUserSelfDeleteException(AppException):
         super().__init__(400, "자기 자신은 삭제할 수 없습니다.", "ADMIN_USER_SELF_DELETE")
 
 
+class AdminUserOwnerUndeletableException(AppException):
+    def __init__(self):
+        super().__init__(400, "OWNER 계정은 삭제할 수 없습니다.", "ADMIN_USER_OWNER_UNDELETABLE")
+
+
+class AdminRoleForbiddenException(AppException):
+    def __init__(self):
+        super().__init__(403, "OWNER만 가능한 작업입니다.", "ADMIN_ROLE_FORBIDDEN")
+
+
+class AdminUserOwnerImmutableException(AppException):
+    def __init__(self):
+        super().__init__(400, "OWNER 계정은 변경할 수 없습니다.", "ADMIN_USER_OWNER_IMMUTABLE")
+
+
+class AdminUserInactiveException(AppException):
+    def __init__(self):
+        super().__init__(403, "비활성화된 계정입니다.", "ADMIN_USER_INACTIVE")
+
+
 class AuthWrongPasswordException(AppException):
     def __init__(self):
         super().__init__(401, "비밀번호가 일치하지 않습니다.", "AUTH_WRONG_PASSWORD")

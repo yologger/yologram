@@ -9,6 +9,7 @@ from app.domain.ums.admin_schema import (
     AdminLoginRequest,
     AdminUserCreateRequest,
     AdminUserResponse,
+    AdminUserStatusUpdateRequest,
 )
 from app.domain.ums.admin_service import AdminUserService
 
@@ -59,14 +60,41 @@ def get_admin_users(
     return service.get_admin_users(page, size)
 
 
+@router.patch(
+    "/admin-users/{id}/status",
+    response_model=ApiEnvelop,
+    summary="어드민 계정 활성/비활성 변경",
+    description="OWNER 전용. status는 ACTIVE/INACTIVE만 허용, OWNER 계정은 변경 불가 (어드민 토큰 필요)",
+    responses={
+        200: {"description": "변경 성공"},
+        400: {
+            "description": "비허용 status 값 (VALIDATION_ERROR) 또는 OWNER 대상 변경 시도 (ADMIN_USER_OWNER_IMMUTABLE)"
+        },
+        401: {"description": "인증 실패 (어드민 토큰 없음/만료/유효하지 않음)"},
+        403: {"description": "요청자가 OWNER가 아님 (ADMIN_ROLE_FORBIDDEN)"},
+        404: {"description": "어드민 사용자를 찾을 수 없음 (ADMIN_USER_NOT_FOUND)"},
+    },
+)
+def update_status(
+    id: int,
+    request: AdminUserStatusUpdateRequest,
+    auth_data: AdminAuthData = Depends(get_authenticated_admin),
+    db: Session = Depends(get_db),
+):
+    service = AdminUserService(db)
+    return ApiEnvelop(data=service.update_status(auth_data, id, request))
+
+
 @router.delete(
     "/admin-users/{id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="어드민 계정 삭제",
-    description="hard delete — 자기 자신은 삭제 불가 (어드민 토큰 필요)",
+    description="hard delete — 자기 자신·OWNER 계정은 삭제 불가 (어드민 토큰 필요)",
     responses={
         204: {"description": "삭제 성공"},
-        400: {"description": "자기 자신 삭제 시도 (ADMIN_USER_SELF_DELETE)"},
+        400: {
+            "description": "자기 자신 삭제 시도 (ADMIN_USER_SELF_DELETE) 또는 OWNER 삭제 시도 (ADMIN_USER_OWNER_UNDELETABLE)"
+        },
         401: {"description": "인증 실패 (어드민 토큰 없음/만료/유효하지 않음)"},
         404: {"description": "어드민 사용자를 찾을 수 없음 (ADMIN_USER_NOT_FOUND)"},
     },
@@ -89,6 +117,7 @@ def delete(
         200: {"description": "로그인 성공"},
         400: {"description": "입력값 검증 실패"},
         401: {"description": "비밀번호 불일치"},
+        403: {"description": "비활성화된 계정 (ADMIN_USER_INACTIVE)"},
         404: {"description": "어드민 사용자를 찾을 수 없음"},
     },
 )
@@ -105,6 +134,7 @@ def login(request: AdminLoginRequest, db: Session = Depends(get_db)):
     responses={
         200: {"description": "검증 성공"},
         401: {"description": "인증 실패 (어드민 토큰 없음/만료/유효하지 않음)"},
+        403: {"description": "비활성화된 계정 (ADMIN_USER_INACTIVE)"},
         404: {"description": "어드민 사용자를 찾을 수 없음"},
     },
 )

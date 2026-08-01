@@ -13,7 +13,7 @@ from app.config.database import get_db
 from app.config.settings import get_settings
 from app.domain.ums.admin_jwt_util import create_admin_token
 from app.domain.ums.jwt_util import create_token
-from app.domain.ums.enum import UserStatus
+from app.domain.ums.enum import AdminUserRole, UserStatus
 from app.domain.ums.model import AdminUser
 from app.main import app
 
@@ -149,6 +149,7 @@ class TestAdminRouter:
         def test_로그인_성공(self, mock_repo_cls):
             admin = AdminUser(email="admin@yologram.link", name="어드민", password=self.hashed_pw)
             admin.id = 1
+            admin.role = AdminUserRole.ADMIN
             mock_repo = MagicMock()
             mock_repo.find_by_email.return_value = admin
             mock_repo_cls.return_value = mock_repo
@@ -163,6 +164,7 @@ class TestAdminRouter:
             assert data["uid"] == 1
             assert data["email"] == "admin@yologram.link"
             assert data["name"] == "어드민"
+            assert data["role"] == "ADMIN"  # 응답에 role 포함
             assert "accessToken" in data
 
         @patch("app.domain.ums.admin_service.AdminUserRepository")
@@ -183,6 +185,44 @@ class TestAdminRouter:
         def test_비밀번호_불일치_401(self, mock_repo_cls):
             admin = AdminUser(email="admin@yologram.link", name="어드민", password=self.hashed_pw)
             admin.id = 1
+            mock_repo = MagicMock()
+            mock_repo.find_by_email.return_value = admin
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.post("/api/v2/ums/admin/auth/login", json={
+                "email": "admin@yologram.link",
+                "password": "wrongpassword",
+            })
+
+            assert response.status_code == 401
+            assert response.json()["errorCode"] == "AUTH_WRONG_PASSWORD"
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_INACTIVE_계정_로그인_403(self, mock_repo_cls):
+            admin = AdminUser(email="admin@yologram.link", name="어드민", password=self.hashed_pw)
+            admin.id = 1
+            admin.role = AdminUserRole.ADMIN
+            admin.status = UserStatus.INACTIVE
+            mock_repo = MagicMock()
+            mock_repo.find_by_email.return_value = admin
+            mock_repo_cls.return_value = mock_repo
+
+            # 올바른 비밀번호여도 비활성 계정이면 차단 (비밀번호 검증 후 체크)
+            response = self.client.post("/api/v2/ums/admin/auth/login", json={
+                "email": "admin@yologram.link",
+                "password": "password123!",
+            })
+
+            assert response.status_code == 403
+            body = response.json()
+            assert body["errorCode"] == "ADMIN_USER_INACTIVE"
+            assert body["errorMessage"] == "비활성화된 계정입니다."
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_INACTIVE_계정이라도_비밀번호_불일치가_먼저_401(self, mock_repo_cls):
+            admin = AdminUser(email="admin@yologram.link", name="어드민", password=self.hashed_pw)
+            admin.id = 1
+            admin.status = UserStatus.INACTIVE
             mock_repo = MagicMock()
             mock_repo.find_by_email.return_value = admin
             mock_repo_cls.return_value = mock_repo
@@ -218,6 +258,7 @@ class TestAdminRouter:
             token = create_admin_token(1)
             admin = AdminUser(email="admin@yologram.link", name="어드민", password="hashed")
             admin.id = 1
+            admin.role = AdminUserRole.OWNER
             mock_repo = MagicMock()
             mock_repo.find_by_id.return_value = admin
             mock_repo_cls.return_value = mock_repo
@@ -232,6 +273,29 @@ class TestAdminRouter:
             assert data["uid"] == 1
             assert data["email"] == "admin@yologram.link"
             assert data["name"] == "어드민"
+            assert data["role"] == "OWNER"  # 응답에 role 포함
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_INACTIVE_계정_403(self, mock_repo_cls):
+            token = create_admin_token(1)
+            admin = AdminUser(email="admin@yologram.link", name="어드민", password="hashed")
+            admin.id = 1
+            admin.role = AdminUserRole.ADMIN
+            admin.status = UserStatus.INACTIVE
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.return_value = admin
+            mock_repo_cls.return_value = mock_repo
+
+            # 기발급 토큰이 유효해도 비활성 계정이면 차단
+            response = self.client.post(
+                "/api/v2/ums/admin/auth/validate-token",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+            assert response.status_code == 403
+            body = response.json()
+            assert body["errorCode"] == "ADMIN_USER_INACTIVE"
+            assert body["errorMessage"] == "비활성화된 계정입니다."
 
         @patch("app.domain.ums.admin_service.AdminUserRepository")
         def test_어드민_없음_404(self, mock_repo_cls):
@@ -361,6 +425,7 @@ class TestAdminRouter:
             )
             admin.id = uid
             admin.status = UserStatus.ACTIVE
+            admin.role = AdminUserRole.ADMIN
             admin.joined_date = datetime(2026, 7, uid, 9, 0)
             return admin
 
@@ -382,6 +447,7 @@ class TestAdminRouter:
             assert body["data"][0]["email"] == "admin1@yologram.link"
             assert body["data"][0]["name"] == "어드민1"
             assert body["data"][0]["status"] == "ACTIVE"  # enum 문자열 직렬화
+            assert body["data"][0]["role"] == "ADMIN"  # 응답에 role 포함
             assert body["data"][0]["joinedDate"] == "2026-07-01T09:00:00"
             assert "password" not in body["data"][0]  # 비밀번호 미노출
             assert body["page"] == 0
@@ -513,6 +579,7 @@ class TestAdminRouter:
         def test_삭제_성공_204(self, mock_repo_cls):
             target = AdminUser(email="target@yologram.link", name="대상", password="hashed")
             target.id = 2
+            target.role = AdminUserRole.ADMIN
             mock_repo = MagicMock()
             mock_repo.find_by_id.return_value = target
             mock_repo_cls.return_value = mock_repo
@@ -525,6 +592,26 @@ class TestAdminRouter:
             assert response.status_code == 204
             assert response.content == b""
             mock_repo.delete.assert_called_once_with(target)
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_OWNER_삭제_400(self, mock_repo_cls):
+            owner = AdminUser(email="owner@yologram.link", name="오너", password="hashed")
+            owner.id = 2
+            owner.role = AdminUserRole.OWNER
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.return_value = owner
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.delete(
+                "/api/v2/ums/admin/admin-users/2",
+                headers={"Authorization": f"Bearer {self.token}"},
+            )
+
+            assert response.status_code == 400
+            body = response.json()
+            assert body["errorCode"] == "ADMIN_USER_OWNER_UNDELETABLE"
+            assert body["errorMessage"] == "OWNER 계정은 삭제할 수 없습니다."
+            mock_repo.delete.assert_not_called()
 
         @patch("app.domain.ums.admin_service.AdminUserRepository")
         def test_자기_자신_삭제_400(self, mock_repo_cls):
@@ -569,6 +656,154 @@ class TestAdminRouter:
             response = self.client.delete(
                 "/api/v2/ums/admin/admin-users/2",
                 headers={"Authorization": f"Bearer {user_token}"},
+            )
+
+            assert response.status_code == 401
+            assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
+
+    class TestUpdateStatus:
+
+        def setup_method(self):
+            self.mock_db = MagicMock()
+            app.dependency_overrides[get_db] = lambda: self.mock_db
+            self.client = TestClient(app)
+            self.token = create_admin_token(1)  # 요청 어드민 uid=1
+
+        def teardown_method(self):
+            app.dependency_overrides.clear()
+
+        @staticmethod
+        def _admin(uid: int, role: AdminUserRole, status: UserStatus = UserStatus.ACTIVE) -> AdminUser:
+            admin = AdminUser(
+                email=f"admin{uid}@yologram.link", name=f"어드민{uid}", password="hashed"
+            )
+            admin.id = uid
+            admin.role = role
+            admin.status = status
+            admin.joined_date = datetime(2026, 7, 1, 9, 0)
+            return admin
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_OWNER가_비활성화_성공_200(self, mock_repo_cls):
+            owner = self._admin(1, AdminUserRole.OWNER)
+            target = self._admin(2, AdminUserRole.ADMIN)
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.side_effect = lambda uid: {1: owner, 2: target}.get(uid)
+            mock_repo.save.side_effect = lambda a: a
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.patch(
+                "/api/v2/ums/admin/admin-users/2/status",
+                headers={"Authorization": f"Bearer {self.token}"},
+                json={"status": "INACTIVE"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()["data"]
+            assert data["uid"] == 2
+            assert data["status"] == "INACTIVE"
+            assert data["role"] == "ADMIN"
+            mock_repo.save.assert_called_once_with(target)
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_OWNER가_재활성화_성공_200(self, mock_repo_cls):
+            owner = self._admin(1, AdminUserRole.OWNER)
+            target = self._admin(2, AdminUserRole.ADMIN, status=UserStatus.INACTIVE)
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.side_effect = lambda uid: {1: owner, 2: target}.get(uid)
+            mock_repo.save.side_effect = lambda a: a
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.patch(
+                "/api/v2/ums/admin/admin-users/2/status",
+                headers={"Authorization": f"Bearer {self.token}"},
+                json={"status": "ACTIVE"},
+            )
+
+            assert response.status_code == 200
+            assert response.json()["data"]["status"] == "ACTIVE"
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_요청자가_OWNER가_아니면_403__대상_존재_여부와_무관(self, mock_repo_cls):
+            requester = self._admin(1, AdminUserRole.ADMIN)
+            mock_repo = MagicMock()
+            # 대상(2)은 없음 — 403이 404보다 먼저 (검사 순서 403 → 404 → 400)
+            mock_repo.find_by_id.side_effect = lambda uid: {1: requester}.get(uid)
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.patch(
+                "/api/v2/ums/admin/admin-users/2/status",
+                headers={"Authorization": f"Bearer {self.token}"},
+                json={"status": "INACTIVE"},
+            )
+
+            assert response.status_code == 403
+            body = response.json()
+            assert body["errorCode"] == "ADMIN_ROLE_FORBIDDEN"
+            assert body["errorMessage"] == "OWNER만 가능한 작업입니다."
+            mock_repo.save.assert_not_called()
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_대상_없음_404(self, mock_repo_cls):
+            owner = self._admin(1, AdminUserRole.OWNER)
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.side_effect = lambda uid: {1: owner}.get(uid)
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.patch(
+                "/api/v2/ums/admin/admin-users/999/status",
+                headers={"Authorization": f"Bearer {self.token}"},
+                json={"status": "INACTIVE"},
+            )
+
+            assert response.status_code == 404
+            assert response.json()["errorCode"] == "ADMIN_USER_NOT_FOUND"
+
+        @patch("app.domain.ums.admin_service.AdminUserRepository")
+        def test_대상이_OWNER면_400(self, mock_repo_cls):
+            owner = self._admin(1, AdminUserRole.OWNER)
+            target_owner = self._admin(2, AdminUserRole.OWNER)
+            mock_repo = MagicMock()
+            mock_repo.find_by_id.side_effect = lambda uid: {1: owner, 2: target_owner}.get(uid)
+            mock_repo_cls.return_value = mock_repo
+
+            response = self.client.patch(
+                "/api/v2/ums/admin/admin-users/2/status",
+                headers={"Authorization": f"Bearer {self.token}"},
+                json={"status": "INACTIVE"},
+            )
+
+            assert response.status_code == 400
+            body = response.json()
+            assert body["errorCode"] == "ADMIN_USER_OWNER_IMMUTABLE"
+            assert body["errorMessage"] == "OWNER 계정은 변경할 수 없습니다."
+            mock_repo.save.assert_not_called()
+
+        def test_DELETED_값_400(self):
+            response = self.client.patch(
+                "/api/v2/ums/admin/admin-users/2/status",
+                headers={"Authorization": f"Bearer {self.token}"},
+                json={"status": "DELETED"},
+            )
+
+            assert response.status_code == 400
+            body = response.json()
+            assert body["errorCode"] == "VALIDATION_ERROR"
+            assert body["errorMessage"] == "status는 ACTIVE 또는 INACTIVE만 허용됩니다"
+
+        def test_알_수_없는_값_400(self):
+            response = self.client.patch(
+                "/api/v2/ums/admin/admin-users/2/status",
+                headers={"Authorization": f"Bearer {self.token}"},
+                json={"status": "PAUSED"},
+            )
+
+            assert response.status_code == 400
+            assert response.json()["errorCode"] == "VALIDATION_ERROR"
+
+        def test_토큰_없음_401(self):
+            response = self.client.patch(
+                "/api/v2/ums/admin/admin-users/2/status", json={"status": "INACTIVE"}
             )
 
             assert response.status_code == 401

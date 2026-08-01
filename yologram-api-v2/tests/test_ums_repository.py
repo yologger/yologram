@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from testcontainers.mysql import MySqlContainer
 
 from app.config.database import Base
-from app.domain.ums.enum import UserStatus
+from app.domain.ums.enum import AdminUserRole, UserStatus
 from app.domain.ums.model import AdminUser, User
 from app.domain.ums.repository import AdminUserRepository, UserRepository
 
@@ -87,6 +87,7 @@ class TestAdminUserRepository:
             assert [a.id for a in page1] == ids[:2]  # 첫 페이지 id asc
             assert [a.id for a in page2] == ids[2:]  # 둘째 페이지 잔여분
             assert page1[0].status == UserStatus.ACTIVE  # 기본 상태
+            assert page1[0].role == AdminUserRole.ADMIN  # 기본 role
             assert page1[0].joined_date is not None
 
         def test_범위_밖_offset이면_빈_목록을_반환한다(self, db_session):

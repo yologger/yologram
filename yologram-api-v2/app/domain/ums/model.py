@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import BigInteger, Boolean, Column, DateTime, Enum, String, func
 
 from app.config.database import Base
-from app.domain.ums.enum import UserStatus, UserType
+from app.domain.ums.enum import AdminUserRole, UserStatus, UserType
 
 
 class User(Base):
@@ -30,6 +30,8 @@ class AdminUser(Base):
     name = Column(String(200), nullable=False)
     password = Column(String(200), nullable=False)
     status = Column(Enum(UserStatus), nullable=False, default=UserStatus.ACTIVE)
+    # OWNER는 DB 직접 조작 전용 — API 생성은 항상 ADMIN
+    role = Column(Enum(AdminUserRole), nullable=False, default=AdminUserRole.ADMIN)
     joined_date = Column(DateTime, nullable=False, default=func.now())
     modified_date = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
