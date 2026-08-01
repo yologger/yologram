@@ -144,6 +144,16 @@
   - [x] admin-web 유저 메뉴 서브탭 골격: /ums → /ums/users 리다이렉트, [유저 관리|어드민 관리] 서브탭(pages/ums/UmsPage + SubTabLayout — web-v1 미러), 목록 화면은 placeholder(목록 API 후속). 서브탭 하위 경로에서 메뉴 선택 유지는 menu.tsx MENU_MATCH_PREFIXES
   - 어드민 계정 관리를 유저 메뉴의 서브탭으로 넣은 근거: 둘 다 UMS 계정 관리(API /ums/admin/users vs /ums/admin/admin-users, 웹 라우트 /ums/users·/ums/admin-users로 1:1 대응), 저빈도 화면이라 톱레벨 메뉴 승격은 과함, 추후 role 도입 시 어드민 관리 탭만 권한 가드 가능. UI 용어는 '회원' 대신 '유저'로 통일
   - 어드민 JWT secret은 유저 JWT처럼 api-v1·v2 동일 값 공유(토큰 양쪽 통용). api-v2 prod는 task definition secrets(ADMIN_JWT_SECRET ← SSM valueFrom) 주입 — infra tf 반영 완료
+- [x] (UMS/Admin) 어드민 활성/비활성 — OWNER 전용 상태 토글 (api-v1·v2 + admin-web)
+  - PATCH /ums/admin/admin-users/{id}/status {status: ACTIVE|INACTIVE(그 외 400)} — 첫 role 기반 인가: 요청자 비-OWNER 403 ADMIN_ROLE_FORBIDDEN, 대상 OWNER 400 ADMIN_USER_OWNER_IMMUTABLE(요청자가 OWNER뿐이라 자기 자신 자동 차단), 검사 순서 403→404→400
+  - INACTIVE 실효성: 로그인·validate-token에서 403 ADMIN_USER_INACTIVE — 로그인은 비밀번호 검증 후 체크(계정 존재 노출 최소화, 비번 오류가 먼저 401)
+  - admin-web: 상태 컬럼을 role 분기로 — 내가 OWNER면 Switch(OWNER 행 비활성+Tooltip, 실패 시 쿼리 기반 원복), ADMIN이면 읽기 전용 Tag. '나' Tag는 이메일 컬럼으로 이동(상태 컬럼은 이 기능으로 부활 — 그 전 잠깐 제거했었음)
+  - 테스트 신규: api-v1 20(총 388)·api-v2 11(총 323)·admin-web 9(총 124)
+- [x] (UMS/Admin) 어드민 role 도입 — OWNER/ADMIN (api-v1·v2 + admin-web 표시)
+  - admin_user.role ENUM('ADMIN','OWNER') NOT NULL DEFAULT 'ADMIN' (수동 DDL — Hibernate 생성문과 일치 확인). OWNER 계정: owner@yologram.link (DB INSERT로 생성)
+  - 정책: OWNER는 오직 DB 직접 조작으로만 존재·변경 — 생성 API는 항상 ADMIN(요청에 role 필드 없음), role 변경 API 없음, OWNER는 삭제 API로도 불가(400 ADMIN_USER_OWNER_UNDELETABLE). 삭제 검사 순서: 자기 자신 400 → 404 → OWNER 400
+  - 응답에 role 포함(목록·로그인·validate-token). admin-web: 역할 컬럼(OWNER gold Tag)·OWNER 행 삭제 비활성+Tooltip, AuthState에 role 저장
+  - 권한 가드(생성·삭제 OWNER 전용 등 role 기반 인가)는 이번 스코프 제외 — 필요 시 todos행
 - [x] (UMS/Admin) 어드민 계정 관리 — 목록·삭제 API(api-v1·v2) + admin-web 어드민 관리 실화면
   - GET /ums/admin/admin-users?page&size — offset 페이지네이션(page 0-based·size 기본 10·1~100, ApiEnvelopPage 재사용: totalPages·totalCount·first·last), id asc·DELETE /{id}(hard delete) — 자기 자신 삭제 400 ADMIN_USER_SELF_DELETE. 이 규칙 하나로 "최소 1명 어드민" 불변식 자동 보장(마지막 남은 어드민은 자기 자신이라 삭제 불가)
   - admin-web 유저 관리 > 어드민 관리(/ums/admin-users): Table(본인 '나' Tag, 본인 행 삭제 비활성+Tooltip, 상태 Tag)·추가 Modal(기존 생성 API 재사용)·삭제 confirm. antd Table 서버사이드 페이지네이션(pageSize 10 고정, keepPreviousData, 마지막 항목 삭제 시 이전 페이지 보정). 쿼리키 ['adminUsers', page]
