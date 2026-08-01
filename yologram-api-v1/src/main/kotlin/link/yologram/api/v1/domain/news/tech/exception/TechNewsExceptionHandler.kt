@@ -16,4 +16,14 @@ class TechNewsExceptionHandler {
     fun handleInvalidCursor(e: InvalidTechNewsCursorException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
+
+    @ExceptionHandler(TechNewsSourceNotFoundException::class)
+    fun handleSourceNotFound(e: TechNewsSourceNotFoundException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(e.message, e.errorCode))
+    }
+
+    @ExceptionHandler(TechNewsSourceDuplicateException::class)
+    fun handleSourceDuplicate(e: TechNewsSourceDuplicateException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse(e.message, e.errorCode))
+    }
 }
