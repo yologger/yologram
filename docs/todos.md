@@ -6,8 +6,27 @@
 > docs/는 메인(루트) 에이전트만 갱신. 서브에이전트는 read-only(참고만).
 
 ## Todos. 
-- [ ] (Worker) 비동기 워커 구성 — yologram-worker/, Spring Boot(Kotlin), 번장 bun-ums-worker 패턴 미러
-  - [x] 1차: 부트스트랩 — Spring Boot + actuator + Parameter Store + OTel + Dockerfile + 인프라(ECR/ECS SPOT) + CI (완료, done.md)
+- [ ] (PMS/QueryDSL) QueryDSL 조인 활용 예시 추가 — 현재 코드에 SQL 조인 사용처 0 (닉네임=IN 배치, 카테고리 필터=EXISTS, 라벨=IN 배치)
+  - 도메인 간 조인 금지 원칙(rules.md)은 유지 — 같은 도메인 내 조인 예시로 추가 (후보: 뉴스 단건/목록에 tech_news ⋈ tech_news_source 소스명 최신화 표시, 게시글 상세의 post ⋈ mapping 단건 계열 — 1:N 목록 조인은 row 뻥튀기로 부적합, 구현 시 확정)
+  - api-v1 QueryDSL 기준(rules.md ②다중 조인 항목 실사용 예시화), api-v2는 SQLAlchemy join 미러
+- [ ] (Cache) Redis(Valkey) 도입 — 대규모 트래픽 가정 하 캐시 예시 (포트폴리오: 가정→결정 근거를 done.md에 기록)
+  - [ ] 인프라: ElastiCache Valkey(cache.t4g.micro, 요금 기검토) infra tf + 로컬 docker compose
+  - [ ] 닉네임 캐시 — cache-aside: 목록·댓글의 user IN 배치 조회(UserQueryClient.findNicknames)를 Redis MGET으로 흡수, 닉네임 변경 시 키 DEL 무효화. LocalUserQueryClient 데코레이터 위치(MSA 분리 후에도 캐시 층 유지)
+  - [ ] 뉴스 첫 페이지 캐시 — GET /news/{section} 무커서 응답 통째(뉴스+매핑+라벨 3쿼리 제거), TTL 5분 or worker 무효화(cross-service). 커서 페이지는 캐시 제외
+  - [ ] 캐시 히트율·응답시간 지표 → Grafana (before/after 실측)
+  - 장애 시나리오 명시: cache-aside라 Redis 다운 시 DB fallback(성능 저하, 가용성 유지). validate-token 등 auth 상태는 캐시 금지(INACTIVE 즉시 차단 무력화 — 의도적 비적용 기록)
+  - 후속 확장(별항 연계): 재발송 rate limit·인증코드 TTL 이관·refresh token 저장소·좋아요 카운터·ShedLock
+- [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
+  - [ ] 도입 시점 판단
+  - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)
+  - [ ] 검색 인덱서(yologram-search-indexer): pms 변경 이벤트 → OpenSearch 동기화
+  - [ ] 검색 API(yologram-search-api): 키워드/카테고리/섹션 검색·필터·정렬·집계
+  - [ ] 프론트 이관: 공개 다건 탐색 → search (단건·쓰기·내 글은 pms 유지)
+  - pms vs search 호출 기준: 단건 정확 조회·쓰기·"내 것"(개인화+권한) = pms / 공개 다건 탐색(키워드·카테고리·섹션 목록·필터·정렬·집계) = search
+  - CQRS: pms = 쓰기 원본(MySQL, 권한·개인화) / search = 읽기 최적화(OpenSearch). 동기화는 pms 쓰기 → 변경 이벤트(SQS/Kinesis) → indexer가 MySQL 읽어 문서화 → OpenSearch 인덱싱 (최종 일관성)
+  - QueryDSL vs search 역할: QueryDSL은 관계형 복잡성(권한 한정 "내 것/정확"), search는 탐색 복잡성(풀텍스트·연관도·패싯, 공개 카탈로그 발견)
+  - 도입 전략: 초기엔 pms cursor 목록으로 시작 → 필요 시 OpenSearch+indexer 도입. 별도 서비스(yologram-search-api, yologram-search-indexer)
+- [x] (Worker) 비동기 워커 구성 — yologram-worker/ 구축 완료(부트스트랩·인프라·CI), 테크 뉴스 파이프라인 운영 중 (done.md). 아래는 조건부 잔여
   - 주기 작업(RSS 수집 등)은 @Scheduled — 단일 인스턴스 전제
   - [ ] worker 다중 인스턴스 확장 시 ShedLock 도입 — @Scheduled 중복 실행 방지(전 인스턴스가 각자 실행 → lock 획득한 한 대만 실행). lock 저장소는 redis/mysql 중 도입 시점에 결정. 현재는 link unique로 멱등이라 데이터는 안 깨지지만 중복 fetch 낭비 + 동시 INSERT 레이스(배치 실패 후 다음 주기 회복) 있음
   - 배포는 기존과 동일 FARGATE_SPOT 0.25vCPU/512MB(월 ~$3, 서울 온디맨드 vCPU $0.04656/h·GB $0.00511/h 기준 ~70% 할인). Spot 중단 시 @Scheduled는 놓친 사이클 소급 실행 없음 — RSS처럼 멱등·다음 주기가 커버하는 작업은 무해. 시각 민감/누적형/중단 불가 배치가 생기면 그 배치만 EventBridge Scheduler → SQS로 이관(스케줄 발화를 인프라가 보장, 워커 다운 중에도 메시지 보존) 또는 온디맨드 capacity 혼합
@@ -63,18 +82,6 @@
   - [x] api-v1 LegacyCommentResource·api-v2 legacy 댓글 라우터 제거 (완료 — web 신경로 배포 확인 후 즉시 제거, 비공개 서비스라 유예 생략)
   - [x] legacy 테이블 정리 — 델타 마이그레이션 → 배포·검증 → *_legacy rename → DROP까지 완료
   - [ ] api-v2 createdAt UTC 저장 이슈 — 신규 작성 시 v1은 KST, v2는 UTC로 저장됨 (분리 전부터 존재하던 차이). v2 프로세스 타임존/DB 세션 타임존 정합 필요
-- [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
-  - [ ] 도입 시점 판단
-  - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)
-  - [ ] 검색 인덱서(yologram-search-indexer): pms 변경 이벤트 → OpenSearch 동기화
-  - [ ] 검색 API(yologram-search-api): 키워드/카테고리/섹션 검색·필터·정렬·집계
-  - [ ] 프론트 이관: 공개 다건 탐색 → search (단건·쓰기·내 글은 pms 유지)
-  - pms vs search 호출 기준: 단건 정확 조회·쓰기·"내 것"(개인화+권한) = pms / 공개 다건 탐색(키워드·카테고리·섹션 목록·필터·정렬·집계) = search
-  - CQRS: pms = 쓰기 원본(MySQL, 권한·개인화) / search = 읽기 최적화(OpenSearch). 동기화는 pms 쓰기 → 변경 이벤트(SQS/Kinesis) → indexer가 MySQL 읽어 문서화 → OpenSearch 인덱싱 (최종 일관성)
-  - QueryDSL vs search 역할: QueryDSL은 관계형 복잡성(권한 한정 "내 것/정확"), search는 탐색 복잡성(풀텍스트·연관도·패싯, 공개 카탈로그 발견)
-  - 도입 전략: 초기엔 pms cursor 목록으로 시작 → 필요 시 OpenSearch+indexer 도입. 별도 서비스(yologram-search-api, yologram-search-indexer)
-- [ ] (Cache) Redis 도입 — 캐싱 등 활용 (세부는 진행 시 결정)
-  - 후보: user 단건 조회 캐싱 — 목록/상세 렌더마다 닉네임 조회(UserQueryClient)로 user select가 요청마다 반복됨(Hibernate 로그로 확인). uid→nickname 캐시 우선 검토
 - [ ] (Notification) 웹 알림 — 모바일 앱 푸시(FCM/APNs) 대신 웹 기반 알림 처리 (세부는 진행 시 결정)
 - [ ] (web) invest/politics 피드 연동
   - [ ] web-v1
