@@ -24,6 +24,7 @@
     - [x] prod DB에 admin_user 테이블 수동 DDL 실행 (완료)
     - [x] 어드민 웹 로그인·가드 연동 — LoginPage·AuthGate·RequireAuth(전 메뉴 보호)·로그아웃 + 유저 메뉴 서브탭(/ums/users 유저 관리·/ums/admin-users 어드민 관리) 골격 (완료, done.md)
     - [x] 어드민 웹 실서버 연동 검증 — 로그인/리다이렉트/서브탭/로그아웃/토큰 복원 브라우저 수동 확인 (완료)
+  - [x] 어드민 계정 관리 — 목록·삭제 API(api-v1/v2, 자기 자신 삭제 금지) + admin-web 유저 관리 > 어드민 관리 실화면 (완료, done.md)
   - 회원/카테고리/게시글 관리 API는 아래 (UMS/CMS/PMS Admin) 항목과 연계
 - [ ] (News) 테크 뉴스 — RSS 수집(Worker) → LLM 요약 → TECH > 뉴스 표시. 남은 순서: ①Admin 인증 → ②소스 CRUD API+어드민 화면 → ⑤공개 조회 API+web → ⑥어드민 뉴스 수정/삭제 (③수집·④요약은 완료 — done.md)
   - 명명 재확정(2026-07-26): Article → News 회귀 통일 (도메인·테이블·클래스·경로 전부 News — tech_news로 통일, 어드민 메뉴 '뉴스 관리'·서비스 표기와 일치. 과거 News→Article 변경을 되돌림, 경위는 done.md). 섹션별 테이블 분리 확정 — 투자/정치는 제공 방식 확정 시 invest_news/politics_news 등 별도 테이블+수집기로 추가 (post 섹션 분리는 별항)
