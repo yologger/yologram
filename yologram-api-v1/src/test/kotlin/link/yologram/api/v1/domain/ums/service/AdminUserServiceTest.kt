@@ -4,6 +4,7 @@ import link.yologram.api.v1.domain.ums.entity.AdminUser
 import link.yologram.api.v1.domain.ums.enum.UserStatus
 import link.yologram.api.v1.domain.ums.exception.AdminUserDuplicateException
 import link.yologram.api.v1.domain.ums.exception.AdminUserNotFoundException
+import link.yologram.api.v1.domain.ums.exception.AdminUserSelfDeleteException
 import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException
 import link.yologram.api.v1.domain.ums.model.AdminLoginRequest
 import link.yologram.api.v1.domain.ums.model.AdminUserCreateRequest
@@ -18,8 +19,14 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.transaction.annotation.Transactional
 import java.util.Optional
@@ -211,6 +218,120 @@ class AdminUserServiceTest {
         @Test
         fun `로그아웃은 아무 동작 없이 성공한다`() {
             adminUserService.logout(1L)
+        }
+    }
+
+    @Nested
+    inner class 어드민_목록_조회 {
+
+        private fun admins(vararg ids: Long) =
+            ids.map { testAdminUser(id = it, email = "admin$it@yologram.link", name = "어드민$it") }
+
+        @Test
+        fun `첫 페이지 조회 시 id 오름차순 Pageable로 조회하고 페이지 메타를 채운다`() {
+            whenever(adminUserRepository.findAll(any<Pageable>())).thenReturn(
+                PageImpl(admins(1L, 2L), PageRequest.of(0, 2), 5)
+            )
+
+            val result = adminUserService.getAdminUsers(0, 2)
+
+            val captor = argumentCaptor<Pageable>()
+            verify(adminUserRepository).findAll(captor.capture())
+            assertEquals(0, captor.firstValue.pageNumber)
+            assertEquals(2, captor.firstValue.pageSize)
+            assertEquals(Sort.by("id").ascending(), captor.firstValue.sort)
+
+            assertEquals(listOf(1L, 2L), result.data.map { it.uid })
+            assertEquals("admin1@yologram.link", result.data[0].email)
+            assertEquals("어드민1", result.data[0].name)
+            assertEquals(UserStatus.ACTIVE, result.data[0].status)
+            assertNotNull(result.data[0].joinedDate)
+            assertEquals(0L, result.page)
+            assertEquals(2L, result.size)
+            assertEquals(3L, result.totalPages)
+            assertEquals(5L, result.totalCount)
+            assertEquals(true, result.first)
+            assertEquals(false, result.last)
+        }
+
+        @Test
+        fun `두 번째 페이지 조회 시 first는 false다`() {
+            whenever(adminUserRepository.findAll(any<Pageable>())).thenReturn(
+                PageImpl(admins(3L, 4L), PageRequest.of(1, 2), 5)
+            )
+
+            val result = adminUserService.getAdminUsers(1, 2)
+
+            assertEquals(listOf(3L, 4L), result.data.map { it.uid })
+            assertEquals(1L, result.page)
+            assertEquals(false, result.first)
+            assertEquals(false, result.last)
+        }
+
+        @Test
+        fun `마지막 페이지 조회 시 last는 true다`() {
+            whenever(adminUserRepository.findAll(any<Pageable>())).thenReturn(
+                PageImpl(admins(5L), PageRequest.of(2, 2), 5)
+            )
+
+            val result = adminUserService.getAdminUsers(2, 2)
+
+            assertEquals(listOf(5L), result.data.map { it.uid })
+            assertEquals(2L, result.page)
+            assertEquals(3L, result.totalPages)
+            assertEquals(false, result.first)
+            assertEquals(true, result.last)
+        }
+
+        @Test
+        fun `범위 밖 페이지 조회 시 빈 데이터와 전체 메타를 반환한다`() {
+            whenever(adminUserRepository.findAll(any<Pageable>())).thenReturn(
+                PageImpl(emptyList(), PageRequest.of(9, 10), 2)
+            )
+
+            val result = adminUserService.getAdminUsers(9, 10)
+
+            assertTrue(result.data.isEmpty())
+            assertEquals(9L, result.page)
+            assertEquals(1L, result.totalPages)
+            assertEquals(2L, result.totalCount)
+        }
+    }
+
+    @Nested
+    inner class 어드민_삭제 {
+
+        @Test
+        fun `삭제 성공 시 repository delete가 호출된다`() {
+            val target = testAdminUser(id = 2L, email = "target@yologram.link")
+            whenever(adminUserRepository.findById(2L)).thenReturn(Optional.of(target))
+
+            adminUserService.delete(1L, 2L)
+
+            verify(adminUserRepository).delete(target)
+        }
+
+        @Test
+        fun `자기 자신 삭제 시 AdminUserSelfDeleteException 발생`() {
+            val exception = assertThrows<AdminUserSelfDeleteException> {
+                adminUserService.delete(1L, 1L)
+            }
+
+            assertEquals("ADMIN_USER_SELF_DELETE", exception.errorCode)
+            verify(adminUserRepository, never()).findById(any())
+            verify(adminUserRepository, never()).delete(any<AdminUser>())
+        }
+
+        @Test
+        fun `없는 id면 AdminUserNotFoundException 발생`() {
+            whenever(adminUserRepository.findById(999L)).thenReturn(Optional.empty())
+
+            val exception = assertThrows<AdminUserNotFoundException> {
+                adminUserService.delete(1L, 999L)
+            }
+
+            assertEquals("ADMIN_USER_NOT_FOUND", exception.errorCode)
+            verify(adminUserRepository, never()).delete(any<AdminUser>())
         }
     }
 }

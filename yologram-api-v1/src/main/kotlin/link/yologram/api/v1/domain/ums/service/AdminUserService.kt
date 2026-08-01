@@ -3,14 +3,19 @@ package link.yologram.api.v1.domain.ums.service
 import link.yologram.api.v1.domain.ums.entity.AdminUser
 import link.yologram.api.v1.domain.ums.exception.AdminUserDuplicateException
 import link.yologram.api.v1.domain.ums.exception.AdminUserNotFoundException
+import link.yologram.api.v1.domain.ums.exception.AdminUserSelfDeleteException
 import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException
 import link.yologram.api.v1.domain.ums.model.AdminLoginRequest
 import link.yologram.api.v1.domain.ums.model.AdminLoginResponse
 import link.yologram.api.v1.domain.ums.model.AdminUserCreateRequest
 import link.yologram.api.v1.domain.ums.model.AdminUserCreateResponse
+import link.yologram.api.v1.domain.ums.model.AdminUserResponse
 import link.yologram.api.v1.domain.ums.model.AdminValidateTokenResponse
 import link.yologram.api.v1.domain.ums.repository.AdminUserRepository
 import link.yologram.api.v1.domain.ums.util.AdminJwtUtil
+import link.yologram.api.v1.global.model.ApiEnvelopPage
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -70,5 +75,31 @@ class AdminUserService(
     }
 
     fun logout(uid: Long) {
+    }
+
+    /** 어드민 목록 offset 페이지 조회 (id asc) — 단순 페이지 조회라 QueryDSL 없이 Spring Data Pageable 사용 */
+    @Transactional(readOnly = true)
+    fun getAdminUsers(page: Int, size: Int): ApiEnvelopPage<AdminUserResponse> {
+        val result = adminUserRepository.findAll(PageRequest.of(page, size, Sort.by("id").ascending()))
+        return ApiEnvelopPage(
+            data = result.content.map { AdminUserResponse.from(it) },
+            page = result.number.toLong(),
+            size = result.size.toLong(),
+            totalPages = result.totalPages.toLong(),
+            totalCount = result.totalElements,
+            first = result.isFirst,
+            last = result.isLast,
+        )
+    }
+
+    /** hard delete — 자기 자신 삭제 금지 규칙만으로 어드민이 항상 최소 1명 남는 것이 보장됨 */
+    @Transactional
+    fun delete(requesterUid: Long, id: Long) {
+        if (requesterUid == id) {
+            throw AdminUserSelfDeleteException()
+        }
+        val admin = adminUserRepository.findById(id)
+            .orElseThrow { AdminUserNotFoundException() }
+        adminUserRepository.delete(admin)
     }
 }

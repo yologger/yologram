@@ -16,7 +16,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - src/main/kotlin/.../domain/ums/service/UserService.kt: 회원가입(이메일 인증 확인)·정보 수정·비밀번호 변경·회원탈퇴
 - src/main/kotlin/.../domain/ums/service/UserEmailVerificationService.kt + EmailSender(Stub/Ses)·SesConfig: 이메일 인증·발송
 - src/main/kotlin/.../domain/ums/service/UserPasswordResetService.kt: 비밀번호 찾기
-- src/main/kotlin/.../domain/ums/service/AdminUserService.kt: 어드민 생성(어드민 토큰 가드)·로그인·토큰 검증·로그아웃 — admin_user 테이블, 전용 JWT
+- src/main/kotlin/.../domain/ums/service/AdminUserService.kt: 어드민 생성(어드민 토큰 가드)·로그인·토큰 검증·로그아웃·목록·삭제(자기 자신 금지) — admin_user 테이블, 전용 JWT
 - src/main/kotlin/.../domain/{pms,cms,comment,news}/tech: 도메인 우선 구조 — pms/tech(TechPostService·QueryDSL), cms/tech(TechCategoryService — tech_category 공용 마스터), comment/tech(TechPostCommentService), news/tech(TechNewsService — 공개 조회: 복합 커서·categoryId 필터·라벨 조인. AdminTechNewsSourceService — 어드민 소스 CRUD /news/admin/tech/sources)
 
 ## 설정 관리

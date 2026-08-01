@@ -32,6 +32,11 @@ class UmsExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(e.message, e.errorCode))
     }
 
+    @ExceptionHandler(AdminUserSelfDeleteException::class)
+    fun handleAdminUserSelfDelete(e: AdminUserSelfDeleteException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
+    }
+
     @ExceptionHandler(AuthWrongPasswordException::class)
     fun handleWrongPassword(e: AuthWrongPasswordException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ErrorResponse(e.message, e.errorCode))
