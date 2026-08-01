@@ -1,4 +1,5 @@
 import api from '../lib/api'
+import type { AdminRole } from '../stores/auth'
 
 export type AdminUserStatus = 'ACTIVE' | 'INACTIVE' | 'DELETED'
 
@@ -6,6 +7,7 @@ export interface AdminUser {
   uid: number
   email: string
   name: string
+  role: AdminRole
   status: AdminUserStatus
   joinedDate: string
 }
@@ -30,4 +32,13 @@ export async function getAdminUsers(page = 0, size = 10): Promise<AdminUsersPage
 
 export async function deleteAdminUser(uid: number): Promise<void> {
   await api.delete(`${BASE_PATH}/${uid}`)
+}
+
+/** 활성/비활성 상태 변경 — OWNER 전용 (DELETED는 hard delete라 대상 아님) */
+export async function updateAdminUserStatus(
+  uid: number,
+  status: 'ACTIVE' | 'INACTIVE',
+): Promise<AdminUser> {
+  const response = await api.patch<{ data: AdminUser }>(`${BASE_PATH}/${uid}/status`, { status })
+  return response.data.data
 }

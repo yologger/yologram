@@ -13,6 +13,7 @@ const adminAuth: AuthState = {
   accessToken: 'valid-token',
   email: 'admin@yologram.link',
   name: '관리자',
+  role: 'OWNER',
 }
 
 const BASE_URL = 'http://localhost:5001/api/v1/news/admin/tech/sources'

@@ -9,6 +9,7 @@ const validAuth: AuthState = {
   accessToken: 'valid-token',
   email: 'admin@yologram.link',
   name: '관리자',
+  role: 'OWNER',
 }
 
 beforeAll(() => server.listen())
@@ -27,6 +28,7 @@ describe('login', () => {
       accessToken: 'mock-access-token',
       email: 'admin@yologram.link',
       name: '관리자',
+      role: 'OWNER',
     })
   })
 
@@ -53,6 +55,7 @@ describe('validateToken', () => {
       uid: 1,
       email: 'admin@yologram.link',
       name: '관리자',
+      role: 'OWNER',
     })
   })
 

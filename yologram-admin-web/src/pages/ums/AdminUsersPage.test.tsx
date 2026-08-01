@@ -14,6 +14,7 @@ const adminAuth: AuthState = {
   accessToken: 'valid-token',
   email: 'admin@yologram.link',
   name: '관리자',
+  role: 'OWNER',
 }
 
 const BASE_URL = 'http://localhost:5001/api/v1/ums/admin/admin-users'
@@ -50,16 +51,53 @@ describe('AdminUsersPage (목록)', () => {
 
     expect(await screen.findByText('admin@yologram.link')).toBeInTheDocument()
     expect(screen.getByText('second@yologram.link')).toBeInTheDocument()
-    expect(screen.getAllByText('활성').length).toBeGreaterThan(0)
-    expect(screen.getByText('비활성')).toBeInTheDocument()
     expect(screen.getByText('2026-06-01')).toBeInTheDocument()
+    expect(screen.getByText('상태')).toBeInTheDocument()
   })
 
-  it('본인 행에는 나 태그를 표시하고 삭제 버튼을 비활성화한다', async () => {
+  it('역할 태그를 렌더한다 — OWNER는 gold, ADMIN은 기본', async () => {
     renderPage()
     await screen.findByText('admin@yologram.link')
 
-    expect(screen.getByText('나')).toBeInTheDocument()
+    const ownerTag = screen.getByText('OWNER').closest('.ant-tag')
+    expect(ownerTag).toHaveClass('ant-tag-gold')
+    // 1페이지 나머지 9명(uid 2~10)은 ADMIN
+    expect(screen.getAllByText('ADMIN')).toHaveLength(9)
+  })
+
+  it('본인이 아닌 OWNER 행도 삭제 버튼을 비활성화한다', async () => {
+    server.use(
+      http.get(BASE_URL, () =>
+        HttpResponse.json(
+          buildAdminUsersPage(
+            [
+              mockAdminUsers[0], // uid 1 본인(OWNER)
+              { uid: 5, email: 'owner2@yologram.link', name: '공동소유자', role: 'OWNER', status: 'ACTIVE', joinedDate: '2026-06-10T09:00:00' },
+              mockAdminUsers[1], // uid 2 ADMIN
+            ],
+            0,
+            10,
+          ),
+        ),
+      ),
+    )
+
+    renderPage()
+    await screen.findByText('owner2@yologram.link')
+
+    const deleteButtons = screen.getAllByRole('button', { name: '삭제' })
+    expect(deleteButtons[0]).toBeDisabled() // 본인(OWNER)
+    expect(deleteButtons[1]).toBeDisabled() // 타인 OWNER
+    expect(deleteButtons[2]).toBeEnabled() // ADMIN
+  })
+
+  it('본인 행 이메일 옆에 나 태그를 표시하고 삭제 버튼을 비활성화한다', async () => {
+    renderPage()
+    await screen.findByText('admin@yologram.link')
+
+    // '나' 태그는 이메일 컬럼(이메일 텍스트 옆)에 표시된다
+    const meTag = screen.getByText('나')
+    expect(meTag.closest('td')).toHaveTextContent('admin@yologram.link')
 
     const deleteButtons = screen.getAllByRole('button', { name: '삭제' })
     expect(deleteButtons).toHaveLength(10)
@@ -129,6 +167,81 @@ describe('AdminUsersPage (페이지네이션)', () => {
     await waitFor(() => {
       expect(screen.queryByText('admin11@yologram.link')).not.toBeInTheDocument()
     })
+  })
+})
+
+describe('AdminUsersPage (상태 토글)', () => {
+  it('OWNER 시점: 상태 자리에 Switch를 렌더하고 OWNER 행은 비활성이다', async () => {
+    renderPage()
+    await screen.findByText('admin@yologram.link')
+
+    const switches = screen.getAllByRole('switch')
+    expect(switches).toHaveLength(10)
+    // uid 1(OWNER): 활성 상태지만 변경 불가
+    expect(switches[0]).toBeChecked()
+    expect(switches[0]).toBeDisabled()
+    // uid 2(ADMIN, INACTIVE): 꺼진 상태로 토글 가능
+    expect(switches[1]).not.toBeChecked()
+    expect(switches[1]).toBeEnabled()
+  })
+
+  it('토글 시 PATCH로 status를 전송하고 성공하면 목록을 갱신한다', async () => {
+    let capturedId: string | null = null
+    let capturedBody: unknown = null
+    server.use(
+      http.patch(`${BASE_URL}/:id/status`, async ({ request, params }) => {
+        capturedId = String(params.id)
+        capturedBody = await request.json()
+        return HttpResponse.json({ data: { ...mockAdminUsers[1], status: 'ACTIVE' } })
+      }),
+    )
+
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('admin@yologram.link')
+
+    // uid 2(INACTIVE) 스위치를 켠다
+    await user.click(screen.getAllByRole('switch')[1])
+
+    await waitFor(() => {
+      expect(capturedId).toBe('2')
+    })
+    expect(capturedBody).toEqual({ status: 'ACTIVE' })
+  })
+
+  it('토글 실패(403) 시 에러 토스트를 띄우고 스위치 상태를 유지한다', async () => {
+    server.use(
+      http.patch(`${BASE_URL}/:id/status`, () =>
+        HttpResponse.json(
+          { errorMessage: 'OWNER만 가능한 작업입니다.', errorCode: 'ADMIN_ROLE_FORBIDDEN' },
+          { status: 403 },
+        ),
+      ),
+    )
+
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('admin@yologram.link')
+
+    await user.click(screen.getAllByRole('switch')[1])
+
+    expect(await screen.findByText('OWNER만 가능한 작업입니다.')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getAllByRole('switch')[1]).not.toBeChecked()
+    })
+  })
+
+  it('ADMIN 시점: 스위치 대신 읽기 전용 태그를 렌더한다', async () => {
+    // uid 3 운영자3(ADMIN)으로 로그인한 시점
+    getDefaultStore().set(authAtom, { ...adminAuth, uid: 3, role: 'ADMIN' })
+
+    renderPage()
+    await screen.findByText('admin@yologram.link')
+
+    expect(screen.queryAllByRole('switch')).toHaveLength(0)
+    // 1페이지: uid 2만 INACTIVE, 나머지 9명 ACTIVE
+    expect(screen.getAllByText('활성')).toHaveLength(9)
+    expect(screen.getByText('비활성')).toBeInTheDocument()
   })
 })
 
@@ -253,6 +366,28 @@ describe('AdminUsersPage (삭제)', () => {
       expect(document.querySelector('.ant-modal-confirm.ant-zoom-leave')).toBeInTheDocument()
     })
     expect(deleteCalled).toBe(false)
+  })
+
+  it('OWNER 삭제 시도(400) 시 서버 에러 메시지를 토스트로 띄운다', async () => {
+    server.use(
+      http.delete(`${BASE_URL}/:id`, () =>
+        HttpResponse.json(
+          { errorMessage: 'OWNER 계정은 삭제할 수 없습니다.', errorCode: 'ADMIN_USER_OWNER_UNDELETABLE' },
+          { status: 400 },
+        ),
+      ),
+    )
+
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('admin@yologram.link')
+
+    await user.click(screen.getAllByRole('button', { name: '삭제' })[1])
+
+    const modal = await findConfirmModal()
+    await user.click(within(modal).getByRole('button', { name: '삭제' }))
+
+    expect(await screen.findByText('OWNER 계정은 삭제할 수 없습니다.')).toBeInTheDocument()
   })
 
   it('삭제 실패(400) 시 서버 에러 메시지를 토스트로 띄운다', async () => {

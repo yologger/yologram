@@ -18,7 +18,7 @@ React 기반 어드민 웹. 유저/카테고리/게시글/뉴스 관리 기능�
 - src/apis/auth.ts: login/validateToken/logout/createAdminUser (api-v1 /ums/admin/*)
 - src/components/auth/: AuthGate(시작 시 저장 토큰 검증), RequireAuth(미인증 /login 리다이렉트)
 - src/pages/auth/LoginPage.tsx: 로그인 (어드민은 회원가입·비밀번호찾기 없음)
-- src/pages/ums/AdminUsersPage.tsx + apis/adminUsers.ts: 어드민 관리 — 목록 Table(본인 '나' Tag·본인 삭제 비활성)·추가 Modal·삭제 confirm
+- src/pages/ums/AdminUsersPage.tsx + apis/adminUsers.ts: 어드민 관리 — 목록 Table(서버사이드 페이지네이션·역할 Tag(OWNER gold)·이메일 옆 '나' Tag·본인/OWNER 삭제 비활성·상태는 OWNER에게 Switch 토글(ADMIN에겐 읽기 전용 Tag))·추가 Modal·삭제 confirm
 - src/pages/news/NewsSourcesPage.tsx + apis/newsSources.ts + queries/useNewsSources*·use*NewsSourceMutation: 뉴스 소스 관리 — 목록 Table·추가/수정 Modal·삭제 confirm·활성 Switch 토글(실패 시 쿼리 기반 자동 원복)
 
 ## 작업 규칙

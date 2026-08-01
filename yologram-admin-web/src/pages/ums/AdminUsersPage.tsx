@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { App, Button, Form, Input, Modal, Table, Tag, Tooltip, Typography } from 'antd'
+import { App, Button, Form, Input, Modal, Switch, Table, Tag, Tooltip, Typography } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAtomValue } from 'jotai'
@@ -7,7 +7,9 @@ import { authAtom } from '../../stores/auth'
 import useAdminUsersQuery from '../../queries/useAdminUsersQuery'
 import useCreateAdminUserMutation from '../../queries/useCreateAdminUserMutation'
 import useDeleteAdminUserMutation from '../../queries/useDeleteAdminUserMutation'
+import useUpdateAdminUserStatusMutation from '../../queries/useUpdateAdminUserStatusMutation'
 import { getErrorMessage } from '../../lib/error'
+import type { AdminRole } from '../../stores/auth'
 import type { AdminUser, AdminUserStatus } from '../../apis/adminUsers'
 import styles from './AdminUsersPage.module.css'
 
@@ -15,12 +17,6 @@ interface AdminUserFormValues {
   email: string
   name: string
   password: string
-}
-
-const STATUS_LABELS: Record<AdminUserStatus, string> = {
-  ACTIVE: '활성',
-  INACTIVE: '비활성',
-  DELETED: '삭제됨',
 }
 
 const PAGE_SIZE = 10
@@ -38,6 +34,10 @@ export default function AdminUsersPage() {
 
   const createMutation = useCreateAdminUserMutation()
   const deleteMutation = useDeleteAdminUserMutation()
+  const statusMutation = useUpdateAdminUserStatusMutation()
+
+  /** 내가 OWNER면 상태 토글 가능, ADMIN이면 읽기 전용 */
+  const isOwnerViewer = auth?.role === 'OWNER'
 
   // Modal이 열릴 때 폼을 초기화한다.
   useEffect(() => {
@@ -55,6 +55,17 @@ export default function AdminUsersPage() {
       },
       onError: (error) => message.error(getErrorMessage(error)),
     })
+  }
+
+  const onToggleStatus = (adminUser: AdminUser, checked: boolean) => {
+    statusMutation.mutate(
+      { uid: adminUser.uid, status: checked ? 'ACTIVE' : 'INACTIVE' },
+      {
+        onSuccess: () => invalidateAdminUsers(),
+        // 스위치는 목록 데이터 기반이라 실패 시 자동으로 원래 상태를 유지한다.
+        onError: (error) => message.error(getErrorMessage(error)),
+      },
+    )
   }
 
   const confirmDelete = (adminUser: AdminUser) => {
@@ -79,24 +90,56 @@ export default function AdminUsersPage() {
 
   const columns = [
     { title: 'UID', dataIndex: 'uid', width: 70 },
-    { title: '이메일', dataIndex: 'email' },
     {
-      title: '이름',
-      dataIndex: 'name',
-      render: (name: string, adminUser: AdminUser) => (
+      title: '이메일',
+      dataIndex: 'email',
+      render: (email: string, adminUser: AdminUser) => (
         <>
-          {name}
+          {email}
           {adminUser.uid === auth?.uid && <Tag className={styles.meTag}>나</Tag>}
         </>
+      ),
+    },
+    { title: '이름', dataIndex: 'name' },
+    {
+      title: '역할',
+      dataIndex: 'role',
+      width: 90,
+      render: (role: AdminRole) => (
+        <Tag color={role === 'OWNER' ? 'gold' : 'default'}>{role}</Tag>
       ),
     },
     {
       title: '상태',
       dataIndex: 'status',
       width: 90,
-      render: (status: AdminUserStatus) => (
-        <Tag color={status === 'ACTIVE' ? 'blue' : 'default'}>{STATUS_LABELS[status]}</Tag>
-      ),
+      render: (status: AdminUserStatus, adminUser: AdminUser) => {
+        // ADMIN 시점: 읽기 전용 Tag
+        if (!isOwnerViewer) {
+          return (
+            <Tag color={status === 'ACTIVE' ? 'blue' : 'default'}>
+              {status === 'ACTIVE' ? '활성' : '비활성'}
+            </Tag>
+          )
+        }
+
+        // OWNER 시점: 활성/비활성 토글 Switch (OWNER 계정은 변경 불가)
+        const isTargetOwner = adminUser.role === 'OWNER'
+        const statusSwitch = (
+          <Switch
+            checked={status === 'ACTIVE'}
+            disabled={isTargetOwner}
+            aria-label={`${adminUser.name} 활성`}
+            loading={statusMutation.isPending && statusMutation.variables?.uid === adminUser.uid}
+            onChange={(checked) => onToggleStatus(adminUser, checked)}
+          />
+        )
+        return isTargetOwner ? (
+          <Tooltip title="OWNER 계정은 변경할 수 없습니다">{statusSwitch}</Tooltip>
+        ) : (
+          statusSwitch
+        )
+      },
     },
     {
       title: '가입일',
@@ -110,18 +153,22 @@ export default function AdminUsersPage() {
       width: 80,
       render: (_: unknown, adminUser: AdminUser) => {
         const isSelf = adminUser.uid === auth?.uid
+        const isOwner = adminUser.role === 'OWNER'
         const button = (
           <Button
             type="link"
             size="small"
             danger
-            disabled={isSelf}
+            disabled={isSelf || isOwner}
             onClick={() => confirmDelete(adminUser)}
           >
             삭제
           </Button>
         )
-        return isSelf ? <Tooltip title="자기 자신은 삭제할 수 없습니다">{button}</Tooltip> : button
+        // 본인이면서 OWNER인 경우 본인 안내를 우선한다
+        if (isSelf) return <Tooltip title="자기 자신은 삭제할 수 없습니다">{button}</Tooltip>
+        if (isOwner) return <Tooltip title="OWNER 계정은 삭제할 수 없습니다">{button}</Tooltip>
+        return button
       },
     },
   ]

@@ -10,6 +10,7 @@ const validAuth: AuthState = {
   accessToken: 'valid-token',
   email: 'admin@yologram.link',
   name: '관리자',
+  role: 'OWNER',
 }
 
 beforeAll(() => server.listen())

@@ -6,6 +6,7 @@ export const mockAdminUsers = [
     uid: 1,
     email: 'admin@yologram.link',
     name: '관리자',
+    role: 'OWNER',
     status: 'ACTIVE',
     joinedDate: '2026-06-01T09:00:00',
   },
@@ -13,6 +14,7 @@ export const mockAdminUsers = [
     uid: 2,
     email: 'second@yologram.link',
     name: '부관리자',
+    role: 'ADMIN',
     status: 'INACTIVE',
     joinedDate: '2026-06-15T09:00:00',
   },
@@ -20,6 +22,7 @@ export const mockAdminUsers = [
     uid: index + 3,
     email: `admin${index + 3}@yologram.link`,
     name: `운영자${index + 3}`,
+    role: 'ADMIN',
     status: 'ACTIVE',
     joinedDate: '2026-06-20T09:00:00',
   })),
@@ -90,6 +93,13 @@ export const handlers = [
       )
     }
 
+    if (body.email === 'inactive@yologram.link') {
+      return HttpResponse.json(
+        { errorMessage: '비활성화된 계정입니다.', errorCode: 'ADMIN_USER_INACTIVE' },
+        { status: 403 },
+      )
+    }
+
     if (body.password === 'wrongpassword') {
       return HttpResponse.json(
         { errorMessage: '비밀번호가 일치하지 않습니다.', errorCode: 'AUTH_WRONG_PASSWORD' },
@@ -103,6 +113,7 @@ export const handlers = [
         accessToken: 'mock-access-token',
         email: body.email,
         name: '관리자',
+        role: 'OWNER',
       },
     })
   }),
@@ -117,11 +128,20 @@ export const handlers = [
       )
     }
 
+    // 비활성화된 계정 토큰
+    if (authHeader.substring(7) === 'inactive-token') {
+      return HttpResponse.json(
+        { errorMessage: '비활성화된 계정입니다.', errorCode: 'ADMIN_USER_INACTIVE' },
+        { status: 403 },
+      )
+    }
+
     return HttpResponse.json({
       data: {
         uid: 1,
         email: 'admin@yologram.link',
         name: '관리자',
+        role: 'OWNER',
       },
     })
   }),
@@ -176,6 +196,41 @@ export const handlers = [
     const size = Number(url.searchParams.get('size') ?? 10)
 
     return HttpResponse.json(buildAdminUsersPage(mockAdminUsers, page, size))
+  }),
+
+  http.patch('http://localhost:5001/api/v1/ums/admin/admin-users/:id/status', async ({ request, params }) => {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return unauthorized()
+
+    // 'admin-token' = ADMIN 권한 토큰 — 상태 변경은 OWNER 전용
+    if (authHeader.substring(7) === 'admin-token') {
+      return HttpResponse.json(
+        { errorMessage: 'OWNER만 가능한 작업입니다.', errorCode: 'ADMIN_ROLE_FORBIDDEN' },
+        { status: 403 },
+      )
+    }
+
+    const id = Number(params.id)
+
+    // uid 1 = OWNER 계정
+    if (id === 1) {
+      return HttpResponse.json(
+        { errorMessage: 'OWNER 계정은 변경할 수 없습니다.', errorCode: 'ADMIN_USER_OWNER_IMMUTABLE' },
+        { status: 400 },
+      )
+    }
+
+    if (id === 99999) {
+      return HttpResponse.json(
+        { errorMessage: '어드민을 찾을 수 없습니다.', errorCode: 'ADMIN_USER_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+
+    const body = await request.json() as { status?: string }
+    const base = mockAdminUsers.find((adminUser) => adminUser.uid === id) ?? mockAdminUsers[1]
+
+    return HttpResponse.json({ data: { ...base, uid: id, status: body.status } })
   }),
 
   http.delete('http://localhost:5001/api/v1/ums/admin/admin-users/:id', ({ request, params }) => {

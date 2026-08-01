@@ -77,6 +77,7 @@ describe('LoginPage', () => {
         accessToken: 'mock-access-token',
         email: 'admin@yologram.link',
         name: '관리자',
+        role: 'OWNER',
       })
     })
   })
@@ -92,6 +93,20 @@ describe('LoginPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText('존재하지 않는 어드민입니다.')).toBeInTheDocument()
+      })
+      expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('비활성화된 계정이면 에러 메시지를 표시한다', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<LoginPage />)
+
+      await user.type(screen.getByPlaceholderText('이메일'), 'inactive@yologram.link')
+      await user.type(screen.getByPlaceholderText('비밀번호'), 'password123!')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('비활성화된 계정입니다.')).toBeInTheDocument()
       })
       expect(mockNavigate).not.toHaveBeenCalled()
     })

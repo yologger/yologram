@@ -1,23 +1,25 @@
 import api from '../lib/api'
-import type { AuthState } from '../stores/auth'
+import type { AdminRole, AuthState } from '../stores/auth'
 
 export interface LoginResponse {
   uid: number
   accessToken: string
   email: string
   name: string
+  role: AdminRole
 }
 
 export interface ValidateTokenResponse {
   uid: number
   email: string
   name: string
+  role: AdminRole
 }
 
 export async function login(email: string, password: string): Promise<AuthState> {
   const response = await api.post<{ data: LoginResponse }>('/api/v1/ums/admin/auth/login', { email, password })
-  const { uid, accessToken, email: resEmail, name } = response.data.data
-  return { uid, accessToken, email: resEmail, name }
+  const { uid, accessToken, email: resEmail, name, role } = response.data.data
+  return { uid, accessToken, email: resEmail, name, role }
 }
 
 export async function validateToken(): Promise<ValidateTokenResponse> {

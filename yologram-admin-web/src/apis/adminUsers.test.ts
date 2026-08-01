@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from
 import { getDefaultStore } from 'jotai'
 import { server } from '../test/server'
 import { mockAdminUsers } from '../test/handlers'
-import { getAdminUsers, deleteAdminUser } from './adminUsers'
+import { getAdminUsers, deleteAdminUser, updateAdminUserStatus } from './adminUsers'
 import { authAtom, type AuthState } from '../stores/auth'
 
 const validAuth: AuthState = {
@@ -10,6 +10,7 @@ const validAuth: AuthState = {
   accessToken: 'valid-token',
   email: 'admin@yologram.link',
   name: '관리자',
+  role: 'OWNER',
 }
 
 beforeAll(() => server.listen())
@@ -48,6 +49,29 @@ describe('getAdminUsers', () => {
     getDefaultStore().set(authAtom, null)
 
     await expect(getAdminUsers()).rejects.toThrow()
+  })
+})
+
+describe('updateAdminUserStatus', () => {
+  it('상태 변경 성공 시 변경된 어드민을 반환한다', async () => {
+    const result = await updateAdminUserStatus(2, 'ACTIVE')
+
+    expect(result.uid).toBe(2)
+    expect(result.status).toBe('ACTIVE')
+  })
+
+  it('OWNER 계정 변경(400)이면 에러를 던진다', async () => {
+    await expect(updateAdminUserStatus(1, 'INACTIVE')).rejects.toThrow()
+  })
+
+  it('ADMIN 권한 토큰(403)이면 에러를 던진다', async () => {
+    getDefaultStore().set(authAtom, { ...validAuth, role: 'ADMIN', accessToken: 'admin-token' })
+
+    await expect(updateAdminUserStatus(2, 'INACTIVE')).rejects.toThrow()
+  })
+
+  it('존재하지 않는 어드민이면 에러를 던진다', async () => {
+    await expect(updateAdminUserStatus(99999, 'ACTIVE')).rejects.toThrow()
   })
 })
 
