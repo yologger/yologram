@@ -1,9 +1,14 @@
 package link.yologram.api.v1.domain.ums.service
 
 import link.yologram.api.v1.domain.ums.entity.AdminUser
+import link.yologram.api.v1.domain.ums.enum.AdminUserRole
 import link.yologram.api.v1.domain.ums.enum.UserStatus
+import link.yologram.api.v1.domain.ums.exception.AdminRoleForbiddenException
 import link.yologram.api.v1.domain.ums.exception.AdminUserDuplicateException
+import link.yologram.api.v1.domain.ums.exception.AdminUserInactiveException
 import link.yologram.api.v1.domain.ums.exception.AdminUserNotFoundException
+import link.yologram.api.v1.domain.ums.exception.AdminUserOwnerImmutableException
+import link.yologram.api.v1.domain.ums.exception.AdminUserOwnerUndeletableException
 import link.yologram.api.v1.domain.ums.exception.AdminUserSelfDeleteException
 import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException
 import link.yologram.api.v1.domain.ums.model.AdminLoginRequest
@@ -56,7 +61,9 @@ class AdminUserServiceTest {
         id: Long = 1L,
         email: String = "admin@yologram.link",
         name: String = "어드민",
-    ) = AdminUser(id = id, email = email, name = name, password = "encoded-password")
+        role: AdminUserRole = AdminUserRole.ADMIN,
+        status: UserStatus = UserStatus.ACTIVE,
+    ) = AdminUser(id = id, email = email, name = name, password = "encoded-password", role = role, status = status)
 
     @Nested
     inner class 어드민_생성_성공 {
@@ -101,6 +108,21 @@ class AdminUserServiceTest {
 
             adminUserService.create(request)
         }
+
+        @Test
+        fun `role은 항상 ADMIN으로 생성된다`() {
+            val request = createRequest()
+
+            whenever(adminUserRepository.existsByEmail(request.email)).thenReturn(false)
+            whenever(passwordEncoder.encode(request.password)).thenReturn("encoded-password")
+            whenever(adminUserRepository.save(any<AdminUser>())).thenAnswer {
+                val admin = it.arguments[0] as AdminUser
+                assertEquals(AdminUserRole.ADMIN, admin.role)
+                admin
+            }
+
+            adminUserService.create(request)
+        }
     }
 
     @Nested
@@ -138,6 +160,21 @@ class AdminUserServiceTest {
             assertEquals("admin-token", response.accessToken)
             assertEquals("admin@yologram.link", response.email)
             assertEquals("어드민", response.name)
+            assertEquals(AdminUserRole.ADMIN, response.role)
+        }
+
+        @Test
+        fun `OWNER 계정 로그인 시 role OWNER를 반환한다`() {
+            val request = AdminLoginRequest(email = "owner@yologram.link", password = "password123")
+            val owner = testAdminUser(email = "owner@yologram.link", role = AdminUserRole.OWNER)
+
+            whenever(adminUserRepository.findByEmail(request.email)).thenReturn(Optional.of(owner))
+            whenever(passwordEncoder.matches(request.password, owner.password)).thenReturn(true)
+            whenever(adminJwtUtil.createToken(owner.id)).thenReturn("owner-token")
+
+            val response = adminUserService.login(request)
+
+            assertEquals(AdminUserRole.OWNER, response.role)
         }
     }
 
@@ -161,6 +198,37 @@ class AdminUserServiceTest {
         fun `비밀번호 불일치 시 AuthWrongPasswordException 발생`() {
             val request = AdminLoginRequest(email = "admin@yologram.link", password = "wrongpass")
             val admin = testAdminUser()
+
+            whenever(adminUserRepository.findByEmail(request.email)).thenReturn(Optional.of(admin))
+            whenever(passwordEncoder.matches(request.password, admin.password)).thenReturn(false)
+
+            val exception = assertThrows<AuthWrongPasswordException> {
+                adminUserService.login(request)
+            }
+
+            assertEquals("AUTH_WRONG_PASSWORD", exception.errorCode)
+        }
+
+        @Test
+        fun `INACTIVE 계정이면 AdminUserInactiveException 발생`() {
+            val request = AdminLoginRequest(email = "admin@yologram.link", password = "password123")
+            val admin = testAdminUser(status = UserStatus.INACTIVE)
+
+            whenever(adminUserRepository.findByEmail(request.email)).thenReturn(Optional.of(admin))
+            whenever(passwordEncoder.matches(request.password, admin.password)).thenReturn(true)
+
+            val exception = assertThrows<AdminUserInactiveException> {
+                adminUserService.login(request)
+            }
+
+            assertEquals("ADMIN_USER_INACTIVE", exception.errorCode)
+            verify(adminJwtUtil, never()).createToken(any())
+        }
+
+        @Test
+        fun `INACTIVE 계정이라도 비밀번호가 틀리면 AuthWrongPasswordException이 먼저다`() {
+            val request = AdminLoginRequest(email = "admin@yologram.link", password = "wrongpass")
+            val admin = testAdminUser(status = UserStatus.INACTIVE)
 
             whenever(adminUserRepository.findByEmail(request.email)).thenReturn(Optional.of(admin))
             whenever(passwordEncoder.matches(request.password, admin.password)).thenReturn(false)
@@ -197,6 +265,7 @@ class AdminUserServiceTest {
             assertEquals(1L, result.uid)
             assertEquals("admin@yologram.link", result.email)
             assertEquals("어드민", result.name)
+            assertEquals(AdminUserRole.ADMIN, result.role)
         }
 
         @Test
@@ -209,6 +278,102 @@ class AdminUserServiceTest {
             }
 
             assertEquals("ADMIN_USER_NOT_FOUND", exception.errorCode)
+        }
+
+        @Test
+        fun `INACTIVE 계정이면 AdminUserInactiveException을 던진다`() {
+            val inactive = testAdminUser(status = UserStatus.INACTIVE)
+
+            whenever(adminJwtUtil.validateAndGetUid("valid-admin-token")).thenReturn(1L)
+            whenever(adminUserRepository.findById(1L)).thenReturn(Optional.of(inactive))
+
+            val exception = assertThrows<AdminUserInactiveException> {
+                adminUserService.validateToken("valid-admin-token")
+            }
+
+            assertEquals("ADMIN_USER_INACTIVE", exception.errorCode)
+        }
+    }
+
+    @Nested
+    inner class 어드민_상태_변경 {
+
+        private fun owner(id: Long = 1L) =
+            testAdminUser(id = id, email = "owner@yologram.link", name = "오너", role = AdminUserRole.OWNER)
+
+        @Test
+        fun `OWNER가 ADMIN을 INACTIVE로 비활성화한다`() {
+            val target = testAdminUser(id = 2L, email = "target@yologram.link")
+            whenever(adminUserRepository.findById(1L)).thenReturn(Optional.of(owner()))
+            whenever(adminUserRepository.findById(2L)).thenReturn(Optional.of(target))
+            whenever(adminUserRepository.saveAndFlush(any<AdminUser>())).thenAnswer { it.arguments[0] }
+
+            val result = adminUserService.updateStatus(1L, 2L, UserStatus.INACTIVE)
+
+            assertEquals(2L, result.uid)
+            assertEquals(UserStatus.INACTIVE, result.status)
+        }
+
+        @Test
+        fun `OWNER가 INACTIVE ADMIN을 다시 ACTIVE로 전환한다`() {
+            val target = testAdminUser(id = 2L, email = "target@yologram.link", status = UserStatus.INACTIVE)
+            whenever(adminUserRepository.findById(1L)).thenReturn(Optional.of(owner()))
+            whenever(adminUserRepository.findById(2L)).thenReturn(Optional.of(target))
+            whenever(adminUserRepository.saveAndFlush(any<AdminUser>())).thenAnswer { it.arguments[0] }
+
+            val result = adminUserService.updateStatus(1L, 2L, UserStatus.ACTIVE)
+
+            assertEquals(UserStatus.ACTIVE, result.status)
+        }
+
+        @Test
+        fun `요청자가 OWNER가 아니면 AdminRoleForbiddenException 발생`() {
+            whenever(adminUserRepository.findById(1L)).thenReturn(Optional.of(testAdminUser(id = 1L)))
+
+            val exception = assertThrows<AdminRoleForbiddenException> {
+                adminUserService.updateStatus(1L, 2L, UserStatus.INACTIVE)
+            }
+
+            assertEquals("ADMIN_ROLE_FORBIDDEN", exception.errorCode)
+            verify(adminUserRepository, never()).findById(2L)
+            verify(adminUserRepository, never()).saveAndFlush(any<AdminUser>())
+        }
+
+        @Test
+        fun `대상이 OWNER면 AdminUserOwnerImmutableException 발생`() {
+            whenever(adminUserRepository.findById(1L)).thenReturn(Optional.of(owner(id = 1L)))
+            whenever(adminUserRepository.findById(2L)).thenReturn(Optional.of(owner(id = 2L)))
+
+            val exception = assertThrows<AdminUserOwnerImmutableException> {
+                adminUserService.updateStatus(1L, 2L, UserStatus.INACTIVE)
+            }
+
+            assertEquals("ADMIN_USER_OWNER_IMMUTABLE", exception.errorCode)
+            verify(adminUserRepository, never()).saveAndFlush(any<AdminUser>())
+        }
+
+        @Test
+        fun `대상이 없으면 AdminUserNotFoundException 발생`() {
+            whenever(adminUserRepository.findById(1L)).thenReturn(Optional.of(owner()))
+            whenever(adminUserRepository.findById(999L)).thenReturn(Optional.empty())
+
+            val exception = assertThrows<AdminUserNotFoundException> {
+                adminUserService.updateStatus(1L, 999L, UserStatus.INACTIVE)
+            }
+
+            assertEquals("ADMIN_USER_NOT_FOUND", exception.errorCode)
+        }
+
+        @Test
+        fun `요청자가 없으면 AdminUserNotFoundException 발생`() {
+            whenever(adminUserRepository.findById(999L)).thenReturn(Optional.empty())
+
+            val exception = assertThrows<AdminUserNotFoundException> {
+                adminUserService.updateStatus(999L, 2L, UserStatus.INACTIVE)
+            }
+
+            assertEquals("ADMIN_USER_NOT_FOUND", exception.errorCode)
+            verify(adminUserRepository, never()).findById(2L)
         }
     }
 
@@ -332,6 +497,29 @@ class AdminUserServiceTest {
 
             assertEquals("ADMIN_USER_NOT_FOUND", exception.errorCode)
             verify(adminUserRepository, never()).delete(any<AdminUser>())
+        }
+
+        @Test
+        fun `대상이 OWNER면 AdminUserOwnerUndeletableException 발생`() {
+            val owner = testAdminUser(id = 2L, email = "owner@yologram.link", role = AdminUserRole.OWNER)
+            whenever(adminUserRepository.findById(2L)).thenReturn(Optional.of(owner))
+
+            val exception = assertThrows<AdminUserOwnerUndeletableException> {
+                adminUserService.delete(1L, 2L)
+            }
+
+            assertEquals("ADMIN_USER_OWNER_UNDELETABLE", exception.errorCode)
+            verify(adminUserRepository, never()).delete(any<AdminUser>())
+        }
+
+        @Test
+        fun `자기 자신이 OWNER 대상이어도 자기 자신 검사가 먼저다`() {
+            val exception = assertThrows<AdminUserSelfDeleteException> {
+                adminUserService.delete(2L, 2L)
+            }
+
+            assertEquals("ADMIN_USER_SELF_DELETE", exception.errorCode)
+            verify(adminUserRepository, never()).findById(any())
         }
     }
 }

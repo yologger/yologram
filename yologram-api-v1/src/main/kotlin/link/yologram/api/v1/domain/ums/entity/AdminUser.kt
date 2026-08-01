@@ -1,6 +1,7 @@
 package link.yologram.api.v1.domain.ums.entity
 
 import jakarta.persistence.*
+import link.yologram.api.v1.domain.ums.enum.AdminUserRole
 import link.yologram.api.v1.domain.ums.enum.UserStatus
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -27,6 +28,11 @@ class AdminUser(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: UserStatus = UserStatus.ACTIVE,
+
+    // DB ENUM('ADMIN','OWNER') — OWNER는 API로 생성·변경 불가, DB 직접 조작으로만 관리 (정책)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    var role: AdminUserRole = AdminUserRole.ADMIN,
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

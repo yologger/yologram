@@ -1,6 +1,7 @@
 package link.yologram.api.v1.domain.ums.repository
 
 import link.yologram.api.v1.domain.ums.entity.AdminUser
+import link.yologram.api.v1.domain.ums.enum.AdminUserRole
 import link.yologram.api.v1.domain.ums.enum.UserStatus
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
@@ -43,6 +44,27 @@ class AdminUserRepositoryTest {
             assertEquals(UserStatus.ACTIVE, saved.status)
             assertNotNull(saved.joinedDate)
             assertNotNull(saved.modifiedDate)
+        }
+
+        @Test
+        fun `기본 role은 ADMIN이다`() {
+            val saved = adminUserRepository.saveAndFlush(createAdminUser())
+
+            assertEquals(AdminUserRole.ADMIN, saved.role)
+        }
+
+        @Test
+        fun `OWNER role로 저장할 수 있다`() {
+            val owner = AdminUser(
+                email = "owner@yologram.link",
+                name = "오너",
+                password = "encoded-password",
+                role = AdminUserRole.OWNER,
+            )
+
+            val saved = adminUserRepository.saveAndFlush(owner)
+
+            assertEquals(AdminUserRole.OWNER, adminUserRepository.findById(saved.id).get().role)
         }
     }
 

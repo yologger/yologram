@@ -13,6 +13,7 @@ import link.yologram.api.v1.domain.ums.model.AdminLoginResponse
 import link.yologram.api.v1.domain.ums.model.AdminUserCreateRequest
 import link.yologram.api.v1.domain.ums.model.AdminUserCreateResponse
 import link.yologram.api.v1.domain.ums.model.AdminUserResponse
+import link.yologram.api.v1.domain.ums.model.AdminUserStatusUpdateRequest
 import link.yologram.api.v1.domain.ums.model.AdminValidateTokenResponse
 import link.yologram.api.v1.domain.ums.resolver.AdminAuthData
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUser
@@ -31,7 +32,7 @@ class AdminUserResource(
 
     @PostMapping("/admin-users")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "어드민 유저 생성", description = "기존 어드민이 새 어드민 계정을 추가 (어드민 토큰 필요)")
+    @Operation(summary = "어드민 유저 생성", description = "기존 어드민이 새 어드민 계정을 추가 (어드민 토큰 필요). role은 항상 ADMIN으로 생성 — OWNER는 DB 직접 조작으로만 관리")
     @ApiResponses(
         ApiResponse(responseCode = "201", description = "생성 성공"),
         ApiResponse(responseCode = "400", description = "입력값 검증 실패"),
@@ -62,12 +63,35 @@ class AdminUserResource(
         return adminUserService.getAdminUsers(page, size)
     }
 
+    @PatchMapping("/admin-users/{id}/status")
+    @Operation(
+        summary = "어드민 유저 상태 변경 (OWNER 전용)",
+        description = "어드민 계정을 활성(ACTIVE)/비활성(INACTIVE) 전환. OWNER만 호출 가능하며 OWNER 계정은 변경 불가",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "변경 성공 (변경 후 어드민 정보)"),
+        ApiResponse(
+            responseCode = "400",
+            description = "status 검증 실패 (ACTIVE/INACTIVE 외 값 — VALIDATION_ERROR) 또는 OWNER 변경 시도 (ADMIN_USER_OWNER_IMMUTABLE)",
+        ),
+        ApiResponse(responseCode = "401", description = "인증 실패 (어드민 토큰 없음/만료/유효하지 않음)"),
+        ApiResponse(responseCode = "403", description = "요청자가 OWNER가 아님 (ADMIN_ROLE_FORBIDDEN)"),
+        ApiResponse(responseCode = "404", description = "어드민 사용자를 찾을 수 없음 (ADMIN_USER_NOT_FOUND)"),
+    )
+    fun updateAdminUserStatus(
+        @AuthenticatedAdminUser authData: AdminAuthData,
+        @PathVariable id: Long,
+        @Valid @RequestBody request: AdminUserStatusUpdateRequest,
+    ): ApiEnvelop<AdminUserResponse> {
+        return ApiEnvelop(data = adminUserService.updateStatus(authData.uid, id, request.status))
+    }
+
     @DeleteMapping("/admin-users/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "어드민 유저 삭제", description = "어드민 계정 삭제 (hard delete, 어드민 토큰 필요). 자기 자신은 삭제 불가")
+    @Operation(summary = "어드민 유저 삭제", description = "어드민 계정 삭제 (hard delete, 어드민 토큰 필요). 자기 자신·OWNER는 삭제 불가")
     @ApiResponses(
         ApiResponse(responseCode = "204", description = "삭제 성공"),
-        ApiResponse(responseCode = "400", description = "자기 자신 삭제 시도 (ADMIN_USER_SELF_DELETE)"),
+        ApiResponse(responseCode = "400", description = "자기 자신 삭제 시도 (ADMIN_USER_SELF_DELETE) 또는 OWNER 삭제 시도 (ADMIN_USER_OWNER_UNDELETABLE)"),
         ApiResponse(responseCode = "401", description = "인증 실패 (어드민 토큰 없음/만료/유효하지 않음)"),
         ApiResponse(responseCode = "404", description = "어드민 사용자를 찾을 수 없음 (ADMIN_USER_NOT_FOUND)"),
     )
@@ -84,6 +108,7 @@ class AdminUserResource(
         ApiResponse(responseCode = "200", description = "로그인 성공"),
         ApiResponse(responseCode = "400", description = "입력값 검증 실패"),
         ApiResponse(responseCode = "401", description = "비밀번호 불일치"),
+        ApiResponse(responseCode = "403", description = "비활성화된 계정 (ADMIN_USER_INACTIVE)"),
         ApiResponse(responseCode = "404", description = "어드민 사용자를 찾을 수 없음"),
     )
     fun login(@Valid @RequestBody request: AdminLoginRequest): ApiEnvelop<AdminLoginResponse> {
@@ -95,6 +120,7 @@ class AdminUserResource(
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "검증 성공"),
         ApiResponse(responseCode = "401", description = "인증 실패 (어드민 토큰 없음/만료/유효하지 않음)"),
+        ApiResponse(responseCode = "403", description = "비활성화된 계정 (ADMIN_USER_INACTIVE)"),
         ApiResponse(responseCode = "404", description = "어드민 사용자를 찾을 수 없음"),
     )
     fun validateToken(@AuthenticatedAdminUser authData: AdminAuthData): ApiEnvelop<AdminValidateTokenResponse> {

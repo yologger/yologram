@@ -3,9 +3,14 @@ package link.yologram.api.v1.domain.ums.resource
 import com.fasterxml.jackson.databind.ObjectMapper
 import link.yologram.api.v1.config.AdminJwtProperties
 import link.yologram.api.v1.config.JwtProperties
+import link.yologram.api.v1.domain.ums.enum.AdminUserRole
 import link.yologram.api.v1.domain.ums.enum.UserStatus
+import link.yologram.api.v1.domain.ums.exception.AdminRoleForbiddenException
 import link.yologram.api.v1.domain.ums.exception.AdminUserDuplicateException
+import link.yologram.api.v1.domain.ums.exception.AdminUserInactiveException
 import link.yologram.api.v1.domain.ums.exception.AdminUserNotFoundException
+import link.yologram.api.v1.domain.ums.exception.AdminUserOwnerImmutableException
+import link.yologram.api.v1.domain.ums.exception.AdminUserOwnerUndeletableException
 import link.yologram.api.v1.domain.ums.exception.AdminUserSelfDeleteException
 import link.yologram.api.v1.domain.ums.exception.AuthTokenExpiredException
 import link.yologram.api.v1.domain.ums.exception.AuthTokenInvalidException
@@ -37,6 +42,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import java.time.LocalDateTime
 
@@ -92,6 +98,23 @@ class AdminUserResourceTest {
                     header("Authorization", "Bearer admin-token")
                     contentType = MediaType.APPLICATION_JSON
                     content = objectMapper.writeValueAsString(createRequest())
+                }.andExpect {
+                    status { isCreated() }
+                    jsonPath("$.data.uid") { value(2) }
+                }
+            }
+
+            @Test
+            fun `요청 본문에 role을 넣어도 무시되고 201을 반환한다`() {
+                // AdminUserCreateRequest에 role 필드 자체가 없어 역직렬화에서 무시됨 — 항상 ADMIN 생성 (정책)
+                whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
+                whenever(adminUserService.create(any())).thenReturn(AdminUserCreateResponse(uid = 2L))
+
+                mockMvc.post("/api/v1/ums/admin/admin-users") {
+                    header("Authorization", "Bearer admin-token")
+                    contentType = MediaType.APPLICATION_JSON
+                    content =
+                        """{"email":"new-admin@yologram.link","name":"새어드민","password":"password123","role":"OWNER"}"""
                 }.andExpect {
                     status { isCreated() }
                     jsonPath("$.data.uid") { value(2) }
@@ -209,7 +232,7 @@ class AdminUserResourceTest {
 
             @Test
             fun `로그인에 성공하면 200과 AdminLoginResponse를 반환한다`() {
-                val response = AdminLoginResponse(1L, "admin-token", "admin@yologram.link", "어드민")
+                val response = AdminLoginResponse(1L, "admin-token", "admin@yologram.link", "어드민", AdminUserRole.ADMIN)
                 whenever(adminUserService.login(any())).thenReturn(response)
 
                 mockMvc.post("/api/v1/ums/admin/auth/login") {
@@ -221,6 +244,21 @@ class AdminUserResourceTest {
                     jsonPath("$.data.accessToken") { value("admin-token") }
                     jsonPath("$.data.email") { value("admin@yologram.link") }
                     jsonPath("$.data.name") { value("어드민") }
+                    jsonPath("$.data.role") { value("ADMIN") }
+                }
+            }
+
+            @Test
+            fun `OWNER 계정 로그인 시 role OWNER를 반환한다`() {
+                val response = AdminLoginResponse(1L, "owner-token", "owner@yologram.link", "오너", AdminUserRole.OWNER)
+                whenever(adminUserService.login(any())).thenReturn(response)
+
+                mockMvc.post("/api/v1/ums/admin/auth/login") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(AdminLoginRequest("owner@yologram.link", "password123"))
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.data.role") { value("OWNER") }
                 }
             }
         }
@@ -238,6 +276,19 @@ class AdminUserResourceTest {
                 }.andExpect {
                     status { isNotFound() }
                     jsonPath("$.errorCode") { value("ADMIN_USER_NOT_FOUND") }
+                }
+            }
+
+            @Test
+            fun `INACTIVE 계정이면 403을 반환한다`() {
+                whenever(adminUserService.login(any())).thenThrow(AdminUserInactiveException())
+
+                mockMvc.post("/api/v1/ums/admin/auth/login") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(AdminLoginRequest("inactive@yologram.link", "password123"))
+                }.andExpect {
+                    status { isForbidden() }
+                    jsonPath("$.errorCode") { value("ADMIN_USER_INACTIVE") }
                 }
             }
 
@@ -271,7 +322,7 @@ class AdminUserResourceTest {
 
         @Test
         fun `유효한 어드민 토큰이면 200과 어드민 정보를 반환한다`() {
-            val response = AdminValidateTokenResponse(1L, "admin@yologram.link", "어드민")
+            val response = AdminValidateTokenResponse(1L, "admin@yologram.link", "어드민", AdminUserRole.ADMIN)
             whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
             whenever(adminUserService.validateToken("admin-token")).thenReturn(response)
 
@@ -282,6 +333,7 @@ class AdminUserResourceTest {
                 jsonPath("$.data.uid") { value(1) }
                 jsonPath("$.data.email") { value("admin@yologram.link") }
                 jsonPath("$.data.name") { value("어드민") }
+                jsonPath("$.data.role") { value("ADMIN") }
             }
         }
 
@@ -330,6 +382,19 @@ class AdminUserResourceTest {
                 jsonPath("$.errorCode") { value("ADMIN_USER_NOT_FOUND") }
             }
         }
+
+        @Test
+        fun `INACTIVE 계정이면 403을 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
+            whenever(adminUserService.validateToken("admin-token")).thenThrow(AdminUserInactiveException())
+
+            mockMvc.post("/api/v1/ums/admin/auth/validate-token") {
+                header("Authorization", "Bearer admin-token")
+            }.andExpect {
+                status { isForbidden() }
+                jsonPath("$.errorCode") { value("ADMIN_USER_INACTIVE") }
+            }
+        }
     }
 
     @Nested
@@ -362,11 +427,12 @@ class AdminUserResourceTest {
     @Nested
     inner class 어드민_목록_조회 {
 
-        private fun adminUserResponse(uid: Long) = AdminUserResponse(
+        private fun adminUserResponse(uid: Long, role: AdminUserRole = AdminUserRole.ADMIN) = AdminUserResponse(
             uid = uid,
             email = "admin$uid@yologram.link",
             name = "어드민$uid",
             status = UserStatus.ACTIVE,
+            role = role,
             joinedDate = LocalDateTime.of(2026, 1, 1, 0, 0),
         )
 
@@ -393,7 +459,7 @@ class AdminUserResourceTest {
             whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
             whenever(adminUserService.getAdminUsers(0, 2)).thenReturn(
                 pageResponse(
-                    data = listOf(adminUserResponse(1L), adminUserResponse(2L)),
+                    data = listOf(adminUserResponse(1L, role = AdminUserRole.OWNER), adminUserResponse(2L)),
                     page = 0,
                     size = 2,
                     totalPages = 3,
@@ -412,8 +478,10 @@ class AdminUserResourceTest {
                 jsonPath("$.data[0].email") { value("admin1@yologram.link") }
                 jsonPath("$.data[0].name") { value("어드민1") }
                 jsonPath("$.data[0].status") { value("ACTIVE") }
+                jsonPath("$.data[0].role") { value("OWNER") }
                 jsonPath("$.data[0].joinedDate") { exists() }
                 jsonPath("$.data[1].uid") { value(2) }
+                jsonPath("$.data[1].role") { value("ADMIN") }
                 jsonPath("$.page") { value(0) }
                 jsonPath("$.size") { value(2) }
                 jsonPath("$.totalPages") { value(3) }
@@ -560,6 +628,19 @@ class AdminUserResourceTest {
         }
 
         @Test
+        fun `대상이 OWNER면 400을 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
+            whenever(adminUserService.delete(1L, 2L)).thenThrow(AdminUserOwnerUndeletableException())
+
+            mockMvc.delete("/api/v1/ums/admin/admin-users/2") {
+                header("Authorization", "Bearer admin-token")
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errorCode") { value("ADMIN_USER_OWNER_UNDELETABLE") }
+            }
+        }
+
+        @Test
         fun `없는 id면 404를 반환한다`() {
             whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(1L)
             whenever(adminUserService.delete(1L, 999L)).thenThrow(AdminUserNotFoundException())
@@ -586,6 +667,155 @@ class AdminUserResourceTest {
 
             mockMvc.delete("/api/v1/ums/admin/admin-users/2") {
                 header("Authorization", "Bearer expired-token")
+            }.andExpect {
+                status { isUnauthorized() }
+                jsonPath("$.errorCode") { value("AUTH_EXPIRED_TOKEN") }
+            }
+        }
+    }
+
+    @Nested
+    inner class 어드민_상태_변경 {
+
+        private fun statusResponse(status: UserStatus) = AdminUserResponse(
+            uid = 2L,
+            email = "target@yologram.link",
+            name = "대상어드민",
+            status = status,
+            role = AdminUserRole.ADMIN,
+            joinedDate = LocalDateTime.of(2026, 1, 1, 0, 0),
+        )
+
+        @Test
+        fun `OWNER가 비활성화하면 200과 변경 후 상태를 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("owner-token")).thenReturn(1L)
+            whenever(adminUserService.updateStatus(1L, 2L, UserStatus.INACTIVE))
+                .thenReturn(statusResponse(UserStatus.INACTIVE))
+
+            mockMvc.patch("/api/v1/ums/admin/admin-users/2/status") {
+                header("Authorization", "Bearer owner-token")
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"status":"INACTIVE"}"""
+            }.andExpect {
+                status { isOk() }
+                jsonPath("$.data.uid") { value(2) }
+                jsonPath("$.data.email") { value("target@yologram.link") }
+                jsonPath("$.data.status") { value("INACTIVE") }
+                jsonPath("$.data.role") { value("ADMIN") }
+            }
+        }
+
+        @Test
+        fun `OWNER가 다시 활성화하면 200과 ACTIVE 상태를 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("owner-token")).thenReturn(1L)
+            whenever(adminUserService.updateStatus(1L, 2L, UserStatus.ACTIVE))
+                .thenReturn(statusResponse(UserStatus.ACTIVE))
+
+            mockMvc.patch("/api/v1/ums/admin/admin-users/2/status") {
+                header("Authorization", "Bearer owner-token")
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"status":"ACTIVE"}"""
+            }.andExpect {
+                status { isOk() }
+                jsonPath("$.data.status") { value("ACTIVE") }
+            }
+        }
+
+        @Test
+        fun `요청자가 OWNER가 아니면 403을 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("admin-token")).thenReturn(3L)
+            whenever(adminUserService.updateStatus(3L, 2L, UserStatus.INACTIVE))
+                .thenThrow(AdminRoleForbiddenException())
+
+            mockMvc.patch("/api/v1/ums/admin/admin-users/2/status") {
+                header("Authorization", "Bearer admin-token")
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"status":"INACTIVE"}"""
+            }.andExpect {
+                status { isForbidden() }
+                jsonPath("$.errorCode") { value("ADMIN_ROLE_FORBIDDEN") }
+            }
+        }
+
+        @Test
+        fun `대상이 OWNER면 400을 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("owner-token")).thenReturn(1L)
+            whenever(adminUserService.updateStatus(1L, 2L, UserStatus.INACTIVE))
+                .thenThrow(AdminUserOwnerImmutableException())
+
+            mockMvc.patch("/api/v1/ums/admin/admin-users/2/status") {
+                header("Authorization", "Bearer owner-token")
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"status":"INACTIVE"}"""
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errorCode") { value("ADMIN_USER_OWNER_IMMUTABLE") }
+            }
+        }
+
+        @Test
+        fun `없는 id면 404를 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("owner-token")).thenReturn(1L)
+            whenever(adminUserService.updateStatus(1L, 999L, UserStatus.INACTIVE))
+                .thenThrow(AdminUserNotFoundException())
+
+            mockMvc.patch("/api/v1/ums/admin/admin-users/999/status") {
+                header("Authorization", "Bearer owner-token")
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"status":"INACTIVE"}"""
+            }.andExpect {
+                status { isNotFound() }
+                jsonPath("$.errorCode") { value("ADMIN_USER_NOT_FOUND") }
+            }
+        }
+
+        @Test
+        fun `status가 DELETED면 400을 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("owner-token")).thenReturn(1L)
+
+            mockMvc.patch("/api/v1/ums/admin/admin-users/2/status") {
+                header("Authorization", "Bearer owner-token")
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"status":"DELETED"}"""
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
+            }
+        }
+
+        @Test
+        fun `status가 정의되지 않은 값이면 400을 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("owner-token")).thenReturn(1L)
+
+            mockMvc.patch("/api/v1/ums/admin/admin-users/2/status") {
+                header("Authorization", "Bearer owner-token")
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"status":"BANNED"}"""
+            }.andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errorCode") { value("VALIDATION_ERROR") }
+            }
+        }
+
+        @Test
+        fun `Authorization 헤더가 없으면 401을 반환한다`() {
+            mockMvc.patch("/api/v1/ums/admin/admin-users/2/status") {
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"status":"INACTIVE"}"""
+            }.andExpect {
+                status { isUnauthorized() }
+                jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+            }
+        }
+
+        @Test
+        fun `만료된 어드민 토큰이면 401을 반환한다`() {
+            whenever(adminJwtUtil.validateAndGetUid("expired-token")).thenThrow(AuthTokenExpiredException())
+
+            mockMvc.patch("/api/v1/ums/admin/admin-users/2/status") {
+                header("Authorization", "Bearer expired-token")
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"status":"INACTIVE"}"""
             }.andExpect {
                 status { isUnauthorized() }
                 jsonPath("$.errorCode") { value("AUTH_EXPIRED_TOKEN") }

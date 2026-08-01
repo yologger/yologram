@@ -37,6 +37,26 @@ class UmsExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
 
+    @ExceptionHandler(AdminUserOwnerUndeletableException::class)
+    fun handleAdminUserOwnerUndeletable(e: AdminUserOwnerUndeletableException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
+    }
+
+    @ExceptionHandler(AdminUserOwnerImmutableException::class)
+    fun handleAdminUserOwnerImmutable(e: AdminUserOwnerImmutableException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
+    }
+
+    @ExceptionHandler(AdminRoleForbiddenException::class)
+    fun handleAdminRoleForbidden(e: AdminRoleForbiddenException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse(e.message, e.errorCode))
+    }
+
+    @ExceptionHandler(AdminUserInactiveException::class)
+    fun handleAdminUserInactive(e: AdminUserInactiveException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse(e.message, e.errorCode))
+    }
+
     @ExceptionHandler(AuthWrongPasswordException::class)
     fun handleWrongPassword(e: AuthWrongPasswordException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ErrorResponse(e.message, e.errorCode))
