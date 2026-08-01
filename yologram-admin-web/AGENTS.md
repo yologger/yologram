@@ -10,15 +10,14 @@ React 기반 어드민 웹. 유저/카테고리/게시글/뉴스 관리 기능�
 
 - src/Router.tsx: 라우팅 정의 (전 메뉴 ComingSoon — 기능 구현 시 페이지 컴포넌트로 교체)
 - src/App.tsx: 앱 진입점
-- src/components/layout/AdminLayout.tsx: 어드민 공통 레이아웃 (반응형 분기 — 데스크탑 고정 사이드바 / 모바일 햄버거 버튼 + Drawer 사이드바)
-- src/components/layout/menu.tsx: 메뉴 정의 공용 상수 (사이드바·Drawer 공유)
+- src/components/layout/AdminLayout.tsx: 어드민 공통 레이아웃 — 데스크탑: 상단 Header(로고+최상위 Menu horizontal+Avatar·Dropdown 로그아웃) + Sider(현재 섹션의 하위만 Menu inline) / 모바일: 햄버거 + Drawer(2단 그룹 메뉴, footer 로그아웃)
+- src/components/layout/menu.tsx: MENU_SECTIONS 2단 메뉴 상수(최상위 섹션 → 하위 경로) + findSelectedSection/findSelectedChildKey (상단·사이드바·Drawer 공유)
 - src/hooks/useIsMobile.ts: 모바일 판별 훅
 - src/lib/api.ts: axios 인스턴스 + Bearer 인터셉터 (401 전역 인증 초기화 — /ums/admin/auth/ 경로 제외)
 - src/stores/auth.ts: authAtom(jotai atomWithStorage — uid/email/name/accessToken)
 - src/apis/auth.ts: login/validateToken/logout/createAdminUser (api-v1 /ums/admin/*)
 - src/components/auth/: AuthGate(시작 시 저장 토큰 검증), RequireAuth(미인증 /login 리다이렉트)
 - src/pages/auth/LoginPage.tsx: 로그인 (어드민은 회원가입·비밀번호찾기 없음)
-- src/pages/ums/UmsPage.tsx + components/common/SubTabLayout.tsx: 유저 메뉴 서브탭(유저 관리/어드민 관리)
 
 ## 작업 규칙
 
@@ -34,10 +33,10 @@ React 기반 어드민 웹. 유저/카테고리/게시글/뉴스 관리 기능�
 ## 라우팅
 
 - /login만 비보호, 나머지 전체는 RequireAuth > AdminLayout 하위 보호
-- / → /dashboard 리다이렉트, 알 수 없는 경로도 /dashboard
-- /ums → /ums/users 리다이렉트, 서브탭 /ums/users(유저 관리)·/ums/admin-users(어드민 관리) — 백엔드 /api/v1/ums/admin/users·admin-users와 대응, 목록 화면은 placeholder. 메뉴 선택 유지는 menu.tsx MENU_MATCH_PREFIXES
-- /dashboard, /categories, /posts, /news는 준비 중
-- 메뉴 라벨: 대시보드/유저 관리/카테고리/게시글/뉴스 관리 — 유저 관련 용어는 '회원'이 아닌 '유저' 사용
+- 2단 내비게이션(번개장터 어드민 문법): 상단 바 = 최상위 분류, 사이드바 = 현재 최상위의 하위 분류. 서브탭 없음
+- 최상위/하위: 대시보드→[대시보드 /dashboard], 유저 관리→[유저 관리 /ums/users, 어드민 관리 /ums/admin-users], 카테고리 관리→[/categories], 게시글 관리→[/posts], 뉴스 관리→[기술 /news/tech, 투자 /news/invest, 정치 /news/politics]
+- 리다이렉트: / → /dashboard, /ums → /ums/users, /news → /news/tech, 미매칭 → /dashboard. 목록 화면들은 아직 placeholder
+- 유저 관련 용어는 '회원'이 아닌 '유저' 사용
 
 ## 인증
 

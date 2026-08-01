@@ -54,28 +54,28 @@ describe('Router (인증)', () => {
 
   it.each([
     ['/dashboard', '대시보드'],
+    ['/ums/users', '유저 관리'],
+    ['/ums/admin-users', '어드민 관리'],
     ['/categories', '카테고리 관리'],
     ['/posts', '게시글 관리'],
-    ['/news', '뉴스 관리'],
+    ['/news/tech', '기술 뉴스 관리'],
+    ['/news/invest', '투자 뉴스 관리'],
+    ['/news/politics', '정치 뉴스 관리'],
   ])('%s 진입 시 "%s" 준비 중 화면을 렌더한다', (path, title) => {
     renderRouterAuthenticated(path)
     expect(screen.getByRole('heading', { level: 3, name: title })).toBeInTheDocument()
     expect(screen.getByText('페이지 준비 중입니다')).toBeInTheDocument()
   })
 
-  it('/ums 진입 시 /ums/users로 리다이렉트하고 서브탭 골격을 렌더한다', async () => {
+  it('/ums 진입 시 /ums/users로 리다이렉트한다', () => {
     renderRouterAuthenticated('/ums')
     expect(screen.getByRole('heading', { level: 3, name: '유저 관리' })).toBeInTheDocument()
-    await waitFor(() => {
-      expect(screen.getByRole('tab', { name: '유저 관리' })).toHaveAttribute('aria-selected', 'true')
-    })
-    expect(screen.getByRole('tab', { name: '어드민 관리' })).toBeInTheDocument()
     expect(screen.getByText('페이지 준비 중입니다')).toBeInTheDocument()
   })
 
-  it('/ums/admin-users 진입 시 어드민 관리 탭이 선택된다', () => {
-    renderRouterAuthenticated('/ums/admin-users')
-    expect(screen.getByRole('tab', { name: '어드민 관리' })).toHaveAttribute('aria-selected', 'true')
+  it('/news 진입 시 /news/tech로 리다이렉트한다', () => {
+    renderRouterAuthenticated('/news')
+    expect(screen.getByRole('heading', { level: 3, name: '기술 뉴스 관리' })).toBeInTheDocument()
     expect(screen.getByText('페이지 준비 중입니다')).toBeInTheDocument()
   })
 

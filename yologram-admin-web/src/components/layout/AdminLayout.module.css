@@ -2,43 +2,39 @@
   min-height: 100vh;
 }
 
-.sider {
-  border-right: 1px solid #f0f0f0;
-}
-
-.siderInner {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.menu {
-  flex: 1;
-}
-
-.adminFooter {
+.header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid #f0f0f0;
+  gap: 24px;
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.adminName {
+.topMenu {
+  flex: 1;
+  min-width: 0;
+  border-bottom: none;
+}
+
+.adminTrigger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-width: 0;
+  gap: 8px;
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
-.logo {
-  padding: 16px;
+.sider {
+  border-right: 1px solid #f0f0f0;
 }
 
 .logoTitle {
   margin: 0 !important;
   color: #1677ff !important;
+  white-space: nowrap;
 }
 
 .mobileLayout {
@@ -60,4 +56,19 @@
 
 .content {
   padding: 24px;
+}
+
+.adminFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.adminName {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
