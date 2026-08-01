@@ -59,6 +59,7 @@ function renderLayout(initialPath = '/dashboard') {
         <Route path="/news/tech" element={<div>news tech content</div>} />
         <Route path="/news/invest" element={<div>news invest content</div>} />
         <Route path="/news/politics" element={<div>news politics content</div>} />
+        <Route path="/news/tech/sources" element={<div>news sources content</div>} />
       </Route>
     </Routes>,
     { wrapperOptions: { routerProps: { initialEntries: [initialPath] } } },
@@ -119,6 +120,24 @@ describe('AdminLayout (데스크탑)', () => {
     expect(within(sider).queryByText('대시보드')).not.toBeInTheDocument()
   })
 
+  it('/news/tech/sources 경로에서 상단 뉴스 관리·사이드바 소스 관리가 선택 상태다', () => {
+    renderLayout('/news/tech/sources')
+    expect(within(getHeader()).getByText('뉴스 관리').closest('li')).toHaveClass('ant-menu-item-selected')
+    // 기술 뉴스 SubMenu가 기본 펼침이라 하위 소스 관리가 보이고 선택 상태다
+    expect(within(getSider()).getByText('소스 관리').closest('li')).toHaveClass('ant-menu-item-selected')
+    // 가장 긴 프리픽스 매칭 — 상위 경로(/news/tech)의 뉴스 관리는 선택되지 않는다
+    expect(within(getSider()).getByText('뉴스 관리').closest('li')).not.toHaveClass('ant-menu-item-selected')
+    expect(screen.getByText('news sources content')).toBeInTheDocument()
+  })
+
+  it('/news/tech 경로에서 기술 뉴스 SubMenu가 펼쳐지고 뉴스 관리가 선택 상태다', () => {
+    renderLayout('/news/tech')
+    const sider = getSider()
+    expect(within(sider).getByText('기술 뉴스')).toBeInTheDocument()
+    expect(within(sider).getByText('뉴스 관리').closest('li')).toHaveClass('ant-menu-item-selected')
+    expect(within(sider).getByText('소스 관리').closest('li')).not.toHaveClass('ant-menu-item-selected')
+  })
+
   it('사이드바 하위 메뉴 클릭 시 해당 경로로 이동한다', async () => {
     const user = userEvent.setup()
     renderLayout('/ums/users')
@@ -176,10 +195,12 @@ describe('AdminLayout (모바일)', () => {
     expect(screen.getAllByText('유저 관리')).toHaveLength(2)
     expect(screen.getAllByText('카테고리 관리')).toHaveLength(2)
     expect(screen.getAllByText('게시글 관리')).toHaveLength(2)
-    // 뉴스 관리는 그룹 라벨 1회 + 고유한 하위 3개
-    expect(screen.getByText('뉴스 관리')).toBeInTheDocument()
+    // 뉴스 관리는 그룹 라벨 + 기술 뉴스 SubMenu 하위 '뉴스 관리' 리프로 두 번
+    expect(screen.getAllByText('뉴스 관리')).toHaveLength(2)
     expect(screen.getByText('어드민 관리')).toBeInTheDocument()
+    // 기술 뉴스 SubMenu는 기본 펼침 — 하위 소스 관리까지 보인다
     expect(screen.getByText('기술 뉴스')).toBeInTheDocument()
+    expect(screen.getByText('소스 관리')).toBeInTheDocument()
     expect(screen.getByText('투자 뉴스')).toBeInTheDocument()
     expect(screen.getByText('정치 뉴스')).toBeInTheDocument()
   })
@@ -191,12 +212,12 @@ describe('AdminLayout (모바일)', () => {
     expect(screen.getByText('어드민 관리').closest('li')).toHaveClass('ant-menu-item-selected')
   })
 
-  it('Drawer 하위 메뉴 클릭 시 해당 경로로 이동하고 Drawer가 닫힌다', async () => {
+  it('Drawer 하위 메뉴(SubMenu 내부 리프) 클릭 시 해당 경로로 이동하고 Drawer가 닫힌다', async () => {
     const user = userEvent.setup()
     renderLayout('/dashboard')
     await user.click(screen.getByLabelText('메뉴 열기'))
-    await user.click(screen.getByText('기술 뉴스'))
-    expect(screen.getByText('news tech content')).toBeInTheDocument()
+    await user.click(screen.getByText('소스 관리'))
+    expect(screen.getByText('news sources content')).toBeInTheDocument()
     await waitFor(() => {
       expect(document.querySelector('.ant-drawer-open')).not.toBeInTheDocument()
     })

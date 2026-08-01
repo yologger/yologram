@@ -18,6 +18,7 @@ React 기반 어드민 웹. 유저/카테고리/게시글/뉴스 관리 기능�
 - src/apis/auth.ts: login/validateToken/logout/createAdminUser (api-v1 /ums/admin/*)
 - src/components/auth/: AuthGate(시작 시 저장 토큰 검증), RequireAuth(미인증 /login 리다이렉트)
 - src/pages/auth/LoginPage.tsx: 로그인 (어드민은 회원가입·비밀번호찾기 없음)
+- src/pages/news/NewsSourcesPage.tsx + apis/newsSources.ts + queries/useNewsSources*·use*NewsSourceMutation: 뉴스 소스 관리 — 목록 Table·추가/수정 Modal·삭제 confirm·활성 Switch 토글(실패 시 쿼리 기반 자동 원복)
 
 ## 작업 규칙
 
@@ -34,8 +35,8 @@ React 기반 어드민 웹. 유저/카테고리/게시글/뉴스 관리 기능�
 
 - /login만 비보호, 나머지 전체는 RequireAuth > AdminLayout 하위 보호
 - 2단 내비게이션(번개장터 어드민 문법): 상단 바 = 최상위 분류, 사이드바 = 현재 최상위의 하위 분류. 서브탭 없음
-- 최상위/하위: 대시보드→[대시보드 /dashboard], 유저 관리→[유저 관리 /ums/users, 어드민 관리 /ums/admin-users], 카테고리 관리→[/categories], 게시글 관리→[/posts], 뉴스 관리→[기술 /news/tech, 투자 /news/invest, 정치 /news/politics]
-- 리다이렉트: / → /dashboard, /ums → /ums/users, /news → /news/tech, 미매칭 → /dashboard. 목록 화면들은 아직 placeholder
+- 최상위/하위: 대시보드→[대시보드 /dashboard], 유저 관리→[유저 관리 /ums/users, 어드민 관리 /ums/admin-users], 카테고리 관리→[/categories], 게시글 관리→[/posts], 뉴스 관리→[기술 뉴스 SubMenu(뉴스 관리 /news/tech·소스 관리 /news/tech/sources), 투자 /news/invest, 정치 /news/politics] — 소스는 섹션 종속이라 기술 뉴스 하위(사이드바 2단 중첩, 기본 펼침·최장 프리픽스 매칭)
+- 리다이렉트: / → /dashboard, /ums → /ums/users, /news → /news/tech, 미매칭 → /dashboard. 소스 관리는 실화면, 나머지 목록 화면들은 placeholder
 - 유저 관련 용어는 '회원'이 아닌 '유저' 사용
 
 ## 인증

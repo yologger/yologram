@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router'
 import AdminLayout from './components/layout/AdminLayout'
 import RequireAuth from './components/auth/RequireAuth'
 import LoginPage from './pages/auth/LoginPage'
+import NewsSourcesPage from './pages/news/NewsSourcesPage'
 import ComingSoon from './components/common/ComingSoon'
 
 /**
@@ -25,6 +26,7 @@ export default function Router() {
           <Route path="/news/tech" element={<ComingSoon title="기술 뉴스 관리" />} />
           <Route path="/news/invest" element={<ComingSoon title="투자 뉴스 관리" />} />
           <Route path="/news/politics" element={<ComingSoon title="정치 뉴스 관리" />} />
+          <Route path="/news/tech/sources" element={<NewsSourcesPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Route>

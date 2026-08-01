@@ -6,7 +6,14 @@ import { useAtomValue } from 'jotai'
 import { authAtom } from '../../stores/auth'
 import useLogoutMutation from '../../queries/useLogoutMutation'
 import useIsMobile from '../../hooks/useIsMobile'
-import { MENU_SECTIONS, findSelectedSection, findSelectedChildKey } from './menu'
+import {
+  MENU_SECTIONS,
+  findSelectedSection,
+  findSelectedChildKey,
+  findFirstLeafKey,
+  findSubMenuKeys,
+  toAntdMenuItems,
+} from './menu'
 import styles from './AdminLayout.module.css'
 
 /**
@@ -75,8 +82,9 @@ export default function AdminLayout() {
               type: 'group' as const,
               key: section.key,
               label: section.label,
-              children: section.children.map((child) => ({ key: child.key, label: child.label })),
+              children: toAntdMenuItems(section.children),
             }))}
+            defaultOpenKeys={MENU_SECTIONS.flatMap((section) => findSubMenuKeys(section))}
             selectedKeys={selectedChildKey ? [selectedChildKey] : []}
             onClick={({ key }) => {
               navigate(key)
@@ -104,7 +112,7 @@ export default function AdminLayout() {
           selectedKeys={selectedSection ? [selectedSection.key] : []}
           onClick={({ key }) => {
             const section = MENU_SECTIONS.find((s) => s.key === key)
-            if (section) navigate(section.children[0].key)
+            if (section) navigate(findFirstLeafKey(section))
           }}
         />
         <Dropdown
@@ -124,9 +132,12 @@ export default function AdminLayout() {
       </Layout.Header>
       <Layout>
         <Layout.Sider theme="light" width={220} className={styles.sider}>
+          {/* key로 섹션 전환 시 재마운트해 defaultOpenKeys(SubMenu 기본 펼침)를 다시 적용한다 */}
           <Menu
+            key={selectedSection?.key ?? 'none'}
             mode="inline"
-            items={selectedSection?.children.map((child) => ({ key: child.key, label: child.label })) ?? []}
+            items={toAntdMenuItems(selectedSection?.children ?? [])}
+            defaultOpenKeys={findSubMenuKeys(selectedSection)}
             selectedKeys={selectedChildKey ? [selectedChildKey] : []}
             onClick={({ key }) => navigate(key)}
           />

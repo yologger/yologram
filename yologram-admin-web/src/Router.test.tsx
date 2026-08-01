@@ -1,6 +1,7 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, afterAll } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import { getDefaultStore } from 'jotai'
+import { server } from './test/server'
 import { renderWithProviders } from './test/utils'
 import { authAtom, type AuthState } from './stores/auth'
 import Router from './Router'
@@ -12,10 +13,13 @@ const adminAuth: AuthState = {
   name: '관리자',
 }
 
+beforeAll(() => server.listen())
 afterEach(() => {
+  server.resetHandlers()
   getDefaultStore().set(authAtom, null)
   localStorage.removeItem('auth')
 })
+afterAll(() => server.close())
 
 function renderRouter(initialPath: string) {
   return renderWithProviders(<Router />, {
@@ -71,6 +75,12 @@ describe('Router (인증)', () => {
     renderRouterAuthenticated('/ums')
     expect(screen.getByRole('heading', { level: 3, name: '유저 관리' })).toBeInTheDocument()
     expect(screen.getByText('페이지 준비 중입니다')).toBeInTheDocument()
+  })
+
+  it('/news/tech/sources 진입 시 소스 관리 화면을 렌더한다', async () => {
+    renderRouterAuthenticated('/news/tech/sources')
+    expect(screen.getByRole('heading', { level: 3, name: '소스 관리' })).toBeInTheDocument()
+    expect(await screen.findByText('우아한형제들 기술블로그')).toBeInTheDocument()
   })
 
   it('/news 진입 시 /news/tech로 리다이렉트한다', () => {
