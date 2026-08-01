@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.core.exception import InvalidCursorException
-from app.domain.tech.category.model import TechCategory
-from app.domain.tech.news.cursor import TechNewsCursor
-from app.domain.tech.news.model import TechNews, TechNewsCategoryMapping, TechNewsStatus
-from app.domain.tech.news.service import MAX_PAGE_SIZE, TechNewsService
+from app.domain.cms.tech.model import TechCategory
+from app.domain.news.tech.cursor import TechNewsCursor
+from app.domain.news.tech.model import TechNews, TechNewsCategoryMapping, TechNewsStatus
+from app.domain.news.tech.service import MAX_PAGE_SIZE, TechNewsService
 
 
 def _news(news_id: int, published_at: datetime = datetime(2026, 7, 18, 9, 0)) -> TechNews:
@@ -41,13 +41,13 @@ class TestTechNewsService:
         self.category_repo.find_by_ids.return_value = []
 
         self.repo_patcher = patch(
-            "app.domain.tech.news.service.TechNewsRepository", return_value=self.news_repo
+            "app.domain.news.tech.service.TechNewsRepository", return_value=self.news_repo
         )
         self.mapping_patcher = patch(
-            "app.domain.tech.news.service.TechNewsCategoryMappingRepository", return_value=self.mapping_repo
+            "app.domain.news.tech.service.TechNewsCategoryMappingRepository", return_value=self.mapping_repo
         )
         self.category_patcher = patch(
-            "app.domain.tech.news.service.TechCategoryRepository", return_value=self.category_repo
+            "app.domain.news.tech.service.TechCategoryRepository", return_value=self.category_repo
         )
         self.repo_patcher.start()
         self.mapping_patcher.start()

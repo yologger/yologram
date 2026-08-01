@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 
 from app.core.response import ApiEnvelopCursorPage
-from app.domain.tech.news.cursor import TechNewsCursor
-from app.domain.tech.news.repository import TechNewsCategoryMappingRepository, TechNewsRepository
-from app.domain.tech.news.schema import TechNewsResponse
-from app.domain.tech.category.repository import TechCategoryRepository
+from app.domain.news.tech.cursor import TechNewsCursor
+from app.domain.news.tech.repository import TechNewsCategoryMappingRepository, TechNewsRepository
+from app.domain.news.tech.schema import TechNewsResponse
+from app.domain.cms.tech.repository import TechCategoryRepository
 
 MAX_PAGE_SIZE = 50
 

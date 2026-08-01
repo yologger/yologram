@@ -2,7 +2,7 @@ from typing import Protocol
 
 from sqlalchemy.orm import Session
 
-from app.domain.tech.comment.repository import TechPostCommentRepository
+from app.domain.comment.tech.repository import TechPostCommentRepository
 
 
 class TechPostCommentCleanupClient(Protocol):

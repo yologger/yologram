@@ -7,10 +7,10 @@ from app.core.exception import (
     PostNotFoundException,
 )
 from app.core.response import ApiEnvelopCursorPage, ApiEnvelopPage
-from app.domain.tech.post.cursor import TechPostCursor
-from app.domain.tech.post.model import TechPost, TechPostCategoryMapping
-from app.domain.tech.post.repository import TechPostCategoryMappingRepository, TechPostRepository
-from app.domain.tech.post.schema import (
+from app.domain.pms.tech.cursor import TechPostCursor
+from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping
+from app.domain.pms.tech.repository import TechPostCategoryMappingRepository, TechPostRepository
+from app.domain.pms.tech.schema import (
     CreatePostRequest,
     CreatePostResponse,
     PostAuthor,
@@ -18,15 +18,15 @@ from app.domain.tech.post.schema import (
     PostSummaryResponse,
     UpdatePostRequest,
 )
-from app.domain.tech.post.tech_post_category_query_client import (
+from app.domain.pms.tech.tech_post_category_query_client import (
     LocalTechPostCategoryQueryClient,
     TechPostCategoryQueryClient,
 )
-from app.domain.tech.post.tech_post_comment_cleanup_client import (
+from app.domain.pms.tech.tech_post_comment_cleanup_client import (
     LocalTechPostCommentCleanupClient,
     TechPostCommentCleanupClient,
 )
-from app.domain.tech.post.user_query_client import LocalUserQueryClient, UserQueryClient
+from app.domain.pms.tech.user_query_client import LocalUserQueryClient, UserQueryClient
 
 MAX_PAGE_SIZE = 50
 SECTION_PATH = "tech"

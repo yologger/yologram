@@ -6,19 +6,19 @@ from app.core.exception import (
     TargetPostNotFoundException,
 )
 from app.core.response import ApiEnvelopCursorPage, ApiEnvelopPage
-from app.domain.tech.comment.cursor import TechPostCommentCursor
-from app.domain.tech.comment.model import TechPostComment
-from app.domain.tech.comment.repository import TechPostCommentRepository
-from app.domain.tech.comment.schema import (
+from app.domain.comment.tech.cursor import TechPostCommentCursor
+from app.domain.comment.tech.model import TechPostComment
+from app.domain.comment.tech.repository import TechPostCommentRepository
+from app.domain.comment.tech.schema import (
     CommentAuthor,
     CommentResponse,
     CreateCommentRequest,
     CreateCommentResponse,
     UpdateCommentRequest,
 )
-from app.domain.tech.comment.sort import CommentSort
-from app.domain.tech.comment.tech_post_query_client import LocalTechPostQueryClient, TechPostQueryClient
-from app.domain.tech.comment.user_query_client import LocalUserQueryClient, UserQueryClient
+from app.domain.comment.tech.sort import CommentSort
+from app.domain.comment.tech.tech_post_query_client import LocalTechPostQueryClient, TechPostQueryClient
+from app.domain.comment.tech.user_query_client import LocalUserQueryClient, UserQueryClient
 
 MAX_PAGE_SIZE = 50
 

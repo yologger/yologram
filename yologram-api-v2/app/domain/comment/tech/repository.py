@@ -1,8 +1,8 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.domain.tech.comment.model import TechPostComment
-from app.domain.tech.comment.sort import CommentSort
+from app.domain.comment.tech.model import TechPostComment
+from app.domain.comment.tech.sort import CommentSort
 
 
 class TechPostCommentRepository:

@@ -9,10 +9,10 @@ from app.core.exception import (
     PostForbiddenException,
     PostNotFoundException,
 )
-from app.domain.tech.post.cursor import TechPostCursor
-from app.domain.tech.post.model import TechPost, TechPostCategoryMapping
-from app.domain.tech.post.schema import CreatePostRequest, UpdatePostRequest
-from app.domain.tech.post.service import TechPostService
+from app.domain.pms.tech.cursor import TechPostCursor
+from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping
+from app.domain.pms.tech.schema import CreatePostRequest, UpdatePostRequest
+from app.domain.pms.tech.service import TechPostService
 
 
 def _saved_post(post_id: int = 10) -> TechPost:
@@ -32,9 +32,9 @@ def _post(post_id: int, user_id: int | None = None) -> TechPost:
 
 class TestTechPostService:
 
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_정상_작성_시_게시글과_카테고리를_저장하고_id를_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_client_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.save.return_value = _saved_post(10)
@@ -51,9 +51,9 @@ class TestTechPostService:
         assert result.id == 10
         assert mock_pc_repo.save.call_count == 2
 
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_카테고리가_테크_게시판_것이_아니면_예외(self, mock_post_repo_cls, mock_pc_repo_cls, mock_client_cls):
         mock_post_repo = MagicMock()
         mock_post_repo_cls.return_value = mock_post_repo
@@ -71,9 +71,9 @@ class TestTechPostService:
 
 class TestTechPostServiceUpdate:
 
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_본인_글이면_수정_후_카테고리_교체(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
         post = _post(1, user_id=1)
         mock_post_repo = MagicMock()
@@ -93,9 +93,9 @@ class TestTechPostServiceUpdate:
         mock_pc_repo.delete_by_post_id.assert_called_once_with(1)
         assert mock_pc_repo.save.call_count == 2
 
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_존재하지_않는_글이면_404(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_by_id.return_value = None
@@ -107,9 +107,9 @@ class TestTechPostServiceUpdate:
         with pytest.raises(PostNotFoundException):
             service.update(99, 1, UpdatePostRequest(content="내용", category_ids=[1]))
 
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_본인_글이_아니면_403(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
         post = _post(1, user_id=99)
         mock_post_repo = MagicMock()
@@ -125,9 +125,9 @@ class TestTechPostServiceUpdate:
 
         mock_pc_repo.delete_by_post_id.assert_not_called()
 
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_카테고리가_테크_게시판_것이_아니면_400(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls):
         post = _post(1, user_id=1)
         mock_post_repo = MagicMock()
@@ -148,10 +148,10 @@ class TestTechPostServiceUpdate:
 
 class TestTechPostServiceDelete:
 
-    @patch("app.domain.tech.post.service.LocalTechPostCommentCleanupClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalTechPostCommentCleanupClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_본인_글이면_카테고리_매핑과_댓글_제거_후_게시글_삭제(
         self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_cleanup_cls
     ):
@@ -172,10 +172,10 @@ class TestTechPostServiceDelete:
         mock_cleanup.delete_by_post_id.assert_called_once_with(1)
         mock_post_repo.delete.assert_called_once_with(post)
 
-    @patch("app.domain.tech.post.service.LocalTechPostCommentCleanupClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalTechPostCommentCleanupClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_존재하지_않는_글이면_404(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_cleanup_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_by_id.return_value = None
@@ -194,10 +194,10 @@ class TestTechPostServiceDelete:
         mock_cleanup.delete_by_post_id.assert_not_called()
         mock_post_repo.delete.assert_not_called()
 
-    @patch("app.domain.tech.post.service.LocalTechPostCommentCleanupClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalTechPostCommentCleanupClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_본인_글이_아니면_403(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_cleanup_cls):
         post = _post(1, user_id=99)
         mock_post_repo = MagicMock()
@@ -220,10 +220,10 @@ class TestTechPostServiceDelete:
 
 class TestTechPostServiceGetPost:
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_게시글과_카테고리_작성자_닉네임을_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         post = TechPost(user_id=12, title="제목", content="내용")
         post.id = 1
@@ -254,10 +254,10 @@ class TestTechPostServiceGetPost:
         assert result.content == "내용"
         assert result.comment_count == 2
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_존재하지_않는_게시글이면_예외(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_by_id.return_value = None
@@ -271,10 +271,10 @@ class TestTechPostServiceGetPost:
 
 class TestTechPostServiceGetPosts:
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_결과가_있으면_마지막_글_id를_nextCursor로_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_posts.return_value = [_post(3), _post(2)]
@@ -295,10 +295,10 @@ class TestTechPostServiceGetPosts:
         assert result.data[0].author.nickname == "u3"
         assert result.next_cursor == TechPostCursor.encode(2)
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_결과가_없으면_빈_목록과_None_nextCursor(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_posts.return_value = []
@@ -316,10 +316,10 @@ class TestTechPostServiceGetPosts:
         assert result.data == []
         assert result.next_cursor is None
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_cursor가_주어지면_디코딩한_id로_조회(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_posts.return_value = []
@@ -336,10 +336,10 @@ class TestTechPostServiceGetPosts:
 
         mock_post_repo.find_posts.assert_called_once_with(None, 5, 20)
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_size가_최대치를_넘으면_50으로_제한(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_posts.return_value = []
@@ -359,10 +359,10 @@ class TestTechPostServiceGetPosts:
 
 class TestTechPostServiceGetMyPosts:
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_내_글_cursor_목록과_nextCursor를_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_my_posts_by_cursor.return_value = [_post(3), _post(2)]
@@ -381,10 +381,10 @@ class TestTechPostServiceGetMyPosts:
         assert result.data[0].category_ids == [10]
         assert result.next_cursor == TechPostCursor.encode(2)
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_내_글_section_tech_지정시_정상_조회(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_my_posts_by_cursor.return_value = []
@@ -401,10 +401,10 @@ class TestTechPostServiceGetMyPosts:
 
         mock_post_repo.find_my_posts_by_cursor.assert_called_once_with(1, None, 20)
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_내_글_section_대문자_TECH도_허용(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_my_posts_by_cursor.return_value = []
@@ -421,10 +421,10 @@ class TestTechPostServiceGetMyPosts:
 
         mock_post_repo.find_my_posts_by_cursor.assert_called_once_with(1, None, 20)
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_내_글_section_없으면_전체_조회(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_my_posts_by_cursor.return_value = []
@@ -441,10 +441,10 @@ class TestTechPostServiceGetMyPosts:
 
         mock_post_repo.find_my_posts_by_cursor.assert_called_once_with(1, None, 20)
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_내_글_유효하지_않은_section이면_예외(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
         mock_post_repo_cls.return_value = mock_post_repo
@@ -456,10 +456,10 @@ class TestTechPostServiceGetMyPosts:
 
         mock_post_repo.find_my_posts_by_cursor.assert_not_called()
 
-    @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    @patch("app.domain.tech.post.service.TechPostRepository")
+    @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_내_글_다른_섹션_section이면_예외(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         # 테이블 분리 후에는 tech 외 섹션이 존재하지 않으므로 invest도 유효하지 않은 섹션
         mock_post_repo = MagicMock()
@@ -473,10 +473,10 @@ class TestTechPostServiceGetMyPosts:
         mock_post_repo.find_my_posts_by_cursor.assert_not_called()
 
     # offset 엔드포인트는 현재 비활성(router에서 주석)이라 학습용으로 테스트도 주석 처리
-    # @patch("app.domain.tech.post.service.LocalUserQueryClient")
-    # @patch("app.domain.tech.post.service.LocalTechPostCategoryQueryClient")
-    # @patch("app.domain.tech.post.service.TechPostCategoryMappingRepository")
-    # @patch("app.domain.tech.post.service.TechPostRepository")
+    # @patch("app.domain.pms.tech.service.LocalUserQueryClient")
+    # @patch("app.domain.pms.tech.service.LocalTechPostCategoryQueryClient")
+    # @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    # @patch("app.domain.pms.tech.service.TechPostRepository")
     # def test_내_글_offset_목록과_페이지_메타를_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
     #     mock_post_repo = MagicMock()
     #     mock_post_repo.count_my_posts.return_value = 3

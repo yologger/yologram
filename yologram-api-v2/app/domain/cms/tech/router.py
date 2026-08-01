@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config.database import get_db
 from app.core.response import ApiEnvelop
-from app.domain.tech.category.service import TechCategoryService
+from app.domain.cms.tech.service import TechCategoryService
 
 # 기존 /api/v2/cms/{section}/categories의 section 경로변수를 tech로 고정 (URL 결과 동일)
 router = APIRouter(prefix="/api/v2/cms", tags=["TechCategory"])

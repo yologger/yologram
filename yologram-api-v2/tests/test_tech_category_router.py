@@ -6,7 +6,7 @@ os.environ.setdefault("JWT_SECRET", "test-jwt-secret-key-for-testing")
 from fastapi.testclient import TestClient
 
 from app.config.database import get_db
-from app.domain.tech.category.model import TechCategory
+from app.domain.cms.tech.model import TechCategory
 from app.main import app
 
 
@@ -20,7 +20,7 @@ class TestTechCategoryRouter:
     def teardown_method(self):
         app.dependency_overrides.clear()
 
-    @patch("app.domain.tech.category.service.TechCategoryRepository")
+    @patch("app.domain.cms.tech.service.TechCategoryRepository")
     def test_카테고리_목록_조회_200(self, mock_repo_cls):
         mock_repo = MagicMock()
         mock_repo.find_active.return_value = [
@@ -38,7 +38,7 @@ class TestTechCategoryRouter:
         assert body["data"][0]["sortOrder"] == 1
         assert body["data"][1]["name"] == "Backend"
 
-    @patch("app.domain.tech.category.service.TechCategoryRepository")
+    @patch("app.domain.cms.tech.service.TechCategoryRepository")
     def test_카테고리가_없으면_빈_배열_반환(self, mock_repo_cls):
         mock_repo = MagicMock()
         mock_repo.find_active.return_value = []

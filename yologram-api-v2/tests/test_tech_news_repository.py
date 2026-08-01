@@ -7,11 +7,11 @@ from sqlalchemy.orm import sessionmaker
 from testcontainers.mysql import MySqlContainer
 
 from app.config.database import Base
-from app.domain.tech.category.model import TechCategory
-from app.domain.tech.category.repository import TechCategoryRepository
-from app.domain.tech.news.cursor import TechNewsCursor
-from app.domain.tech.news.model import TechNews, TechNewsCategoryMapping, TechNewsStatus
-from app.domain.tech.news.repository import TechNewsCategoryMappingRepository, TechNewsRepository
+from app.domain.cms.tech.model import TechCategory
+from app.domain.cms.tech.repository import TechCategoryRepository
+from app.domain.news.tech.cursor import TechNewsCursor
+from app.domain.news.tech.model import TechNews, TechNewsCategoryMapping, TechNewsStatus
+from app.domain.news.tech.repository import TechNewsCategoryMappingRepository, TechNewsRepository
 
 BASE = datetime(2026, 7, 18, 9, 0, 0)
 

@@ -4,8 +4,8 @@ from sqlalchemy.orm import sessionmaker
 from testcontainers.mysql import MySqlContainer
 
 from app.config.database import Base
-from app.domain.tech.comment.model import TechPostComment
-from app.domain.tech.comment.repository import TechPostCommentRepository
+from app.domain.comment.tech.model import TechPostComment
+from app.domain.comment.tech.repository import TechPostCommentRepository
 
 
 @pytest.fixture(scope="module")

@@ -3,7 +3,7 @@ from typing import Protocol
 
 from sqlalchemy.orm import Session
 
-from app.domain.tech.category.repository import TechCategoryRepository
+from app.domain.cms.tech.repository import TechCategoryRepository
 
 
 class TechPostCategoryQueryClient(Protocol):

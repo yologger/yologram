@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.config.database import get_db
 from app.core.response import ApiEnvelopCursorPage
-from app.domain.tech.news.schema import TechNewsResponse
-from app.domain.tech.news.service import TechNewsService
+from app.domain.news.tech.schema import TechNewsResponse
+from app.domain.news.tech.service import TechNewsService
 
 # 테크 뉴스 공개 조회 API — worker가 수집·요약한 tech_news를 발행순으로 제공.
 # 섹션이 경로 세그먼트(/news/tech) — invest/politics 오픈 시 세그먼트 추가 (섹션 규약).

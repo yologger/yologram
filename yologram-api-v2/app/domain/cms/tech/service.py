@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.domain.tech.category.repository import TechCategoryRepository
-from app.domain.tech.category.schema import TechCategoryResponse
+from app.domain.cms.tech.repository import TechCategoryRepository
+from app.domain.cms.tech.schema import TechCategoryResponse
 
 
 class TechCategoryService:

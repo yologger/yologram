@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.config.database import get_db
 from app.core.response import ApiEnvelop, ApiEnvelopCursorPage
-from app.domain.tech.comment.schema import CommentResponse, CreateCommentRequest, UpdateCommentRequest
-from app.domain.tech.comment.service import TechPostCommentService
+from app.domain.comment.tech.schema import CommentResponse, CreateCommentRequest, UpdateCommentRequest
+from app.domain.comment.tech.service import TechPostCommentService
 from app.domain.ums.auth_dependency import get_authenticated_user
 from app.domain.ums.auth_schema import AuthData
 

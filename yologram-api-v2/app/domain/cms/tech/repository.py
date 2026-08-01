@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.domain.tech.category.model import TechCategory
+from app.domain.cms.tech.model import TechCategory
 
 
 class TechCategoryRepository:

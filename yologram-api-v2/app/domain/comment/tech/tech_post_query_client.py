@@ -2,7 +2,7 @@ from typing import Protocol
 
 from sqlalchemy.orm import Session
 
-from app.domain.tech.post.repository import TechPostRepository
+from app.domain.pms.tech.repository import TechPostRepository
 
 
 class TechPostQueryClient(Protocol):

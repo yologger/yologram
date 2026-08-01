@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.domain.tech.news.model import TechNews
+from app.domain.news.tech.model import TechNews
 
 
 class TechNewsResponse(BaseModel):

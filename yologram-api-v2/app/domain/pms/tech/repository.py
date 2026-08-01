@@ -1,7 +1,7 @@
 from sqlalchemy import exists, func
 from sqlalchemy.orm import Query, Session
 
-from app.domain.tech.post.model import TechPost, TechPostCategoryMapping
+from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping
 
 
 class TechPostRepository:

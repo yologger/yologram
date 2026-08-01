@@ -1,12 +1,12 @@
 from unittest.mock import MagicMock, patch
 
-from app.domain.tech.category.model import TechCategory
-from app.domain.tech.category.service import TechCategoryService
+from app.domain.cms.tech.model import TechCategory
+from app.domain.cms.tech.service import TechCategoryService
 
 
 class TestTechCategoryService:
 
-    @patch("app.domain.tech.category.service.TechCategoryRepository")
+    @patch("app.domain.cms.tech.service.TechCategoryRepository")
     def test_활성_카테고리를_정렬_순으로_반환(self, mock_repo_cls):
         mock_repo = MagicMock()
         mock_repo.find_active.return_value = [
@@ -25,7 +25,7 @@ class TestTechCategoryService:
         assert result[1].name == "Backend"
         mock_repo.find_active.assert_called_once_with()
 
-    @patch("app.domain.tech.category.service.TechCategoryRepository")
+    @patch("app.domain.cms.tech.service.TechCategoryRepository")
     def test_카테고리가_없으면_빈_목록_반환(self, mock_repo_cls):
         mock_repo = MagicMock()
         mock_repo.find_active.return_value = []

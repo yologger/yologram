@@ -1,8 +1,8 @@
 from sqlalchemy import exists
 from sqlalchemy.orm import Session
 
-from app.domain.tech.news.cursor import TechNewsCursor
-from app.domain.tech.news.model import TechNews, TechNewsCategoryMapping, TechNewsStatus
+from app.domain.news.tech.cursor import TechNewsCursor
+from app.domain.news.tech.model import TechNews, TechNewsCategoryMapping, TechNewsStatus
 
 
 class TechNewsRepository:

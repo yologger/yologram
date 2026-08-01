@@ -4,7 +4,7 @@ from datetime import datetime
 import pytest
 
 from app.core.exception import InvalidCursorException
-from app.domain.tech.news.cursor import TechNewsCursor
+from app.domain.news.tech.cursor import TechNewsCursor
 
 
 def _b64(raw: str) -> str:
