@@ -6,16 +6,20 @@
 > docs/는 메인(루트) 에이전트만 갱신. 서브에이전트는 read-only(참고만).
 
 ## Todos. 
-- [ ] (PMS/QueryDSL) QueryDSL 조인 활용 예시 추가 — 현재 코드에 SQL 조인 사용처 0 (닉네임=IN 배치, 카테고리 필터=EXISTS, 라벨=IN 배치)
-  - 도메인 간 조인 금지 원칙(rules.md)은 유지 — 같은 도메인 내 조인 예시로 추가 (후보: 뉴스 단건/목록에 tech_news ⋈ tech_news_source 소스명 최신화 표시, 게시글 상세의 post ⋈ mapping 단건 계열 — 1:N 목록 조인은 row 뻥튀기로 부적합, 구현 시 확정)
-  - api-v1 QueryDSL 기준(rules.md ②다중 조인 항목 실사용 예시화), api-v2는 SQLAlchemy join 미러
 - [ ] (Cache) Redis(Valkey) 도입 — 대규모 트래픽 가정 하 캐시 예시 (포트폴리오: 가정→결정 근거를 done.md에 기록)
-  - [ ] 인프라: ElastiCache Valkey(cache.t4g.micro, 요금 기검토) infra tf + 로컬 docker compose
-  - [ ] 닉네임 캐시 — cache-aside: 목록·댓글의 user IN 배치 조회(UserQueryClient.findNicknames)를 Redis MGET으로 흡수, 닉네임 변경 시 키 DEL 무효화. LocalUserQueryClient 데코레이터 위치(MSA 분리 후에도 캐시 층 유지)
+  - [x] 인프라: ElastiCache Valkey(valkey-prod, cache.t4g.micro — 서버리스도 검토했으나 인스턴스형 확정) apply·엔드포인트 SSM 등록(spring.data.redis.host) + 로컬 compose.yaml(valkey:8) (완료, done.md)
+  - [x] 닉네임 캐시(api-v1·api-v2) — 레거시 infra/cache 스타일 이식 + v2 redis-py 미러(키·JSON 바이트 호환), UserNicknameCache 공용 cache-aside, 변경·탈퇴 시 DEL, prod env(CACHE_REDIS_HOST) tf 반영 (완료, done.md)
   - [ ] 뉴스 첫 페이지 캐시 — GET /news/{section} 무커서 응답 통째(뉴스+매핑+라벨 3쿼리 제거), TTL 5분 or worker 무효화(cross-service). 커서 페이지는 캐시 제외
   - [ ] 캐시 히트율·응답시간 지표 → Grafana (before/after 실측)
   - 장애 시나리오 명시: cache-aside라 Redis 다운 시 DB fallback(성능 저하, 가용성 유지). validate-token 등 auth 상태는 캐시 금지(INACTIVE 즉시 차단 무력화 — 의도적 비적용 기록)
   - 후속 확장(별항 연계): 재발송 rate limit·인증코드 TTL 이관·refresh token 저장소·좋아요 카운터·ShedLock
+- [ ] (Count) 좋아요/댓글 수 + QueryDSL 조인 조회 — 레거시(BoardCustomRepository) 패턴 재현
+  - 설계: tech_post_like_count·tech_post_comment_count 1:1 카운트 테이블(pms 소유 비정규화 — 같은 도메인이라 무조인 원칙과 양립, 1:1이라 목록 조인 row 뻥튀기 없음). 좋아요 원장 테이블(tech_post_like — uid·postId unique)과 분리
+  - [ ] 좋아요 토글 API (/count 경로 규칙 재검토 — pms 소유로 갈 경우 /pms/{section}/posts/{id}/like 후보, 구현 시 확정) — api-v1/v2
+  - [ ] 댓글 작성/삭제 시 comment_count 동기화 (현재 카운트 항상 0)
+  - [ ] QueryDSL 조인 조회: 목록·상세에 leftJoin+ON 명시(무FK)+Projections.constructor 중첩+coalesce(0) — 레거시 미러. api-v2는 SQLAlchemy join 미러. rules.md ②다중 조인 실사용 예시화
+  - [ ] web-v1/v2 카운트 표시 + 좋아요 토글 연동 (로컬 임시 토글 → 실연동)
+  - 1차는 카운트 테이블 동기 갱신, 분리 시 이벤트 기반 이관 (기존 메모 유지). Redis 카운터(INCR+write-behind) 확장은 Cache 트랙 후속
 - [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
   - [ ] 도입 시점 판단
   - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)
@@ -32,7 +36,7 @@
   - 배포는 기존과 동일 FARGATE_SPOT 0.25vCPU/512MB(월 ~$3, 서울 온디맨드 vCPU $0.04656/h·GB $0.00511/h 기준 ~70% 할인). Spot 중단 시 @Scheduled는 놓친 사이클 소급 실행 없음 — RSS처럼 멱등·다음 주기가 커버하는 작업은 무해. 시각 민감/누적형/중단 불가 배치가 생기면 그 배치만 EventBridge Scheduler → SQS로 이관(스케줄 발화를 인프라가 보장, 워커 다운 중에도 메시지 보존) 또는 온디맨드 capacity 혼합
   - SQS는 비동기 배치 용도(API가 큐에 넣고 worker가 풀링 — 예: OpenSearch full index, 회원탈퇴 청크 삭제, 댓글 정리 이관). @SqsListener + EventHandler(canHandle/handle) 라우팅은 해당 기능 진행 시
   - 실시간 스트림이 필요해지면 Kinesis/Kafka 재논의 (현재는 SQS로 충분)
-  - 기존 Client 인터페이스(CommentCleanupClient 등) 구현을 이벤트 발행으로 교체하는 지점
+  - 기존 Client 인터페이스(CommentApiClient 등) 구현을 이벤트 발행으로 교체하는 지점
 - [ ] (Admin) 어드민 페이지 (yologram-admin-web)
   - [x] 프로젝트 부트스트랩 — React(web-v1 미러)·S3+CloudFront(admin.yologram.link)·CI (완료, done.md)
   - [x] 어드민 인증 — 방식 확정(변경): user와 분리된 admin_user 테이블 + 어드민 전용 JWT(secret·audience 분리). 이메일 인증 없음, 기존 어드민이 신규 어드민 추가(첫 어드민은 DB 수동 seed). News 어드민 API의 선행 작업 (하위 전체 완료)
@@ -68,14 +72,8 @@
   - [x] 댓글 수정 — api-v1/v2, web-v1/v2 (본인 댓글 인라인 편집, 완료·done.md)
   - [x] 내 댓글에 삭제 버튼 + 댓글 삭제 — api-v1/v2, web-v1/v2 (본인 댓글 삭제 버튼·확인 모달, 완료·done.md)
   - [x] 게시글 삭제 시 연관 댓글 정리 — api-v1/v2 + web 캐시 제거 (완료, done.md)
-  - [ ] 게시글 삭제 시 댓글 정리 비동기 이관 (SQS 워커) — 현재 동기 벌크 delete는 댓글이 극단적으로 많으면 응답 지연·행 잠금·replica 지연 유발. post-deleted 이벤트 발행 → worker가 청크(LIMIT N) 삭제·DLQ 재시도로 이관. CommentCleanupClient 구현 교체 지점. 회원탈퇴 soft delete의 SQS 워커 인프라와 공유 검토
+  - [ ] 게시글 삭제 시 댓글 정리 비동기 이관 (SQS 워커) — 현재 동기 벌크 delete는 댓글이 극단적으로 많으면 응답 지연·행 잠금·replica 지연 유발. post-deleted 이벤트 발행 → worker가 청크(LIMIT N) 삭제·DLQ 재시도로 이관. CommentApiClient 구현 교체 지점. 회원탈퇴 soft delete의 SQS 워커 인프라와 공유 검토
   - 대댓글 지원 여부는 구현 시 결정
-- [ ] (Count) 좋아요 토글 (/count 경로)
-  - [ ] api-v1
-  - [ ] api-v2
-  - [ ] web-v1 / web-v2 (로컬 임시 토글 → 연동)
-  - [ ] 좋아요 수 / 댓글 수 조회·표시 (게시글 목록·상세 카운트, api-v1/v2 + web). 댓글 작성/삭제 시 post.commentCount 동기화 (현재 미증가 — 카운트 항상 0)
-  - 1차는 post 컬럼 동기 보관, 분리 시 이벤트 기반 카운트 이관
 - [ ] (PMS) 기술/정치/투자 섹션 게시글 분리
   - [x] tech 분리 — 테이블 tech_post/tech_post_category/tech_post_category_mapping/tech_post_comment + api-v1/v2 섹션별 완전 분리 (완료, done.md — 이후 domain/{도메인}/{섹션} 구조로 재배치). invest/politics는 게시판 오픈 시 동일 세트 복제
   - [x] web-v1/v2 댓글 API 경로 전환 — section 인자 추가로 정식 경로(/comments/{section}/...) 사용, 쿼리키 [comments, section, postId]로 통일 (완료, done.md)
@@ -135,7 +133,7 @@
   - [ ] C. 목록에 카테고리명 포함: 멀티 join + Projections 중첩 (pms→cms 경계 결합, 학습용 예외)
   - [ ] D. 벌크 update: 좋아요/조회수 증가 (count 도메인 도입 시)
   - [ ] E. 기간별 글 조회: between/goe/loe 범위 조건
-  - A(내 글 목록)는 위 "내 글 목록" 항목에서 구현. legacy BoardCustomRepository 기법, cross-domain join은 QueryClient로 회피(C는 예외)
+  - A(내 글 목록)는 위 "내 글 목록" 항목에서 구현. legacy BoardCustomRepository 기법, cross-domain join은 ApiClient로 회피(C는 예외)
 - [ ] (Infra) GitHub Actions 빌드 캐시 적용 (api-v2, web-v2 — Docker 레이어 캐시)
 - [ ] (api-v1) ECS 헬스체크 설정 (actuator 의존성 + Task Definition healthCheck)
 - [ ] (Infra) 신규 테이블 추가 시 RDS DDL·인덱스 직접 실행 (validate 모드 — 현재 테이블은 적용 완료)

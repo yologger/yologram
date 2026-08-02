@@ -38,7 +38,7 @@
 - [x] (PMS) 게시글 작성
   - POST /pms/{section}/posts (인증). 작성자=인증 유저, categoryIds 1~3개 검증. 요청 { title?, content, categoryIds[] }
 - [x] (PMS) 게시글 상세 조회
-  - GET /pms/{section}/posts/{id} (공개). author{uid, nickname}는 UserQueryClient로 ums 조회. 없거나 다른 section이면 404
+  - GET /pms/{section}/posts/{id} (공개). author{uid, nickname}는 UmsApiClient로 ums 조회. 없거나 다른 section이면 404
 - [x] (PMS) 게시글 다건 조회
   - [x] 백엔드 Cursor-based Pagination (id-only 커서, 마지막 글 id를 nextCursor로·빈 결과면 null. +1/hasNext/count 미사용)
   - [x] 프론트: cursor 무한스크롤(useInfiniteQuery, nextCursor 기준)
@@ -60,11 +60,11 @@
   - [x] 글 작성/상세 데스크탑 760px 중앙(몰입형 전체화면 유지), 화면 정중앙 정렬
   - [x] 전역 배경 #f7f8fa, 구분선 #dfe4ea 톤 통일
 - [x] (Comment) 댓글 작성 (본인 인증)
-  - [x] api-v1/v2: POST /comments/posts/{postId} (인증). 별도 comment 도메인(post_comment 테이블, post_id·user_id FK 없이 컬럼 — pms와 동일 경계). 대상 글 존재 검증(PostQueryClient, 없으면 404 POST_NOT_FOUND), content 필수·최대 1000자(400). 조회/수정/삭제는 후속(하나씩 진행)
+  - [x] api-v1/v2: POST /comments/posts/{postId} (인증). 별도 comment 도메인(post_comment 테이블, post_id·user_id FK 없이 컬럼 — pms와 동일 경계). 대상 글 존재 검증(PmsApiClient, 없으면 404 POST_NOT_FOUND), content 필수·최대 1000자(400). 조회/수정/삭제는 후속(하나씩 진행)
   - [x] web-v1/v2: 상세 하단 입력창 → 작성 API 연동, 성공 시 입력창 초기화 + 토스트. 조회 API 미구현이라 목록 갱신 없음(더미 목록 유지), 미인증 시 비활성/안내
   - commentCount(게시글 댓글 수) 동기화는 별도 Count 도메인 작업으로 분리 — 현재 작성해도 카운트 미증가
 - [x] (Comment) 댓글 조회 (cursor 실사용 + offset 학습용)
-  - [x] api-v1/v2: GET /comments/posts/{postId} (공개) — sort=latest|oldest 양방향 keyset 커서(최신순 id desc·id<cursor / 오래된순 id asc·id>cursor). 작성자 nickname은 UserQueryClient 배치(N+1 회피). 없는 postId면 빈 목록, 잘못된 커서 400
+  - [x] api-v1/v2: GET /comments/posts/{postId} (공개) — sort=latest|oldest 양방향 keyset 커서(최신순 id desc·id<cursor / 오래된순 id asc·id>cursor). 작성자 nickname은 UmsApiClient 배치(N+1 회피). 없는 postId면 빈 목록, 잘못된 커서 400
   - [x] web-v1/v2: 상세 페이지 더미 댓글 제거 → 실제 조회 연동. useInfiniteQuery 20개/페이지 커서 무한스크롤(IntersectionObserver), 최신/오래된순 정렬 토글, 작성 성공 시 ['comments', postId] invalidate로 갱신. 더미 atom(stores/community) 제거
   - offset 페이지네이션(getCommentsByOffset + countByPost)은 학습용으로 코드 보존 — 엔드포인트·서비스 테스트는 주석(cursor/offset 대비). cursor는 getCommentsByCursor로 대칭 명명. api-v2는 Python 오버로딩 불가라 find_by_post_cursor/_offset 메서드명 분리
   - Kotlin 오버로드(findByPost의 cursorId: Long? vs offset: Long) 함정은 pms와 동일(api-v1) — 커서 호출 시 cursorId를 Long?로 명시해 offset 오버로드 오선택 회피
@@ -75,7 +75,7 @@
   - [x] api-v1/v2: DELETE /comments/{commentId} (인증). 작성자 본인만(403 COMMENT_FORBIDDEN), 없으면 404 COMMENT_NOT_FOUND. 댓글 단건 삭제(게시글 삭제 시 연관 댓글 정리는 후속)
   - [x] web-v1/v2: 각 댓글에 본인일 때만 삭제 버튼(수정 버튼 옆, 편집 중엔 숨김). 확인 모달 → DELETE → ['comments', postId] invalidate로 목록 갱신. modal onOk는 성공/실패 모두 resolve(unhandled rejection 방지). 삭제 버튼 aria-label "댓글 삭제"
 - [x] (Comment) 게시글 삭제 시 연관 댓글 정리 (고아 댓글 방지)
-  - [x] api-v1/v2: pms delete에서 카테고리 매핑 → 댓글(벌크 delete_by_post_id) → 글 순으로 정리, 같은 트랜잭션(원자적 — 중간 실패 시 전부 롤백). pms → comment 경계는 CommentCleanupClient(api-v1 인터페이스+Local / api-v2 Protocol+Local)로 추상화 — MSA·비동기 이관 시 이벤트 발행 구현으로 교체 지점
+  - [x] api-v1/v2: pms delete에서 카테고리 매핑 → 댓글(벌크 delete_by_post_id) → 글 순으로 정리, 같은 트랜잭션(원자적 — 중간 실패 시 전부 롤백). pms → comment 경계는 CommentApiClient(api-v1 인터페이스+Local / api-v2 Protocol+Local)로 추상화 — MSA·비동기 이관 시 이벤트 발행 구현으로 교체 지점
   - [x] web-v1/v2: 게시글 삭제 성공 시 그 글의 댓글 캐시 removeQueries(['comments', postId])
   - 댓글이 극단적으로 많은 경우의 비동기(SQS 워커) 이관·soft delete 전환은 todos 참조
 - [x] (Admin) yologram-admin-web 프로젝트 부트스트랩 + 인프라 + CI
@@ -144,6 +144,23 @@
   - [x] admin-web 유저 메뉴 서브탭 골격: /ums → /ums/users 리다이렉트, [유저 관리|어드민 관리] 서브탭(pages/ums/UmsPage + SubTabLayout — web-v1 미러), 목록 화면은 placeholder(목록 API 후속). 서브탭 하위 경로에서 메뉴 선택 유지는 menu.tsx MENU_MATCH_PREFIXES
   - 어드민 계정 관리를 유저 메뉴의 서브탭으로 넣은 근거: 둘 다 UMS 계정 관리(API /ums/admin/users vs /ums/admin/admin-users, 웹 라우트 /ums/users·/ums/admin-users로 1:1 대응), 저빈도 화면이라 톱레벨 메뉴 승격은 과함, 추후 role 도입 시 어드민 관리 탭만 권한 가드 가능. UI 용어는 '회원' 대신 '유저'로 통일
   - 어드민 JWT secret은 유저 JWT처럼 api-v1·v2 동일 값 공유(토큰 양쪽 통용). api-v2 prod는 task definition secrets(ADMIN_JWT_SECRET ← SSM valueFrom) 주입 — infra tf 반영 완료
+- [x] (구조) 경계 클라이언트 개편 — *QueryClient → {대상도메인}ApiClient + infra/client 이동 (api-v1·v2)
+  - 명명: 대상 도메인 기준(UmsApiClient·CmsApiClient·PmsApiClient·CommentApiClient), 구현 Local 접두. 위치: infra/client/{대상도메인}/ — 번장 bun-order-api의 infra/{대상}/client 패턴 미러
+  - pms·comment에 중복이던 ums 클라이언트 2쌍을 1쌍으로 통합(계약 합집합, 중복 테스트 4개 정리 — api-v1 414개) — 소비자 소유 포트에서 소비자 공용 어댑터로 전환한 근거: 두 소비자의 계약이 동일해 중복 비용만 있었고, 동명 클래스 빈 충돌(@Component 이름 명시)도 소멸
+  - 효과: 타 도메인 리포지토리 import가 infra/client 한 층에 격리(grep 감사 용이), 도메인 패키지는 비즈니스 로직만. MSA 분리 시 같은 패키지에 Rest 구현+Config+dto 추가로 교체(번장 구성). UserNicknameCache 배선도 ums 클라이언트 한 곳으로 자연 통합
+  - 규칙 확정: 같은 도메인 DB=자기 repository 직접 / 다른 도메인 DB=infra/client의 ApiClient. 전수 감사로 위반 정리 — api-v1·v2의 news→cms TechCategoryRepository 직접 참조를 CmsApiClient.findCategoryNames 경유로 교체(유일 위반), worker도 infra/client/cms 신설(TechCategory 읽기 모델·리포지토리를 client 층으로 이동, 요약 서비스는 CmsApiClient 주입) — 3개 백엔드 감사 잔여 0
+- [x] (Cache) 닉네임 캐시 — api-v1 cache-aside (레거시 스타일 이식)
+  - 레거시(yologram-legacy) 방식 미러하되 설정은 프로젝트 패턴으로: cache.data.redis.* 커스텀 프로퍼티 + RedisConfig 수동 Lettuce 빈(reconnect fullJitter·소켓 keepAlive — 자동구성 exclude, DataSource와 동일 패턴). SSM은 prod·local 양 경로에 cache.data.redis.host(prod=엔드포인트, local=localhost) — application-local이 [prod, local] 순 import라 local 값 우선(나중 import가 우선). infra/cache의 Cache<V>(key·TypeReference·TTL) 팩토리·CacheService·RedisCacheService(StringRedisTemplate+Jackson, 전 연산 runCatching — 장애 시 DB 폴백)·LocalCacheService. 보완 1: getAllAsMap(키→값, 미스 제외 — 레거시 getAllOrNull은 미스 위치 불명이라 배치 부적합)
+  - 캐시 대상: uid→닉네임 문자열만 (키 ums:users:v1:nickname:{uid}, TTL 1h — 무효화가 주 수단·TTL은 보험). 민감 정보·엔티티 전체 캐시 안 함
+  - 적용: pms·comment의 UmsApiClient 구현에 UserNicknameCache(공용 컴포넌트, DB 조회는 loader 주입 — 도메인 경계 유지, 호출부 무변경). 배치 부분 히트 시 미스만 IN 조회 후 setAll
+  - 무효화: 닉네임 변경(PATCH /ums/user/me)·회원탈퇴 시 DEL. 커밋-전-DEL 레이스는 TTL 보험으로 수렴(주석 기록)
+  - 근거: 목록·댓글 렌더마다 user IN 조회 반복(실측) — 대규모 트래픽 가정에서 반복 읽기를 메모리로 흡수. 조인은 대안이 아님(무조인 경계 원칙 + 조인도 매 요청 DB 접근). auth 상태는 캐시 금지(INACTIVE 즉시 차단 유지)
+  - [x] api-v2 미러: app/infra/cache(Cache·CacheService·RedisCacheService·UserNicknameCache — redis-py, 명령 시점 1초 타임아웃+try/except 폴백으로 Lettuce 대응), 키 스킴·JSON(ensure_ascii=False) v1과 바이트 호환(테스트 검증) — 같은 Valkey를 v1·v2가 공유해도 캐시 상호 히트. 설정 CACHE_REDIS_HOST(pydantic env, SSM cache.data.redis.host — v2 경로 tf+task def env 반영). 테스트 24개(총 346)
+  - 테스트 v1 30개(Testcontainers valkey:8-alpine 통합 + 폴백·무효화 단위) — 총 422
+- [x] (Cache) Valkey 인프라 — ElastiCache 가동 + 로컬 compose (캐시 구현은 후속)
+  - prod: aws/global/elasticache 기존 tf apply — valkey-prod(Valkey 8.0, cache.t4g.micro 단일 노드, VPC 내부 6379만 허용). 엔드포인트는 api-v1 prod SSM(spring.data.redis.host, tf PLACEHOLDER+수동 값 컨벤션)에 등록. api-v2·worker 배선은 캐시 구현 시(env 주입 — task def 변경 동반)
+  - 노드 선정: 서울 리전 Valkey 최저가 조회 — 인스턴스형 최소는 t4g.micro(~$14/월 온디맨드), 서버리스는 ~$7.4/월(스토리지 최소 100MB)로 더 저렴했으나 t4g.micro 확정(사용자 결정)
+  - 로컬: 레포 루트 compose.yaml(valkey:8, 6379) — DB는 공유 RDS지만 캐시는 로컬 분리(공유 불필요·prod 캐시 오염 방지). PONG 검증 완료
 - [x] (UMS/Admin) 어드민 활성/비활성 — OWNER 전용 상태 토글 (api-v1·v2 + admin-web)
   - PATCH /ums/admin/admin-users/{id}/status {status: ACTIVE|INACTIVE(그 외 400)} — 첫 role 기반 인가: 요청자 비-OWNER 403 ADMIN_ROLE_FORBIDDEN, 대상 OWNER 400 ADMIN_USER_OWNER_IMMUTABLE(요청자가 OWNER뿐이라 자기 자신 자동 차단), 검사 순서 403→404→400
   - INACTIVE 실효성: 로그인·validate-token에서 403 ADMIN_USER_INACTIVE — 로그인은 비밀번호 검증 후 체크(계정 존재 노출 최소화, 비번 오류가 먼저 401)

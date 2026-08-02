@@ -21,11 +21,11 @@
 
 ### MSA 
 -  지금은 모놀리틱이나 추후 MSA로 전환 예정이라, 가능하면 아래 내용을 참고하여 MSA 전환이 쉬운 구조로 구현
--  현재 경계 호출은 인터페이스(QueryClient/Protocol)로 추상화 → 분리 시 HTTP/gRPC 구현으로 교체 (예: PostCategoryQueryClient, UserQueryClient). 모놀리식은 Local*QueryClient(리포지토리 직접) 구현, self HTTP 호출 지양
+-  현재 경계 호출은 인터페이스(ApiClient/Protocol)로 추상화 → 분리 시 HTTP/gRPC 구현으로 교체. 모놀리식은 Local*ApiClient(리포지토리 직접) 구현, self HTTP 호출 지양
+-  ApiClient: 도메인 간 호출은 infra/client/{대상도메인}의 {대상도메인}ApiClient로만 (UmsApiClient·CmsApiClient·PmsApiClient·CommentApiClient — 번장 bun-order-api infra/{대상}/client 패턴 미러). 구현은 Local 접두(모놀리식, 타 도메인 리포지토리 import는 이 층에서만 허용) → MSA 분리 시 같은 패키지에 Rest 구현+Config+dto 추가로 교체. 클라이언트당 인터페이스·구현 각 1개(소비 도메인별 중복 금지)
 -  단일 서버에서 도메인별 패키지로 분리. 도메인 경계 = 미래 MSA 경계 = API Gateway path prefix
   -  UMS→yologram-user-api, PMS→yologram-post-api, CMS→yologram-cms-api, Comment→comment-api, Count→count-api, News→news-api
 -  분리 전략: 도메인 간 직접 JOIN·repository 교차 호출 금지
--  경계 호출은 인터페이스(QueryClient/Protocol)로 추상화 → 분리 시 HTTP/gRPC 구현으로 교체 (예: PostCategoryQueryClient, UserQueryClient). 모놀리식은 Local*QueryClient(리포지토리 직접) 구현, self HTTP 호출 지양
 -  전 테이블 FK 미사용(같은 도메인 내부 포함 — tech_news에서 같은 도메인 FK 허용했다가 TRUNCATE 불가 등 운영 불편으로 제거). 참조는 컬럼+인덱스 + app-level 검증
 -  경계 넘는 동기 트랜잭션 의존 최소화 (count 갱신은 추후 이벤트/최종일관성)
 
