@@ -133,6 +133,16 @@ resource "aws_ssm_parameter" "admin_jwt_secret_prod" {
     ignore_changes = [value]
   }
 }
+
+resource "aws_ssm_parameter" "redis_host_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/spring.data.redis.host"
+  type  = "String"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
 resource "aws_ssm_parameter" "grafana_metrics_url_prod" {
   name  = "/yologram/service/yologram-api-v1_prod/management.otlp.metrics.export.url"
   type  = "String"
