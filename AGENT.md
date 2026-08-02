@@ -70,7 +70,7 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 - ECR: yologram-api-v1
 - API Gateway 경로: api.yologram.link/api/v1/*
 - Cloud Map 서비스 디스커버리로 API Gateway 연결
-- SSM(prod): Grafana OTLP (metrics/traces/logs) + DB writer/reader 접속정보 + JWT secret
+- SSM(prod): Grafana OTLP (metrics/traces/logs) + DB writer/reader 접속정보 + JWT secret(유저·어드민) + Redis host(yologram.redis.host — ElastiCache valkey-prod, 커스텀 키인 이유: 로컬이 prod 파라미터 경로를 import하므로 spring.data.redis.host 그대로면 localhost를 덮어씀)
 - 컨테이너 환경변수는 SPRING_PROFILES_ACTIVE만 주입, 나머지는 앱이 SSM에서 직접 read
 - vpc_link_id 변수 필요
 

@@ -141,6 +141,16 @@ resource "aws_ssm_parameter" "jwt_secret_prod" {
     ignore_changes = [value]
   }
 }
+resource "aws_ssm_parameter" "cache_redis_host_prod" {
+  name  = "/yologram/service/yologram-api-v2_prod/cache.data.redis.host"
+  type  = "String"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "aws_ssm_parameter" "admin_jwt_secret_prod" {
   name  = "/yologram/service/yologram-api-v2_prod/yologram.auth.admin-jwt.secret"
   type  = "SecureString"
@@ -311,6 +321,10 @@ resource "aws_ecs_task_definition" "this" {
         {
           name      = "ADMIN_JWT_SECRET"
           valueFrom = aws_ssm_parameter.admin_jwt_secret_prod.arn
+        },
+        {
+          name      = "CACHE_REDIS_HOST"
+          valueFrom = aws_ssm_parameter.cache_redis_host_prod.arn
         },
       ]
     }

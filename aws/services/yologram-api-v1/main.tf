@@ -135,7 +135,7 @@ resource "aws_ssm_parameter" "admin_jwt_secret_prod" {
 }
 
 resource "aws_ssm_parameter" "redis_host_prod" {
-  name  = "/yologram/service/yologram-api-v1_prod/spring.data.redis.host"
+  name  = "/yologram/service/yologram-api-v1_prod/cache.data.redis.host"
   type  = "String"
   value = "PLACEHOLDER"
 
