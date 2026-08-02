@@ -7,7 +7,6 @@ os.environ.setdefault("JWT_SECRET", "test-jwt-secret-key-for-testing")
 from fastapi.testclient import TestClient
 
 from app.config.database import get_db
-from app.domain.cms.tech.model import TechCategory
 from app.domain.news.tech.cursor import TechNewsCursor
 from app.domain.news.tech.model import TechNews, TechNewsCategoryMapping, TechNewsStatus
 from app.main import app
@@ -36,7 +35,7 @@ class TestTechNewsRouter:
     def teardown_method(self):
         app.dependency_overrides.clear()
 
-    @patch("app.domain.news.tech.service.TechCategoryRepository")
+    @patch("app.domain.news.tech.service.LocalCmsApiClient")
     @patch("app.domain.news.tech.service.TechNewsCategoryMappingRepository")
     @patch("app.domain.news.tech.service.TechNewsRepository")
     def test_200과_뉴스_목록을_반환한다(self, mock_repo_cls, mock_mapping_cls, mock_category_cls):
@@ -50,10 +49,7 @@ class TestTechNewsRouter:
         ]
         mock_mapping_cls.return_value = mock_mapping
         mock_category = MagicMock()
-        mock_category.find_by_ids.return_value = [
-            TechCategory(id=2, name="Backend", sort_order=2, is_active=True),
-            TechCategory(id=4, name="DevOps", sort_order=4, is_active=True),
-        ]
+        mock_category.find_category_names.return_value = {2: "Backend", 4: "DevOps"}
         mock_category_cls.return_value = mock_category
 
         response = self.client.get("/api/v2/news/tech")
@@ -67,7 +63,7 @@ class TestTechNewsRouter:
         assert body["data"][0]["categories"] == ["Backend", "DevOps"]  # tech_category 라벨 해석
         assert body["nextCursor"] == TechNewsCursor.encode(datetime(2026, 7, 18, 9, 0), 1)
 
-    @patch("app.domain.news.tech.service.TechCategoryRepository")
+    @patch("app.domain.news.tech.service.LocalCmsApiClient")
     @patch("app.domain.news.tech.service.TechNewsCategoryMappingRepository")
     @patch("app.domain.news.tech.service.TechNewsRepository")
     def test_cursor_size_파라미터가_리포지토리까지_전달된다(self, mock_repo_cls, mock_mapping_cls, mock_category_cls):
@@ -75,7 +71,7 @@ class TestTechNewsRouter:
         mock_repo.find_summarized_news.return_value = []
         mock_repo_cls.return_value = mock_repo
         mock_mapping_cls.return_value = MagicMock(find_by_news_ids=MagicMock(return_value=[]))
-        mock_category_cls.return_value = MagicMock(find_by_ids=MagicMock(return_value=[]))
+        mock_category_cls.return_value = MagicMock(find_category_names=MagicMock(return_value={}))
         cursor = TechNewsCursor.encode(datetime(2026, 7, 18, 9, 0), 42)
 
         response = self.client.get(f"/api/v2/news/tech?cursor={cursor}&size=10")
@@ -85,7 +81,7 @@ class TestTechNewsRouter:
             None, TechNewsCursor(published_at=datetime(2026, 7, 18, 9, 0), id=42), 10
         )
 
-    @patch("app.domain.news.tech.service.TechCategoryRepository")
+    @patch("app.domain.news.tech.service.LocalCmsApiClient")
     @patch("app.domain.news.tech.service.TechNewsCategoryMappingRepository")
     @patch("app.domain.news.tech.service.TechNewsRepository")
     def test_categoryId_파라미터가_리포지토리까지_전달된다(self, mock_repo_cls, mock_mapping_cls, mock_category_cls):
@@ -93,7 +89,7 @@ class TestTechNewsRouter:
         mock_repo.find_summarized_news.return_value = []
         mock_repo_cls.return_value = mock_repo
         mock_mapping_cls.return_value = MagicMock(find_by_news_ids=MagicMock(return_value=[]))
-        mock_category_cls.return_value = MagicMock(find_by_ids=MagicMock(return_value=[]))
+        mock_category_cls.return_value = MagicMock(find_category_names=MagicMock(return_value={}))
 
         response = self.client.get("/api/v2/news/tech?categoryId=2")
 
@@ -106,13 +102,13 @@ class TestTechNewsRouter:
         assert response.status_code == 400
         assert response.json()["errorCode"] == "VALIDATION_ERROR"
 
-    @patch("app.domain.news.tech.service.TechCategoryRepository")
+    @patch("app.domain.news.tech.service.LocalCmsApiClient")
     @patch("app.domain.news.tech.service.TechNewsCategoryMappingRepository")
     @patch("app.domain.news.tech.service.TechNewsRepository")
     def test_결과가_비면_nextCursor_필드가_생략된다(self, mock_repo_cls, mock_mapping_cls, mock_category_cls):
         mock_repo_cls.return_value = MagicMock(find_summarized_news=MagicMock(return_value=[]))
         mock_mapping_cls.return_value = MagicMock(find_by_news_ids=MagicMock(return_value=[]))
-        mock_category_cls.return_value = MagicMock(find_by_ids=MagicMock(return_value=[]))
+        mock_category_cls.return_value = MagicMock(find_category_names=MagicMock(return_value={}))
 
         response = self.client.get("/api/v2/news/tech")
 

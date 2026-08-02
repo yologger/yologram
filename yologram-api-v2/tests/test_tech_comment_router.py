@@ -47,7 +47,7 @@ class _RouterTestBase:
 class _CreateCommentCases(_RouterTestBase):
     POSTS_PATH: str
 
-    @patch("app.domain.comment.tech.service.LocalTechPostQueryClient")
+    @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_정상_작성_시_201(self, mock_comment_repo_cls, mock_client_cls):
         self._authenticate()
@@ -69,7 +69,7 @@ class _CreateCommentCases(_RouterTestBase):
         assert response.status_code == 401
         assert response.json()["errorCode"] == "AUTH_INVALID_TOKEN"
 
-    @patch("app.domain.comment.tech.service.LocalTechPostQueryClient")
+    @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_대상_글이_없으면_404(self, mock_comment_repo_cls, mock_client_cls):
         self._authenticate()
@@ -240,7 +240,7 @@ class TestTechCommentDeleteRouter(_DeleteCommentCases):
 class _QueryCommentCases(_RouterTestBase):
     POSTS_PATH: str
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_조회는_공개_인증_불필요_200(self, mock_repo_cls, mock_user_cls):
         # 인증 오버라이드 없이 호출해도 성공해야 한다(공개 엔드포인트)
@@ -263,7 +263,7 @@ class _QueryCommentCases(_RouterTestBase):
         assert first["content"] == "내용"
         assert "createdAt" in first
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_정상_조회_시_nextCursor는_마지막_id_인코딩(self, mock_repo_cls, mock_user_cls):
         import base64
@@ -279,7 +279,7 @@ class _QueryCommentCases(_RouterTestBase):
         expected = base64.urlsafe_b64encode(b"3").decode().rstrip("=")
         assert response.json()["nextCursor"] == expected
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_빈_목록이면_nextCursor_생략(self, mock_repo_cls, mock_user_cls):
         mock_repo = MagicMock()
@@ -293,7 +293,7 @@ class _QueryCommentCases(_RouterTestBase):
         # api-v1(@JsonInclude NON_NULL) 정합 — 커서 없으면 필드 자체 생략
         assert response.json() == {"data": []}
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_cursor_전달_시_디코딩되어_repository로_전달(self, mock_repo_cls, mock_user_cls):
         import base64
@@ -311,7 +311,7 @@ class _QueryCommentCases(_RouterTestBase):
         # (post_id, sort, cursor_id, limit)
         assert args[2] == 10
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_sort_oldest_시_OLDEST로_조회(self, mock_repo_cls, mock_user_cls):
         from app.domain.comment.tech.sort import CommentSort
@@ -327,7 +327,7 @@ class _QueryCommentCases(_RouterTestBase):
         args = mock_repo.find_by_post_cursor.call_args[0]
         assert args[1] == CommentSort.OLDEST
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_size_최대_50으로_제한(self, mock_repo_cls, mock_user_cls):
         mock_repo = MagicMock()

@@ -4,7 +4,7 @@ from app.core.response import ApiEnvelopCursorPage
 from app.domain.news.tech.cursor import TechNewsCursor
 from app.domain.news.tech.repository import TechNewsCategoryMappingRepository, TechNewsRepository
 from app.domain.news.tech.schema import TechNewsResponse
-from app.domain.cms.tech.repository import TechCategoryRepository
+from app.infra.client.cms.cms_api_client import CmsApiClient, LocalCmsApiClient
 
 MAX_PAGE_SIZE = 50
 
@@ -14,7 +14,8 @@ class TechNewsService:
     def __init__(self, db: Session):
         self.news_repository = TechNewsRepository(db)
         self.mapping_repository = TechNewsCategoryMappingRepository(db)
-        self.category_repository = TechCategoryRepository(db)
+        # 타 도메인(cms) 접근은 infra/client 경유 — 라벨 해석용
+        self.cms_api_client: CmsApiClient = LocalCmsApiClient(db)
 
     def get_news_by_cursor(
         self, category_id: int | None, cursor: str | None, size: int
@@ -30,10 +31,7 @@ class TechNewsService:
 
         # 카테고리 배치 조회 후 tech_category 마스터에서 라벨 해석 (N+1 회피 — 게시판·api-v1 패턴)
         mappings = self.mapping_repository.find_by_news_ids([n.id for n in news])
-        name_by_id = {
-            c.id: c.name
-            for c in self.category_repository.find_by_ids(list({m.category_id for m in mappings}))
-        }
+        name_by_id = self.cms_api_client.find_category_names({m.category_id for m in mappings})
         categories_by_news: dict[int, list[str]] = {}
         for mapping in mappings:
             name = name_by_id.get(mapping.category_id)

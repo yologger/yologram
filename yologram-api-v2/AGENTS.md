@@ -12,6 +12,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - app/config/settings.py: Pydantic Settings (환경변수 매핑)
 - app/config/database.py: engine, SessionLocal, get_db
 - app/config/logging.py · metrics.py · tracing.py: OTLP 로그/메트릭/트레이스
+- app/infra/client/{ums,cms,pms,comment}: 도메인 간 경계 클라이언트 — {대상도메인}ApiClient(Protocol) + Local 구현 (api-v1 미러)
 - app/domain/ums: AuthService(JWT 로그인/로그아웃/검증), UserService(가입/수정/비번변경/탈퇴), UserEmailVerificationService + EmailSender(Stub/Ses), UserPasswordResetService
 - app/domain/ums의 admin_* 세트: 어드민 인증·계정 관리 (admin_schema/admin_jwt_util/admin_auth_dependency/admin_service/admin_router — /api/v2/ums/admin, 생성(항상 role=ADMIN)·로그인·검증·로그아웃·목록(offset 페이지)·삭제(자기 자신·OWNER 금지)·상태 변경(OWNER 전용, INACTIVE 로그인 차단), api-v1 미러)
 - app/domain/{pms,cms,comment,news}/tech: 도메인 우선 구조 — pms/tech(TechPostService), cms/tech(TechCategoryService — tech_category 공용 마스터), comment/tech(TechPostCommentService), news/tech(TechNewsService — 공개 조회: 복합 커서·categoryId 필터·라벨 조인. admin_* 세트 AdminTechNewsSourceService — 어드민 소스 CRUD /news/admin/tech/sources)
@@ -53,7 +54,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 ## 커뮤니티 (tech 게시판 코딩 규칙)
 
 - 섹션별 완전 분리: app/domain/{pms,cms,comment}/tech (도메인 우선, 섹션은 하위) — 테이블 tech_post/tech_post_category_mapping/tech_post_comment + tech_category(게시판·뉴스 공용 마스터) + tech_news/tech_news_category_mapping(뉴스 조회 전용) (api-v1과 DB 공유, 전 테이블 무FK, section 컬럼·Section enum 없음). invest/politics는 동일 세트 복제로 추가
-- 경계 검증·조회는 QueryClient(Protocol)로 추상화 (LocalUserQueryClient, LocalTechPostCategoryQueryClient, LocalTechPostCommentCleanupClient, LocalTechPostQueryClient)
+- 경계 검증·조회는 ApiClient(Protocol)로 추상화 (LocalUmsApiClient, LocalCmsApiClient, LocalCommentApiClient, LocalPmsApiClient)
 - 검증 메시지는 api-v1과 동일 문구 ("내용을 입력해주세요.", "카테고리는 1~3개 선택해주세요.")
 - N+1 회피: find_nicknames·find_by_post_ids 배치 조회, categoryId 필터는 EXISTS
 - 응답 스키마의 section 필드는 "TECH" 고정. ApiEnvelopCursorPage는 null 커서 필드 생략(v1 @JsonInclude NON_NULL 정합)

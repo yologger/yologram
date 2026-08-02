@@ -17,8 +17,8 @@ from app.domain.comment.tech.schema import (
     UpdateCommentRequest,
 )
 from app.domain.comment.tech.sort import CommentSort
-from app.domain.comment.tech.tech_post_query_client import LocalTechPostQueryClient, TechPostQueryClient
-from app.domain.comment.tech.user_query_client import LocalUserQueryClient, UserQueryClient
+from app.infra.client.pms.pms_api_client import LocalPmsApiClient, PmsApiClient
+from app.infra.client.ums.ums_api_client import LocalUmsApiClient, UmsApiClient
 
 MAX_PAGE_SIZE = 50
 
@@ -27,12 +27,12 @@ class TechPostCommentService:
 
     def __init__(self, db: Session):
         self.comment_repository = TechPostCommentRepository(db)
-        self.post_query_client: TechPostQueryClient = LocalTechPostQueryClient(db)
-        self.user_query_client: UserQueryClient = LocalUserQueryClient(db)
+        self.pms_api_client: PmsApiClient = LocalPmsApiClient(db)
+        self.ums_api_client: UmsApiClient = LocalUmsApiClient(db)
 
     def create(self, post_id: int, user_id: int, request: CreateCommentRequest) -> CreateCommentResponse:
         # 대상 글이 없으면 404 (고아 댓글 방지)
-        if not self.post_query_client.exists(post_id):
+        if not self.pms_api_client.exists(post_id):
             raise TargetPostNotFoundException()
 
         comment = self.comment_repository.save(
@@ -113,7 +113,7 @@ class TechPostCommentService:
 
     def _to_responses(self, comments: list[TechPostComment]) -> list[CommentResponse]:
         """댓글 목록 → CommentResponse. 작성자 닉네임 배치 조회(N+1 회피)를 공유."""
-        nicknames = self.user_query_client.find_nicknames([c.user_id for c in comments])
+        nicknames = self.ums_api_client.find_nicknames([c.user_id for c in comments])
         return [
             CommentResponse(
                 id=comment.id,

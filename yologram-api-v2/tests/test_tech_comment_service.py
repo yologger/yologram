@@ -31,7 +31,7 @@ def _comment(comment_id: int, post_id: int = 1, user_id: int = 1) -> TechPostCom
 
 class TestTechPostCommentService:
 
-    @patch("app.domain.comment.tech.service.LocalTechPostQueryClient")
+    @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_정상_작성_시_댓글을_저장하고_id를_반환(self, mock_comment_repo_cls, mock_client_cls):
         mock_comment_repo = MagicMock()
@@ -47,7 +47,7 @@ class TestTechPostCommentService:
         assert result.id == 10
         mock_comment_repo.save.assert_called_once()
 
-    @patch("app.domain.comment.tech.service.LocalTechPostQueryClient")
+    @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_대상_글이_없으면_예외(self, mock_comment_repo_cls, mock_client_cls):
         mock_comment_repo = MagicMock()
@@ -66,7 +66,7 @@ class TestTechPostCommentService:
 
 class TestTechPostCommentServiceUpdate:
 
-    @patch("app.domain.comment.tech.service.LocalTechPostQueryClient")
+    @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_정상_수정_시_내용_갱신(self, mock_repo_cls, mock_client_cls):
         comment = _comment(10, user_id=1)
@@ -81,7 +81,7 @@ class TestTechPostCommentServiceUpdate:
         assert result is None
         assert comment.content == "수정된 내용"
 
-    @patch("app.domain.comment.tech.service.LocalTechPostQueryClient")
+    @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_없는_댓글이면_CommentNotFoundException(self, mock_repo_cls, mock_client_cls):
         mock_repo = MagicMock()
@@ -94,7 +94,7 @@ class TestTechPostCommentServiceUpdate:
         with pytest.raises(CommentNotFoundException):
             service.update(99, 1, UpdateCommentRequest(content="수정된 내용"))
 
-    @patch("app.domain.comment.tech.service.LocalTechPostQueryClient")
+    @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_본인_댓글_아니면_CommentForbiddenException(self, mock_repo_cls, mock_client_cls):
         comment = _comment(10, user_id=1)
@@ -114,7 +114,7 @@ class TestTechPostCommentServiceUpdate:
 
 class TestTechPostCommentServiceDelete:
 
-    @patch("app.domain.comment.tech.service.LocalTechPostQueryClient")
+    @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_정상_삭제_시_repository_delete_호출(self, mock_repo_cls, mock_client_cls):
         comment = _comment(10, user_id=1)
@@ -129,7 +129,7 @@ class TestTechPostCommentServiceDelete:
         assert result is None
         mock_repo.delete.assert_called_once_with(comment)
 
-    @patch("app.domain.comment.tech.service.LocalTechPostQueryClient")
+    @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_없는_댓글이면_CommentNotFoundException(self, mock_repo_cls, mock_client_cls):
         mock_repo = MagicMock()
@@ -144,7 +144,7 @@ class TestTechPostCommentServiceDelete:
 
         mock_repo.delete.assert_not_called()
 
-    @patch("app.domain.comment.tech.service.LocalTechPostQueryClient")
+    @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_본인_댓글_아니면_CommentForbiddenException(self, mock_repo_cls, mock_client_cls):
         comment = _comment(10, user_id=1)
@@ -163,7 +163,7 @@ class TestTechPostCommentServiceDelete:
 
 class TestTechPostCommentServiceQuery:
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_cursor_조회_정상_시_nextCursor는_마지막_id(self, mock_repo_cls, mock_user_cls):
         mock_repo = MagicMock()
@@ -183,7 +183,7 @@ class TestTechPostCommentServiceQuery:
         expected = base64.urlsafe_b64encode(b"3").decode().rstrip("=")
         assert result.next_cursor == expected
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_cursor_빈_목록이면_nextCursor_None(self, mock_repo_cls, mock_user_cls):
         mock_repo = MagicMock()
@@ -197,7 +197,7 @@ class TestTechPostCommentServiceQuery:
         assert result.data == []
         assert result.next_cursor is None
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_cursor_전달_시_디코딩되어_repository로(self, mock_repo_cls, mock_user_cls):
         mock_repo = MagicMock()
@@ -212,7 +212,7 @@ class TestTechPostCommentServiceQuery:
         args = mock_repo.find_by_post_cursor.call_args[0]
         assert args[2] == 10  # cursor_id
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_sort_oldest_시_OLDEST_전달(self, mock_repo_cls, mock_user_cls):
         mock_repo = MagicMock()
@@ -226,7 +226,7 @@ class TestTechPostCommentServiceQuery:
         args = mock_repo.find_by_post_cursor.call_args[0]
         assert args[1] == CommentSort.OLDEST
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_size_최대_50_제한(self, mock_repo_cls, mock_user_cls):
         mock_repo = MagicMock()
@@ -240,7 +240,7 @@ class TestTechPostCommentServiceQuery:
         args = mock_repo.find_by_post_cursor.call_args[0]
         assert args[3] == 50  # limit
 
-    @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_잘못된_커서면_InvalidCursorException(self, mock_repo_cls, mock_user_cls):
         mock_repo_cls.return_value = MagicMock()
@@ -252,7 +252,7 @@ class TestTechPostCommentServiceQuery:
             service.get_comments_by_cursor(1, None, "!!!invalid!!!", 20)
 
     # --- offset 조회 (학습용) — 엔드포인트 비활성(router 주석)이므로 테스트도 주석 처리, 코드는 보존 ---
-    # @patch("app.domain.comment.tech.service.LocalUserQueryClient")
+    # @patch("app.domain.comment.tech.service.LocalUmsApiClient")
     # @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     # def test_offset_조회_시_page_정보_반환(self, mock_repo_cls, mock_user_cls):
     #     mock_repo = MagicMock()
