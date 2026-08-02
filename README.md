@@ -36,10 +36,10 @@ flowchart LR
     subgraph AWS
         CloudFront --> S3["S3<br/>yologram-web-v1"]
         CloudFrontAdmin --> S3Admin["S3<br/>yologram-admin-web"]
-
-        APIGW["API Gateway<br/>yologram-gateway (HTTP API)"]
+        APIGW["API Gateway"]
         APIGW -- "/api/v1/*" --> ECS_API_V1["ECS Fargate<br/>yologram-api-v1<br/>:5000"]
         APIGW -- "/api/v2/*" --> ECS_API_V2["ECS Fargate<br/>yologram-api-v2<br/>:5000"]
+
         APIGW -- "/* (catch-all)" --> ECS_WEB_V2["ECS Fargate<br/>yologram-web-v2<br/>:3000"]
 
         ECS_API_V1 --> RDS[(RDS MySQL)]
@@ -47,14 +47,13 @@ flowchart LR
         ECS_API_V1 --> VALKEY[(ElastiCache<br/>Valkey)]
         ECS_API_V2 --> VALKEY
 
+        ECS_API_V1 -- "publish" --> MQ[["SQS<br/>Kinesis"]]
+        ECS_API_V2 -- "publish" --> MQ
+
         ECS_WORKER["ECS Fargate<br/>yologram-worker<br/>(인바운드 없음)"]
+        MQ -. "consume" .-> ECS_WORKER
     end
 ```
-
-> 초록색 경로: web.v2.yologram.link(서브도메인)로 들어온 요청이 catch-all(/*) route를 통해 web-v2에 도달.
-> 두 커스텀 도메인(api/web.v2)은 동일 게이트웨이/스테이지($default)를 공유하며, 분기 자체는 경로(route_key) 기반.
-> API Gateway → ECS 연결은 VPC Link + Cloud Map(service discovery) 경유.
-> OpenSearch는 프로비저닝 예정으로 다이어그램 생략.
 
 ## CI/CD
 
