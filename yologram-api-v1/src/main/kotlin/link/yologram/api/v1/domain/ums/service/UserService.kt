@@ -12,6 +12,8 @@ import link.yologram.api.v1.domain.ums.model.UpdateProfileRequest
 import link.yologram.api.v1.domain.ums.model.UserMeResponse
 import link.yologram.api.v1.domain.ums.repository.UserEmailVerificationRepository
 import link.yologram.api.v1.domain.ums.repository.UserRepository
+import link.yologram.api.v1.infra.cache.Cache
+import link.yologram.api.v1.infra.cache.CacheService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -21,6 +23,7 @@ class UserService(
     private val userRepository: UserRepository,
     private val emailVerificationCodeRepository: UserEmailVerificationRepository,
     private val passwordEncoder: BCryptPasswordEncoder,
+    private val cacheService: CacheService,
 ) {
 
     @Transactional
@@ -69,6 +72,10 @@ class UserService(
 
         user.nickname = request.nickname
 
+        // 닉네임 캐시 무효화 — 커밋 후(afterCommit) 실행이 이상적이나 레거시 스타일의 단순 호출 유지.
+        // 커밋 전 삭제 후 다른 요청이 옛 값을 재적재하는 짧은 레이스는 TTL 1시간 보험으로 수렴
+        cacheService.deleteAll(Cache.userNickname(uid))
+
         return UserMeResponse(
             uid = user.id,
             email = user.email,
@@ -100,5 +107,8 @@ class UserService(
             .orElseThrow { UserNotFoundException() }
 
         userRepository.delete(user)
+
+        // 닉네임 캐시 무효화 (updateProfile과 동일한 단순 호출 방식 — 근거는 updateProfile 주석 참조)
+        cacheService.deleteAll(Cache.userNickname(uid))
     }
 }

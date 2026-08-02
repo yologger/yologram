@@ -3,6 +3,11 @@ spring:
     import:
       - 'aws-parameterstore:/yologram/service/yologram-api-v1_prod/'
 
+cache:
+  data:
+    redis:
+      host:
+
 database:
   main:
     writer:

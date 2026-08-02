@@ -13,6 +13,8 @@ import link.yologram.api.v1.domain.ums.model.JoinRequest
 import link.yologram.api.v1.domain.ums.model.UpdateProfileRequest
 import link.yologram.api.v1.domain.ums.repository.UserEmailVerificationRepository
 import link.yologram.api.v1.domain.ums.repository.UserRepository
+import link.yologram.api.v1.infra.cache.Cache
+import link.yologram.api.v1.infra.cache.CacheService
 import java.time.LocalDateTime
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
@@ -23,6 +25,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -39,6 +42,9 @@ class UserServiceTest {
 
     @Mock
     lateinit var passwordEncoder: BCryptPasswordEncoder
+
+    @Mock
+    lateinit var cacheService: CacheService
 
     @InjectMocks
     lateinit var userService: UserService
@@ -258,6 +264,21 @@ class UserServiceTest {
             assertEquals("테스터", response.name)
             assertEquals("new-nickname", response.nickname)
         }
+
+        @Test
+        fun `닉네임 캐시를 무효화한다`() {
+            val user = testUser()
+            val request = UpdateProfileRequest(nickname = "new-nickname")
+
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+
+            userService.updateProfile(1L, request)
+
+            // Cache는 TypeReference를 담아 인스턴스 동등성 비교가 안 되므로 key로 검증
+            val captor = argumentCaptor<Cache<*>>()
+            verify(cacheService).deleteAll(captor.capture())
+            assertEquals(Cache.userNickname(1L).key, captor.firstValue.key)
+        }
     }
 
     @Nested
@@ -334,6 +355,18 @@ class UserServiceTest {
             userService.withdraw(1L)
 
             verify(userRepository).delete(user)
+        }
+
+        @Test
+        fun `닉네임 캐시를 무효화한다`() {
+            val user = testUser()
+            whenever(userRepository.findById(1L)).thenReturn(Optional.of(user))
+
+            userService.withdraw(1L)
+
+            val captor = argumentCaptor<Cache<*>>()
+            verify(cacheService).deleteAll(captor.capture())
+            assertEquals(Cache.userNickname(1L).key, captor.firstValue.key)
         }
 
         @Test

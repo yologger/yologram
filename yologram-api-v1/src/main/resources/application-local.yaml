@@ -4,8 +4,12 @@ server:
 spring:
   config:
     import:
-      - 'aws-parameterstore:/yologram/service/yologram-api-v1_local/'
-      - 'optional:aws-parameterstore:/yologram/service/yologram-api-v1_prod/'
+      - 'aws-parameterstore:/yologram/service/yologram-api-v1_prod/'
+
+cache:
+  data:
+    redis:
+      host: localhost
 
 database:
   main:
@@ -21,5 +25,5 @@ database:
         password:
     jpa:
       properties:
-        hibernate.hbm2ddl.auto: update
+        hibernate.hbm2ddl.auto: validate
       show-sql: true

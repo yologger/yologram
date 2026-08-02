@@ -1,3 +1,11 @@
+# 테스트는 Redis 미기동 전제 — Lettuce는 lazy connection이라 부팅에 Redis가 필요 없고,
+# 캐시 연산은 RedisCacheService의 runCatching이 미스로 처리해 DB 폴백된다 (통합 테스트는 자체 컨테이너 사용)
+cache:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 database:
   main:
     writer:

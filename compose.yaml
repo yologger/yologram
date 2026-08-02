@@ -1,0 +1,10 @@
+# 로컬 개발용 인프라. DB는 공유 RDS를 쓰므로 여기엔 없음 — 캐시만 로컬 분리
+# (캐시는 데이터 공유가 불필요하고, 로컬 실험이 prod 캐시를 오염시키지 않도록 의도적으로 분리)
+#
+# 실행: docker compose up -d
+services:
+  valkey:
+    image: valkey/valkey:8
+    container_name: yologram-valkey
+    ports:
+      - "6379:6379"

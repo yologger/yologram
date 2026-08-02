@@ -12,6 +12,8 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - src/main/resources/logback-spring.xml: 로깅 설정 (콘솔 + OTEL appender)
 - src/main/kotlin/.../config/OpenTelemetryLoggingConfig.kt: OTEL logback 초기화
 - src/main/kotlin/.../config/QuerydslConfig.kt: JPAQueryFactory 빈
+- src/main/kotlin/.../infra/client/{ums,cms,pms,comment}/: 도메인 간 경계 클라이언트 — {대상도메인}ApiClient + Local 구현 (타 도메인 리포지토리 import는 이 층에서만, MSA 시 Rest 구현으로 교체)
+- src/main/kotlin/.../config/RedisConfig.kt·CacheRedisProperties.kt + infra/cache/: Valkey 캐시 — cache.data.redis.* 커스텀 프로퍼티 + 수동 Lettuce 빈(자동구성 exclude, DataSource와 동일 패턴). Cache<V> 키 팩토리(prefix:v1:entity:id)·CacheService(runCatching 폴백, getAllAsMap 배치)·UserNicknameCache(cache-aside 공용, loader 주입)
 - src/main/kotlin/.../domain/ums/service/AuthService.kt: JWT 로그인/로그아웃/토큰 검증. validate-token은 master DB 조회
 - src/main/kotlin/.../domain/ums/service/UserService.kt: 회원가입(이메일 인증 확인)·정보 수정·비밀번호 변경·회원탈퇴
 - src/main/kotlin/.../domain/ums/service/UserEmailVerificationService.kt + EmailSender(Stub/Ses)·SesConfig: 이메일 인증·발송
@@ -24,7 +26,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - application.yaml: 공통 설정 (OTLP endpoint placeholder)
 - application-local.yaml: 로컬 개발 (AWS Parameter Store)
 - application-prod.yaml: 프로덕션 (AWS Parameter Store, instance-profile)
-- 설정값은 AWS Parameter Store에서 주입 (/yologram/service/yologram-api-v1_{ENV}/)
+- 설정값은 AWS Parameter Store에서 주입 (/yologram/service/yologram-api-v1_{ENV}/). local은 [prod, local] 순 import — 나중 선언이 우선이라 local 경로 값(cache.data.redis.host=localhost 등)이 prod를 덮음
 - hbm2ddl: local=update, prod=validate — prod 테이블 생성·변경은 수동 DDL (정책·ENUM 함정은 docs/rules.md)
 
 ## 인증 (코딩 규칙)
@@ -48,8 +50,9 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 ## 커뮤니티 (tech 게시판 코딩 규칙·함정)
 
 - 섹션별 완전 분리: domain/{pms,cms,comment}/tech (도메인 우선, 섹션은 하위) — 테이블 tech_post/tech_post_category_mapping/tech_post_comment + tech_category(게시판·뉴스 공용 마스터) + tech_news/tech_news_category_mapping(뉴스 조회 전용) (전 테이블 무FK, section 컬럼·Section enum 없음 — 테이블명·경로·패키지가 섹션 담당). invest/politics는 동일 세트 복제로 추가
-- 경계 검증·조회는 QueryClient로 추상화 (LocalUserQueryClient, LocalTechPostCategoryQueryClient, LocalTechPostCommentCleanupClient, LocalTechPostQueryClient)
+- 경계 검증·조회는 infra/client/{대상도메인}의 ApiClient로 추상화 (UmsApiClient·CmsApiClient·PmsApiClient·CommentApiClient + Local 구현 — 도메인 패키지 안에 두지 않음)
 - TechPostRepositoryImpl이 QueryDSL 사용처. N+1 회피 위해 닉네임(findNicknames)·카테고리(findByPostIds) 배치 조회
+- 닉네임은 Valkey 캐시(ums:users:v1:nickname:{uid}, TTL 1h) 경유 — 히트 시 user 테이블 미접근, 무효화는 닉네임 변경·탈퇴 시 DEL. Redis 장애 시 DB 폴백(runCatching)
 - 카테고리 매핑 교체는 @Modifying 벌크 delete 후 재삽입 (derived delete는 flush 순서로 uk 충돌)
 - 응답 DTO의 section 필드는 "TECH" 고정 문자열 (web 계약 유지)
 - 패키지명에 `enum`(Java 예약어) 금지 — QueryDSL APT가 import 생성 못 함. enums 사용
