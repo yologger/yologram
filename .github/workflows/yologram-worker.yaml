@@ -6,10 +6,12 @@ on:
     branches: [master]
     paths:
       - 'yologram-worker/**'
+      - '!yologram-worker/**/*.md'
   pull_request:
     branches: [master]
     paths:
       - 'yologram-worker/**'
+      - '!yologram-worker/**/*.md'
 
 env:
   ECR_REPOSITORY: yologram-worker

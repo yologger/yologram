@@ -6,10 +6,12 @@ on:
     branches: [master]
     paths:
       - 'yologram-admin-web/**'
+      - '!yologram-admin-web/**/*.md'
   pull_request:
     branches: [master]
     paths:
       - 'yologram-admin-web/**'
+      - '!yologram-admin-web/**/*.md'
 
 env:
   S3_BUCKET: yologram-admin-web

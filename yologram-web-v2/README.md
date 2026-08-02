@@ -8,7 +8,8 @@ Next.js 16 기반 웹 애플리케이션.
 - Ant Design (@ant-design/cssinjs + Next.js registry)
 - Jotai (상태 관리), axios + TanStack Query (API 통신)
 - react-markdown (뉴스 요약 렌더)
-- OpenTelemetry NodeSDK (server-side trace + metrics)
+- OpenTelemetry NodeSDK (server-side logs/metrics/traces)
+- Vitest + Testing Library + MSW (테스트)
 - Yarn Berry (non-zero-install), 일반 next start (standalone 미사용)
 
 ## 디렉토리 구조

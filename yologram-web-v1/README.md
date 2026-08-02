@@ -9,6 +9,7 @@ React 기반 하이브리드 웹 애플리케이션. 투자/정치/기술 서비
 - Ant Design + CSS Modules
 - Jotai (상태 관리), axios + TanStack Query (API 통신)
 - react-markdown (뉴스 요약 렌더)
+- Vitest + Testing Library + MSW (테스트), ESLint + Prettier
 - Yarn Berry (non-zero-install), Node 24
 
 ## React ↔ Next.js 비교 (학습 목적)

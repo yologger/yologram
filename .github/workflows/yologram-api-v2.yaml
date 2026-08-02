@@ -6,10 +6,12 @@ on:
     branches: [master]
     paths:
       - 'yologram-api-v2/**'
+      - '!yologram-api-v2/**/*.md'
   pull_request:
     branches: [master]
     paths:
       - 'yologram-api-v2/**'
+      - '!yologram-api-v2/**/*.md'
 
 env:
   ECR_REPOSITORY: yologram-api-v2

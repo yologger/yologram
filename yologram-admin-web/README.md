@@ -19,6 +19,7 @@ yologram 어드민 웹. 유저/게시글/뉴스/카테고리 관리 기능을 �
 - Vite + TypeScript
 - Ant Design + CSS Modules (테마 컬러: 파란 계열 #1677ff)
 - Jotai (상태 관리), axios + TanStack Query (API 통신)
+- Vitest + Testing Library + MSW (테스트), ESLint + Prettier
 - Yarn Berry (non-zero-install), Node 24
 - API 대상: api-v1 (Spring)
 

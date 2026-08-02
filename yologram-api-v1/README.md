@@ -5,6 +5,7 @@ Spring Boot MVC (Kotlin) API 서버.
 ## 기술 스택
 
 - Spring Boot 3.5 (Kotlin), Java 17, Gradle (Kotlin DSL)
+- Spring Web MVC + Actuator (헬스체크) + Bean Validation
 - Spring Data JPA + QueryDSL 5.1 (ORM + 복잡 쿼리)
 - MySQL (RDS) + Testcontainers (테스트)
 - R/W splitting (MasterSlaveRoutingDataSource)
