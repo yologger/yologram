@@ -7,6 +7,8 @@ FastAPI 기반 API 서버.
 - FastAPI, Python 3.12+, uv, uvicorn
 - pydantic-settings (APP_PROFILE 분기), pydantic[email] (이메일 검증)
 - SQLAlchemy + PyMySQL
+- redis-py: Valkey 닉네임 캐시 — api-v1 미러 (동일 키 `ums:users:v1:nickname:{uid}`, 1s 타임아웃, 장애 시 DB 폴백)
+- 도메인 경계: app/infra/client/{대상도메인}의 ApiClient — 타 도메인 DB 접근은 이 층에서만 (api-v1 규칙 미러)
 - bcrypt (비밀번호 해싱), PyJWT (JWT)
 - boto3 (AWS SES)
 - OpenTelemetry SDK + OTLP exporter (logs/metrics/traces)
@@ -25,6 +27,11 @@ uv sync
 ```
 
 ## 로컬 실행
+
+캐시(Valkey) — 레포 루트에서. 미기동이어도 API는 DB 폴백으로 정상 동작:
+```bash
+docker compose up -d
+```
 
 기본 프로파일 (default):
 ```bash

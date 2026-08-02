@@ -10,6 +10,7 @@
 - Kotlin 1.9.25, Spring Boot 3.5.14, Java 17
 - Spring Web + Actuator (헬스체크) / WebFlux WebClient (외부 HTTP 호출 통일)
 - Spring Data JPA + MySQL (master/slave 라우팅 — api-v1 미러)
+- 도메인 경계: 타 도메인(cms) 접근은 infra/client의 CmsApiClient 경유 (api-v1 규칙 미러)
 - Rome (RSS/Atom 파싱), Readability4J (원문 본문 추출)
 - Spring AI 1.1.8 (OpenAI 호환 ChatModel — Gemini flash-lite 1순위, Groq llama-3.3 fallback)
 - Spring Cloud AWS Parameter Store (설정 주입)

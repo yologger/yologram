@@ -10,6 +10,7 @@
 - yologram-web-v2/: Next.js
 - yologram-worker/: Spring Boot 비동기 워커 (Kotlin)
 - yologram-admin-web/: 어드민 웹 (React, web-v1과 동일 스택)
+- compose.yaml: 로컬 개발용 인프라 (Valkey 캐시 — DB는 공유 RDS라 미포함)
 - .github/workflows/: GitHub Actions
 
 ## 인프라
@@ -21,6 +22,7 @@
 - web-v1: S3 + CloudFront (web.v1.yologram.link)
 - admin-web: S3 + CloudFront (admin.yologram.link)
 - worker: ECS Fargate (인바운드 없음)
+- 캐시: ElastiCache Valkey (valkey-prod, cache.t4g.micro) — api-v1/v2 닉네임 캐시
 
 
 ```mermaid
@@ -42,6 +44,8 @@ flowchart LR
 
         ECS_API_V1 --> RDS[(RDS MySQL)]
         ECS_API_V2 --> RDS
+        ECS_API_V1 --> VALKEY[(ElastiCache<br/>Valkey)]
+        ECS_API_V2 --> VALKEY
 
         ECS_WORKER["ECS Fargate<br/>yologram-worker<br/>(인바운드 없음)"]
     end
@@ -50,7 +54,7 @@ flowchart LR
 > 초록색 경로: web.v2.yologram.link(서브도메인)로 들어온 요청이 catch-all(/*) route를 통해 web-v2에 도달.
 > 두 커스텀 도메인(api/web.v2)은 동일 게이트웨이/스테이지($default)를 공유하며, 분기 자체는 경로(route_key) 기반.
 > API Gateway → ECS 연결은 VPC Link + Cloud Map(service discovery) 경유.
-> ElastiCache(Valkey)와 OpenSearch는 프로비저닝되어 있으나 앱 연결은 별도 (다이어그램 생략).
+> OpenSearch는 프로비저닝 예정으로 다이어그램 생략.
 
 ## CI/CD
 
