@@ -4,11 +4,11 @@ import link.yologram.worker.domain.news.tech.client.NewsContentCrawler
 import link.yologram.worker.domain.news.tech.entity.TechNews
 import link.yologram.worker.domain.news.tech.enums.TechNewsStatus
 import link.yologram.worker.domain.news.tech.entity.TechNewsCategoryMapping
-import link.yologram.worker.domain.news.tech.entity.TechCategory
 import link.yologram.worker.domain.news.tech.repository.TechNewsCategoryMappingRepository
-import link.yologram.worker.domain.news.tech.repository.TechCategoryRepository
 import link.yologram.worker.domain.news.tech.repository.TechNewsRepository
 import link.yologram.worker.global.discord.DiscordNotifier
+import link.yologram.worker.infra.client.cms.CmsApiClient
+import link.yologram.worker.infra.client.cms.TechCategory
 import link.yologram.worker.global.llm.LlmClient
 import link.yologram.worker.global.llm.LlmCompletion
 import org.junit.jupiter.api.Test
@@ -30,8 +30,8 @@ class TechNewsSummarizeServiceTest {
 
     private val techNewsRepository: TechNewsRepository = mock()
     private val techNewsCategoryMappingRepository: TechNewsCategoryMappingRepository = mock()
-    private val techCategoryRepository: TechCategoryRepository = mock {
-        on { findByIsActiveTrueOrderBySortOrder() } doReturn listOf(
+    private val cmsApiClient: CmsApiClient = mock {
+        on { findActiveCategories() } doReturn listOf(
             TechCategory(id = 2, name = "Backend", sortOrder = 2),
             TechCategory(id = 4, name = "DevOps", sortOrder = 4),
             TechCategory(id = 7, name = "기타", sortOrder = 7),
@@ -58,7 +58,7 @@ class TechNewsSummarizeServiceTest {
     private val service = TechNewsSummarizeService(
         techNewsRepository,
         techNewsCategoryMappingRepository,
-        techCategoryRepository,
+        cmsApiClient,
         newsContentCrawler,
         llmClient,
         notifierProvider,

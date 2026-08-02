@@ -5,11 +5,11 @@ import link.yologram.worker.domain.news.tech.client.NewsContentCrawler
 import link.yologram.worker.domain.news.tech.entity.TechNews
 import link.yologram.worker.domain.news.tech.enums.TechNewsStatus
 import link.yologram.worker.domain.news.tech.entity.TechNewsCategoryMapping
-import link.yologram.worker.domain.news.tech.entity.TechCategory
 import link.yologram.worker.domain.news.tech.repository.TechNewsCategoryMappingRepository
 import link.yologram.worker.domain.news.tech.repository.TechNewsRepository
-import link.yologram.worker.domain.news.tech.repository.TechCategoryRepository
 import link.yologram.worker.global.discord.DiscordNotifier
+import link.yologram.worker.infra.client.cms.CmsApiClient
+import link.yologram.worker.infra.client.cms.TechCategory
 import link.yologram.worker.global.llm.LlmClient
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.data.domain.PageRequest
@@ -23,7 +23,7 @@ private val logger = KotlinLogging.logger {}
 class TechNewsSummarizeService(
     private val techNewsRepository: TechNewsRepository,
     private val techNewsCategoryMappingRepository: TechNewsCategoryMappingRepository,
-    private val techCategoryRepository: TechCategoryRepository,
+    private val cmsApiClient: CmsApiClient,
     private val newsContentCrawler: NewsContentCrawler,
     private val llmClient: LlmClient,
     private val discordNotifier: ObjectProvider<DiscordNotifier>,
@@ -48,8 +48,8 @@ class TechNewsSummarizeService(
         )
         if (targets.isEmpty()) return SummarizeResult(targetCount = 0, summarizedCount = 0, failedCount = 0)
 
-        // 분류 어휘 — tech_category 마스터(활성)에서 배치마다 로드 (어드민 변경 자동 반영)
-        val vocabulary = techCategoryRepository.findByIsActiveTrueOrderBySortOrder()
+        // 분류 어휘 — tech_category 마스터(활성, cms 소유)를 CmsApiClient 경유로 배치마다 로드 (어드민 변경 자동 반영)
+        val vocabulary = cmsApiClient.findActiveCategories()
 
         var summarized = 0
         var failed = 0

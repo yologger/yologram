@@ -3,10 +3,10 @@ package link.yologram.worker.domain.news.tech.service
 import link.yologram.worker.domain.news.tech.client.NewsContentCrawler
 import link.yologram.worker.domain.news.tech.entity.TechNews
 import link.yologram.worker.domain.news.tech.enums.TechNewsStatus
-import link.yologram.worker.domain.news.tech.entity.TechCategory
+import link.yologram.worker.infra.client.cms.TechCategory
 import link.yologram.worker.domain.news.tech.repository.TechNewsCategoryMappingRepository
 import link.yologram.worker.domain.news.tech.repository.TechNewsRepository
-import link.yologram.worker.domain.news.tech.repository.TechCategoryRepository
+import link.yologram.worker.infra.client.cms.TechCategoryRepository
 import link.yologram.worker.global.llm.LlmClient
 import link.yologram.worker.global.llm.LlmCompletion
 import org.junit.jupiter.api.AfterEach
