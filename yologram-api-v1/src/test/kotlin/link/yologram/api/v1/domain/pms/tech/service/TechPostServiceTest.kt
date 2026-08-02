@@ -11,6 +11,9 @@ import link.yologram.api.v1.domain.pms.tech.model.TechPostCursor
 import link.yologram.api.v1.domain.pms.tech.model.UpdateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostCategoryMappingRepository
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostRepository
+import link.yologram.api.v1.infra.client.cms.CmsApiClient
+import link.yologram.api.v1.infra.client.comment.CommentApiClient
+import link.yologram.api.v1.infra.client.ums.UmsApiClient
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Nested
@@ -40,13 +43,13 @@ class TechPostServiceTest {
     lateinit var postCategoryMappingRepository: TechPostCategoryMappingRepository
 
     @Mock
-    lateinit var categoryQueryClient: TechPostCategoryQueryClient
+    lateinit var cmsApiClient: CmsApiClient
 
     @Mock
-    lateinit var userQueryClient: UserQueryClient
+    lateinit var umsApiClient: UmsApiClient
 
     @Mock
-    lateinit var commentCleanupClient: TechPostCommentCleanupClient
+    lateinit var commentApiClient: CommentApiClient
 
     @InjectMocks
     lateinit var postService: TechPostService
@@ -59,7 +62,7 @@ class TechPostServiceTest {
 
         @Test
         fun `정상 작성 시 게시글과 카테고리를 저장하고 id를 반환한다`() {
-            whenever(categoryQueryClient.allActive(setOf(1L, 2L))).thenReturn(true)
+            whenever(cmsApiClient.allActive(setOf(1L, 2L))).thenReturn(true)
             whenever(postRepository.save(any<TechPost>())).thenReturn(savedPost(10L))
 
             val result = postService.create(1L, CreateTechPostRequest(content = "내용", categoryIds = listOf(1L, 2L)))
@@ -70,7 +73,7 @@ class TechPostServiceTest {
 
         @Test
         fun `카테고리가 테크 게시판 것이 아니면 InvalidTechCategoryException을 던진다`() {
-            whenever(categoryQueryClient.allActive(setOf(99L))).thenReturn(false)
+            whenever(cmsApiClient.allActive(setOf(99L))).thenReturn(false)
 
             assertThrows<InvalidTechCategoryException> {
                 postService.create(1L, CreateTechPostRequest(content = "내용", categoryIds = listOf(99L)))
@@ -86,7 +89,7 @@ class TechPostServiceTest {
         @Test
         fun `본인 글이면 제목·내용 수정 후 카테고리를 교체한다`() {
             whenever(postRepository.findById(1L)).thenReturn(Optional.of(TechPost(id = 1L, userId = 1L, content = "원본")))
-            whenever(categoryQueryClient.allActive(setOf(2L, 3L))).thenReturn(true)
+            whenever(cmsApiClient.allActive(setOf(2L, 3L))).thenReturn(true)
 
             postService.update(1L, 1L, UpdateTechPostRequest(title = "새 제목", content = "새 내용", categoryIds = listOf(2L, 3L)))
 
@@ -117,7 +120,7 @@ class TechPostServiceTest {
         @Test
         fun `카테고리가 테크 게시판 것이 아니면 InvalidTechCategoryException을 던진다`() {
             whenever(postRepository.findById(1L)).thenReturn(Optional.of(TechPost(id = 1L, userId = 1L, content = "내용")))
-            whenever(categoryQueryClient.allActive(setOf(99L))).thenReturn(false)
+            whenever(cmsApiClient.allActive(setOf(99L))).thenReturn(false)
 
             assertThrows<InvalidTechCategoryException> {
                 postService.update(1L, 1L, UpdateTechPostRequest(content = "내용", categoryIds = listOf(99L)))
@@ -138,7 +141,7 @@ class TechPostServiceTest {
             postService.delete(1L, 1L)
 
             verify(postCategoryMappingRepository).deleteByPostId(1L)
-            verify(commentCleanupClient).deleteByPostId(1L)
+            verify(commentApiClient).deleteByPostId(1L)
             verify(postRepository).delete(post)
         }
 
@@ -151,7 +154,7 @@ class TechPostServiceTest {
             }
 
             verify(postRepository, never()).delete(any<TechPost>())
-            verify(commentCleanupClient, never()).deleteByPostId(any())
+            verify(commentApiClient, never()).deleteByPostId(any())
         }
 
         @Test
@@ -163,7 +166,7 @@ class TechPostServiceTest {
             }
 
             verify(postCategoryMappingRepository, never()).deleteByPostId(any())
-            verify(commentCleanupClient, never()).deleteByPostId(any())
+            verify(commentApiClient, never()).deleteByPostId(any())
             verify(postRepository, never()).delete(any<TechPost>())
         }
     }
@@ -178,7 +181,7 @@ class TechPostServiceTest {
             whenever(postCategoryMappingRepository.findByPostId(1L)).thenReturn(
                 listOf(TechPostCategoryMapping(id = 1L, postId = 1L, categoryId = 1L), TechPostCategoryMapping(id = 2L, postId = 1L, categoryId = 2L)),
             )
-            whenever(userQueryClient.findNickname(12L)).thenReturn("tester")
+            whenever(umsApiClient.findNickname(12L)).thenReturn("tester")
 
             val result = postService.getPost(1L)
 
@@ -211,7 +214,7 @@ class TechPostServiceTest {
         fun `결과가 있으면 마지막 글 id를 nextCursor로 반환한다`() {
             val fetched = listOf(post(3), post(2))
             whenever(postRepository.findPosts(anyOrNull(), isNull<Long>(), eq(2))).thenReturn(fetched)
-            whenever(userQueryClient.findNicknames(any())).thenReturn(mapOf(3L to "u3", 2L to "u2"))
+            whenever(umsApiClient.findNicknames(any())).thenReturn(mapOf(3L to "u3", 2L to "u2"))
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(
                 listOf(TechPostCategoryMapping(id = 1L, postId = 3L, categoryId = 10L)),
             )
@@ -230,7 +233,7 @@ class TechPostServiceTest {
         @Test
         fun `결과가 없으면 빈 목록과 null nextCursor를 반환한다`() {
             whenever(postRepository.findPosts(anyOrNull(), isNull<Long>(), eq(20))).thenReturn(emptyList())
-            whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
+            whenever(umsApiClient.findNicknames(any())).thenReturn(emptyMap())
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
             val result = postService.getPostsByCursor(null, null, 20)
@@ -242,7 +245,7 @@ class TechPostServiceTest {
         @Test
         fun `cursor가 주어지면 디코딩한 id로 조회한다`() {
             whenever(postRepository.findPosts(anyOrNull(), eq<Long?>(5L), eq(20))).thenReturn(emptyList())
-            whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
+            whenever(umsApiClient.findNicknames(any())).thenReturn(emptyMap())
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
             postService.getPostsByCursor(null, TechPostCursor.encode(5L), 20)
@@ -253,7 +256,7 @@ class TechPostServiceTest {
         @Test
         fun `size가 최대치를 넘으면 50으로 제한된다`() {
             whenever(postRepository.findPosts(anyOrNull(), isNull<Long>(), eq(50))).thenReturn(emptyList())
-            whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
+            whenever(umsApiClient.findNicknames(any())).thenReturn(emptyMap())
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
             postService.getPostsByCursor(null, null, 100)
@@ -272,7 +275,7 @@ class TechPostServiceTest {
         fun `결과가 있으면 마지막 글 id를 nextCursor로 반환한다`() {
             whenever(postRepository.findMyPosts(eq(1L), isNull<Long>(), eq(2)))
                 .thenReturn(listOf(post(3), post(2)))
-            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(umsApiClient.findNickname(1L)).thenReturn("me")
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(
                 listOf(TechPostCategoryMapping(id = 1L, postId = 3L, categoryId = 10L)),
             )
@@ -288,7 +291,7 @@ class TechPostServiceTest {
         @Test
         fun `결과가 없으면 빈 목록과 null nextCursor를 반환한다`() {
             whenever(postRepository.findMyPosts(eq(1L), isNull<Long>(), eq(20))).thenReturn(emptyList())
-            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(umsApiClient.findNickname(1L)).thenReturn("me")
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
             val result = postService.getMyPostsByCursor(1L, null, null, 20)
@@ -300,7 +303,7 @@ class TechPostServiceTest {
         @Test
         fun `cursor가 주어지면 디코딩한 id로 조회한다`() {
             whenever(postRepository.findMyPosts(eq(1L), eq<Long?>(5L), eq(20))).thenReturn(emptyList())
-            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(umsApiClient.findNickname(1L)).thenReturn("me")
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
             postService.getMyPostsByCursor(1L, null, TechPostCursor.encode(5L), 20)
@@ -311,7 +314,7 @@ class TechPostServiceTest {
         @Test
         fun `section이 tech면 정상 조회한다 (구 API 호환)`() {
             whenever(postRepository.findMyPosts(eq(1L), isNull<Long>(), eq(20))).thenReturn(emptyList())
-            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(umsApiClient.findNickname(1L)).thenReturn("me")
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
             postService.getMyPostsByCursor(1L, "tech", null, 20)
@@ -322,7 +325,7 @@ class TechPostServiceTest {
         @Test
         fun `section은 대소문자를 구분하지 않는다`() {
             whenever(postRepository.findMyPosts(eq(1L), isNull<Long>(), eq(20))).thenReturn(emptyList())
-            whenever(userQueryClient.findNickname(1L)).thenReturn("me")
+            whenever(umsApiClient.findNickname(1L)).thenReturn("me")
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
 
             postService.getMyPostsByCursor(1L, "TECH", null, 20)

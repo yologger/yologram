@@ -11,6 +11,8 @@ import link.yologram.api.v1.domain.comment.tech.model.TechPostCommentResponse
 import link.yologram.api.v1.domain.comment.tech.model.TechPostCommentSort
 import link.yologram.api.v1.domain.comment.tech.model.UpdateTechPostCommentRequest
 import link.yologram.api.v1.domain.comment.tech.repository.TechPostCommentRepository
+import link.yologram.api.v1.infra.client.pms.PmsApiClient
+import link.yologram.api.v1.infra.client.ums.UmsApiClient
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import link.yologram.api.v1.global.model.ApiEnvelopPage
 import org.springframework.data.repository.findByIdOrNull
@@ -20,8 +22,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class TechPostCommentService(
     private val commentRepository: TechPostCommentRepository,
-    private val postQueryClient: TechPostQueryClient,
-    private val userQueryClient: UserQueryClient,
+    private val pmsApiClient: PmsApiClient,
+    private val umsApiClient: UmsApiClient,
 ) {
 
     companion object {
@@ -32,7 +34,7 @@ class TechPostCommentService(
     @Transactional
     fun create(postId: Long, userId: Long, request: CreateTechPostCommentRequest): CreateTechPostCommentResponse {
         // 대상 글이 없으면 404 (고아 댓글 방지)
-        if (!postQueryClient.exists(postId)) throw TargetTechPostNotFoundException()
+        if (!pmsApiClient.exists(postId)) throw TargetTechPostNotFoundException()
 
         val comment = commentRepository.save(
             TechPostComment(
@@ -78,7 +80,7 @@ class TechPostCommentService(
         val comments = commentRepository.findByPost(postId, sort, cursorId, pageSize)
 
         // 작성자 닉네임 배치 조회 (N+1 회피)
-        val nicknames = userQueryClient.findNicknames(comments.map { it.userId })
+        val nicknames = umsApiClient.findNicknames(comments.map { it.userId })
 
         val data = comments.map { comment ->
             TechPostCommentResponse(
@@ -108,7 +110,7 @@ class TechPostCommentService(
         val totalCount = commentRepository.countByPost(postId)
         val comments = commentRepository.findByPost(postId, sort, offset, pageSize)
 
-        val nicknames = userQueryClient.findNicknames(comments.map { it.userId })
+        val nicknames = umsApiClient.findNicknames(comments.map { it.userId })
 
         val data = comments.map { comment ->
             TechPostCommentResponse(

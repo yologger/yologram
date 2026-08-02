@@ -9,6 +9,8 @@ import link.yologram.api.v1.domain.comment.tech.model.TechPostCommentCursor
 import link.yologram.api.v1.domain.comment.tech.model.TechPostCommentSort
 import link.yologram.api.v1.domain.comment.tech.model.UpdateTechPostCommentRequest
 import link.yologram.api.v1.domain.comment.tech.repository.TechPostCommentRepository
+import link.yologram.api.v1.infra.client.pms.PmsApiClient
+import link.yologram.api.v1.infra.client.ums.UmsApiClient
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Nested
@@ -33,10 +35,10 @@ class TechPostCommentServiceTest {
     lateinit var commentRepository: TechPostCommentRepository
 
     @Mock
-    lateinit var postQueryClient: TechPostQueryClient
+    lateinit var pmsApiClient: PmsApiClient
 
     @Mock
-    lateinit var userQueryClient: UserQueryClient
+    lateinit var umsApiClient: UmsApiClient
 
     @InjectMocks
     lateinit var commentService: TechPostCommentService
@@ -49,7 +51,7 @@ class TechPostCommentServiceTest {
 
         @Test
         fun `대상 글이 있으면 댓글을 저장하고 id를 반환한다`() {
-            whenever(postQueryClient.exists(100L)).thenReturn(true)
+            whenever(pmsApiClient.exists(100L)).thenReturn(true)
             whenever(commentRepository.save(any<TechPostComment>())).thenReturn(comment(10L))
 
             val result = commentService.create(100L, 1L, CreateTechPostCommentRequest(content = "좋은 글"))
@@ -60,7 +62,7 @@ class TechPostCommentServiceTest {
 
         @Test
         fun `대상 글이 없으면 TargetTechPostNotFoundException을 던진다`() {
-            whenever(postQueryClient.exists(999L)).thenReturn(false)
+            whenever(pmsApiClient.exists(999L)).thenReturn(false)
 
             assertThrows<TargetTechPostNotFoundException> {
                 commentService.create(999L, 1L, CreateTechPostCommentRequest(content = "좋은 글"))
@@ -145,7 +147,7 @@ class TechPostCommentServiceTest {
         fun `결과가 있으면 마지막 댓글 id를 nextCursor로 반환한다`() {
             whenever(commentRepository.findByPost(eq(100L), eq(TechPostCommentSort.LATEST), isNull<Long>(), eq(2)))
                 .thenReturn(listOf(comment(3L, userId = 3L), comment(2L, userId = 2L)))
-            whenever(userQueryClient.findNicknames(any())).thenReturn(mapOf(3L to "u3", 2L to "u2"))
+            whenever(umsApiClient.findNicknames(any())).thenReturn(mapOf(3L to "u3", 2L to "u2"))
 
             val result = commentService.getCommentsByCursor(100L, null, null, 2)
 
@@ -158,7 +160,7 @@ class TechPostCommentServiceTest {
         fun `결과가 없으면 빈 목록과 null nextCursor를 반환한다`() {
             whenever(commentRepository.findByPost(eq(100L), eq(TechPostCommentSort.LATEST), isNull<Long>(), eq(20)))
                 .thenReturn(emptyList())
-            whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
+            whenever(umsApiClient.findNicknames(any())).thenReturn(emptyMap())
 
             val result = commentService.getCommentsByCursor(100L, null, null, 20)
 
@@ -170,7 +172,7 @@ class TechPostCommentServiceTest {
         fun `cursor가 주어지면 디코딩한 id로 조회한다`() {
             whenever(commentRepository.findByPost(eq(100L), eq(TechPostCommentSort.LATEST), eq<Long?>(5L), eq(20)))
                 .thenReturn(emptyList())
-            whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
+            whenever(umsApiClient.findNicknames(any())).thenReturn(emptyMap())
 
             commentService.getCommentsByCursor(100L, null, TechPostCommentCursor.encode(5L), 20)
 
@@ -181,7 +183,7 @@ class TechPostCommentServiceTest {
         fun `sort=oldest면 OLDEST로 조회한다`() {
             whenever(commentRepository.findByPost(eq(100L), eq(TechPostCommentSort.OLDEST), isNull<Long>(), eq(20)))
                 .thenReturn(emptyList())
-            whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
+            whenever(umsApiClient.findNicknames(any())).thenReturn(emptyMap())
 
             commentService.getCommentsByCursor(100L, "oldest", null, 20)
 
@@ -192,7 +194,7 @@ class TechPostCommentServiceTest {
         fun `size가 최대치를 넘으면 50으로 제한된다`() {
             whenever(commentRepository.findByPost(eq(100L), eq(TechPostCommentSort.LATEST), isNull<Long>(), eq(50)))
                 .thenReturn(emptyList())
-            whenever(userQueryClient.findNicknames(any())).thenReturn(emptyMap())
+            whenever(umsApiClient.findNicknames(any())).thenReturn(emptyMap())
 
             commentService.getCommentsByCursor(100L, null, null, 100)
 

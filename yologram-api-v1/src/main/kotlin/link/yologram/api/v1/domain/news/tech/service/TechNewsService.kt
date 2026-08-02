@@ -1,11 +1,11 @@
 package link.yologram.api.v1.domain.news.tech.service
 
-import link.yologram.api.v1.domain.cms.tech.repository.TechCategoryRepository
 import link.yologram.api.v1.domain.news.tech.model.TechNewsCursor
 import link.yologram.api.v1.domain.news.tech.model.TechNewsResponse
 import link.yologram.api.v1.domain.news.tech.repository.TechNewsCategoryMappingRepository
 import link.yologram.api.v1.domain.news.tech.repository.TechNewsRepository
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
+import link.yologram.api.v1.infra.client.cms.CmsApiClient
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional
 class TechNewsService(
     private val techNewsRepository: TechNewsRepository,
     private val techNewsCategoryMappingRepository: TechNewsCategoryMappingRepository,
-    private val techCategoryRepository: TechCategoryRepository,
+    private val cmsApiClient: CmsApiClient,
 ) {
 
     /**
@@ -27,10 +27,10 @@ class TechNewsService(
 
         val news = techNewsRepository.findSummarizedNews(categoryId, decodedCursor, pageSize)
 
-        // 카테고리 배치 조회 후 tech_category 마스터에서 라벨 해석 (N+1 회피 — 게시판 패턴)
+        // 카테고리 배치 조회 후 tech_category 마스터에서 라벨 해석 (N+1 회피 — 게시판 패턴).
+        // cms는 타 도메인이므로 리포지토리 직접 참조 대신 CmsApiClient 경유 (infra/client 경계 규칙)
         val mappings = techNewsCategoryMappingRepository.findByNewsIdIn(news.map { it.id })
-        val nameById = techCategoryRepository.findAllById(mappings.map { it.categoryId }.distinct())
-            .associateBy({ it.id }, { it.name })
+        val nameById = cmsApiClient.findCategoryNames(mappings.map { it.categoryId }.distinct())
         val categoriesByNews = mappings.groupBy(
             { it.newsId },
             { nameById[it.categoryId] },

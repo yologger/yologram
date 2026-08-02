@@ -7,8 +7,7 @@ import link.yologram.api.v1.domain.news.tech.model.TechNewsCursor
 import link.yologram.api.v1.domain.news.tech.entity.TechNewsCategoryMapping
 import link.yologram.api.v1.domain.news.tech.repository.TechNewsCategoryMappingRepository
 import link.yologram.api.v1.domain.news.tech.repository.TechNewsRepository
-import link.yologram.api.v1.domain.cms.tech.entity.TechCategory
-import link.yologram.api.v1.domain.cms.tech.repository.TechCategoryRepository
+import link.yologram.api.v1.infra.client.cms.CmsApiClient
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -26,12 +25,12 @@ class TechNewsServiceTest {
 
     private val techNewsRepository: TechNewsRepository = mock()
     private val mappingRepository: TechNewsCategoryMappingRepository = mock()
-    private val categoryRepository: TechCategoryRepository = mock()
-    private val service = TechNewsService(techNewsRepository, mappingRepository, categoryRepository)
+    private val cmsApiClient: CmsApiClient = mock()
+    private val service = TechNewsService(techNewsRepository, mappingRepository, cmsApiClient)
 
     init {
         whenever(mappingRepository.findByNewsIdIn(any())).thenReturn(emptyList())
-        whenever(categoryRepository.findAllById(any())).thenReturn(emptyList())
+        whenever(cmsApiClient.findCategoryNames(any())).thenReturn(emptyMap())
     }
 
     private fun news(id: Long, publishedAt: LocalDateTime = LocalDateTime.of(2026, 7, 18, 9, 0)) = TechNews(
@@ -69,11 +68,8 @@ class TechNewsServiceTest {
                 TechNewsCategoryMapping(id = 2, newsId = 1L, categoryId = 5L),
             )
         )
-        whenever(categoryRepository.findAllById(any())).thenReturn(
-            listOf(
-                TechCategory(id = 2, name = "Backend", sortOrder = 2),
-                TechCategory(id = 5, name = "Cloud", sortOrder = 5),
-            )
+        whenever(cmsApiClient.findCategoryNames(listOf(2L, 5L))).thenReturn(
+            mapOf(2L to "Backend", 5L to "Cloud")
         )
 
         val result = service.getNewsByCursor(categoryId = null, cursor = null, size = 20)

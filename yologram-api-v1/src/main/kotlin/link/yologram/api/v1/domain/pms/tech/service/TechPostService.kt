@@ -14,6 +14,9 @@ import link.yologram.api.v1.domain.pms.tech.model.TechPostSummaryResponse
 import link.yologram.api.v1.domain.pms.tech.model.UpdateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostCategoryMappingRepository
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostRepository
+import link.yologram.api.v1.infra.client.cms.CmsApiClient
+import link.yologram.api.v1.infra.client.comment.CommentApiClient
+import link.yologram.api.v1.infra.client.ums.UmsApiClient
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import link.yologram.api.v1.global.model.ApiEnvelopPage
 import org.springframework.data.repository.findByIdOrNull
@@ -24,9 +27,9 @@ import org.springframework.transaction.annotation.Transactional
 class TechPostService(
     private val postRepository: TechPostRepository,
     private val postCategoryMappingRepository: TechPostCategoryMappingRepository,
-    private val categoryQueryClient: TechPostCategoryQueryClient,
-    private val userQueryClient: UserQueryClient,
-    private val commentCleanupClient: TechPostCommentCleanupClient,
+    private val cmsApiClient: CmsApiClient,
+    private val umsApiClient: UmsApiClient,
+    private val commentApiClient: CommentApiClient,
 ) {
 
     companion object {
@@ -48,7 +51,7 @@ class TechPostService(
     fun create(userId: Long, request: CreateTechPostRequest): CreateTechPostResponse {
         val categoryIds = request.categoryIds.toSet()
 
-        if (!categoryQueryClient.allActive(categoryIds)) {
+        if (!cmsApiClient.allActive(categoryIds)) {
             throw InvalidTechCategoryException()
         }
 
@@ -78,7 +81,7 @@ class TechPostService(
 
         // 카테고리 검증 (작성과 동일: 테크 게시판 활성 카테고리 1~3개)
         val categoryIds = request.categoryIds.toSet()
-        if (!categoryQueryClient.allActive(categoryIds)) {
+        if (!cmsApiClient.allActive(categoryIds)) {
             throw InvalidTechCategoryException()
         }
 
@@ -101,10 +104,10 @@ class TechPostService(
         // 작성자 본인만 삭제 가능 (아니면 403)
         if (post.userId != userId) throw TechPostForbiddenException()
 
-        // 연관 데이터 정리 후 게시글 삭제 — 카테고리 매핑 + 댓글(고아 방지, TechPostCommentCleanupClient로 경계 추상화).
+        // 연관 데이터 정리 후 게시글 삭제 — 카테고리 매핑 + 댓글(고아 방지, CommentApiClient로 경계 추상화).
         // 같은 트랜잭션이라 글·매핑·댓글 삭제가 원자적 (좋아요 도메인은 미구현)
         postCategoryMappingRepository.deleteByPostId(post.id)
-        commentCleanupClient.deleteByPostId(post.id)
+        commentApiClient.deleteByPostId(post.id)
         postRepository.delete(post)
     }
 
@@ -114,7 +117,7 @@ class TechPostService(
         val post = postRepository.findByIdOrNull(id) ?: throw TechPostNotFoundException()
 
         val categoryIds = postCategoryMappingRepository.findByPostId(post.id).map { it.categoryId }
-        val nickname = userQueryClient.findNickname(post.userId)
+        val nickname = umsApiClient.findNickname(post.userId)
 
         return TechPostDetailResponse(
             id = post.id,
@@ -144,8 +147,8 @@ class TechPostService(
         val posts = postRepository.findPosts(categoryId, cursorId, pageSize)
 
         // 4) 작성자 닉네임 배치 조회 (N+1 회피): 글들의 userId를 모아 ums에 1번 질의 → uid→nickname Map
-        //    UserQueryClient로 ums 경계를 추상화(MSA 분리 대비). 모놀리식은 users 직접 조회
-        val nicknames = userQueryClient.findNicknames(posts.map { it.userId })
+        //    UmsApiClient로 ums 경계를 추상화(MSA 분리 대비). 모놀리식은 users 직접 조회
+        val nicknames = umsApiClient.findNicknames(posts.map { it.userId })
 
         // 5) 카테고리 배치 조회 (N+1 회피): postId들을 모아 1번 질의 후 postId→categoryId 리스트로 그룹핑
         //    글:카테고리는 1:N이라 목록 join 시 row가 불어나 limit이 깨짐 → 별도 IN 조회
@@ -184,7 +187,7 @@ class TechPostService(
         val totalCount = postRepository.countPosts(categoryId)
         val posts = postRepository.findPosts(categoryId, offset, pageSize)
 
-        val nicknames = userQueryClient.findNicknames(posts.map { it.userId })
+        val nicknames = umsApiClient.findNicknames(posts.map { it.userId })
         val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.id })
             .groupBy({ it.postId }, { it.categoryId })
 
@@ -226,7 +229,7 @@ class TechPostService(
 
         val posts = postRepository.findMyPosts(userId, cursorId, pageSize)
 
-        val nickname = userQueryClient.findNickname(userId)
+        val nickname = umsApiClient.findNickname(userId)
         val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.id })
             .groupBy({ it.postId }, { it.categoryId })
 
@@ -267,7 +270,7 @@ class TechPostService(
         val posts = postRepository.findMyPosts(userId, offset, pageSize)
 
         // 4) 작성자는 본인이라 닉네임은 단건 조회로 충분. 카테고리는 1:N이라 배치(IN) 조회
-        val nickname = userQueryClient.findNickname(userId)
+        val nickname = umsApiClient.findNickname(userId)
         val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.id })
             .groupBy({ it.postId }, { it.categoryId })
 
