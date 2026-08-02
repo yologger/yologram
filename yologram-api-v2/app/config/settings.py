@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     # SES
     ses_from_address: str = "no-reply@yologram.link"
 
+    # 캐시용 Redis(Valkey) — SSM 키는 api-v1과 공유 개념(cache.data.redis.host)이며
+    # pydantic-settings 대문자 env 매핑으로 CACHE_REDIS_HOST/CACHE_REDIS_PORT로 주입. 로컬 기본 localhost
+    cache_redis_host: str = "localhost"
+    cache_redis_port: int = 6379
+
     # OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS는
     # OpenTelemetry SDK가 자동으로 읽음 (ECS secrets에서 주입)
 

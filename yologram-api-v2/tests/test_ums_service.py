@@ -148,6 +148,26 @@ class TestUserService:
             with pytest.raises(UserNotFoundException):
                 self.service.update_profile(999, request)
 
+        def test_닉네임_변경_시_닉네임_캐시를_무효화한다(self):
+            from app.infra.cache.cache import Cache
+
+            user = self._make_user()
+            self.service.repository.find_by_id = MagicMock(return_value=user)
+            self.service.cache_service = MagicMock()
+
+            self.service.update_profile(1, UpdateProfileRequest(nickname="new-nickname"))
+
+            self.service.cache_service.delete_all.assert_called_once_with(Cache.user_nickname(1))
+
+        def test_존재하지_않는_유저면_캐시_무효화도_없다(self):
+            self.service.repository.find_by_id = MagicMock(return_value=None)
+            self.service.cache_service = MagicMock()
+
+            with pytest.raises(UserNotFoundException):
+                self.service.update_profile(999, UpdateProfileRequest(nickname="new-nickname"))
+
+            self.service.cache_service.delete_all.assert_not_called()
+
     class TestChangePassword:
 
         def setup_method(self):
@@ -208,3 +228,15 @@ class TestUserService:
 
             with pytest.raises(UserNotFoundException):
                 self.service.withdraw(999)
+
+        def test_탈퇴_시_닉네임_캐시를_무효화한다(self):
+            from app.infra.cache.cache import Cache
+
+            user = MagicMock()
+            self.service.repository.find_by_id = MagicMock(return_value=user)
+            self.service.repository.delete = MagicMock()
+            self.service.cache_service = MagicMock()
+
+            self.service.withdraw(1)
+
+            self.service.cache_service.delete_all.assert_called_once_with(Cache.user_nickname(1))

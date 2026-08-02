@@ -5,6 +5,8 @@ from app.core.exception import AuthWrongPasswordException, UserEmailNotVerifiedE
 from app.domain.ums.model import User
 from app.domain.ums.repository import UserEmailVerificationRepository, UserRepository
 from app.domain.ums.schema import ChangePasswordRequest, JoinRequest, JoinResponse, UpdateProfileRequest, UserMeResponse
+from app.infra.cache.cache import Cache
+from app.infra.cache.redis_cache_service import RedisCacheService
 
 
 class UserService:
@@ -12,6 +14,7 @@ class UserService:
     def __init__(self, db: Session):
         self.repository = UserRepository(db)
         self.email_verification_code_repository = UserEmailVerificationRepository(db)
+        self.cache_service = RedisCacheService()
 
     def join(self, request: JoinRequest) -> JoinResponse:
         existing = self.repository.find_by_email(request.email)
@@ -61,6 +64,9 @@ class UserService:
         user.nickname = request.nickname
         self.repository.db.flush()
 
+        # 닉네임 캐시 무효화 — 다음 조회 시 cache-aside가 새 값으로 재적재 (api-v1 미러)
+        self.cache_service.delete_all(Cache.user_nickname(uid))
+
         return UserMeResponse(
             uid=user.id,
             email=user.email,
@@ -92,3 +98,6 @@ class UserService:
             raise UserNotFoundException()
 
         self.repository.delete(user)
+
+        # 탈퇴 유저 닉네임 캐시 무효화 (api-v1 미러)
+        self.cache_service.delete_all(Cache.user_nickname(uid))

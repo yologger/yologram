@@ -5,6 +5,7 @@ from typing import Protocol
 from sqlalchemy.orm import Session
 
 from app.domain.ums.repository import UserRepository
+from app.infra.cache.user_nickname_cache import UserNicknameCache
 
 
 class UmsApiClient(Protocol):
@@ -24,15 +25,23 @@ class UmsApiClient(Protocol):
 
 
 class LocalUmsApiClient:
+    """닉네임 cache-aside(UserNicknameCache) 적용 지점 — pms·comment 소비처가 공통으로 캐시를 탄다 (api-v1 미러)."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, nickname_cache: UserNicknameCache | None = None):
         self.repository = UserRepository(db)
+        self.nickname_cache = nickname_cache or UserNicknameCache()
 
     def find_nickname(self, uid: int) -> str | None:
-        user = self.repository.find_by_id(uid)
-        return user.nickname if user else None
+        return self.nickname_cache.get_nickname(uid, self._load_nickname)
 
     def find_nicknames(self, uids: list[int]) -> dict[int, str]:
         if not uids:
             return {}
-        return {user.id: user.nickname for user in self.repository.find_by_ids(uids)}
+        return self.nickname_cache.get_nicknames(uids, self._load_nicknames)
+
+    def _load_nickname(self, uid: int) -> str | None:
+        user = self.repository.find_by_id(uid)
+        return user.nickname if user else None
+
+    def _load_nicknames(self, uids) -> dict[int, str]:
+        return {user.id: user.nickname for user in self.repository.find_by_ids(list(uids))}
