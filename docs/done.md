@@ -160,7 +160,16 @@
 - [x] (Cache) Valkey 인프라 — ElastiCache 가동 + 로컬 compose (캐시 구현은 후속)
   - prod: aws/global/elasticache 기존 tf apply — valkey-prod(Valkey 8.0, cache.t4g.micro 단일 노드, VPC 내부 6379만 허용). 엔드포인트는 api-v1 prod SSM(spring.data.redis.host, tf PLACEHOLDER+수동 값 컨벤션)에 등록. api-v2·worker 배선은 캐시 구현 시(env 주입 — task def 변경 동반)
   - 노드 선정: 서울 리전 Valkey 최저가 조회 — 인스턴스형 최소는 t4g.micro(~$14/월 온디맨드), 서버리스는 ~$7.4/월(스토리지 최소 100MB)로 더 저렴했으나 t4g.micro 확정(사용자 결정)
-  - 로컬: 레포 루트 compose.yaml(valkey:8, 6379) — DB는 공유 RDS지만 캐시는 로컬 분리(공유 불필요·prod 캐시 오염 방지). PONG 검증 완료
+  - 로컬: 레포 루트 compose.yaml(valkey:8, 6379) — DB는 공유 RDS지만 캐시는 로컬 분리(공유 불필요·prod 캐시 오염 방지). PONG 검증 완료. (후속 변경: 로컬 캐시는 brew redis 16379로 일원화 — 뉴스 첫 페이지 캐시 항목 참조)
+- [x] (Cache) 뉴스 첫 페이지 캐시 — api-v1·api-v2 조회 + worker 무효화 (Valkey)
+  - 대상: GET /news/tech 무커서(첫 페이지) 응답 통째(ApiEnvelopCursorPage — 뉴스 keyset+매핑+라벨 3쿼리 제거). 커서 요청은 키가 커서 값으로 분산돼 히트율이 없어 캐시 제외. 키 news:tech:v1:first-page:{categoryId|all}:{size}(size는 1~50 보정 후 키에 반영 — 키 폭증 방지), 조회는 페이지 키 GET 1회
+  - v1·v2 상호 호환: 저장 값은 camelCase envelope JSON(datetime ISO 초 단위, nextCursor null이면 필드 생략 — v1 @JsonInclude NON_NULL 정합). v2는 model_dump(by_alias)/model_validate, serialization_alias→alias 전환(복원에 입력 alias 필요, populate_by_name이라 동작 불변)
+  - 무효화: worker 요약 배치에서 SUMMARIZED 전환 ≥1이면 배치당 1회(건별 아님·건별 트랜잭션 커밋 이후), (all+활성 카테고리)×size 1~50 키 전수 열거 UNLINK 1왕복. 수집(COLLECTED) 시점이 아닌 요약 완료 시점 — 목록 노출 조건이 SUMMARIZED라 목록이 실제로 바뀌는 순간. worker Redis 최초 연결(api-v1 RedisConfig 미러 — lazy·1s 타임아웃·REJECT_COMMANDS, Redis 없어도 기동·배치 정상)
+  - 설계 변천(왕복 비용 논의): 버전 키(generational, worker INCR·API가 ver 읽어 키 구성)로 먼저 구현 → 요청당 Redis GET 2회(ver+페이지)가 걸려 DEL 방식으로 회귀 확정 — GET 1회 우선. 버전 키의 장점(레이스 자가 치유·O(1) 무효화)은 포기하고 단순성·왕복 절감을 택함
+  - SCAN 미사용: SCAN은 prefix 인덱스가 아니라 전체 keyspace 순회(MATCH는 후필터) — 닉네임 키가 늘수록 비용 동반 상승. UNLINK는 없는 키를 O(1) 무시하므로 열거 가능한 키 공간(스코프×size)은 전수 열거가 정확·저렴 (UNLINK=DEL의 비동기판, 메인 스레드 비블로킹)
+  - TTL 3분 = 보험·낡음 상한: 삭제 실패(Redis 순단·worker 다운)와 레이스(API가 커밋 전 옛 목록을 읽고 worker 삭제 직후 SET — 좀비 부활, 창 수십 ms) 수용 근거. 뉴스 생성 주기(수집 10분·요약 5분) ≥ TTL이라 체감 무해. 무효화 직후 미스 동시 유입(stampede)은 현 규모 무해 — 대규모 시 singleflight(SETNX 뮤텍스)·stale-while-revalidate 카드
+  - 인프라·로컬: worker_prod SSM cache.data.redis.host tf apply+값 등록(worker는 spring.config.import 프리픽스 로드라 task def 무변경, Valkey SG는 VPC CIDR 허용이라 SG 변경 불필요). 로컬 Redis는 brew redis 16379로 일원화(v1·worker application-local.yaml, v2 .env CACHE_REDIS_HOST/PORT — compose valkey 6379는 미사용 전환)
+  - 테스트: api-v1 캐시 5·서비스 3(전체 통과) / api-v2 캐시 7·서비스 3(총 356) / worker Invalidator 4·배치 연동 6(전체 통과). 키 스킴·TTL을 테스트로 계약 고정
 - [x] (UMS/Admin) 어드민 활성/비활성 — OWNER 전용 상태 토글 (api-v1·v2 + admin-web)
   - PATCH /ums/admin/admin-users/{id}/status {status: ACTIVE|INACTIVE(그 외 400)} — 첫 role 기반 인가: 요청자 비-OWNER 403 ADMIN_ROLE_FORBIDDEN, 대상 OWNER 400 ADMIN_USER_OWNER_IMMUTABLE(요청자가 OWNER뿐이라 자기 자신 자동 차단), 검사 순서 403→404→400
   - INACTIVE 실효성: 로그인·validate-token에서 403 ADMIN_USER_INACTIVE — 로그인은 비밀번호 검증 후 체크(계정 존재 노출 최소화, 비번 오류가 먼저 401)

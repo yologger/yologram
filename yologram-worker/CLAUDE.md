@@ -18,6 +18,7 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 
 - global/discord/: DiscordNotifier(채널별 웹훅 send/sendEmbed)·DiscordConfig·DiscordProperties(yologram.discord.webhooks.{채널}.url/enabled)
 - domain/news/tech/: 테크 뉴스 도메인 — client(RssFeedClient·NewsContentCrawler — 외부 HTTP), service(Collect·Summarize·CategoryParser), scheduler(cron 수집 10분·요약 5분). LLM 분류 어휘는 CmsApiClient로 배치마다 로드 — 어드민 카테고리 변경 자동 반영, 매핑은 categoryId
 - infra/client/cms/: 도메인 간 경계 클라이언트 — CmsApiClient + LocalCmsApiClient + TechCategory 읽기 모델(tech_category 매핑은 이 층에만, api-v1 infra/client 규칙과 일관)
+- config/RedisConfig.kt·CacheRedisProperties.kt + infra/cache/TechNewsFirstPageCacheInvalidator.kt: Valkey 연결(api-v1 미러 — cache.data.redis.*, lazy·1s 타임아웃·REJECT_COMMANDS, Redis 없어도 기동 정상) + 뉴스 첫 페이지 캐시 무효화(clear — (all+활성 카테고리)×size 1~50 키 전수 열거 UNLINK 1왕복, 요약 배치 SUMMARIZED ≥1이면 배치당 1회·커밋 이후 호출. 실패 삼킴 — API 캐시 TTL 3분이 보험. 키 스킴은 api-v1 Cache.kt와 문자열 계약)
 - src/main/resources/application.yaml: 공통 설정 (database.main, cron, LLM 모델, Discord 채널)
 - src/main/resources/logback-spring.xml: 로깅 (콘솔 + prod OTEL appender)
 
@@ -38,7 +39,7 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 
 ## 설정 관리
 
 - application-local.yaml: 로컬 (포트 5003, OTLP 비활성, worker_local SSM만 import — prod 파라미터 유입 금지)
-- application-prod.yaml: 프로덕션 (Parameter Store /yologram/service/yologram-worker_prod/ — OTLP 6·DB 6·LLM 키 2·Discord 웹훅 3)
+- application-prod.yaml: 프로덕션 (Parameter Store /yologram/service/yologram-worker_prod/ — OTLP 6·DB 6·LLM 키 2·Discord 웹훅 3·cache 1)
 - Discord 채널 on/off는 yaml(webhooks.{채널}.enabled), URL은 SSM
 
 ## 테스트

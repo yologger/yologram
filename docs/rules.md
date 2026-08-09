@@ -29,6 +29,14 @@
 -  전 테이블 FK 미사용(같은 도메인 내부 포함 — tech_news에서 같은 도메인 FK 허용했다가 TRUNCATE 불가 등 운영 불편으로 제거). 참조는 컬럼+인덱스 + app-level 검증
 -  경계 넘는 동기 트랜잭션 의존 최소화 (count 갱신은 추후 이벤트/최종일관성)
 
+### 캐시 (Valkey)
+
+- 키 스킴 {도메인 prefix}:v1:{엔티티}:{식별자} — 정의는 각 API infra/cache의 Cache 팩토리(v1 Cache.kt / v2 cache.py). v1·v2가 같은 키·JSON(camelCase, ensure_ascii=False)을 공유하므로 한쪽 변경 시 반드시 양쪽 동시 수정
+- 뉴스 첫 페이지 키(news:tech:v1:first-page:{categoryId|all}:{size})는 worker TechNewsFirstPageCacheInvalidator의 UNLINK 전수 열거와 문자열 계약 — 키 스킴·size 상한(50) 변경 시 api-v1·v2·worker 3곳 동시 수정
+- 캐시에는 파생 데이터만(원본은 항상 MySQL) — 최악의 불일치는 flush로 복구 가능해야 한다. auth 상태 캐시 금지(INACTIVE 즉시 차단 무력화)
+- 무효화 방식 기준: 키 공간이 열거 가능하면 DEL(UNLINK) 전수 열거 — SCAN 금지(전체 keyspace 순회라 무관한 키 증가에 비용 동반). 열거 불가능하면 버전 키(INCR) 검토
+- 로컬 Redis는 localhost:16379 (brew redis — v1·worker application-local.yaml, v2 .env)
+
 ### Worker (yologram-worker)
 - 워커 작업은 FARGATE_SPOT 중단(2분 경고 후 종료·재기동)을 전제로 멱등·재시도 가능하게 설계 (예: RSS 수집은 중복 방지 키, 삭제류는 청크 반복)
 - @Scheduled는 놓친 사이클을 소급하지 않음 — 다음 주기가 커버하는 작업(RSS류)만 사용. 시각 민감/누적형/중단 불가 배치는 EventBridge Scheduler → SQS로 이관(스케줄 발화를 인프라가 보장)

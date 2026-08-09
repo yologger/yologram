@@ -13,7 +13,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - app/config/database.py: engine, SessionLocal, get_db
 - app/config/logging.py · metrics.py · tracing.py: OTLP 로그/메트릭/트레이스
 - app/infra/client/{ums,cms,pms,comment}: 도메인 간 경계 클라이언트 — {대상도메인}ApiClient(Protocol) + Local 구현 (api-v1 미러)
-- app/infra/cache/ + config/redis.py: Valkey 닉네임 캐시 — cache-aside(UserNicknameCache), 전 연산 예외 삼킴(DB 폴백), 1초 타임아웃. 키 ums:users:v1:nickname:{uid} — api-v1과 바이트 호환. 설정 CACHE_REDIS_HOST/PORT
+- app/infra/cache/ + config/redis.py: Valkey 캐시 — cache-aside(UserNicknameCache·TechNewsFirstPageCache), 전 연산 예외 삼킴(DB 폴백), 1초 타임아웃. 키·JSON api-v1과 바이트 호환 — 닉네임 ums:users:v1:nickname:{uid}(TTL 1h), 뉴스 첫 페이지 news:tech:v1:first-page:{category|all}:{size}(TTL 3분, worker UNLINK 무효화·camelCase envelope). 설정 CACHE_REDIS_HOST/PORT(로컬 .env 16379)
 - app/domain/ums: AuthService(JWT 로그인/로그아웃/검증), UserService(가입/수정/비번변경/탈퇴), UserEmailVerificationService + EmailSender(Stub/Ses), UserPasswordResetService
 - app/domain/ums의 admin_* 세트: 어드민 인증·계정 관리 (admin_schema/admin_jwt_util/admin_auth_dependency/admin_service/admin_router — /api/v2/ums/admin, 생성(항상 role=ADMIN)·로그인·검증·로그아웃·목록(offset 페이지)·삭제(자기 자신·OWNER 금지)·상태 변경(OWNER 전용, INACTIVE 로그인 차단), api-v1 미러)
 - app/domain/{pms,cms,comment,news}/tech: 도메인 우선 구조 — pms/tech(TechPostService), cms/tech(TechCategoryService — tech_category 공용 마스터), comment/tech(TechPostCommentService), news/tech(TechNewsService — 공개 조회: 복합 커서·categoryId 필터·라벨 조인. admin_* 세트 AdminTechNewsSourceService — 어드민 소스 CRUD /news/admin/tech/sources)

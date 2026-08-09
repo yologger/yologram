@@ -14,6 +14,7 @@
 - Rome (RSS/Atom 파싱), Readability4J + jsoup (원문 본문 추출·HTML 파싱)
 - Spring AI 1.1.8 (OpenAI 호환 ChatModel — Gemini flash-lite 1순위, Groq llama-3.3 fallback)
 - Spring Cloud AWS Parameter Store (설정 주입)
+- Spring Data Redis + Lettuce (api-v1 미러) — 뉴스 첫 페이지 캐시 무효화 발행 (요약 배치 시 키 전수 열거 UNLINK)
 - kotlin-logging (로깅)
 - OpenTelemetry (logs/metrics/traces → Grafana Cloud OTLP direct push)
 - Gradle (Kotlin DSL), Testcontainers(MySQL)
@@ -35,7 +36,7 @@
 
 - application.yaml: 공통 (database.main·cron·LLM 모델·Discord 채널 — 비밀값은 Parameter Store에서 주입)
 - application-local.yaml: 로컬 (포트 5003, OTLP 비활성, DB는 worker_local SSM)
-- application-prod.yaml: 프로덕션 (Parameter Store /yologram/service/yologram-worker_prod/ — OTLP 6·DB 6·LLM 키 2·Discord 웹훅 3)
+- application-prod.yaml: 프로덕션 (Parameter Store /yologram/service/yologram-worker_prod/ — OTLP 6·DB 6·LLM 키 2·Discord 웹훅 3·cache 1)
 
 ## 배포
 

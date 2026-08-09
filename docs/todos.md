@@ -9,7 +9,7 @@
 - [ ] (Cache) Redis(Valkey) 도입 — 대규모 트래픽 가정 하 캐시 예시 (포트폴리오: 가정→결정 근거를 done.md에 기록)
   - [x] 인프라: ElastiCache Valkey(valkey-prod, cache.t4g.micro — 서버리스도 검토했으나 인스턴스형 확정) apply·엔드포인트 SSM 등록(spring.data.redis.host) + 로컬 compose.yaml(valkey:8) (완료, done.md)
   - [x] 닉네임 캐시(api-v1·api-v2) — 레거시 infra/cache 스타일 이식 + v2 redis-py 미러(키·JSON 바이트 호환), UserNicknameCache 공용 cache-aside, 변경·탈퇴 시 DEL, prod env(CACHE_REDIS_HOST) tf 반영 (완료, done.md)
-  - [ ] 뉴스 첫 페이지 캐시 — GET /news/{section} 무커서 응답 통째(뉴스+매핑+라벨 3쿼리 제거), TTL 5분 or worker 무효화(cross-service). 커서 페이지는 캐시 제외
+  - [x] 뉴스 첫 페이지 캐시 — 무커서 응답 통째 cache-aside(TTL 3분) + worker 요약 시 키 전수 열거 UNLINK 무효화 (api-v1·v2·worker 완료, done.md)
   - [ ] 캐시 히트율·응답시간 지표 → Grafana (before/after 실측)
   - 장애 시나리오 명시: cache-aside라 Redis 다운 시 DB fallback(성능 저하, 가용성 유지). validate-token 등 auth 상태는 캐시 금지(INACTIVE 즉시 차단 무력화 — 의도적 비적용 기록)
   - 후속 확장(별항 연계): 재발송 rate limit·인증코드 TTL 이관·refresh token 저장소·좋아요 카운터·ShedLock
