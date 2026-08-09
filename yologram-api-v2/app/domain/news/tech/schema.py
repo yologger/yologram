@@ -14,11 +14,12 @@ class TechNewsResponse(BaseModel):
     title: str
     summary: str = Field(description="LLM 한국어 요약 (마크다운 형식)")
     link: str = Field(description="원문 링크")
-    source_name: str = Field(serialization_alias="sourceName", description="출처 (소스명)")
+    # alias는 직렬화(camelCase 응답)와 검증 양쪽에 사용 — 첫 페이지 캐시가 저장한 camelCase JSON을 model_validate로 복원
+    source_name: str = Field(alias="sourceName", description="출처 (소스명)")
     categories: list[str] = Field(
         description="카테고리 라벨 1~3개 (LLM 분류 — tech_category 마스터 기준)"
     )
-    published_at: datetime = Field(serialization_alias="publishedAt")
+    published_at: datetime = Field(alias="publishedAt")
 
     @classmethod
     def from_news(cls, news: TechNews, categories: list[str]) -> "TechNewsResponse":

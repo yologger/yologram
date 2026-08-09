@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from app.config.database import get_db
 from app.domain.news.tech.cursor import TechNewsCursor
 from app.domain.news.tech.model import TechNews, TechNewsCategoryMapping, TechNewsStatus
+from app.infra.cache.tech_news_first_page_cache import TechNewsFirstPageCache
 from app.main import app
 
 
@@ -31,8 +32,17 @@ class TestTechNewsRouter:
         self.mock_db = MagicMock()
         app.dependency_overrides[get_db] = lambda: self.mock_db
         self.client = TestClient(app)
+        # 첫 페이지 캐시는 mock CacheService(전체 미스)로 대체 — 실 Redis 접근 차단, DB 경로 그대로 검증
+        self.cache_service = MagicMock()
+        self.cache_service.get_or_null.return_value = None
+        self.cache_patcher = patch(
+            "app.domain.news.tech.service.TechNewsFirstPageCache",
+            return_value=TechNewsFirstPageCache(self.cache_service),
+        )
+        self.cache_patcher.start()
 
     def teardown_method(self):
+        self.cache_patcher.stop()
         app.dependency_overrides.clear()
 
     @patch("app.domain.news.tech.service.LocalCmsApiClient")

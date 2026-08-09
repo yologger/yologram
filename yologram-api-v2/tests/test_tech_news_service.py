@@ -7,6 +7,7 @@ from app.core.exception import InvalidCursorException
 from app.domain.news.tech.cursor import TechNewsCursor
 from app.domain.news.tech.model import TechNews, TechNewsCategoryMapping, TechNewsStatus
 from app.domain.news.tech.service import MAX_PAGE_SIZE, TechNewsService
+from app.infra.cache.tech_news_first_page_cache import TechNewsFirstPageCache
 
 
 def _news(news_id: int, published_at: datetime = datetime(2026, 7, 18, 9, 0)) -> TechNews:
@@ -47,7 +48,12 @@ class TestTechNewsService:
         self.repo_patcher.start()
         self.mapping_patcher.start()
         self.category_patcher.start()
-        self.service = TechNewsService(MagicMock())
+        # 첫 페이지 캐시는 mock CacheService(전체 미스)로 주입 — 기존 테스트는 DB 경로 그대로 검증
+        self.cache_service = MagicMock()
+        self.cache_service.get_or_null.return_value = None
+        self.service = TechNewsService(
+            MagicMock(), first_page_cache=TechNewsFirstPageCache(self.cache_service)
+        )
 
     def teardown_method(self):
         self.repo_patcher.stop()
@@ -143,3 +149,52 @@ class TestTechNewsService:
 
         self.service.get_news_by_cursor(category_id=None, cursor=None, size=-1)
         self.news_repo.find_summarized_news.assert_called_with(None, None, 1)
+
+    # --- 첫 페이지 캐시 (worker UNLINK 무효화 — 조회는 페이지 키 GET 1회) ---
+
+    def test_커서가_없으면_첫_페이지_캐시를_경유한다__미스면_저장(self):
+        self.news_repo.find_summarized_news.return_value = [_news(1)]
+
+        self.service.get_news_by_cursor(category_id=None, cursor=None, size=20)
+
+        # 조회는 페이지 키 GET 1회 (버전 키 간접층 없음), size는 정규화 값
+        keys = [call.args[0].key for call in self.cache_service.get_or_null.call_args_list]
+        assert keys == ["news:tech:v1:first-page:all:20"]
+        (set_cache, set_value), _ = self.cache_service.set.call_args
+        assert set_cache.key == "news:tech:v1:first-page:all:20"
+        assert set_value["data"][0]["title"] == "제목 1"
+
+    def test_첫_페이지_캐시_히트면_리포지토리를_조회하지_않는다(self):
+        cached = {
+            "data": [
+                {
+                    "id": 1,
+                    "title": "캐시 제목",
+                    "summary": "캐시 요약",
+                    "link": "https://a/1",
+                    "sourceName": "테크 블로그",
+                    "categories": ["Backend"],
+                    "publishedAt": "2026-07-18T14:23:50",
+                }
+            ],
+            "nextCursor": "커서",
+        }
+        self.cache_service.get_or_null.side_effect = lambda cache: (
+            cached if cache.key == "news:tech:v1:first-page:all:20" else None
+        )
+
+        result = self.service.get_news_by_cursor(category_id=None, cursor=None, size=20)
+
+        assert result.data[0].title == "캐시 제목"
+        assert result.next_cursor == "커서"
+        self.news_repo.find_summarized_news.assert_not_called()
+        self.cache_service.set.assert_not_called()
+
+    def test_커서가_있으면_캐시를_경유하지_않는다(self):
+        self.news_repo.find_summarized_news.return_value = []
+        cursor = TechNewsCursor.encode(datetime(2026, 7, 18, 9, 0), 42)
+
+        self.service.get_news_by_cursor(category_id=None, cursor=cursor, size=20)
+
+        self.cache_service.get_or_null.assert_not_called()
+        self.cache_service.set.assert_not_called()
