@@ -202,6 +202,16 @@ resource "aws_ssm_parameter" "llm_groq_api_key_prod" {
   }
 }
 
+resource "aws_ssm_parameter" "cache_redis_host_prod" {
+  name  = "/yologram/service/yologram-worker_prod/cache.data.redis.host"
+  type  = "String"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 ###################################
 ## SSM Parameter Store (DB prod) ##
 ###################################
