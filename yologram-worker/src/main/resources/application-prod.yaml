@@ -3,6 +3,12 @@ spring:
     import:
       - 'aws-parameterstore:/yologram/service/yologram-worker_prod/'
 
+cache:
+  data:
+    redis:
+      host:  # Parameter Store 주입 (/yologram/service/yologram-worker_prod/cache.data.redis.host)
+      port: 6379
+
 # Parameter Store 주입 (/yologram/service/yologram-worker_prod/database.main.*)
 database:
   main:

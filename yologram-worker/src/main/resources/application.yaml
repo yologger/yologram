@@ -7,6 +7,14 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+cache:
+  data:
+    redis:
+      host:
+      port: 6379
 
 database:
   main:
@@ -63,6 +71,12 @@ yologram:
         enabled: false
 
 management:
+  # 캐시는 부가 기능 — Redis 장애가 서비스 health DOWN(ECS 태스크 교체·CI health 테스트 실패)으로
+  # 전파되지 않도록 Redis health indicator 비활성. Redis 자동구성은 exclude했지만 actuator의
+  # RedisHealthContributorAutoConfiguration은 별개라 수동 RedisConnectionFactory 빈만으로 활성화됨
+  health:
+    redis:
+      enabled: false
   tracing:
     sampling:
       probability: 1.0

@@ -33,6 +33,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     runtimeOnly("com.mysql:mysql-connector-j")
 
+    // Redis(Valkey) — 캐시 무효화 발행 (Lettuce, 수동 빈 구성은 RedisConfig — api-v1 미러)
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+
     // RSS 파싱
     implementation("com.rometools:rome:2.1.0")
 

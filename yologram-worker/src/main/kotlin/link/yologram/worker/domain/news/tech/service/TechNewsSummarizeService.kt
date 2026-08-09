@@ -8,6 +8,7 @@ import link.yologram.worker.domain.news.tech.entity.TechNewsCategoryMapping
 import link.yologram.worker.domain.news.tech.repository.TechNewsCategoryMappingRepository
 import link.yologram.worker.domain.news.tech.repository.TechNewsRepository
 import link.yologram.worker.global.discord.DiscordNotifier
+import link.yologram.worker.infra.cache.TechNewsFirstPageCacheInvalidator
 import link.yologram.worker.infra.client.cms.CmsApiClient
 import link.yologram.worker.infra.client.cms.TechCategory
 import link.yologram.worker.global.llm.LlmClient
@@ -28,6 +29,7 @@ class TechNewsSummarizeService(
     private val llmClient: LlmClient,
     private val discordNotifier: ObjectProvider<DiscordNotifier>,
     private val transactionOperations: TransactionOperations,
+    private val cacheInvalidator: TechNewsFirstPageCacheInvalidator,
 ) {
 
     /**
@@ -89,6 +91,12 @@ class TechNewsSummarizeService(
                 techNewsRepository.save(news)
             }
         }
+
+        // 첫 페이지 캐시 삭제 — SUMMARIZED 전환이 1건 이상일 때만 배치당 1회 (건별 아님).
+        // 키 열거 스코프는 all + 활성 카테고리(vocabulary — 배치 초에 로드된 tech_category 마스터).
+        // 건별 트랜잭션은 루프 안(transactionOperations)에서 이미 커밋됐으므로 이 시점의 삭제는 항상 커밋 이후.
+        // 실패는 Invalidator가 삼킴 — FAILED만 나온 배치·전환 0건 배치는 호출하지 않음
+        if (summarized > 0) cacheInvalidator.clear(vocabulary.map { it.id })
 
         logger.info { "테크 뉴스 요약 배치 완료: targets=${targets.size} summarized=$summarized failed=$failed" }
         return SummarizeResult(targetCount = targets.size, summarizedCount = summarized, failedCount = failed)

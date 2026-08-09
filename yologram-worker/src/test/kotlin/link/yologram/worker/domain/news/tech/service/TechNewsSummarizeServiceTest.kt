@@ -7,6 +7,7 @@ import link.yologram.worker.domain.news.tech.entity.TechNewsCategoryMapping
 import link.yologram.worker.domain.news.tech.repository.TechNewsCategoryMappingRepository
 import link.yologram.worker.domain.news.tech.repository.TechNewsRepository
 import link.yologram.worker.global.discord.DiscordNotifier
+import link.yologram.worker.infra.cache.TechNewsFirstPageCacheInvalidator
 import link.yologram.worker.infra.client.cms.CmsApiClient
 import link.yologram.worker.infra.client.cms.TechCategory
 import link.yologram.worker.global.llm.LlmClient
@@ -49,6 +50,8 @@ class TechNewsSummarizeServiceTest {
     // 콜백을 즉시 실행하는 트랜잭션 목 (실제 트랜잭션 경계는 통합 환경에서 검증)
     private val transactionOperations: TransactionOperations = TransactionOperations.withoutTransaction()
 
+    private val cacheInvalidator: TechNewsFirstPageCacheInvalidator = mock()
+
     init {
         @Suppress("UNCHECKED_CAST")
         org.mockito.kotlin.doAnswer { (it.arguments[0] as java.util.function.Consumer<DiscordNotifier>).accept(notifier) }
@@ -63,6 +66,7 @@ class TechNewsSummarizeServiceTest {
         llmClient,
         notifierProvider,
         transactionOperations,
+        cacheInvalidator,
     )
 
     private fun news(id: Long = 1, link: String = "https://a/$id", retryCount: Int = 0) = TechNews(
@@ -266,6 +270,98 @@ class TechNewsSummarizeServiceTest {
 
         assertEquals(0, result.targetCount)
         verify(techNewsRepository, never()).save(any())
+    }
+
+    @Test
+    fun `SUMMARIZED 전환이 1건 이상이면 첫 페이지 캐시를 배치당 1회만 삭제한다`() {
+        val first = news(id = 1)
+        val second = news(id = 2)
+        stubTargets(first, second)
+        whenever(newsContentCrawler.fetch(any())).thenReturn("본문")
+        whenever(llmClient.complete(any())).thenReturn(LlmCompletion("gemini", "요약"))
+
+        service.summarize()
+
+        // 전환 2건이어도 삭제는 배치 단위 1회 (건별 아님). 키 열거 스코프는 활성 카테고리 마스터 전체
+        verify(cacheInvalidator, org.mockito.kotlin.times(1)).clear(org.mockito.kotlin.check {
+            assertEquals(setOf(2L, 4L, 7L), it.toSet())
+        })
+    }
+
+    @Test
+    fun `일부만 성공한 배치도 캐시를 1회 삭제한다`() {
+        val failing = news(id = 1)
+        val healthy = news(id = 2)
+        stubTargets(failing, healthy)
+        whenever(newsContentCrawler.fetch(failing.link)).doThrow(RuntimeException("timeout"))
+        whenever(newsContentCrawler.fetch(healthy.link)).thenReturn("본문")
+        whenever(llmClient.complete(any())).thenReturn(LlmCompletion("groq", "요약"))
+
+        service.summarize()
+
+        verify(cacheInvalidator, org.mockito.kotlin.times(1)).clear(any())
+    }
+
+    @Test
+    fun `요약 대상이 없으면 캐시를 삭제하지 않는다`() {
+        stubTargets()
+
+        service.summarize()
+
+        verify(cacheInvalidator, never()).clear(any())
+    }
+
+    @Test
+    fun `전환 0건(전부 재시도 실패) 배치는 캐시를 삭제하지 않는다`() {
+        val target = news()
+        stubTargets(target)
+        whenever(newsContentCrawler.fetch(target.link)).doThrow(RuntimeException("timeout"))
+
+        service.summarize()
+
+        verify(cacheInvalidator, never()).clear(any())
+    }
+
+    @Test
+    fun `전부 FAILED로 확정된 배치는 캐시를 삭제하지 않는다`() {
+        val target = news(retryCount = TechNewsSummarizeService.MAX_RETRY - 1)
+        stubTargets(target)
+        whenever(newsContentCrawler.fetch(target.link)).doThrow(RuntimeException("403 Forbidden"))
+
+        service.summarize()
+
+        assertEquals(TechNewsStatus.FAILED, target.status)
+        verify(cacheInvalidator, never()).clear(any())
+    }
+
+    @Test
+    fun `캐시 삭제가 실패해도 배치 결과는 정상이다`() {
+        // 실제 Invalidator + Redis 예외를 던지는 템플릿 — runCatching이 삼키는 실동작 검증
+        val stringRedisTemplate: org.springframework.data.redis.core.StringRedisTemplate = mock {
+            on { unlink(any<Collection<String>>()) } doThrow
+                org.springframework.data.redis.RedisConnectionFailureException("connection refused")
+        }
+        val serviceWithRealInvalidator = TechNewsSummarizeService(
+            techNewsRepository,
+            techNewsCategoryMappingRepository,
+            cmsApiClient,
+            newsContentCrawler,
+            llmClient,
+            notifierProvider,
+            transactionOperations,
+            TechNewsFirstPageCacheInvalidator(stringRedisTemplate),
+        )
+        val target = news()
+        stubTargets(target)
+        whenever(newsContentCrawler.fetch(target.link)).thenReturn("본문")
+        whenever(llmClient.complete(any())).thenReturn(LlmCompletion("gemini", "요약"))
+
+        val result = serviceWithRealInvalidator.summarize()
+
+        assertEquals(1, result.summarizedCount)
+        assertEquals(0, result.failedCount)
+        assertEquals(TechNewsStatus.SUMMARIZED, target.status)
+        verify(stringRedisTemplate).unlink(any<Collection<String>>())
     }
 
     @Test

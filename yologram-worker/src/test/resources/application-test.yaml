@@ -1,3 +1,11 @@
+# 테스트는 Redis 미기동 전제 — Lettuce는 lazy connection이라 부팅에 Redis가 필요 없고,
+# INCR 실패는 TechNewsFirstPageCacheInvalidator의 runCatching이 삼킨다 (api-v1 패턴)
+cache:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 # 테스트: Testcontainers MySQL + 스키마 자동 생성 (create-drop, api-v1 패턴)
 database:
   main:
