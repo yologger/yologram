@@ -60,6 +60,11 @@ springdoc:
     path: /api/v1/api-docs
 
 management:
+  # 캐시는 부가 기능 — Redis 장애가 서비스 health DOWN으로 전파되지 않도록 Redis health indicator 비활성
+  # (Redis 자동구성 exclude와 별개로 actuator RedisHealthContributorAutoConfiguration이 수동 빈으로 활성화됨)
+  health:
+    redis:
+      enabled: false
   tracing:
     sampling:
       probability: 1.0

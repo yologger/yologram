@@ -6,7 +6,8 @@ spring:
 cache:
   data:
     redis:
-      host:
+      host:  # Parameter Store 주입 (/yologram/service/yologram-api-v1_prod/cache.data.redis.host)
+      port: 6379
 
 database:
   main:

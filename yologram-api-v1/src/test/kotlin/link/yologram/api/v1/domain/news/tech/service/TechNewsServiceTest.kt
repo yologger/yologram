@@ -7,15 +7,22 @@ import link.yologram.api.v1.domain.news.tech.model.TechNewsCursor
 import link.yologram.api.v1.domain.news.tech.entity.TechNewsCategoryMapping
 import link.yologram.api.v1.domain.news.tech.repository.TechNewsCategoryMappingRepository
 import link.yologram.api.v1.domain.news.tech.repository.TechNewsRepository
+import link.yologram.api.v1.domain.news.tech.model.TechNewsResponse
+import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
+import link.yologram.api.v1.infra.cache.Cache
+import link.yologram.api.v1.infra.cache.CacheService
+import link.yologram.api.v1.infra.cache.TechNewsFirstPageCache
 import link.yologram.api.v1.infra.client.cms.CmsApiClient
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.time.LocalDateTime
 import kotlin.test.assertEquals
@@ -26,7 +33,8 @@ class TechNewsServiceTest {
     private val techNewsRepository: TechNewsRepository = mock()
     private val mappingRepository: TechNewsCategoryMappingRepository = mock()
     private val cmsApiClient: CmsApiClient = mock()
-    private val service = TechNewsService(techNewsRepository, mappingRepository, cmsApiClient)
+    private val cacheService: CacheService = mock() // 기본 스텁이 null(전체 미스)이라 기존 테스트는 DB 경로 그대로
+    private val service = TechNewsService(techNewsRepository, mappingRepository, cmsApiClient, TechNewsFirstPageCache(cacheService))
 
     init {
         whenever(mappingRepository.findByNewsIdIn(any())).thenReturn(emptyList())
@@ -125,5 +133,42 @@ class TechNewsServiceTest {
 
         service.getNewsByCursor(categoryId = null, cursor = null, size = -1)
         verify(techNewsRepository).findSummarizedNews(anyOrNull(), anyOrNull(), eq(1))
+    }
+
+    @Test
+    fun `cursor가 있으면 캐시를 경유하지 않는다`() {
+        val cursor = TechNewsCursor.encode(LocalDateTime.of(2026, 7, 18, 9, 0), 42L)
+        whenever(techNewsRepository.findSummarizedNews(anyOrNull(), anyOrNull(), any())).thenReturn(emptyList())
+
+        service.getNewsByCursor(categoryId = null, cursor = cursor, size = 20)
+
+        verifyNoInteractions(cacheService)
+    }
+
+    @Test
+    fun `cursor가 없으면 캐시를 경유하고 미스 시 결과를 캐시에 저장한다`() {
+        whenever(techNewsRepository.findSummarizedNews(anyOrNull(), anyOrNull(), any())).thenReturn(emptyList())
+
+        service.getNewsByCursor(categoryId = null, cursor = null, size = 20)
+
+        // categoryId null(all) — coerce된 size가 키에 반영
+        verify(cacheService).set(
+            argThat<Cache<ApiEnvelopCursorPage<TechNewsResponse>>> { key == Cache.techNewsFirstPage(null, 20).key },
+            any(),
+        )
+    }
+
+    @Test
+    fun `cursor가 없고 캐시 히트면 DB를 조회하지 않는다`() {
+        val cached = ApiEnvelopCursorPage<TechNewsResponse>(data = emptyList(), nextCursor = null)
+        whenever(cacheService.getOrNull(any<Cache<Any>>())).thenAnswer { invocation ->
+            val key = invocation.getArgument<Cache<*>>(0).key
+            if (key == Cache.techNewsFirstPage(null, 20).key) cached else null
+        }
+
+        val result = service.getNewsByCursor(categoryId = null, cursor = null, size = 20)
+
+        assertEquals(cached, result)
+        verify(techNewsRepository, never()).findSummarizedNews(anyOrNull(), anyOrNull(), any())
     }
 }
