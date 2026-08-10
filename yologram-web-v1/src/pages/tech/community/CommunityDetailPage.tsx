@@ -182,6 +182,8 @@ export default function CommunityDetailPage() {
           message.success('댓글이 등록되었습니다.')
           // 목록 무효화 → 작성한 댓글이 최신순 맨 위에 반영
           queryClient.invalidateQueries({ queryKey: ['comments', 'tech', id] })
+          // 게시글 무효화 → commentCount 갱신 (서버가 카운트 테이블 조인으로 실값 반환)
+          queryClient.invalidateQueries({ queryKey: ['post', 'tech', id] })
         },
         onError: () => {
           // reject를 남기면 unhandled rejection이 되므로 토스트만 띄우고 안전하게 종료
@@ -240,6 +242,8 @@ export default function CommunityDetailPage() {
                 message.success('댓글이 삭제되었습니다.')
                 // 목록 무효화 → 삭제 반영
                 queryClient.invalidateQueries({ queryKey: ['comments', 'tech', id] })
+                // 게시글 무효화 → commentCount 갱신
+                queryClient.invalidateQueries({ queryKey: ['post', 'tech', id] })
                 resolve()
               },
               onError: () => {
