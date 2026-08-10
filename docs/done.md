@@ -170,6 +170,12 @@
   - TTL 3분 = 보험·낡음 상한: 삭제 실패(Redis 순단·worker 다운)와 레이스(API가 커밋 전 옛 목록을 읽고 worker 삭제 직후 SET — 좀비 부활, 창 수십 ms) 수용 근거. 뉴스 생성 주기(수집 10분·요약 5분) ≥ TTL이라 체감 무해. 무효화 직후 미스 동시 유입(stampede)은 현 규모 무해 — 대규모 시 singleflight(SETNX 뮤텍스)·stale-while-revalidate 카드
   - 인프라·로컬: worker_prod SSM cache.data.redis.host tf apply+값 등록(worker는 spring.config.import 프리픽스 로드라 task def 무변경, Valkey SG는 VPC CIDR 허용이라 SG 변경 불필요). 로컬 Redis는 brew redis 16379로 일원화(v1·worker application-local.yaml, v2 .env CACHE_REDIS_HOST/PORT — compose valkey 6379는 미사용 전환)
   - 테스트: api-v1 캐시 5·서비스 3(전체 통과) / api-v2 캐시 7·서비스 3(총 356) / worker Invalidator 4·배치 연동 6(전체 통과). 키 스킴·TTL을 테스트로 계약 고정
+- [x] (Search) 섹션 검색 UI — web-v1·web-v2 (백엔드 미연동, saveticker.com/news 참고)
+  - 배치: SubTabLayout의 타이틀("기술")과 탭 사이에 검색바(콘텐츠 전체 폭) — 데스크탑 인라인 Input(돋보기 prefix·allowClear·placeholder "검색어를 입력하세요"), 모바일(useIsMobile 768px)은 타이틀 행 우상단 돋보기 버튼 → 검색 오버레이(← 뒤로 + autoFocus, ESC 닫힘). collapseOnScroll 헤더에 포함돼 스크롤 시 함께 숨김. 세 섹션(tech/invest/politics) 자동 적용
+  - 동작: Enter 시 trim·빈 값 무시, /{section}/keywords/{encodeURIComponent(키워드)} 이동. 키워드 페이지는 "'제미나이' 검색결과" placeholder 텍스트 + 재검색 바(initialValue) — 결과 목록은 검색 백엔드(todos Search 트랙)에서 연동
+  - web-v2 라우트 재구성: 키워드 페이지가 섹션 레이아웃에 중첩되면 검색바 이중 렌더·ComingSoon 가로채기 문제 → tech·invest·politics 탭 경로를 (tabs) route group으로 이동해 keywords/를 레이아웃 밖 독립 라우트로 (URL 전부 불변). 루트 /invest·/politics는 (tabs) 밖이 되므로 page가 직접 ComingSoon 렌더
+  - 키워드 인코딩: web-v1은 useParams 자동 디코딩, web-v2는 인코딩 상태로 와서 decodeURIComponent(실패 시 원본 폴백)
+  - 테스트: web-v1 신규 21(총 176) / web-v2 신규 22(총 175) — 인코딩·빈 입력 무시·오버레이 열림/닫힘·placeholder 렌더. antd Tabs 렌더 테스트용 ResizeObserver 스텁을 양쪽 setup.ts에 추가(jsdom 미지원)
 - [x] (UMS/Admin) 어드민 활성/비활성 — OWNER 전용 상태 토글 (api-v1·v2 + admin-web)
   - PATCH /ums/admin/admin-users/{id}/status {status: ACTIVE|INACTIVE(그 외 400)} — 첫 role 기반 인가: 요청자 비-OWNER 403 ADMIN_ROLE_FORBIDDEN, 대상 OWNER 400 ADMIN_USER_OWNER_IMMUTABLE(요청자가 OWNER뿐이라 자기 자신 자동 차단), 검사 순서 403→404→400
   - INACTIVE 실효성: 로그인·validate-token에서 403 ADMIN_USER_INACTIVE — 로그인은 비밀번호 검증 후 체크(계정 존재 노출 최소화, 비번 오류가 먼저 401)

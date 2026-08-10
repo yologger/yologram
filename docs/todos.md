@@ -26,6 +26,7 @@
   - [ ] 검색 인덱서(yologram-search-indexer): pms 변경 이벤트 → OpenSearch 동기화
   - [ ] 검색 API(yologram-search-api): 키워드/카테고리/섹션 검색·필터·정렬·집계
   - [ ] 프론트 이관: 공개 다건 탐색 → search (단건·쓰기·내 글은 pms 유지)
+  - [ ] 키워드 검색 실데이터 연동 — web-v1/v2 검색바·/{section}/keywords/{키워드} 페이지(placeholder 구현 완료, done.md)에 결과 목록 연결. 1차 DB LIKE(pms/news q 파라미터) 또는 OpenSearch 도입과 함께 결정
   - pms vs search 호출 기준: 단건 정확 조회·쓰기·"내 것"(개인화+권한) = pms / 공개 다건 탐색(키워드·카테고리·섹션 목록·필터·정렬·집계) = search
   - CQRS: pms = 쓰기 원본(MySQL, 권한·개인화) / search = 읽기 최적화(OpenSearch). 동기화는 pms 쓰기 → 변경 이벤트(SQS/Kinesis) → indexer가 MySQL 읽어 문서화 → OpenSearch 인덱싱 (최종 일관성)
   - QueryDSL vs search 역할: QueryDSL은 관계형 복잡성(권한 한정 "내 것/정확"), search는 탐색 복잡성(풀텍스트·연관도·패싯, 공개 카탈로그 발견)

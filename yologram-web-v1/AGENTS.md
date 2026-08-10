@@ -14,6 +14,8 @@ React 기반 하이브리드 웹앱. 투자/정치/기술 서비스를 반응형
 - src/components/auth/RequireAuth.tsx: 보호 라우트 인증 가드
 - src/components/layout/ResponsiveLayout.tsx: 반응형 레이아웃 분기
 - src/components/common/SubTabLayout.tsx: 서브탭 공통 레이아웃
+- src/components/common/SearchBar.tsx: 섹션 검색바 — 데스크탑 인라인 / 모바일 돋보기→오버레이, Enter 시 /{section}/keywords/{키워드} 이동 (백엔드 미연동)
+- src/pages/search/KeywordSearchPage.tsx: 키워드 검색 결과 placeholder 페이지 (섹션 공용, 라우트 3개)
 - src/components/common/FilterChips.tsx: 필터 칩 공통 컴포넌트
 - src/hooks/useIsMobile.ts: 모바일 판별 훅
 
