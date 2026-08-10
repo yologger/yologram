@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, afterAll } 
 import { act, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { renderWithProviders } from '../../../../test/utils'
-import { server } from '../../../../test/server'
+import { renderWithProviders } from '../../../../../test/utils'
+import { server } from '../../../../../test/server'
 import TechNews from './page'
 
 type IOCallback = (entries: Array<{ isIntersecting: boolean }>) => void

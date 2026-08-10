@@ -3,6 +3,7 @@
 import { Tabs, Typography } from 'antd'
 import { usePathname, useRouter } from 'next/navigation'
 import useScrollDirection from '@/hooks/useScrollDirection'
+import SearchBar from './SearchBar'
 import styles from './SubTabLayout.module.css'
 
 interface Tab {
@@ -28,8 +29,10 @@ export default function SubTabLayout({ basePath, tabs, title, children, collapse
 
   return (
     <div>
-      <div className={`${collapseOnScroll ? styles.header : ''} ${hidden ? styles.headerHidden : ''}`}>
+      <div className={`${styles.headerWrap} ${collapseOnScroll ? styles.header : ''} ${hidden ? styles.headerHidden : ''}`}>
         <Typography.Title level={3}>{title}</Typography.Title>
+        {/* 타이틀과 탭 사이 검색바(모바일은 돋보기 버튼이 타이틀 행 오른쪽 상단에 뜸) */}
+        <SearchBar basePath={basePath} />
         <Tabs
           activeKey={activeKey}
           onChange={(key) => router.push(`${basePath}/${key}`)}

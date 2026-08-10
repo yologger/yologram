@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, afterAll } 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { getDefaultStore } from 'jotai'
-import { renderWithProviders } from '../../../../../test/utils'
-import { server } from '../../../../../test/server'
+import { renderWithProviders } from '../../../../../../test/utils'
+import { server } from '../../../../../../test/server'
 import { authAtom } from '@/stores/auth'
 import CommunityWrite from './page'
 

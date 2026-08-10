@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeAll, afterEach, afterAll } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderWithProviders } from '../../../../test/utils'
-import { server } from '../../../../test/server'
+import { renderWithProviders } from '../../../../../test/utils'
+import { server } from '../../../../../test/server'
 import TechCommunity from './page'
 
 const mockPush = vi.fn()

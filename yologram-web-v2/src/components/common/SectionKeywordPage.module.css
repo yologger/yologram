@@ -1,0 +1,9 @@
+/* 모바일 돋보기 버튼(absolute)의 기준 컨테이너 */
+.container {
+  position: relative;
+}
+
+.result {
+  display: block;
+  margin-top: 12px;
+}

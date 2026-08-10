@@ -7,7 +7,7 @@ import { MAX_POST_CATEGORIES } from '@/constants/community'
 import MultiSelectChips from '@/components/common/MultiSelectChips'
 import { type ChipItem } from '@/components/common/FilterChips'
 import usePostCategoriesQuery from '@/queries/usePostCategoriesQuery'
-import styles from '@/app/(main)/tech/community/write/CommunityWrite.module.css'
+import styles from '@/app/(main)/tech/(tabs)/community/write/CommunityWrite.module.css'
 
 export interface CommunityPostFormValues {
   title: string
