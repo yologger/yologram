@@ -24,6 +24,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.Optional
@@ -61,6 +62,17 @@ class TechPostCommentServiceTest {
         }
 
         @Test
+        fun `작성 성공 시 게시글 댓글 수를 1회 증가시킨다`() {
+            whenever(pmsApiClient.exists(100L)).thenReturn(true)
+            whenever(commentRepository.save(any<TechPostComment>())).thenReturn(comment(10L))
+
+            commentService.create(100L, 1L, CreateTechPostCommentRequest(content = "좋은 글"))
+
+            verify(pmsApiClient, times(1)).increasePostCommentCount(100L)
+            verify(pmsApiClient, never()).decreasePostCommentCount(any())
+        }
+
+        @Test
         fun `대상 글이 없으면 TargetTechPostNotFoundException을 던진다`() {
             whenever(pmsApiClient.exists(999L)).thenReturn(false)
 
@@ -69,6 +81,17 @@ class TechPostCommentServiceTest {
             }
 
             verify(commentRepository, never()).save(any<TechPostComment>())
+        }
+
+        @Test
+        fun `작성 실패(대상 글 없음) 시 댓글 수를 증가시키지 않는다`() {
+            whenever(pmsApiClient.exists(999L)).thenReturn(false)
+
+            assertThrows<TargetTechPostNotFoundException> {
+                commentService.create(999L, 1L, CreateTechPostCommentRequest(content = "좋은 글"))
+            }
+
+            verify(pmsApiClient, never()).increasePostCommentCount(any())
         }
     }
 
@@ -83,6 +106,16 @@ class TechPostCommentServiceTest {
             commentService.update(1L, 1L, UpdateTechPostCommentRequest(content = "수정됨"))
 
             assertEquals("수정됨", target.content)
+        }
+
+        @Test
+        fun `수정은 댓글 수를 변경하지 않는다`() {
+            whenever(commentRepository.findById(1L)).thenReturn(Optional.of(comment(1L, userId = 1L)))
+
+            commentService.update(1L, 1L, UpdateTechPostCommentRequest(content = "수정됨"))
+
+            verify(pmsApiClient, never()).increasePostCommentCount(any())
+            verify(pmsApiClient, never()).decreasePostCommentCount(any())
         }
 
         @Test
@@ -118,6 +151,16 @@ class TechPostCommentServiceTest {
         }
 
         @Test
+        fun `삭제 성공 시 대상 글의 댓글 수를 1회 감소시킨다`() {
+            whenever(commentRepository.findById(1L)).thenReturn(Optional.of(comment(1L, postId = 100L, userId = 1L)))
+
+            commentService.delete(1L, 1L)
+
+            verify(pmsApiClient, times(1)).decreasePostCommentCount(100L)
+            verify(pmsApiClient, never()).increasePostCommentCount(any())
+        }
+
+        @Test
         fun `존재하지 않는 댓글이면 TechPostCommentNotFoundException을 던진다`() {
             whenever(commentRepository.findById(99L)).thenReturn(Optional.empty())
 
@@ -126,6 +169,7 @@ class TechPostCommentServiceTest {
             }
 
             verify(commentRepository, never()).delete(any<TechPostComment>())
+            verify(pmsApiClient, never()).decreasePostCommentCount(any())
         }
 
         @Test
@@ -137,6 +181,7 @@ class TechPostCommentServiceTest {
             }
 
             verify(commentRepository, never()).delete(any<TechPostComment>())
+            verify(pmsApiClient, never()).decreasePostCommentCount(any())
         }
     }
 

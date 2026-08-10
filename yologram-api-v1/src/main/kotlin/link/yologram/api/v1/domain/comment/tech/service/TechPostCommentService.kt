@@ -43,6 +43,11 @@ class TechPostCommentService(
                 content = request.content!!,
             )
         )
+
+        // 게시글 소유 카운트(tech_post_comment_count) +1 — PmsApiClient 경계로 위임.
+        // 같은 트랜잭션이라 댓글 저장과 카운트 증가가 원자적으로 커밋/롤백된다
+        pmsApiClient.increasePostCommentCount(postId)
+
         return CreateTechPostCommentResponse(id = comment.id)
     }
 
@@ -65,6 +70,10 @@ class TechPostCommentService(
         if (comment.userId != userId) throw TechPostCommentForbiddenException()
 
         commentRepository.delete(comment)
+
+        // 게시글 소유 카운트(tech_post_comment_count) -1 — PmsApiClient 경계로 위임.
+        // 같은 트랜잭션이라 댓글 삭제와 카운트 감소가 원자적으로 커밋/롤백된다 (0 미만 방지는 쿼리에서)
+        pmsApiClient.decreasePostCommentCount(comment.postId)
     }
 
     /**

@@ -114,7 +114,9 @@ class TechPostService(
     // 게시글 단건 조회
     @Transactional(readOnly = true)
     fun getPost(id: Long): TechPostDetailResponse {
-        val post = postRepository.findByIdOrNull(id) ?: throw TechPostNotFoundException()
+        // 댓글 수는 tech_post_comment_count leftJoin + coalesce(0) — count row가 없으면 0
+        val postWithCount = postRepository.findPostWithCommentCount(id) ?: throw TechPostNotFoundException()
+        val post = postWithCount.post
 
         val categoryIds = postCategoryMappingRepository.findByPostId(post.id).map { it.categoryId }
         val nickname = umsApiClient.findNickname(post.userId)
@@ -126,7 +128,7 @@ class TechPostService(
             content = post.content,
             categoryIds = categoryIds,
             likeCount = post.likeCount,
-            commentCount = post.commentCount,
+            commentCount = postWithCount.commentCount.toInt(),
             createdAt = post.createdAt,
         )
     }
@@ -143,20 +145,22 @@ class TechPostService(
         // 2) cursor 디코딩: 직전 페이지의 마지막 글 id. 없으면 null(첫 페이지). 깨진 값이면 InvalidTechPostCursorException(400)
         val cursorId = cursor?.let { TechPostCursor.decode(it) }
 
-        // 3) 목록 조회: categoryId 있으면 EXISTS 필터 + id < cursorId, id desc, pageSize개
+        // 3) 목록 조회: categoryId 있으면 EXISTS 필터 + id < cursorId, id desc, pageSize개.
+        //    댓글 수는 tech_post_comment_count leftJoin + coalesce(0)로 함께 조회 (1:1이라 커서 영향 없음)
         val posts = postRepository.findPosts(categoryId, cursorId, pageSize)
 
         // 4) 작성자 닉네임 배치 조회 (N+1 회피): 글들의 userId를 모아 ums에 1번 질의 → uid→nickname Map
         //    UmsApiClient로 ums 경계를 추상화(MSA 분리 대비). 모놀리식은 users 직접 조회
-        val nicknames = umsApiClient.findNicknames(posts.map { it.userId })
+        val nicknames = umsApiClient.findNicknames(posts.map { it.post.userId })
 
         // 5) 카테고리 배치 조회 (N+1 회피): postId들을 모아 1번 질의 후 postId→categoryId 리스트로 그룹핑
         //    글:카테고리는 1:N이라 목록 join 시 row가 불어나 limit이 깨짐 → 별도 IN 조회
-        val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.id })
+        val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.post.id })
             .groupBy({ it.postId }, { it.categoryId })
 
         // 6) DTO 매핑: 4·5에서 만든 Map에서 닉네임·카테고리를 꺼내 TechPostSummaryResponse로 변환
-        val data = posts.map { post ->
+        val data = posts.map { postWithCount ->
+            val post = postWithCount.post
             TechPostSummaryResponse(
                 id = post.id,
                 author = TechPostDetailResponse.Author(uid = post.userId, nickname = nicknames[post.userId]),
@@ -164,13 +168,13 @@ class TechPostService(
                 content = post.content,
                 categoryIds = categoryIdsByPost[post.id] ?: emptyList(),
                 likeCount = post.likeCount,
-                commentCount = post.commentCount,
+                commentCount = postWithCount.commentCount.toInt(),
                 createdAt = post.createdAt,
             )
         }
 
         // 7) 다음 커서: 마지막(가장 과거) 글 id를 인코딩. 빈 결과면 null → 클라이언트는 빈 응답으로 끝을 판단
-        val nextCursor = posts.lastOrNull()?.let { TechPostCursor.encode(it.id) }
+        val nextCursor = posts.lastOrNull()?.let { TechPostCursor.encode(it.post.id) }
 
         return ApiEnvelopCursorPage(data = data, nextCursor = nextCursor)
     }
@@ -187,11 +191,12 @@ class TechPostService(
         val totalCount = postRepository.countPosts(categoryId)
         val posts = postRepository.findPosts(categoryId, offset, pageSize)
 
-        val nicknames = umsApiClient.findNicknames(posts.map { it.userId })
-        val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.id })
+        val nicknames = umsApiClient.findNicknames(posts.map { it.post.userId })
+        val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.post.id })
             .groupBy({ it.postId }, { it.categoryId })
 
-        val data = posts.map { post ->
+        val data = posts.map { postWithCount ->
+            val post = postWithCount.post
             TechPostSummaryResponse(
                 id = post.id,
                 author = TechPostDetailResponse.Author(uid = post.userId, nickname = nicknames[post.userId]),
@@ -199,7 +204,7 @@ class TechPostService(
                 content = post.content,
                 categoryIds = categoryIdsByPost[post.id] ?: emptyList(),
                 likeCount = post.likeCount,
-                commentCount = post.commentCount,
+                commentCount = postWithCount.commentCount.toInt(),
                 createdAt = post.createdAt,
             )
         }
@@ -230,10 +235,11 @@ class TechPostService(
         val posts = postRepository.findMyPosts(userId, cursorId, pageSize)
 
         val nickname = umsApiClient.findNickname(userId)
-        val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.id })
+        val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.post.id })
             .groupBy({ it.postId }, { it.categoryId })
 
-        val data = posts.map { post ->
+        val data = posts.map { postWithCount ->
+            val post = postWithCount.post
             TechPostSummaryResponse(
                 id = post.id,
                 author = TechPostDetailResponse.Author(uid = post.userId, nickname = nickname),
@@ -241,12 +247,12 @@ class TechPostService(
                 content = post.content,
                 categoryIds = categoryIdsByPost[post.id] ?: emptyList(),
                 likeCount = post.likeCount,
-                commentCount = post.commentCount,
+                commentCount = postWithCount.commentCount.toInt(),
                 createdAt = post.createdAt,
             )
         }
 
-        val nextCursor = posts.lastOrNull()?.let { TechPostCursor.encode(it.id) }
+        val nextCursor = posts.lastOrNull()?.let { TechPostCursor.encode(it.post.id) }
         return ApiEnvelopCursorPage(data = data, nextCursor = nextCursor)
     }
 
@@ -271,11 +277,12 @@ class TechPostService(
 
         // 4) 작성자는 본인이라 닉네임은 단건 조회로 충분. 카테고리는 1:N이라 배치(IN) 조회
         val nickname = umsApiClient.findNickname(userId)
-        val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.id })
+        val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.post.id })
             .groupBy({ it.postId }, { it.categoryId })
 
         // 5) DTO 매핑
-        val data = posts.map { post ->
+        val data = posts.map { postWithCount ->
+            val post = postWithCount.post
             TechPostSummaryResponse(
                 id = post.id,
                 author = TechPostDetailResponse.Author(uid = post.userId, nickname = nickname),
@@ -283,7 +290,7 @@ class TechPostService(
                 content = post.content,
                 categoryIds = categoryIdsByPost[post.id] ?: emptyList(),
                 likeCount = post.likeCount,
-                commentCount = post.commentCount,
+                commentCount = postWithCount.commentCount.toInt(),
                 createdAt = post.createdAt,
             )
         }

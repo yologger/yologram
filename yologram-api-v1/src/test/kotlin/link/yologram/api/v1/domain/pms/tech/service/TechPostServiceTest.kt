@@ -8,6 +8,7 @@ import link.yologram.api.v1.domain.pms.tech.exception.TechPostForbiddenException
 import link.yologram.api.v1.domain.pms.tech.exception.TechPostNotFoundException
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.model.TechPostCursor
+import link.yologram.api.v1.domain.pms.tech.model.TechPostWithCommentCount
 import link.yologram.api.v1.domain.pms.tech.model.UpdateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostCategoryMappingRepository
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostRepository
@@ -175,9 +176,10 @@ class TechPostServiceTest {
     inner class 게시글_상세_조회 {
 
         @Test
-        fun `게시글과 카테고리·작성자 닉네임을 반환한다`() {
-            val post = TechPost(id = 1L, userId = 12L, title = "제목", content = "내용", likeCount = 3, commentCount = 2)
-            whenever(postRepository.findById(1L)).thenReturn(Optional.of(post))
+        fun `게시글과 카테고리·작성자 닉네임·댓글 수를 반환한다`() {
+            val post = TechPost(id = 1L, userId = 12L, title = "제목", content = "내용", likeCount = 3)
+            // 댓글 수는 tech_post_comment_count leftJoin 프로젝션에서 온다 (엔티티 컬럼 아님)
+            whenever(postRepository.findPostWithCommentCount(1L)).thenReturn(TechPostWithCommentCount(post, 2L))
             whenever(postCategoryMappingRepository.findByPostId(1L)).thenReturn(
                 listOf(TechPostCategoryMapping(id = 1L, postId = 1L, categoryId = 1L), TechPostCategoryMapping(id = 2L, postId = 1L, categoryId = 2L)),
             )
@@ -196,7 +198,7 @@ class TechPostServiceTest {
 
         @Test
         fun `존재하지 않는 게시글이면 TechPostNotFoundException을 던진다`() {
-            whenever(postRepository.findById(99L)).thenReturn(Optional.empty())
+            whenever(postRepository.findPostWithCommentCount(99L)).thenReturn(null)
 
             assertThrows<TechPostNotFoundException> {
                 postService.getPost(99L)
@@ -207,12 +209,13 @@ class TechPostServiceTest {
     @Nested
     inner class 게시글_목록_조회 {
 
-        private fun post(id: Long, userId: Long = id) =
-            TechPost(id = id, userId = userId, content = "내용$id")
+        private fun post(id: Long, userId: Long = id, commentCount: Long = 0L) =
+            TechPostWithCommentCount(TechPost(id = id, userId = userId, content = "내용$id"), commentCount)
 
         @Test
         fun `결과가 있으면 마지막 글 id를 nextCursor로 반환한다`() {
-            val fetched = listOf(post(3), post(2))
+            // 댓글 수는 leftJoin 프로젝션 값 — 글 3은 5개, 글 2는 count row 없음(coalesce 0)
+            val fetched = listOf(post(3, commentCount = 5L), post(2))
             whenever(postRepository.findPosts(anyOrNull(), isNull<Long>(), eq(2))).thenReturn(fetched)
             whenever(umsApiClient.findNicknames(any())).thenReturn(mapOf(3L to "u3", 2L to "u2"))
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(
@@ -226,6 +229,7 @@ class TechPostServiceTest {
             assertEquals(listOf(10L), result.data[0].categoryIds)
             assertEquals("u3", result.data[0].author.nickname)
             assertEquals("TECH", result.data[0].section)
+            assertEquals(listOf(5, 0), result.data.map { it.commentCount })
             // 마지막 글 id(2)를 인코딩한 값
             assertEquals(TechPostCursor.encode(2L), result.nextCursor)
         }
@@ -268,13 +272,13 @@ class TechPostServiceTest {
     @Nested
     inner class 내_글_목록_cursor {
 
-        private fun post(id: Long) =
-            TechPost(id = id, userId = 1L, content = "내용$id")
+        private fun post(id: Long, commentCount: Long = 0L) =
+            TechPostWithCommentCount(TechPost(id = id, userId = 1L, content = "내용$id"), commentCount)
 
         @Test
         fun `결과가 있으면 마지막 글 id를 nextCursor로 반환한다`() {
             whenever(postRepository.findMyPosts(eq(1L), isNull<Long>(), eq(2)))
-                .thenReturn(listOf(post(3), post(2)))
+                .thenReturn(listOf(post(3, commentCount = 7L), post(2)))
             whenever(umsApiClient.findNickname(1L)).thenReturn("me")
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(
                 listOf(TechPostCategoryMapping(id = 1L, postId = 3L, categoryId = 10L)),
@@ -285,6 +289,7 @@ class TechPostServiceTest {
             assertEquals(listOf(3L, 2L), result.data.map { it.id })
             assertEquals("me", result.data[0].author.nickname)
             assertEquals(listOf(10L), result.data[0].categoryIds)
+            assertEquals(listOf(7, 0), result.data.map { it.commentCount })
             assertEquals(TechPostCursor.encode(2L), result.nextCursor)
         }
 

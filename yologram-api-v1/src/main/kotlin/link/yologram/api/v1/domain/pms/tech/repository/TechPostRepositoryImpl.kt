@@ -1,19 +1,52 @@
 package link.yologram.api.v1.domain.pms.tech.repository
 
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.core.types.ConstructorExpression
+import com.querydsl.core.types.Projections
 import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import link.yologram.api.v1.domain.pms.tech.entity.QTechPost
 import link.yologram.api.v1.domain.pms.tech.entity.QTechPostCategoryMapping
-import link.yologram.api.v1.domain.pms.tech.entity.TechPost
+import link.yologram.api.v1.domain.pms.tech.entity.QTechPostCommentCount
+import link.yologram.api.v1.domain.pms.tech.model.TechPostWithCommentCount
 
 class TechPostRepositoryImpl(
     private val queryFactory: JPAQueryFactory,
 ) : TechPostRepositoryCustom {
 
-    // cursor-based pagination
-    override fun findPosts(categoryId: Long?, cursorId: Long?, limit: Int): List<TechPost> {
+    /**
+     * 게시글 + 댓글 수 프로젝션. 댓글 수는 tech_post_comment_count를 leftJoin해
+     * coalesce(0)로 — count row가 없는 글(댓글 0개)도 목록·상세에서 빠지지 않고 0으로 나온다.
+     * 무FK라 on(post.id = count.postId)을 명시. 글:카운트가 1:1(카운트 PK=post_id)이라
+     * join으로 row가 불어나지 않아 기존 정렬·커서·limit에 영향 없다 (레거시 BoardCustomRepository 패턴).
+     */
+    private fun withCommentCount(
+        post: QTechPost,
+        commentCount: QTechPostCommentCount,
+    ): ConstructorExpression<TechPostWithCommentCount> =
+        Projections.constructor(
+            TechPostWithCommentCount::class.java,
+            post,
+            commentCount.commentCount.coalesce(0L),
+        )
+
+    override fun findPostWithCommentCount(id: Long): TechPostWithCommentCount? {
         val post = QTechPost.techPost
+        val commentCount = QTechPostCommentCount.techPostCommentCount
+
+        // 상세 단건 + 댓글 수 (없는 글이면 null → 호출부 404)
+        return queryFactory
+            .select(withCommentCount(post, commentCount))
+            .from(post)
+            .leftJoin(commentCount).on(post.id.eq(commentCount.postId))
+            .where(post.id.eq(id))
+            .fetchOne()
+    }
+
+    // cursor-based pagination
+    override fun findPosts(categoryId: Long?, cursorId: Long?, limit: Int): List<TechPostWithCommentCount> {
+        val post = QTechPost.techPost
+        val commentCount = QTechPostCommentCount.techPostCommentCount
 
         // 카테고리 동적 조건 + 커서 조건(id < cursorId, 직전 페이지보다 과거 글).
         // OFFSET 없이 인덱스 범위 스캔으로 다음 페이지를 이어받는 keyset 방식
@@ -22,20 +55,25 @@ class TechPostRepositoryImpl(
             builder.and(post.id.lt(cursorId))
         }
 
-        // 최신순(id desc) 정렬 후 limit개. 커서+정렬이 PK(id)를 그대로 탄다
+        // 최신순(id desc) 정렬 후 limit개. 커서+정렬이 PK(id)를 그대로 탄다 (1:1 join이라 커서 영향 없음)
         return queryFactory
-            .selectFrom(post)
+            .select(withCommentCount(post, commentCount))
+            .from(post)
+            .leftJoin(commentCount).on(post.id.eq(commentCount.postId))
             .where(builder)
             .orderBy(post.id.desc())
             .limit(limit.toLong())
             .fetch()
     }
 
-    override fun findPosts(categoryId: Long?, offset: Long, limit: Int): List<TechPost> {
+    override fun findPosts(categoryId: Long?, offset: Long, limit: Int): List<TechPostWithCommentCount> {
         val post = QTechPost.techPost
+        val commentCount = QTechPostCommentCount.techPostCommentCount
         // 테크 피드 offset 페이지네이션(학습용). cursor와 동일 조건 + offset/limit
         return queryFactory
-            .selectFrom(post)
+            .select(withCommentCount(post, commentCount))
+            .from(post)
+            .leftJoin(commentCount).on(post.id.eq(commentCount.postId))
             .where(feedCondition(post, categoryId))
             .orderBy(post.id.desc())
             .offset(offset)
@@ -46,7 +84,7 @@ class TechPostRepositoryImpl(
     // offset-based pagination
     override fun countPosts(categoryId: Long?): Long {
         val post = QTechPost.techPost
-        // totalCount: 조건은 findPosts와 동일, count(*)만 집계
+        // totalCount: 조건은 findPosts와 동일, count(*)만 집계 (카운트 join 불필요)
         return queryFactory
             .select(post.count())
             .from(post)
@@ -74,8 +112,9 @@ class TechPostRepositoryImpl(
         return builder
     }
 
-    override fun findMyPosts(userId: Long, cursorId: Long?, limit: Int): List<TechPost> {
+    override fun findMyPosts(userId: Long, cursorId: Long?, limit: Int): List<TechPostWithCommentCount> {
         val post = QTechPost.techPost
+        val commentCount = QTechPostCommentCount.techPostCommentCount
         // 내 글 조건(userId) + cursorId 이후(과거) 글. 피드와 동일한 keyset 방식.
         // idx_tech_post_user_id(user_id, id)를 그대로 탄다
         val builder = BooleanBuilder()
@@ -84,18 +123,23 @@ class TechPostRepositoryImpl(
             builder.and(post.id.lt(cursorId))
         }
         return queryFactory
-            .selectFrom(post)
+            .select(withCommentCount(post, commentCount))
+            .from(post)
+            .leftJoin(commentCount).on(post.id.eq(commentCount.postId))
             .where(builder)
             .orderBy(post.id.desc())
             .limit(limit.toLong())
             .fetch()
     }
 
-    override fun findMyPosts(userId: Long, offset: Long, limit: Int): List<TechPost> {
+    override fun findMyPosts(userId: Long, offset: Long, limit: Int): List<TechPostWithCommentCount> {
         val post = QTechPost.techPost
+        val commentCount = QTechPostCommentCount.techPostCommentCount
         // 최신순(id desc) + OFFSET/LIMIT. 피드의 keyset과 달리 페이지 번호로 건너뛰는 offset 방식
         return queryFactory
-            .selectFrom(post)
+            .select(withCommentCount(post, commentCount))
+            .from(post)
+            .leftJoin(commentCount).on(post.id.eq(commentCount.postId))
             .where(post.userId.eq(userId))
             .orderBy(post.id.desc())
             .offset(offset)

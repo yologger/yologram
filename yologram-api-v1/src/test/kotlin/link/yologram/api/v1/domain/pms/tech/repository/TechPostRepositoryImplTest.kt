@@ -3,7 +3,9 @@ package link.yologram.api.v1.domain.pms.tech.repository
 import jakarta.persistence.EntityManager
 import link.yologram.api.v1.domain.pms.tech.entity.TechPost
 import link.yologram.api.v1.domain.pms.tech.entity.TechPostCategoryMapping
+import link.yologram.api.v1.domain.pms.tech.entity.TechPostCommentCount
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -25,17 +27,26 @@ class TechPostRepositoryImplTest {
     lateinit var postCategoryMappingRepository: TechPostCategoryMappingRepository
 
     @Autowired
+    lateinit var postCommentCountRepository: TechPostCommentCountRepository
+
+    @Autowired
     lateinit var entityManager: EntityManager
 
     @BeforeEach
     fun setUp() {
         postCategoryMappingRepository.deleteAll()
+        postCommentCountRepository.deleteAll()
         postRepository.deleteAll()
         entityManager.flush()
     }
 
     private fun savePost(userId: Long = 1L): TechPost =
         postRepository.save(TechPost(userId = userId, content = "내용"))
+
+    private fun saveCommentCount(postId: Long, count: Long) {
+        postCommentCountRepository.save(TechPostCommentCount(postId = postId, commentCount = count))
+        entityManager.flush()
+    }
 
     @Nested
     inner class 정렬 {
@@ -48,7 +59,7 @@ class TechPostRepositoryImplTest {
 
             val result = postRepository.findPosts(null, null, 10)
 
-            assertEquals(listOf(c.id, b.id, a.id), result.map { it.id })
+            assertEquals(listOf(c.id, b.id, a.id), result.map { it.post.id })
         }
     }
 
@@ -63,12 +74,12 @@ class TechPostRepositoryImplTest {
 
             // id desc → p3, p2, p1
             val firstPage = postRepository.findPosts(null, null, 2)
-            assertEquals(listOf(p3.id, p2.id), firstPage.map { it.id })
+            assertEquals(listOf(p3.id, p2.id), firstPage.map { it.post.id })
 
             // cursorId는 Long?로 줘야 cursor 오버로드가 선택됨(Long이면 offset 오버로드로 감)
-            val cursorId: Long? = firstPage.last().id
+            val cursorId: Long? = firstPage.last().post.id
             val secondPage = postRepository.findPosts(null, cursorId, 2)
-            assertEquals(listOf(p1.id), secondPage.map { it.id })
+            assertEquals(listOf(p1.id), secondPage.map { it.post.id })
         }
     }
 
@@ -85,7 +96,7 @@ class TechPostRepositoryImplTest {
 
             val result = postRepository.findPosts(10L, null, 10)
 
-            assertEquals(listOf(p1.id), result.map { it.id })
+            assertEquals(listOf(p1.id), result.map { it.post.id })
         }
     }
 
@@ -113,10 +124,10 @@ class TechPostRepositoryImplTest {
 
             // id desc → p3, p2, p1. 2번째 인자가 Long(offset)이라 offset 오버로드가 선택됨
             val firstPage = postRepository.findPosts(null, 0L, 2)
-            assertEquals(listOf(p3.id, p2.id), firstPage.map { it.id })
+            assertEquals(listOf(p3.id, p2.id), firstPage.map { it.post.id })
 
             val secondPage = postRepository.findPosts(null, 2L, 2)
-            assertEquals(listOf(p1.id), secondPage.map { it.id })
+            assertEquals(listOf(p1.id), secondPage.map { it.post.id })
         }
 
         @Test
@@ -143,7 +154,7 @@ class TechPostRepositoryImplTest {
             val result = postRepository.findMyPosts(1L, 0L, 10)
 
             assertEquals(2, result.size)
-            assertTrue(result.all { it.userId == 1L })
+            assertTrue(result.all { it.post.userId == 1L })
         }
 
         @Test
@@ -154,7 +165,7 @@ class TechPostRepositoryImplTest {
 
             val result = postRepository.findMyPosts(1L, 0L, 10)
 
-            assertEquals(listOf(c.id, b.id, a.id), result.map { it.id })
+            assertEquals(listOf(c.id, b.id, a.id), result.map { it.post.id })
         }
 
         @Test
@@ -165,10 +176,10 @@ class TechPostRepositoryImplTest {
 
             // id desc → p3, p2, p1
             val firstPage = postRepository.findMyPosts(1L, 0L, 2)
-            assertEquals(listOf(p3.id, p2.id), firstPage.map { it.id })
+            assertEquals(listOf(p3.id, p2.id), firstPage.map { it.post.id })
 
             val secondPage = postRepository.findMyPosts(1L, 2L, 2)
-            assertEquals(listOf(p1.id), secondPage.map { it.id })
+            assertEquals(listOf(p1.id), secondPage.map { it.post.id })
         }
 
         @Test
@@ -189,13 +200,84 @@ class TechPostRepositoryImplTest {
 
             // 내 글 id desc → p3, p1 (다른 유저 글 제외)
             val firstPage = postRepository.findMyPosts(1L, null, 1)
-            assertEquals(listOf(p3.id), firstPage.map { it.id })
-            assertTrue(firstPage.all { it.userId == 1L })
+            assertEquals(listOf(p3.id), firstPage.map { it.post.id })
+            assertTrue(firstPage.all { it.post.userId == 1L })
 
             // cursor(p3.id) 이후 → p1. cursorId는 Long?로 줘야 cursor 오버로드가 선택됨(Long이면 offset 오버로드로 감)
             val cursorId: Long? = p3.id
             val secondPage = postRepository.findMyPosts(1L, cursorId, 1)
-            assertEquals(listOf(p1.id), secondPage.map { it.id })
+            assertEquals(listOf(p1.id), secondPage.map { it.post.id })
+        }
+    }
+
+    @Nested
+    inner class 댓글_수_조인 {
+
+        @Test
+        fun `목록에서 count row가 있는 글은 실값, 없는 글은 0으로 반환한다`() {
+            val withComments = savePost()
+            val withoutComments = savePost()
+            saveCommentCount(withComments.id, 3L)
+
+            // id desc → withoutComments(0), withComments(3). leftJoin+coalesce라 row 없는 글도 목록에 남는다
+            val result = postRepository.findPosts(null, null, 10)
+
+            assertEquals(listOf(withoutComments.id, withComments.id), result.map { it.post.id })
+            assertEquals(listOf(0L, 3L), result.map { it.commentCount })
+        }
+
+        @Test
+        fun `상세에서 count row가 있는 글은 실값을 반환한다`() {
+            val post = savePost()
+            saveCommentCount(post.id, 5L)
+
+            val result = postRepository.findPostWithCommentCount(post.id)
+
+            assertEquals(post.id, result?.post?.id)
+            assertEquals(5L, result?.commentCount)
+        }
+
+        @Test
+        fun `상세에서 count row가 없는 글은 0을 반환한다 (coalesce)`() {
+            val post = savePost()
+
+            val result = postRepository.findPostWithCommentCount(post.id)
+
+            assertEquals(0L, result?.commentCount)
+        }
+
+        @Test
+        fun `상세에서 없는 글이면 null을 반환한다`() {
+            assertNull(postRepository.findPostWithCommentCount(9999L))
+        }
+
+        @Test
+        fun `내 글 목록에도 댓글 수가 실린다`() {
+            val mine = savePost(userId = 1L)
+            saveCommentCount(mine.id, 2L)
+
+            val result = postRepository.findMyPosts(1L, 0L, 10)
+
+            assertEquals(listOf(2L), result.map { it.commentCount })
+        }
+
+        @Test
+        fun `count 조인 후에도 커서 페이지네이션이 동일하게 동작한다`() {
+            val p1 = savePost()
+            val p2 = savePost()
+            val p3 = savePost()
+            // 1:1 조인이라 row가 불어나지 않아 정렬·커서·limit 불변 (일부 글만 count row 보유)
+            saveCommentCount(p1.id, 1L)
+            saveCommentCount(p3.id, 4L)
+
+            val firstPage = postRepository.findPosts(null, null, 2)
+            assertEquals(listOf(p3.id, p2.id), firstPage.map { it.post.id })
+            assertEquals(listOf(4L, 0L), firstPage.map { it.commentCount })
+
+            val cursorId: Long? = firstPage.last().post.id
+            val secondPage = postRepository.findPosts(null, cursorId, 2)
+            assertEquals(listOf(p1.id), secondPage.map { it.post.id })
+            assertEquals(listOf(1L), secondPage.map { it.commentCount })
         }
     }
 
