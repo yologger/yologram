@@ -187,6 +187,8 @@ export default function CommunityDetail() {
         onSuccess: () => {
           // 작성 성공 시 해당 글의 댓글 목록 재조회(정렬 무관 전체 무효화)
           queryClient.invalidateQueries({ queryKey: ['comments', 'tech', id] })
+          // 게시글 무효화 → commentCount 갱신 (서버가 카운트 테이블 조인으로 실값 반환)
+          queryClient.invalidateQueries({ queryKey: ['post', 'tech', id] })
           setText('')
           message.success('댓글이 등록되었습니다.')
         },
@@ -247,6 +249,8 @@ export default function CommunityDetail() {
               onSuccess: () => {
                 // 삭제 성공 시 해당 글의 댓글 목록 재조회(정렬 무관 전체 무효화)
                 queryClient.invalidateQueries({ queryKey: ['comments', 'tech', id] })
+                // 게시글 무효화 → commentCount 갱신
+                queryClient.invalidateQueries({ queryKey: ['post', 'tech', id] })
                 // 편집 중이던 댓글을 삭제한 경우 편집 상태도 종료
                 if (editingId === commentId) {
                   setEditingId(null)
