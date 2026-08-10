@@ -9,7 +9,7 @@
 - [x] (Count/Comment) 댓글 수 — tech_post_comment_count + QueryDSL 조인 최초 도입 (api-v1·v2·web 완료, done.md)
   - [x] DDL: 테이블 생성 + backfill prod 실행 완료 (당시 댓글 0건이라 backfill 0행 — 정상)
   - [x] 작성/삭제 시 원자 upsert/가드 UPDATE 동기화 (PmsApiClient 경계 경유), 목록·상세 leftJoin+coalesce, api-v2 미러, web 무효화 2줄
-  - [ ] 배포 후 차분 보정 1회: INSERT...SELECT COUNT ON DUPLICATE KEY UPDATE (prod 수동 — 형식적, 배포 전 댓글 발생 대비)
+  - [x] 배포 후 차분 보정 1회: INSERT...SELECT COUNT ON DUPLICATE KEY UPDATE 실행 완료 (배포 전 댓글 0건 — 0행 보정, count=actual 정합 검증)
   - [ ] 후속 메모: tech_post의 사장 컬럼 comment_count(엔티티 매핑만 유지, 미참조) drop DDL — like_count 정리 시점에 함께
 - [ ] (Count/Like) 좋아요 — tech_post_like 원장 + tech_post_like_count (레거시 BoardLike 미러 + 갱신 로직 개선)
   - 설계: 원장(tech_post_like — id·post_id·uid·created_at, UNIQUE(post_id,uid))과 1:1 카운트 분리(pms 소유 비정규화 — 무조인 원칙과 양립, 목록 조인 row 뻥튀기 없음). 원장이 진실, 불일치 시 재계산 복구

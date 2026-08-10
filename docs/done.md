@@ -176,7 +176,7 @@
   - 경계: 댓글 도메인이 직접 갱신하지 않고 PmsApiClient.increase/decreasePostCommentCount 경유 (infra/client 규칙 — 게시글 소유 카운트의 갱신 창구)
   - 조회: TechPostRepositoryImpl 목록 4종+상세(신규 QueryDSL 단건)에 leftJoin+ON 명시(무FK)+Projections.constructor+coalesce(0) — 레거시 BoardCustomRepository 패턴 재현. 1:1이라 커서·row 수 불변. api-v2는 outerjoin+coalesce 프로젝션 미러(dialect insert.on_duplicate_key_update). tech_post의 기존 comment_count 컬럼은 매핑만 유지·미참조(사장 — drop은 후속 DDL)
   - web-v1/v2: 표시 UI는 기존(목록 카드·상세 "댓글 N") — 댓글 작성/삭제 onSuccess에 ['post','tech',id] 무효화 2줄만 추가(카운트 즉시 갱신)
-  - prod DDL: 테이블 생성+backfill 실행 완료(사용자), 배포 후 차분 보정 1회 예정. 로컬 E2E: 작성→1→삭제→0 curl 검증 완료
+  - prod DDL: 테이블 생성+backfill 실행 완료(사용자). 배포 후 차분 보정 1회 실행 완료(INSERT...SELECT COUNT ON DUPLICATE KEY UPDATE — 배포 전 댓글 0건이라 0행, count=actual 정합·prod API commentCount 서빙 확인). 로컬 E2E: 작성→1→삭제→0 curl 검증 완료
   - 테스트: api-v1 신규(카운트 upsert/음수 방어 Testcontainers·서비스 호출·조인 coalesce) 총 451 / api-v2 369(신규 통합 12) / web-v1 176·web-v2 175
 - [x] (Search) 섹션 검색 UI — web-v1·web-v2 (백엔드 미연동, saveticker.com/news 참고)
   - 배치: SubTabLayout의 타이틀("기술")과 탭 사이에 검색바(콘텐츠 전체 폭) — 데스크탑 인라인 Input(돋보기 prefix·allowClear·placeholder "검색어를 입력하세요"), 모바일(useIsMobile 768px)은 타이틀 행 우상단 돋보기 버튼 → 검색 오버레이(← 뒤로 + autoFocus, ESC 닫힘). collapseOnScroll 헤더에 포함돼 스크롤 시 함께 숨김. 세 섹션(tech/invest/politics) 자동 적용
