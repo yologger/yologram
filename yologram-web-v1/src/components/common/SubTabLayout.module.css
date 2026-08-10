@@ -9,3 +9,10 @@
 .headerHidden {
   transform: translateY(-100%);
 }
+
+/* 타이틀 + (모바일) 돋보기 아이콘 행 */
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

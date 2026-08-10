@@ -36,6 +36,18 @@ Object.defineProperty(globalThis, 'localStorage', {
   value: localStorageMock,
 })
 
+// antd Tabs 등이 내부적으로 ResizeObserver를 사용하지만 jsdom에는 없으므로 no-op 스텁 제공
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+Object.defineProperty(globalThis, 'ResizeObserver', {
+  writable: true,
+  value: ResizeObserverStub,
+})
+
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: (query: string) => ({

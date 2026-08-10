@@ -1,0 +1,24 @@
+/* 데스크탑 인라인 검색바 — 콘텐츠 전체 폭 (saveticker 데스크탑과 동일) */
+.desktopInput {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+/* 모바일 검색 오버레이: 화면 전체를 덮고 상단에 뒤로 버튼 + 입력창 표시 */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #fff;
+}
+
+.overlayBar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+}
+
+.overlayInput {
+  flex: 1;
+}

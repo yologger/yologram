@@ -24,6 +24,7 @@ import TechCommunityPage from './pages/tech/TechCommunityPage'
 // import TechJobsPage from './pages/tech/TechJobsPage'
 import CommunityWritePage from './pages/tech/community/CommunityWritePage'
 import CommunityDetailPage from './pages/tech/community/CommunityDetailPage'
+import KeywordSearchPage from './pages/search/KeywordSearchPage'
 // TODO(notifications): 알림 구현 시작 시 주석 해제 + ComingSoon 라우트 제거
 // import NotificationsPage from './pages/notifications/NotificationsPage'
 import SettingsPage from './pages/settings/SettingsPage'
@@ -44,6 +45,10 @@ export default function Router() {
       <Route path="/tech/community/:postId" element={<CommunityDetailPage />} />
       <Route element={<ResponsiveLayout />}>
         <Route path="/" element={<Navigate to="/tech" replace />} />
+        {/* 섹션별 키워드 검색 결과 (SubTabLayout 밖 독립 페이지, 백엔드 연동 전 placeholder) */}
+        <Route path="/tech/keywords/:keyword" element={<KeywordSearchPage basePath="/tech" />} />
+        <Route path="/invest/keywords/:keyword" element={<KeywordSearchPage basePath="/invest" />} />
+        <Route path="/politics/keywords/:keyword" element={<KeywordSearchPage basePath="/politics" />} />
         {/* invest/politics 준비 중: 구현 시작 시 ComingSoon 라우트 제거하고 아래 주석 블록 복구 */}
         <Route path="/invest/*" element={<ComingSoon title="투자" />} />
         <Route path="/politics/*" element={<ComingSoon title="정치" />} />
