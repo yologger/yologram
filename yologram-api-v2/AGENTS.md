@@ -58,6 +58,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - 경계 검증·조회는 ApiClient(Protocol)로 추상화 (LocalUmsApiClient, LocalCmsApiClient, LocalCommentApiClient, LocalPmsApiClient)
 - 검증 메시지는 api-v1과 동일 문구 ("내용을 입력해주세요.", "카테고리는 1~3개 선택해주세요.")
 - N+1 회피: find_nicknames·find_by_post_ids 배치 조회, categoryId 필터는 EXISTS
+- 댓글 수: tech_post_comment_count 매핑(pms 소유 1:1) — insert().on_duplicate_key_update(+1)/가드 UPDATE(-1)만 사용, 댓글 서비스는 PmsApiClient 경유. 조회는 outerjoin+coalesce(0) 프로젝션(TechPostWithCommentCount). tech_post.comment_count 컬럼은 사장(매핑만 유지·미참조)
 - 응답 스키마의 section 필드는 "TECH" 고정. ApiEnvelopCursorPage는 null 커서 필드 생략(v1 @JsonInclude NON_NULL 정합)
 - (데이터 모델·엔드포인트·설계 근거는 docs/done.md, 경로 규칙은 docs/rules.md 참조)
 

@@ -52,6 +52,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - 섹션별 완전 분리: domain/{pms,cms,comment}/tech (도메인 우선, 섹션은 하위) — 테이블 tech_post/tech_post_category_mapping/tech_post_comment + tech_category(게시판·뉴스 공용 마스터) + tech_news/tech_news_category_mapping(뉴스 조회 전용) (전 테이블 무FK, section 컬럼·Section enum 없음 — 테이블명·경로·패키지가 섹션 담당). invest/politics는 동일 세트 복제로 추가
 - 경계 검증·조회는 infra/client/{대상도메인}의 ApiClient로 추상화 (UmsApiClient·CmsApiClient·PmsApiClient·CommentApiClient + Local 구현 — 도메인 패키지 안에 두지 않음)
 - TechPostRepositoryImpl이 QueryDSL 사용처. N+1 회피 위해 닉네임(findNicknames)·카테고리(findByPostIds) 배치 조회
+- 댓글 수: tech_post_comment_count(pms 소유 1:1, post_id PK) — 갱신은 원자 upsert/가드 UPDATE만(엔티티 ±1 save 금지), 댓글 도메인은 PmsApiClient.increase/decreasePostCommentCount 경유. 조회는 목록·상세 leftJoin+coalesce(0) (TechPostWithCommentCount 프로젝션). tech_post.comment_count 컬럼은 사장(매핑만 유지·미참조)
 - 닉네임은 Valkey 캐시(ums:users:v1:nickname:{uid}, TTL 1h) 경유 — 히트 시 user 테이블 미접근, 무효화는 닉네임 변경·탈퇴 시 DEL. Redis 장애 시 DB 폴백(runCatching)
 - 카테고리 매핑 교체는 @Modifying 벌크 delete 후 재삽입 (derived delete는 flush 순서로 uk 충돌)
 - 응답 DTO의 section 필드는 "TECH" 고정 문자열 (web 계약 유지)

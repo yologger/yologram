@@ -29,6 +29,12 @@
 -  전 테이블 FK 미사용(같은 도메인 내부 포함 — tech_news에서 같은 도메인 FK 허용했다가 TRUNCATE 불가 등 운영 불편으로 제거). 참조는 컬럼+인덱스 + app-level 검증
 -  경계 넘는 동기 트랜잭션 의존 최소화 (count 갱신은 추후 이벤트/최종일관성)
 
+### 카운트 (댓글 수 등)
+
+- 카운트 갱신은 원자 쿼리로만 — INSERT...ON DUPLICATE KEY UPDATE(+1) / 가드 UPDATE(count>0, -1). "엔티티 읽고 ±1 후 save"는 lost update 레이스라 금지 (레거시 방식 답습 금지)
+- 1:1 카운트 테이블(post_id PK)은 대상 도메인 소유(pms) — 타 도메인(comment 등)의 갱신은 ApiClient 경유. count 0 row는 삭제하지 않음(조회 coalesce가 0 처리)
+- 목록·상세 조회는 leftJoin+ON 명시(무FK)+coalesce(0) — 1:1이라 row 뻥튀기 없음. 고빈도 쓰기 카운트(조회수)는 이 패턴 대신 Redis 버퍼링(todos Count/View)
+
 ### 캐시 (Valkey)
 
 - 키 스킴 {도메인 prefix}:v1:{엔티티}:{식별자} — 정의는 각 API infra/cache의 Cache 팩토리(v1 Cache.kt / v2 cache.py). v1·v2가 같은 키·JSON(camelCase, ensure_ascii=False)을 공유하므로 한쪽 변경 시 반드시 양쪽 동시 수정

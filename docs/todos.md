@@ -6,20 +6,23 @@
 > docs/는 메인(루트) 에이전트만 갱신. 서브에이전트는 read-only(참고만).
 
 ## Todos. 
-- [ ] (Cache) Redis(Valkey) 도입 — 대규모 트래픽 가정 하 캐시 예시 (포트폴리오: 가정→결정 근거를 done.md에 기록)
-  - [x] 인프라: ElastiCache Valkey(valkey-prod, cache.t4g.micro — 서버리스도 검토했으나 인스턴스형 확정) apply·엔드포인트 SSM 등록(spring.data.redis.host) + 로컬 compose.yaml(valkey:8) (완료, done.md)
-  - [x] 닉네임 캐시(api-v1·api-v2) — 레거시 infra/cache 스타일 이식 + v2 redis-py 미러(키·JSON 바이트 호환), UserNicknameCache 공용 cache-aside, 변경·탈퇴 시 DEL, prod env(CACHE_REDIS_HOST) tf 반영 (완료, done.md)
-  - [x] 뉴스 첫 페이지 캐시 — 무커서 응답 통째 cache-aside(TTL 3분) + worker 요약 시 키 전수 열거 UNLINK 무효화 (api-v1·v2·worker 완료, done.md)
-  - [ ] 캐시 히트율·응답시간 지표 → Grafana (before/after 실측)
-  - 장애 시나리오 명시: cache-aside라 Redis 다운 시 DB fallback(성능 저하, 가용성 유지). validate-token 등 auth 상태는 캐시 금지(INACTIVE 즉시 차단 무력화 — 의도적 비적용 기록)
-  - 후속 확장(별항 연계): 재발송 rate limit·인증코드 TTL 이관·refresh token 저장소·좋아요 카운터·ShedLock
-- [ ] (Count) 좋아요/댓글 수 + QueryDSL 조인 조회 — 레거시(BoardCustomRepository) 패턴 재현
-  - 설계: tech_post_like_count·tech_post_comment_count 1:1 카운트 테이블(pms 소유 비정규화 — 같은 도메인이라 무조인 원칙과 양립, 1:1이라 목록 조인 row 뻥튀기 없음). 좋아요 원장 테이블(tech_post_like — uid·postId unique)과 분리
-  - [ ] 좋아요 토글 API (/count 경로 규칙 재검토 — pms 소유로 갈 경우 /pms/{section}/posts/{id}/like 후보, 구현 시 확정) — api-v1/v2
-  - [ ] 댓글 작성/삭제 시 comment_count 동기화 (현재 카운트 항상 0)
-  - [ ] QueryDSL 조인 조회: 목록·상세에 leftJoin+ON 명시(무FK)+Projections.constructor 중첩+coalesce(0) — 레거시 미러. api-v2는 SQLAlchemy join 미러. rules.md ②다중 조인 실사용 예시화
-  - [ ] web-v1/v2 카운트 표시 + 좋아요 토글 연동 (로컬 임시 토글 → 실연동)
-  - 1차는 카운트 테이블 동기 갱신, 분리 시 이벤트 기반 이관 (기존 메모 유지). Redis 카운터(INCR+write-behind) 확장은 Cache 트랙 후속
+- [x] (Count/Comment) 댓글 수 — tech_post_comment_count + QueryDSL 조인 최초 도입 (api-v1·v2·web 완료, done.md)
+  - [x] DDL: 테이블 생성 + backfill prod 실행 완료 (당시 댓글 0건이라 backfill 0행 — 정상)
+  - [x] 작성/삭제 시 원자 upsert/가드 UPDATE 동기화 (PmsApiClient 경계 경유), 목록·상세 leftJoin+coalesce, api-v2 미러, web 무효화 2줄
+  - [ ] 배포 후 차분 보정 1회: INSERT...SELECT COUNT ON DUPLICATE KEY UPDATE (prod 수동 — 형식적, 배포 전 댓글 발생 대비)
+  - [ ] 후속 메모: tech_post의 사장 컬럼 comment_count(엔티티 매핑만 유지, 미참조) drop DDL — like_count 정리 시점에 함께
+- [ ] (Count/Like) 좋아요 — tech_post_like 원장 + tech_post_like_count (레거시 BoardLike 미러 + 갱신 로직 개선)
+  - 설계: 원장(tech_post_like — id·post_id·uid·created_at, UNIQUE(post_id,uid))과 1:1 카운트 분리(pms 소유 비정규화 — 무조인 원칙과 양립, 목록 조인 row 뻥튀기 없음). 원장이 진실, 불일치 시 재계산 복구
+  - [ ] DDL: tech_post_like + tech_post_like_count — prod 수동
+  - [ ] 좋아요 API: POST/DELETE /pms/tech/posts/{id}/like (인증 필수) — 레거시 개선 3: ①원자 UPDATE 증감(엔티티 읽고 ++ 금지) ②멱등(이미 좋아요 POST·미좋아요 DELETE는 no-op 200, uk 위반도 no-op 수렴 — 더블클릭·재시도 안전, 레거시는 409) ③count 0이어도 row 유지(delete/insert churn 제거, coalesce가 없음=0 처리) — api-v1/v2
+  - [ ] 조회 조인 확장: like_count leftJoin + likedByMe(로그인 시 원장 배치 EXISTS, 비로그인 false — 레거시에 없던 추가)
+  - [ ] web-v1/v2 하트 토글 실연동 (옵티미스틱 업데이트 + 실패 원복)
+  - 공통: 1차는 카운트 테이블 동기 갱신, MSA 분리 시 이벤트 기반 이관. 탈퇴·게시글 삭제 시 원장 정리는 worker 청크 삭제 트랙에서(무FK라 고아 무해)
+- [ ] (Count/View) 조회수 — 레거시(BoardViewService) 미러가 아니라 처음부터 Redis 버퍼링으로 (고빈도 쓰기 대비)
+  - 레거시 구조: board_view_event(bid·uid·ip 원장 — 동일 조합 1회 집계) + board_view_count 1:1, 상세 조회 시 event 확인 후 count++ save. 약점: 모든 상세 조회가 DB INSERT+UPDATE 유발(고빈도 쓰기), 이벤트 테이블 무한 증식, read-modify-write 레이스, uid/ip nullable이라 uk 부재로 동시 중복 이벤트
+  - 방향: 조회 시 Redis INCR(또는 중복 판정도 Redis SET/HyperLogLog)로 받고 worker가 주기 write-behind로 DB 반영 — 댓글·좋아요(동기 DB 카운트)와 대비되는 고빈도 쓰기 패턴 전시. Cache 트랙의 "Redis 카운터 확장" 합류점
+  - [ ] 상세 설계(중복 판정 기준·flush 주기·유실 허용 범위)는 착수 시 결정
+  - [ ] tech_post_view_count 테이블 + 목록·상세 조인 확장 + web 표시
 - [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
   - [ ] 도입 시점 판단
   - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)
@@ -31,6 +34,13 @@
   - CQRS: pms = 쓰기 원본(MySQL, 권한·개인화) / search = 읽기 최적화(OpenSearch). 동기화는 pms 쓰기 → 변경 이벤트(SQS/Kinesis) → indexer가 MySQL 읽어 문서화 → OpenSearch 인덱싱 (최종 일관성)
   - QueryDSL vs search 역할: QueryDSL은 관계형 복잡성(권한 한정 "내 것/정확"), search는 탐색 복잡성(풀텍스트·연관도·패싯, 공개 카탈로그 발견)
   - 도입 전략: 초기엔 pms cursor 목록으로 시작 → 필요 시 OpenSearch+indexer 도입. 별도 서비스(yologram-search-api, yologram-search-indexer)
+- [ ] (Cache) Redis(Valkey) 도입 — 대규모 트래픽 가정 하 캐시 예시 (포트폴리오: 가정→결정 근거를 done.md에 기록)
+  - [x] 인프라: ElastiCache Valkey(valkey-prod, cache.t4g.micro — 서버리스도 검토했으나 인스턴스형 확정) apply·엔드포인트 SSM 등록(spring.data.redis.host) + 로컬 compose.yaml(valkey:8) (완료, done.md)
+  - [x] 닉네임 캐시(api-v1·api-v2) — 레거시 infra/cache 스타일 이식 + v2 redis-py 미러(키·JSON 바이트 호환), UserNicknameCache 공용 cache-aside, 변경·탈퇴 시 DEL, prod env(CACHE_REDIS_HOST) tf 반영 (완료, done.md)
+  - [x] 뉴스 첫 페이지 캐시 — 무커서 응답 통째 cache-aside(TTL 3분) + worker 요약 시 키 전수 열거 UNLINK 무효화 (api-v1·v2·worker 완료, done.md)
+  - [ ] 캐시 히트율·응답시간 지표 → Grafana (before/after 실측)
+  - 장애 시나리오 명시: cache-aside라 Redis 다운 시 DB fallback(성능 저하, 가용성 유지). validate-token 등 auth 상태는 캐시 금지(INACTIVE 즉시 차단 무력화 — 의도적 비적용 기록)
+  - 후속 확장(별항 연계): 재발송 rate limit·인증코드 TTL 이관·refresh token 저장소·좋아요 카운터·ShedLock
 - [x] (Worker) 비동기 워커 구성 — yologram-worker/ 구축 완료(부트스트랩·인프라·CI), 테크 뉴스 파이프라인 운영 중 (done.md). 아래는 조건부 잔여
   - 주기 작업(RSS 수집 등)은 @Scheduled — 단일 인스턴스 전제
   - [ ] worker 다중 인스턴스 확장 시 ShedLock 도입 — @Scheduled 중복 실행 방지(전 인스턴스가 각자 실행 → lock 획득한 한 대만 실행). lock 저장소는 redis/mysql 중 도입 시점에 결정. 현재는 link unique로 멱등이라 데이터는 안 깨지지만 중복 fetch 낭비 + 동시 INSERT 레이스(배치 실패 후 다음 주기 회복) 있음

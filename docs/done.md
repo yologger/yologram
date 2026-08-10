@@ -170,6 +170,14 @@
   - TTL 3분 = 보험·낡음 상한: 삭제 실패(Redis 순단·worker 다운)와 레이스(API가 커밋 전 옛 목록을 읽고 worker 삭제 직후 SET — 좀비 부활, 창 수십 ms) 수용 근거. 뉴스 생성 주기(수집 10분·요약 5분) ≥ TTL이라 체감 무해. 무효화 직후 미스 동시 유입(stampede)은 현 규모 무해 — 대규모 시 singleflight(SETNX 뮤텍스)·stale-while-revalidate 카드
   - 인프라·로컬: worker_prod SSM cache.data.redis.host tf apply+값 등록(worker는 spring.config.import 프리픽스 로드라 task def 무변경, Valkey SG는 VPC CIDR 허용이라 SG 변경 불필요). 로컬 Redis는 brew redis 16379로 일원화(v1·worker application-local.yaml, v2 .env CACHE_REDIS_HOST/PORT — compose valkey 6379는 미사용 전환)
   - 테스트: api-v1 캐시 5·서비스 3(전체 통과) / api-v2 캐시 7·서비스 3(총 356) / worker Invalidator 4·배치 연동 6(전체 통과). 키 스킴·TTL을 테스트로 계약 고정
+- [x] (Count/Comment) 게시글 댓글 수 — tech_post_comment_count + QueryDSL 조인 최초 도입 (api-v1·v2 + web 무효화)
+  - 구조: 레거시(board_comment_count) 미러 — 1:1 카운트 테이블(post_id PK·comment_count, 무FK·audit 없음), pms 소유(게시글의 비정규화 속성). 번장은 본체 컬럼(product.metrics) 방식이나 QueryDSL 조인 전시·쓰기 락 격리·카운트류 일관 패턴을 위해 별도 테이블 채택 (트래픽 증가 시 본체 컬럼 비정규화로 조인 제거가 발전 방향)
+  - 갱신(레거시 개선): 원자 upsert INSERT...ON DUPLICATE KEY UPDATE +1 / 가드 UPDATE(comment_count>0) -1 — 레거시 "엔티티 읽고 ++ save"의 lost update 레이스 제거, 음수 방어, count 0 row 유지(delete churn 제거). 댓글 작성/삭제와 같은 트랜잭션(로컬 검증에서 락 대기 롤백 시 댓글·카운트 동시 원복 실증)
+  - 경계: 댓글 도메인이 직접 갱신하지 않고 PmsApiClient.increase/decreasePostCommentCount 경유 (infra/client 규칙 — 게시글 소유 카운트의 갱신 창구)
+  - 조회: TechPostRepositoryImpl 목록 4종+상세(신규 QueryDSL 단건)에 leftJoin+ON 명시(무FK)+Projections.constructor+coalesce(0) — 레거시 BoardCustomRepository 패턴 재현. 1:1이라 커서·row 수 불변. api-v2는 outerjoin+coalesce 프로젝션 미러(dialect insert.on_duplicate_key_update). tech_post의 기존 comment_count 컬럼은 매핑만 유지·미참조(사장 — drop은 후속 DDL)
+  - web-v1/v2: 표시 UI는 기존(목록 카드·상세 "댓글 N") — 댓글 작성/삭제 onSuccess에 ['post','tech',id] 무효화 2줄만 추가(카운트 즉시 갱신)
+  - prod DDL: 테이블 생성+backfill 실행 완료(사용자), 배포 후 차분 보정 1회 예정. 로컬 E2E: 작성→1→삭제→0 curl 검증 완료
+  - 테스트: api-v1 신규(카운트 upsert/음수 방어 Testcontainers·서비스 호출·조인 coalesce) 총 451 / api-v2 369(신규 통합 12) / web-v1 176·web-v2 175
 - [x] (Search) 섹션 검색 UI — web-v1·web-v2 (백엔드 미연동, saveticker.com/news 참고)
   - 배치: SubTabLayout의 타이틀("기술")과 탭 사이에 검색바(콘텐츠 전체 폭) — 데스크탑 인라인 Input(돋보기 prefix·allowClear·placeholder "검색어를 입력하세요"), 모바일(useIsMobile 768px)은 타이틀 행 우상단 돋보기 버튼 → 검색 오버레이(← 뒤로 + autoFocus, ESC 닫힘). collapseOnScroll 헤더에 포함돼 스크롤 시 함께 숨김. 세 섹션(tech/invest/politics) 자동 적용
   - 동작: Enter 시 trim·빈 값 무시, /{section}/keywords/{encodeURIComponent(키워드)} 이동. 키워드 페이지는 "'제미나이' 검색결과" placeholder 텍스트 + 재검색 바(initialValue) — 결과 목록은 검색 백엔드(todos Search 트랙)에서 연동
