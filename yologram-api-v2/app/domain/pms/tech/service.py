@@ -8,7 +8,7 @@ from app.core.exception import (
 )
 from app.core.response import ApiEnvelopCursorPage, ApiEnvelopPage
 from app.domain.pms.tech.cursor import TechPostCursor
-from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping
+from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping, TechPostWithCommentCount
 from app.domain.pms.tech.repository import TechPostCategoryMappingRepository, TechPostRepository
 from app.domain.pms.tech.schema import (
     CreatePostRequest,
@@ -103,9 +103,11 @@ class TechPostService:
         self.post_repository.delete(post)
 
     def get_post(self, id: int) -> PostDetailResponse:
-        post = self.post_repository.find_by_id(id)
-        if post is None:
+        # 상세 단건 + 댓글 수 (tech_post_comment_count outerjoin+coalesce 프로젝션 — 없는 글이면 404)
+        post_with_count = self.post_repository.find_post_with_comment_count(id)
+        if post_with_count is None:
             raise PostNotFoundException()
+        post = post_with_count.post
 
         category_ids = [pc.category_id for pc in self.post_category_repository.find_by_post_id(post.id)]
         nickname = self.ums_api_client.find_nickname(post.user_id)
@@ -117,7 +119,7 @@ class TechPostService:
             content=post.content,
             category_ids=category_ids,
             like_count=post.like_count,
-            comment_count=post.comment_count,
+            comment_count=post_with_count.comment_count,
             created_at=post.created_at,
         )
 
@@ -133,7 +135,7 @@ class TechPostService:
         posts = self.post_repository.find_posts(category_id, cursor_id, page_size)
 
         data = self._to_summaries(posts)
-        next_cursor = TechPostCursor.encode(posts[-1].id) if posts else None
+        next_cursor = TechPostCursor.encode(posts[-1].post.id) if posts else None
         return ApiEnvelopCursorPage(data=data, next_cursor=next_cursor)
 
     def get_posts_by_offset(
@@ -164,7 +166,7 @@ class TechPostService:
         posts = self.post_repository.find_my_posts_by_cursor(user_id, cursor_id, page_size)
 
         data = self._to_summaries(posts)
-        next_cursor = TechPostCursor.encode(posts[-1].id) if posts else None
+        next_cursor = TechPostCursor.encode(posts[-1].post.id) if posts else None
         return ApiEnvelopCursorPage(data=data, next_cursor=next_cursor)
 
     def get_my_posts_by_offset(
@@ -188,26 +190,29 @@ class TechPostService:
         if section_path is not None and section_path.lower() != SECTION_PATH:
             raise InvalidSectionException()
 
-    def _to_summaries(self, posts: list[TechPost]) -> list[PostSummaryResponse]:
-        """글 목록 → PostSummaryResponse. 닉네임·카테고리 배치 조회(N+1 회피)를 공유."""
-        nicknames = self.ums_api_client.find_nicknames([p.user_id for p in posts])
+    def _to_summaries(self, posts: list[TechPostWithCommentCount]) -> list[PostSummaryResponse]:
+        """글(+댓글 수 프로젝션) 목록 → PostSummaryResponse. 닉네임·카테고리 배치 조회(N+1 회피)를 공유."""
+        nicknames = self.ums_api_client.find_nicknames([p.post.user_id for p in posts])
 
         category_ids_by_post: dict[int, list[int]] = {}
-        for pc in self.post_category_repository.find_by_post_ids([p.id for p in posts]):
+        for pc in self.post_category_repository.find_by_post_ids([p.post.id for p in posts]):
             category_ids_by_post.setdefault(pc.post_id, []).append(pc.category_id)
 
         return [
             PostSummaryResponse(
-                id=post.id,
-                author=PostAuthor(uid=post.user_id, nickname=nicknames.get(post.user_id)),
-                title=post.title,
-                content=post.content,
-                category_ids=category_ids_by_post.get(post.id, []),
-                like_count=post.like_count,
-                comment_count=post.comment_count,
-                created_at=post.created_at,
+                id=post_with_count.post.id,
+                author=PostAuthor(
+                    uid=post_with_count.post.user_id,
+                    nickname=nicknames.get(post_with_count.post.user_id),
+                ),
+                title=post_with_count.post.title,
+                content=post_with_count.post.content,
+                category_ids=category_ids_by_post.get(post_with_count.post.id, []),
+                like_count=post_with_count.post.like_count,
+                comment_count=post_with_count.comment_count,
+                created_at=post_with_count.post.created_at,
             )
-            for post in posts
+            for post_with_count in posts
         ]
 
     @staticmethod

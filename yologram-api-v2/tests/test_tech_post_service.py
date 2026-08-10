@@ -10,7 +10,7 @@ from app.core.exception import (
     PostNotFoundException,
 )
 from app.domain.pms.tech.cursor import TechPostCursor
-from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping
+from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping, TechPostWithCommentCount
 from app.domain.pms.tech.schema import CreatePostRequest, UpdatePostRequest
 from app.domain.pms.tech.service import TechPostService
 
@@ -28,6 +28,11 @@ def _post(post_id: int, user_id: int | None = None) -> TechPost:
     post.comment_count = 0
     post.created_at = datetime(2026, 1, 1, 0, 0)
     return post
+
+
+def _post_with_count(post_id: int, comment_count: int = 0, user_id: int | None = None) -> TechPostWithCommentCount:
+    """리포지토리 프로젝션(outerjoin+coalesce 결과) 모형 — 목록·상세 조회 반환값."""
+    return TechPostWithCommentCount(post=_post(post_id, user_id=user_id), comment_count=comment_count)
 
 
 class TestTechPostService:
@@ -228,10 +233,12 @@ class TestTechPostServiceGetPost:
         post = TechPost(user_id=12, title="제목", content="내용")
         post.id = 1
         post.like_count = 3
-        post.comment_count = 2
         post.created_at = datetime(2026, 1, 1, 0, 0)
         mock_post_repo = MagicMock()
-        mock_post_repo.find_by_id.return_value = post
+        # 상세는 프로젝션(find_post_with_comment_count)으로 조회 — 댓글 수는 coalesce 실값
+        mock_post_repo.find_post_with_comment_count.return_value = TechPostWithCommentCount(
+            post=post, comment_count=2
+        )
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
         mock_pc_repo.find_by_post_id.return_value = [
@@ -260,7 +267,7 @@ class TestTechPostServiceGetPost:
     @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_존재하지_않는_게시글이면_예외(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
-        mock_post_repo.find_by_id.return_value = None
+        mock_post_repo.find_post_with_comment_count.return_value = None
         mock_post_repo_cls.return_value = mock_post_repo
 
         service = TechPostService(MagicMock())
@@ -277,7 +284,7 @@ class TestTechPostServiceGetPosts:
     @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_결과가_있으면_마지막_글_id를_nextCursor로_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
-        mock_post_repo.find_posts.return_value = [_post(3), _post(2)]
+        mock_post_repo.find_posts.return_value = [_post_with_count(3, comment_count=5), _post_with_count(2)]
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
         mock_pc_repo.find_by_post_ids.return_value = [TechPostCategoryMapping(post_id=3, category_id=10)]
@@ -293,6 +300,9 @@ class TestTechPostServiceGetPosts:
         assert result.data[0].section == "TECH"
         assert result.data[0].category_ids == [10]
         assert result.data[0].author.nickname == "u3"
+        # 댓글 수는 프로젝션 실값 그대로 (count row 없는 글은 coalesce 0)
+        assert result.data[0].comment_count == 5
+        assert result.data[1].comment_count == 0
         assert result.next_cursor == TechPostCursor.encode(2)
 
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
@@ -365,7 +375,10 @@ class TestTechPostServiceGetMyPosts:
     @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_내_글_cursor_목록과_nextCursor를_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
-        mock_post_repo.find_my_posts_by_cursor.return_value = [_post(3), _post(2)]
+        mock_post_repo.find_my_posts_by_cursor.return_value = [
+            _post_with_count(3, comment_count=1),
+            _post_with_count(2),
+        ]
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
         mock_pc_repo.find_by_post_ids.return_value = [TechPostCategoryMapping(post_id=3, category_id=10)]
@@ -379,6 +392,9 @@ class TestTechPostServiceGetMyPosts:
 
         assert [p.id for p in result.data] == [3, 2]
         assert result.data[0].category_ids == [10]
+        # 댓글 수는 프로젝션 실값 그대로 (count row 없는 글은 coalesce 0)
+        assert result.data[0].comment_count == 1
+        assert result.data[1].comment_count == 0
         assert result.next_cursor == TechPostCursor.encode(2)
 
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
@@ -480,7 +496,7 @@ class TestTechPostServiceGetMyPosts:
     # def test_내_글_offset_목록과_페이지_메타를_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
     #     mock_post_repo = MagicMock()
     #     mock_post_repo.count_my_posts.return_value = 3
-    #     mock_post_repo.find_my_posts_by_offset.return_value = [_post(3), _post(2), _post(1)]
+    #     mock_post_repo.find_my_posts_by_offset.return_value = [_post_with_count(3), _post_with_count(2), _post_with_count(1)]
     #     mock_post_repo_cls.return_value = mock_post_repo
     #     mock_pc_repo = MagicMock()
     #     mock_pc_repo.find_by_post_ids.return_value = []

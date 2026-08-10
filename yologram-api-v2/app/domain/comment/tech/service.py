@@ -42,6 +42,11 @@ class TechPostCommentService:
                 content=request.content,
             )
         )
+
+        # 게시글 소유 카운트(tech_post_comment_count) +1 — PmsApiClient 경계로 위임.
+        # 같은 세션(get_db 요청 단위 commit)이라 댓글 저장과 카운트 증가가 원자적으로 커밋/롤백된다
+        self.pms_api_client.increase_post_comment_count(post_id)
+
         return CreateCommentResponse(id=comment.id)
 
     def update(self, comment_id: int, user_id: int, request: UpdateCommentRequest) -> None:
@@ -70,6 +75,10 @@ class TechPostCommentService:
             raise CommentForbiddenException()
 
         self.comment_repository.delete(comment)
+
+        # 게시글 소유 카운트(tech_post_comment_count) -1 — PmsApiClient 경계로 위임.
+        # 같은 세션(get_db 요청 단위 commit)이라 댓글 삭제와 카운트 감소가 원자적으로 커밋/롤백된다 (0 미만 방지는 쿼리에서)
+        self.pms_api_client.decrease_post_comment_count(comment.post_id)
 
     def get_comments_by_cursor(
         self, post_id: int, sort_param: str | None, cursor: str | None, size: int

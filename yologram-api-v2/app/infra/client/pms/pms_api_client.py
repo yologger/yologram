@@ -4,12 +4,12 @@ from typing import Protocol
 
 from sqlalchemy.orm import Session
 
-from app.domain.pms.tech.repository import TechPostRepository
+from app.domain.pms.tech.repository import TechPostCommentCountRepository, TechPostRepository
 
 
 class PmsApiClient(Protocol):
     """
-    tech comment → tech post 도메인 경계 호출 추상화 (대상 글 존재 검증).
+    tech comment → tech post 도메인 경계 호출 추상화 (대상 글 존재 검증·댓글 수 갱신).
     모놀리식에서는 tech post 리포지토리를 직접 호출(LocalPmsApiClient),
     MSA 분리 시 post-api HTTP 호출 구현으로 교체한다.
     """
@@ -18,11 +18,28 @@ class PmsApiClient(Protocol):
         """post_id의 게시글이 존재하면 True."""
         ...
 
+    def increase_post_comment_count(self, post_id: int) -> None:
+        """post_id 게시글의 댓글 수 +1 — 댓글 도메인이 게시글 소유 카운트(tech_post_comment_count)를
+        갱신하는 경계 지점. 같은 세션(get_db 요청 단위 commit)이라 댓글 저장과 원자적으로 커밋/롤백된다."""
+        ...
+
+    def decrease_post_comment_count(self, post_id: int) -> None:
+        """post_id 게시글의 댓글 수 -1 (0 미만 방지) — 댓글 도메인이 게시글 소유 카운트를 갱신하는 경계 지점.
+        같은 세션(get_db 요청 단위 commit)이라 댓글 삭제와 원자적으로 커밋/롤백된다."""
+        ...
+
 
 class LocalPmsApiClient:
 
     def __init__(self, db: Session):
         self.repository = TechPostRepository(db)
+        self.comment_count_repository = TechPostCommentCountRepository(db)
 
     def exists(self, post_id: int) -> bool:
         return self.repository.find_by_id(post_id) is not None
+
+    def increase_post_comment_count(self, post_id: int) -> None:
+        self.comment_count_repository.increase(post_id)
+
+    def decrease_post_comment_count(self, post_id: int) -> None:
+        self.comment_count_repository.decrease(post_id)

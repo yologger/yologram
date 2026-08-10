@@ -46,6 +46,8 @@ class TestTechPostCommentService:
 
         assert result.id == 10
         mock_comment_repo.save.assert_called_once()
+        # 댓글 저장과 같은 세션에서 게시글 소유 카운트 +1 (PmsApiClient 경계)
+        mock_client.increase_post_comment_count.assert_called_once_with(1)
 
     @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
@@ -62,6 +64,25 @@ class TestTechPostCommentService:
             service.create(99, 1, CreateCommentRequest(content="내용"))
 
         mock_comment_repo.save.assert_not_called()
+        # 작성 실패 시 카운트 증가도 미호출
+        mock_client.increase_post_comment_count.assert_not_called()
+
+    @patch("app.domain.comment.tech.service.LocalPmsApiClient")
+    @patch("app.domain.comment.tech.service.TechPostCommentRepository")
+    def test_저장_실패_시_카운트_증가_미호출(self, mock_comment_repo_cls, mock_client_cls):
+        mock_comment_repo = MagicMock()
+        mock_comment_repo.save.side_effect = RuntimeError("저장 실패")
+        mock_comment_repo_cls.return_value = mock_comment_repo
+        mock_client = MagicMock()
+        mock_client.exists.return_value = True
+        mock_client_cls.return_value = mock_client
+
+        service = TechPostCommentService(MagicMock())
+
+        with pytest.raises(RuntimeError):
+            service.create(1, 1, CreateCommentRequest(content="내용"))
+
+        mock_client.increase_post_comment_count.assert_not_called()
 
 
 class TestTechPostCommentServiceUpdate:
@@ -73,13 +94,17 @@ class TestTechPostCommentServiceUpdate:
         mock_repo = MagicMock()
         mock_repo.find_by_id.return_value = comment
         mock_repo_cls.return_value = mock_repo
-        mock_client_cls.return_value = MagicMock()
+        mock_client = MagicMock()
+        mock_client_cls.return_value = mock_client
 
         service = TechPostCommentService(MagicMock())
         result = service.update(10, 1, UpdateCommentRequest(content="수정된 내용"))
 
         assert result is None
         assert comment.content == "수정된 내용"
+        # 수정은 댓글 수 불변 — 카운트 갱신 미호출
+        mock_client.increase_post_comment_count.assert_not_called()
+        mock_client.decrease_post_comment_count.assert_not_called()
 
     @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
@@ -117,17 +142,20 @@ class TestTechPostCommentServiceDelete:
     @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
     def test_정상_삭제_시_repository_delete_호출(self, mock_repo_cls, mock_client_cls):
-        comment = _comment(10, user_id=1)
+        comment = _comment(10, post_id=7, user_id=1)
         mock_repo = MagicMock()
         mock_repo.find_by_id.return_value = comment
         mock_repo_cls.return_value = mock_repo
-        mock_client_cls.return_value = MagicMock()
+        mock_client = MagicMock()
+        mock_client_cls.return_value = mock_client
 
         service = TechPostCommentService(MagicMock())
         result = service.delete(10, 1)
 
         assert result is None
         mock_repo.delete.assert_called_once_with(comment)
+        # 댓글 삭제와 같은 세션에서 게시글 소유 카운트 -1 (PmsApiClient 경계)
+        mock_client.decrease_post_comment_count.assert_called_once_with(7)
 
     @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
@@ -135,7 +163,8 @@ class TestTechPostCommentServiceDelete:
         mock_repo = MagicMock()
         mock_repo.find_by_id.return_value = None
         mock_repo_cls.return_value = mock_repo
-        mock_client_cls.return_value = MagicMock()
+        mock_client = MagicMock()
+        mock_client_cls.return_value = mock_client
 
         service = TechPostCommentService(MagicMock())
 
@@ -143,6 +172,8 @@ class TestTechPostCommentServiceDelete:
             service.delete(99, 1)
 
         mock_repo.delete.assert_not_called()
+        # 삭제 실패 시 카운트 감소도 미호출
+        mock_client.decrease_post_comment_count.assert_not_called()
 
     @patch("app.domain.comment.tech.service.LocalPmsApiClient")
     @patch("app.domain.comment.tech.service.TechPostCommentRepository")
@@ -151,7 +182,8 @@ class TestTechPostCommentServiceDelete:
         mock_repo = MagicMock()
         mock_repo.find_by_id.return_value = comment
         mock_repo_cls.return_value = mock_repo
-        mock_client_cls.return_value = MagicMock()
+        mock_client = MagicMock()
+        mock_client_cls.return_value = mock_client
 
         service = TechPostCommentService(MagicMock())
 
@@ -159,6 +191,8 @@ class TestTechPostCommentServiceDelete:
             service.delete(10, 2)
 
         mock_repo.delete.assert_not_called()
+        # 삭제 실패 시 카운트 감소도 미호출
+        mock_client.decrease_post_comment_count.assert_not_called()
 
 
 class TestTechPostCommentServiceQuery:
