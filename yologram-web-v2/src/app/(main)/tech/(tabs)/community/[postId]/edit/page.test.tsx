@@ -14,6 +14,7 @@ const mockUseParams = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace, back: vi.fn() }),
   useParams: () => mockUseParams(),
+  usePathname: () => '/tech/community/1/edit',
 }))
 
 const store = getDefaultStore()

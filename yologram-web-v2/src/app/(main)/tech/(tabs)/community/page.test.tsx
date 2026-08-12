@@ -66,13 +66,59 @@ describe('TechCommunity 피드', () => {
     expect(screen.queryByText('API 피드 본문 1')).not.toBeInTheDocument()
   })
 
-  it('작성바 클릭 시 글 작성 페이지로 이동한다', async () => {
+  it('로그인 상태에서 작성바 클릭 시 즉시 글 작성 페이지로 이동한다', async () => {
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
     const user = userEvent.setup()
     renderWithProviders(<TechCommunity />)
 
     await user.click(screen.getByRole('button', { name: '기술 커뮤니티에 글을 남겨보세요' }))
 
     expect(mockPush).toHaveBeenCalledWith('/tech/community/write')
+    // 로그인 상태에서는 로그인 유도 모달이 뜨지 않음
+    expect(screen.queryByText('로그인이 필요해요')).not.toBeInTheDocument()
+  })
+
+  it('비로그인 상태에서 작성바 클릭 시 로그인 유도 모달을 띄우고 이동하지 않는다', async () => {
+    // 비로그인 상태 유지(afterEach에서 null 설정)
+    const user = userEvent.setup()
+    renderWithProviders(<TechCommunity />)
+
+    await user.click(screen.getByRole('button', { name: '기술 커뮤니티에 글을 남겨보세요' }))
+
+    // antd 모달은 노드가 중복 렌더될 수 있어 AllBy 계열로 확인
+    expect((await screen.findAllByText('로그인이 필요해요')).length).toBeGreaterThan(0)
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('작성바의 로그인 유도 모달에서 로그인을 누르면 글쓰기 경로를 returnTo로 로그인 페이지로 이동한다', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<TechCommunity />)
+
+    await user.click(screen.getByRole('button', { name: '기술 커뮤니티에 글을 남겨보세요' }))
+
+    await screen.findAllByText('로그인이 필요해요')
+    // 모달 확인(로그인) 버튼은 primary 스타일
+    const okButton = document.querySelector('.ant-modal-confirm-btns .ant-btn-primary') as HTMLElement
+    await user.click(okButton)
+
+    // 현재 경로(/tech/community)가 아닌 글쓰기 경로로 복귀하도록 returnTo 지정
+    await waitFor(() =>
+      expect(mockPush).toHaveBeenCalledWith(`/login?returnTo=${encodeURIComponent('/tech/community/write')}`),
+    )
+  })
+
+  it('작성바의 로그인 유도 모달에서 취소하면 이동하지 않는다', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<TechCommunity />)
+
+    await user.click(screen.getByRole('button', { name: '기술 커뮤니티에 글을 남겨보세요' }))
+
+    await screen.findAllByText('로그인이 필요해요')
+    const cancelButton = document.querySelector('.ant-modal-confirm-btns .ant-btn:not(.ant-btn-primary)') as HTMLElement
+    await user.click(cancelButton)
+
+    await new Promise((r) => setTimeout(r, 50))
+    expect(mockPush).not.toHaveBeenCalled()
   })
 
   it('카드의 좋아요 수가 metrics 기반으로 표시된다', async () => {

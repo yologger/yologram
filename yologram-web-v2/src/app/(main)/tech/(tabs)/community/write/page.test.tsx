@@ -11,6 +11,7 @@ const mockPush = vi.fn()
 const mockReplace = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace }),
+  usePathname: () => '/tech/community/write',
 }))
 
 const store = getDefaultStore()
@@ -44,6 +45,15 @@ describe('CommunityWrite', () => {
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/tech/community')
     })
+  })
+
+  it('비로그인 진입 시 글쓰기 경로를 returnTo로 담아 로그인 페이지로 이동한다', async () => {
+    store.set(authAtom, null)
+    renderWithProviders(<CommunityWrite />)
+
+    await waitFor(() =>
+      expect(mockReplace).toHaveBeenCalledWith(`/login?returnTo=${encodeURIComponent('/tech/community/write')}`),
+    )
   })
 
   it('내용만 입력하고 카테고리 미선택 시 남기기 버튼이 비활성화된다', async () => {

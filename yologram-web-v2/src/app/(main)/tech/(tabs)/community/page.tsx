@@ -7,10 +7,12 @@ import ScrollToTopButton from '@/components/common/ScrollToTopButton'
 import FilterChips, { type ChipItem } from '@/components/common/FilterChips'
 import usePostCategoriesQuery from '@/queries/usePostCategoriesQuery'
 import usePostsQuery from '@/queries/usePostsQuery'
+import useRequireAuth from '@/hooks/useRequireAuth'
 import styles from './TechCommunity.module.css'
 
 export default function TechCommunity() {
   const router = useRouter()
+  const requireAuth = useRequireAuth()
   const { data: categories = [] } = usePostCategoriesQuery('tech')
   const [filter, setFilter] = useState<number | null>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -26,6 +28,12 @@ export default function TechCommunity() {
   } = usePostsQuery('tech', filter)
 
   const nameById = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories])
+
+  const goWrite = () => {
+    // 비로그인이면 로그인 유도 모달 — 로그인 성공 시 목록이 아닌 글쓰기 화면으로 바로 복귀
+    if (!requireAuth('/tech/community/write')) return
+    router.push('/tech/community/write')
+  }
 
   const filterItems: Array<ChipItem<number | null>> = [
     { label: '전체', value: null },
@@ -74,7 +82,7 @@ export default function TechCommunity() {
       {hasNextPage && <div ref={sentinelRef} className={styles.sentinel} />}
 
       <div className={styles.composeBar}>
-        <button className={styles.composeInput} onClick={() => router.push('/tech/community/write')}>
+        <button className={styles.composeInput} onClick={goWrite}>
           기술 커뮤니티에 글을 남겨보세요
         </button>
       </div>

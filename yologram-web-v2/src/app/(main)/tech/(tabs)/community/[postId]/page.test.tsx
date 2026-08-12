@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterEach, afterAll, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse, delay } from 'msw'
 import { QueryClient } from '@tanstack/react-query'
@@ -173,7 +173,7 @@ describe('CommunityDetail', () => {
     await waitFor(() => expect(getCount).toBeGreaterThan(initialGetCount))
   })
 
-  it('비로그인 상태에서 등록하면 로그인 유도 모달을 띄우고 요청하지 않는다', async () => {
+  it('비로그인 상태에서 등록하면 로그인 유도 모달을 띄우고 요청하지 않는다(안전망)', async () => {
     let called = false
     server.use(
       http.post('http://localhost:5002/api/v2/comments/:section/posts/:postId', () => {
@@ -186,7 +186,8 @@ describe('CommunityDetail', () => {
     renderWithProviders(<CommunityDetail />)
 
     await screen.findByText('API 본문 내용')
-    await user.type(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), '댓글 내용')
+    // 포커스 가드를 우회해 등록 시점 안전망만 검증 — focus 이벤트 없이 값 주입
+    fireEvent.change(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), { target: { value: '댓글 내용' } })
     await user.click(screen.getByRole('button', { name: '등록' }))
 
     // 로그인 유도 모달 노출 + 작성 요청 미발생
@@ -201,7 +202,8 @@ describe('CommunityDetail', () => {
     renderWithProviders(<CommunityDetail />)
 
     await screen.findByText('API 본문 내용')
-    await user.type(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), '댓글 내용')
+    // 포커스 가드를 우회해 등록 시점 안전망 모달을 검증 — focus 이벤트 없이 값 주입
+    fireEvent.change(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), { target: { value: '댓글 내용' } })
     await user.click(screen.getByRole('button', { name: '등록' }))
 
     await screen.findAllByText('로그인이 필요해요')
@@ -212,6 +214,54 @@ describe('CommunityDetail', () => {
     await waitFor(() =>
       expect(mockPush).toHaveBeenCalledWith(`/login?returnTo=${encodeURIComponent('/tech/community/1')}`),
     )
+  })
+
+  it('비로그인 상태에서 댓글 입력에 포커스하면 로그인 유도 모달을 띄우고 입력창을 blur 처리한다', async () => {
+    // 비로그인 상태 유지(afterEach에서 null 설정)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    const input = screen.getByPlaceholderText('댓글로 의견을 남겨보세요')
+    await user.click(input)
+
+    // 포커스 시점에 로그인 유도 모달 노출 (YouTube 패턴)
+    // antd 모달은 노드가 중복 렌더될 수 있어 AllBy 계열로 확인
+    expect((await screen.findAllByText('로그인이 필요해요')).length).toBeGreaterThan(0)
+    // 모달 취소 후 남은 포커스로 타이핑되지 않도록 입력창은 blur 상태
+    expect(input).not.toHaveFocus()
+  })
+
+  it('비로그인 댓글 포커스의 로그인 유도 모달에서 로그인을 누르면 returnTo와 함께 로그인 페이지로 이동한다', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    await user.click(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'))
+
+    await screen.findAllByText('로그인이 필요해요')
+    // 모달 확인(로그인) 버튼은 primary 스타일
+    const okButton = document.querySelector('.ant-modal-confirm-btns .ant-btn-primary') as HTMLElement
+    await user.click(okButton)
+
+    await waitFor(() =>
+      expect(mockPush).toHaveBeenCalledWith(`/login?returnTo=${encodeURIComponent('/tech/community/1')}`),
+    )
+  })
+
+  it('로그인 상태에서 댓글 입력에 포커스해도 로그인 유도 모달이 뜨지 않는다', async () => {
+    store.set(authAtom, { uid: 12, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    const input = screen.getByPlaceholderText('댓글로 의견을 남겨보세요')
+    await user.click(input)
+
+    await new Promise((r) => setTimeout(r, 50))
+    expect(screen.queryByText('로그인이 필요해요')).not.toBeInTheDocument()
+    // 포커스 유지 — 그대로 타이핑 가능
+    expect(input).toHaveFocus()
   })
 
   it('댓글 등록 실패 시 에러 토스트를 표시한다', async () => {

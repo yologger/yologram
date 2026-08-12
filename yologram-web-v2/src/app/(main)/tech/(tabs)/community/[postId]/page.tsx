@@ -174,11 +174,19 @@ export default function CommunityDetail() {
     })
   }
 
+  // 비로그인이 댓글 입력에 포커스하면 즉시 로그인 유도 (YouTube 패턴)
+  // 모달을 띄우기 전에 blur — 취소 후 입력창에 포커스가 남아 타이핑되는 것을 방지
+  const handleCommentFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (auth) return
+    e.currentTarget.blur()
+    requireAuth()
+  }
+
   const submitComment = () => {
     const content = text.trim()
     if (!content || isCommentPending) return
 
-    // 비로그인이면 로그인 유도 모달만 띄우고 요청하지 않는다
+    // 등록 시점 가드는 안전망으로 유지 — 비로그인이면 로그인 유도 모달만 띄우고 요청하지 않는다
     if (!requireAuth()) return
 
     createComment(
@@ -412,6 +420,7 @@ export default function CommunityDetail() {
           className={styles.commentInput}
           placeholder="댓글로 의견을 남겨보세요"
           value={text}
+          onFocus={handleCommentFocus}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') submitComment()
