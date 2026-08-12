@@ -21,9 +21,9 @@
   - [x] prod 배포·검증 완료: CI 4종 성공·롤아웃 완료, api-v2 좋아요 사이클 prod 검증(신규 POST→1/true→중복 POST 멱등→DELETE→0/false→재DELETE 멱등) + 잔여 데이터 원복 + v1 교차 확인(같은 토큰으로 v1 metrics 동일 계약·값 확인). 로컬 v2 검증은 prod로 대체(사용자 확정)
   - [x] 사장 컬럼 drop DDL: ALTER TABLE tech_post DROP COLUMN like_count, DROP COLUMN comment_count — prod 실행 완료(사용자), 실행 후 v1·v2 API 정상 확인
   - 공통: 1차는 카운트 테이블 동기 갱신, MSA 분리 시 이벤트 기반 이관. 탈퇴·게시글 삭제 시 원장 정리는 worker 청크 삭제 트랙에서(무FK라 고아 무해)
-- [ ] (Infra/DB) DB 커넥션 타임아웃 방어 — Mac 슬립 half-open 커넥션으로 로컬 api-v2 전면 hang 재현(2026-08-12, PyMySQL 기본 read_timeout 무한 + pool_pre_ping SELECT 1 블록)
-  - [ ] api-v2: create_engine connect_args={"connect_timeout": 5, "read_timeout": 10, "write_timeout": 10} + pool_recycle=3600 (수정안 승인 대기)
-  - [ ] api-v1: JDBC URL socketTimeout=10000&connectTimeout=5000 동일 계열 방어
+- [x] (Infra/DB) DB 커넥션 타임아웃 방어 — Mac 슬립 half-open 커넥션으로 로컬 api-v2 전면 hang 재현(2026-08-12) 후속 (완료, done.md)
+  - [x] api-v2: create_engine connect_args(connect 5s·read/write 10s) + pool_recycle 900(15분 — 번장 미러), 설정 계약 테스트
+  - [x] api-v1·worker: SSM url 파라미터 4개에 connectTimeout=5000&socketTimeout=10000 반영(재기동부터 적용) + Hikari max-lifetime 900000
 - [ ] (Count/View) 조회수 — 레거시(BoardViewService) 미러가 아니라 처음부터 Redis 버퍼링으로 (고빈도 쓰기 대비)
   - 레거시 구조: board_view_event(bid·uid·ip 원장 — 동일 조합 1회 집계) + board_view_count 1:1, 상세 조회 시 event 확인 후 count++ save. 약점: 모든 상세 조회가 DB INSERT+UPDATE 유발(고빈도 쓰기), 이벤트 테이블 무한 증식, read-modify-write 레이스, uid/ip nullable이라 uk 부재로 동시 중복 이벤트
   - 방향: 조회 시 Redis INCR(또는 중복 판정도 Redis SET/HyperLogLog)로 받고 worker가 주기 write-behind로 DB 반영 — 댓글·좋아요(동기 DB 카운트)와 대비되는 고빈도 쓰기 패턴 전시. Cache 트랙의 "Redis 카운터 확장" 합류점

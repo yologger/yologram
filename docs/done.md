@@ -188,6 +188,12 @@
   - web-v1/v2: 하트 토글 실연동 — 공용 뮤테이션 훅(v1 useTogglePostLikeMutation / v2 useToggleLikeMutation)의 onMutate에서 상세·피드(카테고리 변형 포함)·내 글 캐시 옵티미스틱 갱신(likedByMe 토글+likeCount ±1, 0 미만 방어) + 스냅샷, onError 원복+토스트. 멱등 API라 성공 후 invalidate 생략. 미인증은 하트 disabled로 통일(사용자 확정 — 추후 returnTo 로그인 유도 트랙에서 개선). 토큰은 기존 axios 인터셉터 전역 첨부라 likedByMe 자동 수신
   - 로컬 검증: api-v1 curl 사이클(좋아요→중복 no-op→비로그인 false→취소→미좋아요 no-op→404) + 원복 확인. api-v2 curl은 서버 hang(Mac 슬립 half-open — 별도 todos)으로 중단, 재기동 후 잔여
   - 테스트: api-v1 481(신규 30 — 카운트 upsert/가드·서비스 통합 멱등·리소스·조인·선택 인증) / api-v2 403(신규 34) / web-v1 190(신규 13) / web-v2 190 전부 통과 + 양쪽 프로덕션 빌드
+- [x] (Infra/DB) DB 커넥션 타임아웃 방어 — api-v1·api-v2·worker (half-open 커넥션 무한 대기 제거)
+  - 사고 분석: Mac 슬립으로 풀 안의 RDS 커넥션이 half-open → api-v2 pool_pre_ping의 SELECT 1이 PyMySQL 기본 read_timeout(무한)에서 영원히 블로킹 → DB 쓰는 요청 전면 hang·비DB 경로만 정상·RDS엔 실행 쿼리 없음 (2026-08-12 로컬 재현). 신규 코드(insert_ignore·optional auth)는 무혐의 — 엔진 설정 부재가 근본 원인
+  - api-v2: create_engine에 connect_args(connect 5s·read/write 10s) + pool_recycle 900 — 상수(CONNECT_ARGS·POOL_RECYCLE_SECONDS)로 노출해 설정 계약 테스트 3개 (전체 406 통과)
+  - api-v1·worker: JDBC URL에 connectTimeout=5000&socketTimeout=10000 — 코드 무변경(SSM url 파라미터 4개 수정, 재기동부터 적용). Hikari는 기본 방어(체크아웃 시 isValid 검증 5s·connectionTimeout 30s)가 있어 v2보다 덜 취약했으나 실행 중 쿼리의 죽은 소켓 대기 구멍을 socketTimeout으로 봉인. max-lifetime 900000(15분) 추가
+  - 번장 레퍼런스: bun-ums-api는 AWS Advanced JDBC Wrapper(wrapperPlugins: efm2·failover2·auroraConnectionTracker) + max-lifetime 15분으로 해결 — EFM이 죽은 커넥션을 능동 감지·차단. 우리는 단일 RDS(Aurora 아님)라 타임아웃 파라미터가 저비용 등가 — Aurora 전환 시 aws-wrapper+EFM 도입이 발전 방향
+  - 값 근거: 현재 쿼리 전부 ms 단위라 read 10s는 충분한 여유, 무거운 작업(DDL)은 앱 커넥션 미사용 방침이라 충돌 없음
 - [x] (web) 커뮤니티 UI 개선 4종 — 로그인 유도 전환 + 댓글 메타·버튼 정리 (web-v1·web-v2)
   - 미인증 하트·댓글: disabled → 활성 + 클릭 시 로그인 유도 — 대세 UX(YouTube·X·Reddit 등 "누르고 싶어진 순간이 로그인 전환 타이밍", disabled는 발견성·접근성 저하). useRequireAuth 공용 훅: modal.confirm("로그인이 필요해요") → 로그인 이동 → 성공 시 returnTo 원위치 복귀. returnTo는 라우터 차이로 v1 location.state / v2 쿼리 파라미터(내부 경로만 허용 — 오픈 리다이렉트 방지, useSearchParams 대신 window.location.search — Suspense 경계 회피로 /login 정적 프리렌더 유지). 댓글 입력값은 모달 취소 후에도 유지
   - 댓글 메타: 작성일을 닉네임 아래 줄로(세로 스택). 수정/삭제 버튼 텍스트 제거(아이콘만, aria-label 유지 — 게시글 상세 상단 버튼 포함), 삭제 아이콘 DeleteOutlined → CloseOutlined(X)
