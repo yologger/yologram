@@ -25,12 +25,16 @@ database:
           # 워커는 주기 배치 위주 — 커넥션 최소 유지
           maximum-pool-size: 2
           minimum-idle: 1
+          # 커넥션 수명 15분 — 낡은 커넥션 주기 교체 (번장 bun-ums-api 미러, Hikari 기본 30분 단축).
+          # 죽은 커넥션 소켓 타임아웃은 JDBC URL의 socketTimeout/connectTimeout이 담당 (SSM url 파라미터)
+          max-lifetime: 900000
     reader:
       datasource:
         driver-class-name: com.mysql.cj.jdbc.Driver
         hikari:
           maximum-pool-size: 2
           minimum-idle: 1
+          max-lifetime: 900000
     jpa:
       properties:
         hibernate.jdbc.batch_size: 50
