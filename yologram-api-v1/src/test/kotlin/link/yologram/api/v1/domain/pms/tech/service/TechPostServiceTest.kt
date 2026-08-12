@@ -7,7 +7,9 @@ import link.yologram.api.v1.domain.pms.tech.exception.InvalidTechCategoryExcepti
 import link.yologram.api.v1.domain.pms.tech.exception.InvalidTechSectionException
 import link.yologram.api.v1.domain.pms.tech.exception.TechPostForbiddenException
 import link.yologram.api.v1.domain.pms.tech.exception.TechPostNotFoundException
+import link.yologram.api.v1.config.EventStreamProperties
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostRequest
+import link.yologram.api.v1.domain.pms.tech.model.PostViewEvent
 import link.yologram.api.v1.domain.pms.tech.model.TechPostCursor
 import link.yologram.api.v1.domain.pms.tech.model.TechPostWithCounts
 import link.yologram.api.v1.domain.pms.tech.model.UpdateTechPostRequest
@@ -17,6 +19,7 @@ import link.yologram.api.v1.domain.pms.tech.repository.TechPostRepository
 import link.yologram.api.v1.infra.client.cms.CmsApiClient
 import link.yologram.api.v1.infra.client.comment.CommentApiClient
 import link.yologram.api.v1.infra.client.ums.UmsApiClient
+import link.yologram.api.v1.infra.event.PostViewEventPublisher
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -30,12 +33,18 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
+import software.amazon.awssdk.services.kinesis.KinesisClient
+import software.amazon.awssdk.services.kinesis.model.PutRecordRequest
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
@@ -58,6 +67,9 @@ class TechPostServiceTest {
 
     @Mock
     lateinit var commentApiClient: CommentApiClient
+
+    @Mock
+    lateinit var postViewEventPublisher: PostViewEventPublisher
 
     @InjectMocks
     lateinit var postService: TechPostService
@@ -240,6 +252,97 @@ class TechPostServiceTest {
             assertThrows<TechPostNotFoundException> {
                 postService.getPost(99L)
             }
+        }
+    }
+
+    @Nested
+    inner class 조회_이벤트_발행 {
+
+        private fun stubPostFound(postId: Long = 1L) {
+            whenever(postRepository.findPostWithCounts(postId))
+                .thenReturn(TechPostWithCounts(TechPost(id = postId, userId = 12L, content = "내용"), 0L, 0L))
+            whenever(postCategoryMappingRepository.findByPostId(postId)).thenReturn(emptyList())
+            whenever(umsApiClient.findNickname(12L)).thenReturn("tester")
+        }
+
+        private fun capturedEvent(): PostViewEvent {
+            val captor = argumentCaptor<PostViewEvent>()
+            verify(postViewEventPublisher).publish(captor.capture())
+            return captor.firstValue
+        }
+
+        @Test
+        fun `비로그인 상세 조회 성공 시 uid null 이벤트를 1회 발행한다`() {
+            stubPostFound()
+
+            postService.getPost(1L, viewerUid = null, clientIp = "1.2.3.4")
+
+            val event = capturedEvent()
+            assertEquals(PostViewEvent.EVENT_TYPE_POST_VIEW, event.eventType)
+            assertEquals(PostViewEvent.SECTION_TECH, event.section)
+            assertEquals(1L, event.postId)
+            assertNull(event.uid)
+            assertEquals("1.2.3.4", event.ip)
+        }
+
+        @Test
+        fun `로그인 상세 조회 성공 시 uid를 담아 1회 발행한다`() {
+            stubPostFound()
+            whenever(likeRepository.existsByPostIdAndUid(1L, 7L)).thenReturn(false)
+
+            postService.getPost(1L, viewerUid = 7L, clientIp = "1.2.3.4")
+
+            val event = capturedEvent()
+            assertEquals(7L, event.uid)
+            assertEquals(1L, event.postId)
+        }
+
+        @Test
+        fun `IP를 못 구한 요청이면 ip null로 발행한다`() {
+            stubPostFound()
+
+            postService.getPost(1L)
+
+            assertNull(capturedEvent().ip)
+        }
+
+        @Test
+        fun `존재하지 않는 게시글(404)이면 발행하지 않는다`() {
+            whenever(postRepository.findPostWithCounts(99L)).thenReturn(null)
+
+            assertThrows<TechPostNotFoundException> {
+                postService.getPost(99L, viewerUid = 7L, clientIp = "1.2.3.4")
+            }
+
+            verify(postViewEventPublisher, never()).publish(any())
+        }
+
+        @Test
+        fun `발행이 실패해도 상세 응답은 정상이다 (publisher가 삼킴)`() {
+            stubPostFound()
+            // 실제 publisher + PutRecord 예외 — 삼킴 책임이 publisher에 있음을 서비스 경로로 확인
+            val kinesisClient = mock<KinesisClient> {
+                on { putRecord(any<PutRecordRequest>()) } doThrow RuntimeException("boom")
+            }
+            val service = TechPostService(
+                postRepository,
+                postCategoryMappingRepository,
+                likeRepository,
+                cmsApiClient,
+                umsApiClient,
+                commentApiClient,
+                PostViewEventPublisher(
+                    kinesisClient,
+                    Jackson2ObjectMapperBuilder.json().build(),
+                    EventStreamProperties(postView = EventStreamProperties.Stream(name = "yologram-post-view-event-test")),
+                ),
+            )
+
+            val result = service.getPost(1L, viewerUid = null, clientIp = "1.2.3.4")
+
+            assertEquals(1L, result.id)
+            assertEquals("내용", result.content)
+            verify(kinesisClient).putRecord(any<PutRecordRequest>())
         }
     }
 

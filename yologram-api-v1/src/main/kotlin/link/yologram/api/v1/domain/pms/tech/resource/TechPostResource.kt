@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostResponse
@@ -16,6 +17,7 @@ import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUser
 import link.yologram.api.v1.domain.ums.resolver.OptionalAuthenticatedUser
 import link.yologram.api.v1.global.model.ApiEnvelop
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
+import link.yologram.api.v1.global.util.ClientIpResolver
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -152,8 +154,9 @@ class TechPostResource(
 //        return postService.getMyPostsByOffset(authData.uid, section, page, size)
 //    }
 
+    // 상세 조회는 조회 이벤트(Kinesis) 발행 대상 — IP는 서블릿 요청에서만 알 수 있어 여기서 추출해 서비스로 넘긴다
     @GetMapping("/tech/posts/{id}")
-    @Operation(summary = "테크 게시글 상세 조회", description = "테크 게시판의 게시글 단건 조회 (공개, 로그인 시 likedByMe 포함)")
+    @Operation(summary = "테크 게시글 상세 조회", description = "테크 게시판의 게시글 단건 조회 (공개, 로그인 시 likedByMe 포함). 조회 성공 시 조회 이벤트를 발행")
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "조회 성공"),
         ApiResponse(responseCode = "401", description = "무효 토큰 (헤더를 보낸 경우만 검증)"),
@@ -162,7 +165,8 @@ class TechPostResource(
     fun getPost(
         @PathVariable id: Long,
         @OptionalAuthenticatedUser authData: AuthData?,
+        request: HttpServletRequest,
     ): ApiEnvelop<TechPostDetailResponse> {
-        return ApiEnvelop(data = postService.getPost(id, authData?.uid))
+        return ApiEnvelop(data = postService.getPost(id, authData?.uid, ClientIpResolver.resolve(request)))
     }
 }

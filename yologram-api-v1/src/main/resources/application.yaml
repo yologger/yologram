@@ -16,6 +16,13 @@ cache:
       host:
       port: 6379
 
+# 이벤트 스트림(Kinesis) — 스트림 이름은 비밀값이 아니라 고정 이름이므로 Parameter Store가 아닌 yaml에 직접 둔다.
+# 기본값은 빈 값 = 발행 스킵 (로컬·테스트에서 prod 스트림이 오염되지 않도록). prod는 application-prod.yaml에서 지정
+event:
+  stream:
+    post-view:
+      name:
+
 database:
   main:
     writer:

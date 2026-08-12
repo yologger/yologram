@@ -30,6 +30,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -288,7 +289,7 @@ class TechPostResourceTest {
 
     @Test
     fun `게시글 상세 조회 시 200과 게시글을 반환한다 (비로그인 - viewerUid null)`() {
-        whenever(postService.getPost(eq(1L), isNull())).thenReturn(
+        whenever(postService.getPost(eq(1L), isNull(), anyOrNull())).thenReturn(
             TechPostDetailResponse(
                 id = 1L,
                 author = TechPostDetailResponse.Author(uid = 12L, nickname = "tester"),
@@ -317,7 +318,7 @@ class TechPostResourceTest {
     @Test
     fun `로그인 상태로 상세 조회하면 viewerUid가 전달된다 (선택 인증)`() {
         whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(7L)
-        whenever(postService.getPost(eq(1L), eq(7L))).thenReturn(
+        whenever(postService.getPost(eq(1L), eq(7L), anyOrNull())).thenReturn(
             TechPostDetailResponse(
                 id = 1L,
                 author = TechPostDetailResponse.Author(uid = 12L, nickname = "tester"),
@@ -351,7 +352,7 @@ class TechPostResourceTest {
 
     @Test
     fun `존재하지 않는 게시글이면 404 반환`() {
-        whenever(postService.getPost(eq(99L), isNull())).thenThrow(TechPostNotFoundException())
+        whenever(postService.getPost(eq(99L), isNull(), anyOrNull())).thenThrow(TechPostNotFoundException())
 
         mockMvc.get("/api/v1/pms/tech/posts/99")
             .andExpect {
@@ -359,6 +360,43 @@ class TechPostResourceTest {
                 jsonPath("$.errorCode") { value("POST_NOT_FOUND") }
             }
     }
+
+    @Test
+    fun `상세 조회 시 X-Forwarded-For 첫 값을 클라이언트 IP로 전달한다 (조회 이벤트용)`() {
+        whenever(postService.getPost(eq(1L), isNull(), anyOrNull())).thenReturn(detailResponse())
+
+        mockMvc.get("/api/v1/pms/tech/posts/1") {
+            // 프록시 체인(API Gateway·CloudFront) — 맨 앞이 원 클라이언트
+            header("X-Forwarded-For", "1.2.3.4, 70.41.3.18")
+        }.andExpect {
+            status { isOk() }
+        }
+
+        verify(postService).getPost(eq(1L), isNull(), eq("1.2.3.4"))
+    }
+
+    @Test
+    fun `상세 조회 시 X-Forwarded-For가 없으면 remoteAddr를 전달한다`() {
+        whenever(postService.getPost(eq(1L), isNull(), anyOrNull())).thenReturn(detailResponse())
+
+        mockMvc.get("/api/v1/pms/tech/posts/1")
+            .andExpect {
+                status { isOk() }
+            }
+
+        // MockMvc 기본 remoteAddr
+        verify(postService).getPost(eq(1L), isNull(), eq("127.0.0.1"))
+    }
+
+    private fun detailResponse() = TechPostDetailResponse(
+        id = 1L,
+        author = TechPostDetailResponse.Author(uid = 12L, nickname = "tester"),
+        title = "제목",
+        content = "내용",
+        categoryIds = listOf(1L),
+        metrics = TechPostMetrics(commentCount = 0, likeCount = 0, likedByMe = false),
+        createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
+    )
 
     @Test
     fun `게시글 목록 조회 시 200과 data·nextCursor를 반환한다`() {

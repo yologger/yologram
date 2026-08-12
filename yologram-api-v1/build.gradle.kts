@@ -65,6 +65,7 @@ dependencies {
     // AWS SDK v2
     implementation(platform("software.amazon.awssdk:bom:2.31.62"))
     implementation("software.amazon.awssdk:ses")
+    implementation("software.amazon.awssdk:kinesis")
 
     // Dev
     developmentOnly("org.springframework.boot:spring-boot-devtools")

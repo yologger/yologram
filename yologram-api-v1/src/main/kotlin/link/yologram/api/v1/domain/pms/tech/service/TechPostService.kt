@@ -8,6 +8,7 @@ import link.yologram.api.v1.domain.pms.tech.exception.TechPostForbiddenException
 import link.yologram.api.v1.domain.pms.tech.exception.TechPostNotFoundException
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostResponse
+import link.yologram.api.v1.domain.pms.tech.model.PostViewEvent
 import link.yologram.api.v1.domain.pms.tech.model.TechPostCursor
 import link.yologram.api.v1.domain.pms.tech.model.TechPostDetailResponse
 import link.yologram.api.v1.domain.pms.tech.model.TechPostMetrics
@@ -20,6 +21,7 @@ import link.yologram.api.v1.domain.pms.tech.repository.TechPostRepository
 import link.yologram.api.v1.infra.client.cms.CmsApiClient
 import link.yologram.api.v1.infra.client.comment.CommentApiClient
 import link.yologram.api.v1.infra.client.ums.UmsApiClient
+import link.yologram.api.v1.infra.event.PostViewEventPublisher
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import link.yologram.api.v1.global.model.ApiEnvelopPage
 import org.springframework.data.repository.findByIdOrNull
@@ -34,6 +36,7 @@ class TechPostService(
     private val cmsApiClient: CmsApiClient,
     private val umsApiClient: UmsApiClient,
     private val commentApiClient: CommentApiClient,
+    private val postViewEventPublisher: PostViewEventPublisher,
 ) {
 
     companion object {
@@ -116,9 +119,12 @@ class TechPostService(
         postRepository.delete(post)
     }
 
-    // 게시글 단건 조회. viewerUid는 선택 인증(로그인 시 likedByMe 계산, 비로그인 null → false)
+    /**
+     * 게시글 단건 조회. viewerUid는 선택 인증(로그인 시 likedByMe 계산, 비로그인 null → false).
+     * clientIp는 조회 이벤트용(Resource가 X-Forwarded-For에서 추출해 전달, 없으면 null).
+     */
     @Transactional(readOnly = true)
-    fun getPost(id: Long, viewerUid: Long? = null): TechPostDetailResponse {
+    fun getPost(id: Long, viewerUid: Long? = null, clientIp: String? = null): TechPostDetailResponse {
         // 카운트는 tech_post_comment_count·tech_post_like_count leftJoin + coalesce(0) — count row가 없으면 0
         val postWithCounts = postRepository.findPostWithCounts(id) ?: throw TechPostNotFoundException()
         val post = postWithCounts.post
@@ -128,6 +134,12 @@ class TechPostService(
 
         // likedByMe: 개인화 값이라 프로젝션이 아닌 원장 단건 exists (비로그인은 조회 생략)
         val likedByMe = viewerUid != null && likeRepository.existsByPostIdAndUid(post.id, viewerUid)
+
+        // 조회 이벤트 발행 — 조회가 성공한 뒤에만(404면 위에서 예외로 빠져 발행되지 않는다).
+        // 실패는 publisher가 삼킨다(부가 기능이므로 조회 API 가용성 우선). 중복 판정은 소비 쪽(worker) 몫
+        postViewEventPublisher.publish(
+            PostViewEvent(postId = post.id, uid = viewerUid, ip = clientIp),
+        )
 
         return TechPostDetailResponse(
             id = post.id,
