@@ -56,6 +56,8 @@ aws/
     api-gateway/            # HTTP API Gateway (yologram-gateway), VPC Link, Custom Domain
     database/               # RDS MySQL 8.0 (db.t4g.micro)
     elasticache/            # Valkey 8.0 (cache.t3.micro)
+    kinesis/                # Kinesis 스트림 (yologram-post-view-event-prod — 게시글 조회수 이벤트)
+    dynamodb/               # DynamoDB (Kinesis 컨슈머 체크포인트·샤드 락 테이블)
     opensearch/             # OpenSearch 2.19 (t3.small.search)
   services/
     yologram-api-v1/        # Spring Boot API (ECS Fargate SPOT)
@@ -87,13 +89,15 @@ aws/
 | ElastiCache | $3.51 | $8.93 (RI) | Valkey, cache.t4g.micro |
 | RDS MySQL | $0 | $13.50 (RI) | db.t4g.micro |
 | OpenSearch | $0 | $40.88 (온디멘드) | t3.small.search, RI 불가 |
+| Kinesis | $13.51 | $13.51 | yologram-post-view-event-prod, provisioned 1샤드 $0.0185/h (프리티어 없음) |
+| DynamoDB | $0 | $0 | 컨슈머 체크포인트·락 2테이블, provisioned 5/5 — 상시 무료 티어(25 RCU/WCU) 내 |
 | Lightsail (n8n) | $0 (첫 3개월 무료) | $5 | 무료 종료 후 $5/월 |
 | S3 | ~$0 | ~$0 | 사용량 비례 |
 | SES | ~$0 | ~$0 | 사용량 비례 |
 | ECR | $0.09 | $0.09 | 사용량 비례 |
 | Google Workspace | $7.56 | $7.56 | Starter 플랜 |
-| 합계($) | $42.68 | $107.48 | Google Workspace 포함 |
-| 합계(₩) | 약 ₩64,000 | 약 ₩161,000 | ₩1,500/$ 기준 |
+| 합계($) | $56.19 | $120.99 | Google Workspace 포함 |
+| 합계(₩) | 약 ₩84,000 | 약 ₩181,000 | ₩1,500/$ 기준 |
 
 
 RI 요금
@@ -110,9 +114,9 @@ RI 요금
 
 | 시나리오 | 월 | 연 |
 | --- | --- | --- |
-| 현재(프리티어) | 약 $43 (₩64,000) | 약 $512 (₩768,000) |
-| 프리티어 만료 후(RI 적용) | 약 $107 (₩161,000) | 약 $1,290 (₩1,935,000) |
-| 만료 후 + OpenSearch self-host($7) | 약 $74 (₩110,000) | 약 $883 (₩1,325,000) |
+| 현재(프리티어) | 약 $56 (₩84,000) | 약 $674 (₩1,011,000) |
+| 프리티어 만료 후(RI 적용) | 약 $121 (₩181,000) | 약 $1,452 (₩2,178,000) |
+| 만료 후 + OpenSearch self-host($7) | 약 $88 (₩131,000) | 약 $1,050 (₩1,575,000) |
 
 - 프리티어는 계정 생성 후 12개월 한정. 이후 만료 요금 적용
 - 최대 절감 레버: OpenSearch 관리형($40.88) → Lightsail self-host($7)로 전환 시 만료 후 월 $34 절감

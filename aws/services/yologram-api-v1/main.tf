@@ -111,6 +111,25 @@ resource "aws_iam_role_policy" "task_ses_send" {
   })
 }
 
+resource "aws_iam_role_policy" "task_kinesis_put" {
+  name = "kinesis-put"
+  role = aws_iam_role.task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "kinesis:PutRecord",
+          "kinesis:PutRecords",
+        ]
+        Resource = "arn:aws:kinesis:ap-northeast-2:${data.aws_caller_identity.current.account_id}:stream/yologram-post-view-event-prod"
+      }
+    ]
+  })
+}
+
 ################################
 ## SSM Parameter Store (prod) ##
 ################################

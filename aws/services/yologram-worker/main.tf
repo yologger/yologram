@@ -87,6 +87,52 @@ resource "aws_iam_role_policy" "task_ssm_read" {
   })
 }
 
+# 조회수 이벤트 컨슈머(Spring Cloud Stream Kinesis binder) — 스트림 읽기 + 체크포인트/락 DynamoDB
+resource "aws_iam_role_policy" "task_kinesis_get" {
+  name = "kinesis-get"
+  role = aws_iam_role.task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "kinesis:DescribeStream",
+          "kinesis:DescribeStreamSummary",
+          "kinesis:GetRecords",
+          "kinesis:GetShardIterator",
+          "kinesis:ListShards",
+        ]
+        Resource = "arn:aws:kinesis:ap-northeast-2:${data.aws_caller_identity.current.account_id}:stream/yologram-post-view-event-prod"
+      },
+      {
+        # binder가 스트림 존재 확인 시 사용 (리소스 한정 불가 액션)
+        Effect   = "Allow"
+        Action   = ["kinesis:ListStreams"]
+        Resource = "*"
+      },
+      {
+        # 체크포인트(MetadataStore)·샤드 락(LockRegistry) 테이블 — tf 선생성(aws/global/kinesis)
+        Effect = "Allow"
+        Action = [
+          "dynamodb:DescribeTable",
+          "dynamodb:DescribeTimeToLive",
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+        ]
+        Resource = [
+          "arn:aws:dynamodb:ap-northeast-2:${data.aws_caller_identity.current.account_id}:table/yologram-post-view-event-checkpoint-prod",
+          "arn:aws:dynamodb:ap-northeast-2:${data.aws_caller_identity.current.account_id}:table/yologram-post-view-event-lock-prod",
+        ]
+      }
+    ]
+  })
+}
+
 ################################
 ## SSM Parameter Store (prod) ##
 ################################
