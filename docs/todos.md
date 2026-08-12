@@ -10,14 +10,20 @@
   - [x] DDL: 테이블 생성 + backfill prod 실행 완료 (당시 댓글 0건이라 backfill 0행 — 정상)
   - [x] 작성/삭제 시 원자 upsert/가드 UPDATE 동기화 (PmsApiClient 경계 경유), 목록·상세 leftJoin+coalesce, api-v2 미러, web 무효화 2줄
   - [x] 배포 후 차분 보정 1회: INSERT...SELECT COUNT ON DUPLICATE KEY UPDATE 실행 완료 (배포 전 댓글 0건 — 0행 보정, count=actual 정합 검증)
-  - [ ] 후속 메모: tech_post의 사장 컬럼 comment_count(엔티티 매핑만 유지, 미참조) drop DDL — like_count 정리 시점에 함께
-- [ ] (Count/Like) 좋아요 — tech_post_like 원장 + tech_post_like_count (레거시 BoardLike 미러 + 갱신 로직 개선)
+  - [x] 후속 메모 처리: 사장 컬럼 drop은 아래 Like 항목의 잔여 DDL로 통합 (comment_count·like_count 동시 drop)
+- [x] (Count/Like) 좋아요 — tech_post_like 원장 + tech_post_like_count + metrics 응답 전환 (api-v1·v2·web-v1·v2 구현 완료, done.md)
   - 설계: 원장(tech_post_like — id·post_id·uid·created_at, UNIQUE(post_id,uid))과 1:1 카운트 분리(pms 소유 비정규화 — 무조인 원칙과 양립, 목록 조인 row 뻥튀기 없음). 원장이 진실, 불일치 시 재계산 복구
-  - [ ] DDL: tech_post_like + tech_post_like_count — prod 수동
-  - [ ] 좋아요 API: POST/DELETE /pms/tech/posts/{id}/like (인증 필수) — 레거시 개선 3: ①원자 UPDATE 증감(엔티티 읽고 ++ 금지) ②멱등(이미 좋아요 POST·미좋아요 DELETE는 no-op 200, uk 위반도 no-op 수렴 — 더블클릭·재시도 안전, 레거시는 409) ③count 0이어도 row 유지(delete/insert churn 제거, coalesce가 없음=0 처리) — api-v1/v2
-  - [ ] 조회 조인 확장: like_count leftJoin + likedByMe(로그인 시 원장 배치 EXISTS, 비로그인 false — 레거시에 없던 추가)
-  - [ ] web-v1/v2 하트 토글 실연동 (옵티미스틱 업데이트 + 실패 원복)
+  - [x] 응답 계약 전환: 목록·상세의 카운트를 metrics 객체로 중첩 — metrics: {commentCount, likeCount, likedByMe} (레거시 product.metrics 미러, likedByMe도 metrics 안 — 사용자 확정). 평면 필드 제거는 브레이킹 → api+web 한 트랙, 배포 창 순단 수용(사용자 확정). viewCount는 조회수 도입 시 필드 추가(무브레이킹)
+  - [x] DDL: tech_post_like(uid로 rename 포함) + tech_post_like_count — prod 실행 완료(사용자)
+  - [x] 좋아요 API: POST/DELETE /pms/tech/posts/{id}/like (인증 필수, 멱등 no-op 200) — api-v1(INSERT IGNORE+가드 UPDATE)·api-v2 미러
+  - [x] 조회 조인 확장: like_count leftJoin + likedByMe(상세 exists·목록 원장 IN 배치, 선택 인증 — 헤더 없으면 비로그인 false·무효 토큰 401)
+  - [x] web-v1/v2 하트 토글 실연동 (옵티미스틱 업데이트 + 실패 원복, 미인증은 disabled로 통일 — 사용자 확정)
+  - [ ] 배포 후 잔여: 로컬 api-v2 curl 검증(서버 hang으로 중단 — 재기동 후) + 검증 데이터 원복(글 1200 좋아요 1건) + prod 배포 확인
+  - [ ] 사장 컬럼 drop DDL: ALTER TABLE tech_post DROP COLUMN like_count, DROP COLUMN comment_count — 매핑 제거 버전 배포 확인 후 prod 수동 (SQL 준비해 제공)
   - 공통: 1차는 카운트 테이블 동기 갱신, MSA 분리 시 이벤트 기반 이관. 탈퇴·게시글 삭제 시 원장 정리는 worker 청크 삭제 트랙에서(무FK라 고아 무해)
+- [ ] (Infra/DB) DB 커넥션 타임아웃 방어 — Mac 슬립 half-open 커넥션으로 로컬 api-v2 전면 hang 재현(2026-08-12, PyMySQL 기본 read_timeout 무한 + pool_pre_ping SELECT 1 블록)
+  - [ ] api-v2: create_engine connect_args={"connect_timeout": 5, "read_timeout": 10, "write_timeout": 10} + pool_recycle=3600 (수정안 승인 대기)
+  - [ ] api-v1: JDBC URL socketTimeout=10000&connectTimeout=5000 동일 계열 방어
 - [ ] (Count/View) 조회수 — 레거시(BoardViewService) 미러가 아니라 처음부터 Redis 버퍼링으로 (고빈도 쓰기 대비)
   - 레거시 구조: board_view_event(bid·uid·ip 원장 — 동일 조합 1회 집계) + board_view_count 1:1, 상세 조회 시 event 확인 후 count++ save. 약점: 모든 상세 조회가 DB INSERT+UPDATE 유발(고빈도 쓰기), 이벤트 테이블 무한 증식, read-modify-write 레이스, uid/ip nullable이라 uk 부재로 동시 중복 이벤트
   - 방향: 조회 시 Redis INCR(또는 중복 판정도 Redis SET/HyperLogLog)로 받고 worker가 주기 write-behind로 DB 반영 — 댓글·좋아요(동기 DB 카운트)와 대비되는 고빈도 쓰기 패턴 전시. Cache 트랙의 "Redis 카운터 확장" 합류점

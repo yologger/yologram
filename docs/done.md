@@ -178,6 +178,16 @@
   - web-v1/v2: 표시 UI는 기존(목록 카드·상세 "댓글 N") — 댓글 작성/삭제 onSuccess에 ['post','tech',id] 무효화 2줄만 추가(카운트 즉시 갱신)
   - prod DDL: 테이블 생성+backfill 실행 완료(사용자). 배포 후 차분 보정 1회 실행 완료(INSERT...SELECT COUNT ON DUPLICATE KEY UPDATE — 배포 전 댓글 0건이라 0행, count=actual 정합·prod API commentCount 서빙 확인). 로컬 E2E: 작성→1→삭제→0 curl 검증 완료
   - 테스트: api-v1 신규(카운트 upsert/음수 방어 Testcontainers·서비스 호출·조인 coalesce) 총 451 / api-v2 369(신규 통합 12) / web-v1 176·web-v2 175
+- [x] (Count/Like) 게시글 좋아요 — tech_post_like 원장 + tech_post_like_count + metrics 응답 계약 전환 (api-v1·v2 + web-v1·v2)
+  - 구조: 원장(tech_post_like — post_id·uid·created_at, UNIQUE(post_id,uid))이 진실, 1:1 카운트(tech_post_like_count)는 표시용 비정규화(불일치 시 원장 COUNT 재계산 복구). 댓글 수와 같은 카운트 패턴이되 "누가"가 필요해 원장 추가 — 레거시 BoardLike 미러
+  - 갱신(레거시 개선 3): ①원자 쿼리만(INSERT IGNORE 원장 + upsert/가드 UPDATE 카운트 — 엔티티 ±1 save 금지) ②멱등(중복 좋아요 POST·미좋아요 DELETE는 no-op 200, 동시 uk 충돌도 0행 수렴 — 더블클릭·재시도 안전, 레거시는 409) ③count 0 row 유지. INSERT IGNORE 채택 근거: save+flush 후 uk 예외 catch는 Hibernate 세션 오염(예외 후 사용 불가)으로 같은 트랜잭션의 카운트 갱신이 깨짐 — 삽입 행수(1/0) 반환으로 "실제 삽입 시만 +1" 분기까지 한 문장. v2는 mysql insert().prefix_with("IGNORE") 미러
+  - API: POST/DELETE /pms/tech/posts/{id}/like (인증 필수, 성공 항상 200). 없는 글 404(고아 방지, 취소도 대칭 404)
+  - metrics 전환(브레이킹, 사용자 확정): 목록·상세 응답의 평면 likeCount/commentCount 제거 → metrics: {commentCount, likeCount, likedByMe} 중첩(레거시 product.metrics 미러). likedByMe도 metrics 안. api+web 한 트랙 배포, 배포 창 순단 수용(비공개 서비스). viewCount는 조회수 도입 시 필드 추가(무브레이킹)
+  - likedByMe·선택 인증: 공개 GET(목록·상세)에 v1 @OptionalAuthenticatedUser 리졸버 / v2 get_optional_authenticated_user 신설 — 헤더 없으면 null(비로그인 false), 헤더가 있으면 필수 인증과 동일 검증(무효 토큰 401 — 만료 토큰 방치 버그를 숨기지 않음). 상세는 원장 exists 단건, 목록은 원장 IN 배치(N+1 회피). 프로젝션(TechPostWithCounts — 댓글·좋아요 coalesce(0) 이중 leftJoin)에 넣지 않고 service에서 조회(개인화 값 분리)
+  - 사장 컬럼: tech_post.like_count·comment_count 엔티티/모델 매핑 제거(prod 컬럼 DEFAULT 0 확인 — INSERT 안전). drop DDL은 매핑 제거 버전 배포 후 (todos 잔여)
+  - web-v1/v2: 하트 토글 실연동 — 공용 뮤테이션 훅(v1 useTogglePostLikeMutation / v2 useToggleLikeMutation)의 onMutate에서 상세·피드(카테고리 변형 포함)·내 글 캐시 옵티미스틱 갱신(likedByMe 토글+likeCount ±1, 0 미만 방어) + 스냅샷, onError 원복+토스트. 멱등 API라 성공 후 invalidate 생략. 미인증은 하트 disabled로 통일(사용자 확정 — 추후 returnTo 로그인 유도 트랙에서 개선). 토큰은 기존 axios 인터셉터 전역 첨부라 likedByMe 자동 수신
+  - 로컬 검증: api-v1 curl 사이클(좋아요→중복 no-op→비로그인 false→취소→미좋아요 no-op→404) + 원복 확인. api-v2 curl은 서버 hang(Mac 슬립 half-open — 별도 todos)으로 중단, 재기동 후 잔여
+  - 테스트: api-v1 481(신규 30 — 카운트 upsert/가드·서비스 통합 멱등·리소스·조인·선택 인증) / api-v2 403(신규 34) / web-v1 190(신규 13) / web-v2 190 전부 통과 + 양쪽 프로덕션 빌드
 - [x] (Search) 섹션 검색 UI — web-v1·web-v2 (백엔드 미연동, saveticker.com/news 참고)
   - 배치: SubTabLayout의 타이틀("기술")과 탭 사이에 검색바(콘텐츠 전체 폭) — 데스크탑 인라인 Input(돋보기 prefix·allowClear·placeholder "검색어를 입력하세요"), 모바일(useIsMobile 768px)은 타이틀 행 우상단 돋보기 버튼 → 검색 오버레이(← 뒤로 + autoFocus, ESC 닫힘). collapseOnScroll 헤더에 포함돼 스크롤 시 함께 숨김. 세 섹션(tech/invest/politics) 자동 적용
   - 동작: Enter 시 trim·빈 값 무시, /{section}/keywords/{encodeURIComponent(키워드)} 이동. 키워드 페이지는 "'제미나이' 검색결과" placeholder 텍스트 + 재검색 바(initialValue) — 결과 목록은 검색 백엔드(todos Search 트랙)에서 연동
