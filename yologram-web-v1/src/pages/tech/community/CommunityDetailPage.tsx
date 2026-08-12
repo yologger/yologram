@@ -12,7 +12,7 @@ import {
   RetweetOutlined,
   ShareAltOutlined,
   EditOutlined,
-  DeleteOutlined,
+  CloseOutlined,
 } from '@ant-design/icons'
 import { authAtom } from '../../../stores/auth'
 import usePostQuery from '../../../queries/usePostQuery'
@@ -23,6 +23,7 @@ import useUpdateCommentMutation from '../../../queries/useUpdateCommentMutation'
 import useDeleteCommentMutation from '../../../queries/useDeleteCommentMutation'
 import useCommentsQuery from '../../../queries/useCommentsQuery'
 import type { CommentSort } from '../../../apis/comments'
+import useRequireAuth from '../../../hooks/useRequireAuth'
 import { getErrorStatus } from '../../../lib/error'
 import styles from './CommunityDetailPage.module.css'
 
@@ -41,6 +42,7 @@ export default function CommunityDetailPage() {
   const sentinelRef = useRef<HTMLDivElement>(null)
   const { message, modal } = App.useApp()
   const queryClient = useQueryClient()
+  const requireAuth = useRequireAuth()
   const { mutate: deletePost } = useDeletePostMutation()
   const { mutate: toggleLikeMutate } = useTogglePostLikeMutation()
   const { mutate: createComment, isPending: isSubmitting } = useCreateCommentMutation()
@@ -119,13 +121,12 @@ export default function CommunityDetailPage() {
   // 본인 글일 때만 수정 노출 (상세 응답 author.uid 와 로그인 uid 비교)
   const isAuthor = auth != null && auth.uid === post.author.uid
   const createdAtText = new Date(post.createdAt).toLocaleString('ko-KR')
-  const isAuthenticated = auth != null
   // 좋아요 상태는 서버 metrics(likedByMe/likeCount)가 원본 — 옵티미스틱 반영은 캐시에서 수행
   const { likeCount, commentCount, likedByMe } = post.metrics
 
   const toggleLike = () => {
-    // 미인증 시 무시 (버튼도 동일 조건으로 비활성)
-    if (!isAuthenticated) return
+    // 비로그인 시 로그인 유도 모달을 띄우고 중단
+    if (!requireAuth()) return
     toggleLikeMutate(
       { section: 'tech', id, like: !likedByMe },
       {
@@ -174,8 +175,10 @@ export default function CommunityDetailPage() {
   }
 
   const submitComment = () => {
-    // 미인증/빈 내용/전송 중에는 무시 (버튼도 동일 조건으로 비활성)
-    if (!isAuthenticated || !text.trim() || isSubmitting) return
+    // 빈 내용/전송 중에는 무시 (등록 버튼도 동일 조건으로 비활성)
+    if (!text.trim() || isSubmitting) return
+    // 비로그인 시 로그인 유도 모달을 띄우고 중단 (입력값은 유지)
+    if (!requireAuth()) return
     createComment(
       { section: 'tech', postId: id, content: text.trim() },
       {
@@ -272,10 +275,10 @@ export default function CommunityDetailPage() {
               aria-label="수정"
               onClick={() => navigate(`/tech/community/${id}/edit`)}
             >
-              <EditOutlined /> 수정
+              <EditOutlined />
             </button>
             <button className={styles.delete} aria-label="삭제" onClick={handleDelete}>
-              <DeleteOutlined /> 삭제
+              <CloseOutlined />
             </button>
           </div>
         )}
@@ -292,12 +295,11 @@ export default function CommunityDetailPage() {
         {post.title && <div className={styles.title}>{post.title}</div>}
         <div className={styles.content}>{post.content}</div>
         <div className={styles.actions}>
-          {/* 미인증 시 비활성 (댓글 입력 비활성 관례와 동일) */}
+          {/* 비로그인에도 활성 — 클릭 시 로그인 유도 모달 (useRequireAuth) */}
           <button
             className={`${styles.likeButton} ${likedByMe ? styles.liked : ''}`}
             aria-label="좋아요"
             aria-pressed={likedByMe}
-            disabled={!isAuthenticated}
             onClick={toggleLike}
           >
             {likedByMe ? <HeartFilled /> : <HeartOutlined />} {likeCount}
@@ -347,8 +349,11 @@ export default function CommunityDetailPage() {
           <div key={c.id} className={styles.comment}>
             <div className={styles.authorRow}>
               <Avatar size={28} icon={<UserOutlined />} />
-              <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
-              <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
+              {/* 닉네임 위, 작성일 아래 — 세로 스택 */}
+              <div className={styles.commentMeta}>
+                <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
+                <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
+              </div>
               {isCommentAuthor && !isEditing && (
                 <>
                   <button
@@ -356,14 +361,14 @@ export default function CommunityDetailPage() {
                     aria-label="댓글 수정"
                     onClick={() => startEdit(c.id, c.content)}
                   >
-                    <EditOutlined /> 수정
+                    <EditOutlined />
                   </button>
                   <button
                     className={styles.commentDelete}
                     aria-label="댓글 삭제"
                     onClick={() => handleDeleteComment(c.id)}
                   >
-                    <DeleteOutlined /> 삭제
+                    <CloseOutlined />
                   </button>
                 </>
               )}
@@ -404,11 +409,12 @@ export default function CommunityDetailPage() {
       {hasNextPage && <div ref={sentinelRef} className={styles.sentinel} />}
 
       <div className={styles.commentBar}>
+        {/* 비로그인에도 활성 — 등록 시도 시 로그인 유도 모달 (useRequireAuth) */}
         <input
           className={styles.commentInput}
-          placeholder={isAuthenticated ? '댓글로 의견을 남겨보세요' : '로그인 후 댓글을 남길 수 있어요'}
+          placeholder="댓글로 의견을 남겨보세요"
           value={text}
-          disabled={!isAuthenticated || isSubmitting}
+          disabled={isSubmitting}
           maxLength={1000}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -417,7 +423,7 @@ export default function CommunityDetailPage() {
         />
         <button
           className={styles.sendButton}
-          disabled={!isAuthenticated || !text.trim() || isSubmitting}
+          disabled={!text.trim() || isSubmitting}
           onClick={submitComment}
         >
           등록

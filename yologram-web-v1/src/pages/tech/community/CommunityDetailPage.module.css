@@ -109,10 +109,6 @@
   cursor: pointer;
 }
 
-.likeButton:disabled {
-  cursor: default;
-}
-
 .liked {
   color: #ef4444;
 }
@@ -161,6 +157,12 @@
 .comment {
   padding: 12px 16px;
   border-bottom: 1px solid #dfe4ea;
+}
+
+/* 댓글 메타 — 닉네임 위, 작성일 아래 세로 스택 (폰트 크기·색은 .author/.time 그대로) */
+.commentMeta {
+  display: flex;
+  flex-direction: column;
 }
 
 .commentEdit {

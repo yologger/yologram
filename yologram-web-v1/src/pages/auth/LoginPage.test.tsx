@@ -63,6 +63,26 @@ describe('LoginPage', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/')
       })
     })
+
+    it('returnTo state가 있으면 성공 시 해당 경로로 복귀한다', async () => {
+      const user = userEvent.setup()
+      // 로그인 유도 모달에서 넘어온 상황 재현 — location.state.returnTo 전달
+      renderWithProviders(<LoginPage />, {
+        wrapperOptions: {
+          routerProps: {
+            initialEntries: [{ pathname: '/login', state: { returnTo: '/tech/community/1' } }],
+          },
+        },
+      })
+
+      await user.type(screen.getByPlaceholderText('이메일'), 'test@yologram.link')
+      await user.type(screen.getByPlaceholderText('비밀번호'), 'password123!')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/tech/community/1')
+      })
+    })
   })
 
   describe('로그인 실패', () => {

@@ -57,10 +57,6 @@
   cursor: pointer;
 }
 
-.likeButton:disabled {
-  cursor: default;
-}
-
 .liked {
   color: #ef4444;
 }

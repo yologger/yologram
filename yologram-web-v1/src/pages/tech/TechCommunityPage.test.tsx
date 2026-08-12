@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterEach, afterAll } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { getDefaultStore } from 'jotai'
@@ -133,13 +133,38 @@ describe('TechCommunityPage', () => {
     expect(likeButton).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('비로그인 상태면 카드 하트 버튼이 비활성화된다', async () => {
+  it('비로그인 상태에서 카드 하트 클릭 시 로그인 유도 모달을 띄우고 API를 호출하지 않는다', async () => {
+    let likeCalled = false
+    server.use(
+      http.post('http://localhost:5001/api/v1/pms/:section/posts/:id/like', () => {
+        likeCalled = true
+        return new HttpResponse(null, { status: 200 })
+      }),
+    )
+    const user = userEvent.setup()
     renderWithProviders(<TechCommunityPage />)
 
     await screen.findByText('API 피드 본문 1')
 
-    screen.getAllByRole('button', { name: '좋아요' }).forEach((button) => {
-      expect(button).toBeDisabled()
-    })
+    // 비로그인에도 하트 버튼은 활성 (disabled 아님)
+    const likeButton = screen.getAllByRole('button', { name: '좋아요' })[0]
+    expect(likeButton).toBeEnabled()
+
+    await user.click(likeButton)
+
+    // 로그인 유도 모달 노출 + 카운트 그대로, API 미호출, 상세 이동도 없음
+    const dialogs = await screen.findAllByRole('dialog')
+    const dialog = dialogs[dialogs.length - 1]
+    // antd confirm은 제목을 header/본문에 두 번 렌더링 → getAllByText 사용
+    expect(within(dialog).getAllByText('로그인이 필요해요').length).toBeGreaterThan(0)
+    expect(likeButton).toHaveTextContent('3')
+    expect(likeCalled).toBe(false)
+    expect(mockNavigate).not.toHaveBeenCalled()
+
+    // 확인 시 returnTo와 함께 로그인 페이지로 이동
+    await user.click(within(dialog).getByRole('button', { name: '로그인' }))
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith('/login', { state: { returnTo: '/' } }),
+    )
   })
 })

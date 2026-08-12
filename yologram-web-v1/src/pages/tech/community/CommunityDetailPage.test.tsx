@@ -201,13 +201,54 @@ describe('CommunityDetailPage', () => {
     expect(screen.getByRole('button', { name: '등록' })).toBeDisabled()
   })
 
-  it('비로그인 상태면 입력창이 비활성화되고 로그인 안내를 표시한다', async () => {
+  it('비로그인 상태에서도 댓글 입력창은 활성 상태이고, 등록 시도 시 로그인 유도 모달을 띄운다', async () => {
+    let createCalled = false
+    server.use(
+      http.post('http://localhost:5001/api/v1/comments/:section/posts/:postId', () => {
+        createCalled = true
+        return new HttpResponse(null, { status: 201 })
+      }),
+    )
+    const user = userEvent.setup()
     renderWithProviders(<CommunityDetailPage />)
 
     await screen.findByText('API 본문 내용')
 
-    expect(screen.getByPlaceholderText('로그인 후 댓글을 남길 수 있어요')).toBeDisabled()
-    expect(screen.getByRole('button', { name: '등록' })).toBeDisabled()
+    // 비로그인에도 입력창·등록 버튼은 활성 (disabled 아님)
+    const input = screen.getByPlaceholderText('댓글로 의견을 남겨보세요')
+    expect(input).toBeEnabled()
+    await user.type(input, '비로그인 댓글')
+    await user.click(screen.getByRole('button', { name: '등록' }))
+
+    // 로그인 유도 모달 노출 + API 미호출
+    const dialog = await latestDialog()
+    // antd confirm은 제목을 header/본문에 두 번 렌더링 → getAllByText 사용
+    expect(within(dialog).getAllByText('로그인이 필요해요').length).toBeGreaterThan(0)
+    expect(within(dialog).getByText('좋아요와 댓글은 로그인 후 이용할 수 있어요.')).toBeInTheDocument()
+    expect(createCalled).toBe(false)
+
+    // 취소하면 이동하지 않고 입력값은 유지
+    await user.click(within(dialog).getByRole('button', { name: '취소' }))
+    expect(mockNavigate).not.toHaveBeenCalled()
+    expect(input).toHaveValue('비로그인 댓글')
+  })
+
+  it('비로그인 댓글 등록 모달에서 로그인을 선택하면 returnTo와 함께 로그인 페이지로 이동한다', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('API 본문 내용')
+
+    await user.type(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), '비로그인 댓글')
+    await user.click(screen.getByRole('button', { name: '등록' }))
+
+    const dialog = await latestDialog()
+    await user.click(within(dialog).getByRole('button', { name: '로그인' }))
+
+    // 현재 경로(MemoryRouter 기본 '/')를 returnTo로 넘겨 로그인 후 복귀
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith('/login', { state: { returnTo: '/' } }),
+    )
   })
 
   it('댓글 등록 API 실패 시 에러 메시지를 표시하고 입력값을 유지한다', async () => {
@@ -446,7 +487,7 @@ describe('CommunityDetailPage', () => {
     expect(likeButton).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('비로그인 상태면 좋아요 버튼이 비활성화되고 API를 호출하지 않는다', async () => {
+  it('비로그인 상태에서 좋아요 클릭 시 로그인 유도 모달을 띄우고 API를 호출하지 않는다', async () => {
     let likeCalled = false
     server.use(
       http.post('http://localhost:5001/api/v1/pms/:section/posts/:id/like', () => {
@@ -457,14 +498,24 @@ describe('CommunityDetailPage', () => {
     const user = userEvent.setup()
     renderWithProviders(<CommunityDetailPage />)
 
+    // 비로그인에도 하트 버튼은 활성 (disabled 아님)
     const likeButton = await screen.findByRole('button', { name: '좋아요' })
-    expect(likeButton).toBeDisabled()
+    expect(likeButton).toBeEnabled()
 
     await user.click(likeButton)
 
-    // 비활성 버튼 클릭은 무시 → 카운트 그대로, API 미호출
+    // 로그인 유도 모달 노출 + 카운트 그대로, API 미호출
+    const dialog = await latestDialog()
+    // antd confirm은 제목을 header/본문에 두 번 렌더링 → getAllByText 사용
+    expect(within(dialog).getAllByText('로그인이 필요해요').length).toBeGreaterThan(0)
     expect(likeButton).toHaveTextContent('5')
     expect(likeCalled).toBe(false)
+
+    // 확인 시 returnTo와 함께 로그인 페이지로 이동
+    await user.click(within(dialog).getByRole('button', { name: '로그인' }))
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith('/login', { state: { returnTo: '/' } }),
+    )
   })
 
   // 댓글 목록 msw: '오래된 댓글'(id 101, uid 1) = 본인, '최신 댓글'(id 102, uid 2) = 타인

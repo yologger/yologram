@@ -1,9 +1,8 @@
 import type { MouseEvent } from 'react'
 import { App, Avatar } from 'antd'
 import { UserOutlined, HeartOutlined, HeartFilled, MessageOutlined } from '@ant-design/icons'
-import { useAtom } from 'jotai'
-import { authAtom } from '../../../stores/auth'
 import useTogglePostLikeMutation from '../../../queries/useTogglePostLikeMutation'
+import useRequireAuth from '../../../hooks/useRequireAuth'
 import type { PostSummary } from '../../../apis/pms'
 import { formatRelativeTime } from '../../../lib/date'
 import styles from './PostCard.module.css'
@@ -15,14 +14,16 @@ interface Props {
 }
 
 export default function PostCard({ post, categoryNames = [], onClick }: Props) {
-  const [auth] = useAtom(authAtom)
   const { message } = App.useApp()
   const { mutate: toggleLike } = useTogglePostLikeMutation()
+  const requireAuth = useRequireAuth()
   const { likeCount, commentCount, likedByMe } = post.metrics
 
   const handleToggleLike = (e: MouseEvent<HTMLButtonElement>) => {
     // 카드 클릭(상세 이동)과 분리
     e.stopPropagation()
+    // 비로그인 시 로그인 유도 모달을 띄우고 중단
+    if (!requireAuth()) return
     toggleLike(
       // section은 응답이 대문자(TECH)라 API 경로용 소문자로 변환
       { section: post.section.toLowerCase(), id: post.id, like: !likedByMe },
@@ -52,12 +53,11 @@ export default function PostCard({ post, categoryNames = [], onClick }: Props) {
         </div>
       )}
       <div className={styles.meta}>
-        {/* 미인증 시 비활성 (댓글 입력 비활성 관례와 동일) */}
+        {/* 비로그인에도 활성 — 클릭 시 로그인 유도 모달 (useRequireAuth) */}
         <button
           className={`${styles.likeButton} ${likedByMe ? styles.liked : ''}`}
           aria-label="좋아요"
           aria-pressed={likedByMe}
-          disabled={auth == null}
           onClick={handleToggleLike}
         >
           {likedByMe ? <HeartFilled /> : <HeartOutlined />} {likeCount}
