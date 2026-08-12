@@ -319,8 +319,8 @@ export const handlers = [
     }
 
     const all = [
-      { id: 1050, section: 'TECH', author: { uid: 1, nickname: '테스터' }, title: '피드 첫 글', content: 'API 피드 본문 1', categoryIds: [1], likeCount: 3, commentCount: 1, createdAt: '2026-06-10T00:00:00' },
-      { id: 1049, section: 'TECH', author: { uid: 2, nickname: '다른유저' }, content: 'API 피드 본문 2', categoryIds: [2], likeCount: 0, commentCount: 0, createdAt: '2026-06-09T00:00:00' },
+      { id: 1050, section: 'TECH', author: { uid: 1, nickname: '테스터' }, title: '피드 첫 글', content: 'API 피드 본문 1', categoryIds: [1], metrics: { commentCount: 1, likeCount: 3, likedByMe: false }, createdAt: '2026-06-10T00:00:00' },
+      { id: 1049, section: 'TECH', author: { uid: 2, nickname: '다른유저' }, content: 'API 피드 본문 2', categoryIds: [2], metrics: { commentCount: 0, likeCount: 0, likedByMe: false }, createdAt: '2026-06-09T00:00:00' },
     ]
     const data = categoryId ? all.filter((p) => p.categoryIds.includes(Number(categoryId))) : all
 
@@ -346,9 +346,9 @@ export const handlers = [
     }
 
     const all = [
-      { id: 2001, section: 'TECH', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 기술 글', categoryIds: [1], likeCount: 3, commentCount: 1, createdAt: '2026-06-18T09:00:00' },
-      { id: 2002, section: 'INVEST', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 투자 글', categoryIds: [9], likeCount: 5, commentCount: 2, createdAt: '2026-06-17T09:00:00' },
-      { id: 2003, section: 'POLITICS', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 정치 글', categoryIds: [16], likeCount: 1, commentCount: 0, createdAt: '2026-06-16T09:00:00' },
+      { id: 2001, section: 'TECH', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 기술 글', categoryIds: [1], metrics: { commentCount: 1, likeCount: 3, likedByMe: false }, createdAt: '2026-06-18T09:00:00' },
+      { id: 2002, section: 'INVEST', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 투자 글', categoryIds: [9], metrics: { commentCount: 2, likeCount: 5, likedByMe: false }, createdAt: '2026-06-17T09:00:00' },
+      { id: 2003, section: 'POLITICS', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 정치 글', categoryIds: [16], metrics: { commentCount: 0, likeCount: 1, likedByMe: false }, createdAt: '2026-06-16T09:00:00' },
     ]
     const data = section ? all.filter((p) => p.section.toLowerCase() === section.toLowerCase()) : all
 
@@ -376,11 +376,50 @@ export const handlers = [
         title: 'API 제목',
         content: 'API 본문 내용',
         categoryIds: [1],
-        likeCount: 5,
-        commentCount: 0,
+        metrics: { commentCount: 0, likeCount: 5, likedByMe: false },
         createdAt: '2026-01-01T00:00:00',
       },
     })
+  }),
+
+  // 좋아요 등록 — 인증 필수, 멱등 (이미 눌렀어도 200 no-op)
+  http.post('http://localhost:5001/api/v1/pms/:section/posts/:id/like', ({ request, params }) => {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
+        { status: 401 },
+      )
+    }
+
+    if (Number(params.id) === 99999) {
+      return HttpResponse.json(
+        { errorMessage: '게시글을 찾을 수 없습니다.', errorCode: 'POST_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 200 })
+  }),
+
+  // 좋아요 취소 — 인증 필수, 멱등 (안 눌렀어도 200 no-op)
+  http.delete('http://localhost:5001/api/v1/pms/:section/posts/:id/like', ({ request, params }) => {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { errorMessage: '유효하지 않은 토큰입니다.', errorCode: 'AUTH_INVALID_TOKEN' },
+        { status: 401 },
+      )
+    }
+
+    if (Number(params.id) === 99999) {
+      return HttpResponse.json(
+        { errorMessage: '게시글을 찾을 수 없습니다.', errorCode: 'POST_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
+
+    return new HttpResponse(null, { status: 200 })
   }),
 
   http.patch('http://localhost:5001/api/v1/pms/:section/posts/:id', async ({ request }) => {

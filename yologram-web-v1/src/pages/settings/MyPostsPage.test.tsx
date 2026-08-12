@@ -118,8 +118,8 @@ describe('MyPostsPage', () => {
       http.get('http://localhost:5001/api/v1/pms/posts/me', () =>
         HttpResponse.json({
           data: [
-            { id: 2002, section: 'INVEST', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 투자 글', categoryIds: [9], likeCount: 5, commentCount: 2, createdAt: '2026-06-17T09:00:00' },
-            { id: 2003, section: 'POLITICS', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 정치 글', categoryIds: [16], likeCount: 1, commentCount: 0, createdAt: '2026-06-16T09:00:00' },
+            { id: 2002, section: 'INVEST', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 투자 글', categoryIds: [9], metrics: { commentCount: 2, likeCount: 5, likedByMe: false }, createdAt: '2026-06-17T09:00:00' },
+            { id: 2003, section: 'POLITICS', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 정치 글', categoryIds: [16], metrics: { commentCount: 0, likeCount: 1, likedByMe: false }, createdAt: '2026-06-16T09:00:00' },
           ],
           nextCursor: null,
         }),

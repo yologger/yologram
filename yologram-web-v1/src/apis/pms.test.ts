@@ -1,10 +1,24 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { http, HttpResponse } from 'msw'
+import { getDefaultStore } from 'jotai'
 import { server } from '../test/server'
-import { createPost, getPosts } from './pms'
+import { authAtom } from '../stores/auth'
+import { createPost, getPosts, likePost, unlikePost } from './pms'
+
+const login = () =>
+  getDefaultStore().set(authAtom, {
+    uid: 1,
+    accessToken: 'valid-token',
+    email: 'test@yologram.link',
+    name: '테스터',
+    nickname: 'tester',
+  })
 
 beforeAll(() => server.listen())
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+  server.resetHandlers()
+  getDefaultStore().set(authAtom, null)
+})
 afterAll(() => server.close())
 
 describe('createPost', () => {
@@ -36,6 +50,12 @@ describe('getPosts', () => {
     expect(page.nextCursor).toBe('next-cursor')
   })
 
+  it('게시글에 중첩된 metrics(commentCount/likeCount/likedByMe)를 반환한다', async () => {
+    const page = await getPosts('tech', { size: 15 })
+
+    expect(page.data[0].metrics).toEqual({ commentCount: 1, likeCount: 3, likedByMe: false })
+  })
+
   it('categoryId로 필터링한다', async () => {
     const page = await getPosts('tech', { categoryId: 2 })
 
@@ -47,5 +67,37 @@ describe('getPosts', () => {
 
     expect(page.data).toEqual([])
     expect(page.nextCursor).toBeNull()
+  })
+})
+
+describe('likePost', () => {
+  it('로그인 상태에서 좋아요 등록에 성공한다 (200)', async () => {
+    login()
+    await expect(likePost('tech', 1)).resolves.toBeUndefined()
+  })
+
+  it('존재하지 않는 글이면 404 에러를 던진다', async () => {
+    login()
+    await expect(likePost('tech', 99999)).rejects.toThrow()
+  })
+
+  it('미인증 상태면 401 에러를 던진다', async () => {
+    await expect(likePost('tech', 1)).rejects.toThrow()
+  })
+})
+
+describe('unlikePost', () => {
+  it('로그인 상태에서 좋아요 취소에 성공한다 (200, 안 눌렀어도 no-op)', async () => {
+    login()
+    await expect(unlikePost('tech', 1)).resolves.toBeUndefined()
+  })
+
+  it('존재하지 않는 글이면 404 에러를 던진다', async () => {
+    login()
+    await expect(unlikePost('tech', 99999)).rejects.toThrow()
+  })
+
+  it('미인증 상태면 401 에러를 던진다', async () => {
+    await expect(unlikePost('tech', 1)).rejects.toThrow()
   })
 })

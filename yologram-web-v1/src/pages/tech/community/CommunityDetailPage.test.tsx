@@ -362,6 +362,111 @@ describe('CommunityDetailPage', () => {
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
+  // 게시글 상세 msw 기본값: metrics { likeCount: 5, likedByMe: false }
+  it('좋아요 클릭 시 즉시 하트가 채워지고 카운트가 증가하며(옵티미스틱) POST를 호출한다', async () => {
+    loginAs(1)
+    let likeCalled = false
+    server.use(
+      http.post('http://localhost:5001/api/v1/pms/:section/posts/:id/like', () => {
+        likeCalled = true
+        return new HttpResponse(null, { status: 200 })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    const likeButton = await screen.findByRole('button', { name: '좋아요' })
+    expect(likeButton).toHaveTextContent('5')
+    expect(likeButton).toHaveAttribute('aria-pressed', 'false')
+
+    await user.click(likeButton)
+
+    // 옵티미스틱: 응답과 무관하게 캐시가 즉시 갱신되어 채워진 하트 + 카운트 증가
+    await waitFor(() => expect(likeButton).toHaveTextContent('6'))
+    expect(likeButton).toHaveAttribute('aria-pressed', 'true')
+    await waitFor(() => expect(likeCalled).toBe(true))
+  })
+
+  it('이미 좋아요한 글을 클릭하면 카운트가 감소하고 DELETE를 호출한다', async () => {
+    loginAs(1)
+    let unlikeCalled = false
+    server.use(
+      // 이미 좋아요한 상태로 조회되는 글
+      http.get('http://localhost:5001/api/v1/pms/:section/posts/:id', () =>
+        HttpResponse.json({
+          data: {
+            id: 1,
+            section: 'TECH',
+            author: { uid: 1, nickname: '테스터' },
+            title: 'API 제목',
+            content: 'API 본문 내용',
+            categoryIds: [1],
+            metrics: { commentCount: 0, likeCount: 5, likedByMe: true },
+            createdAt: '2026-01-01T00:00:00',
+          },
+        }),
+      ),
+      http.delete('http://localhost:5001/api/v1/pms/:section/posts/:id/like', () => {
+        unlikeCalled = true
+        return new HttpResponse(null, { status: 200 })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    const likeButton = await screen.findByRole('button', { name: '좋아요' })
+    expect(likeButton).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(likeButton)
+
+    await waitFor(() => expect(likeButton).toHaveTextContent('4'))
+    expect(likeButton).toHaveAttribute('aria-pressed', 'false')
+    await waitFor(() => expect(unlikeCalled).toBe(true))
+  })
+
+  it('좋아요 API 실패 시 원래 상태로 원복하고 에러 메시지를 표시한다', async () => {
+    loginAs(1)
+    server.use(
+      http.post('http://localhost:5001/api/v1/pms/:section/posts/:id/like', () =>
+        HttpResponse.json(
+          { errorMessage: '서버 오류', errorCode: 'INTERNAL_SERVER_ERROR' },
+          { status: 500 },
+        ),
+      ),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    const likeButton = await screen.findByRole('button', { name: '좋아요' })
+    await user.click(likeButton)
+
+    // 실패 → 스냅샷 원복(5, 빈 하트) + 토스트
+    expect(await screen.findByText(/좋아요 처리에 실패했어요/)).toBeInTheDocument()
+    await waitFor(() => expect(likeButton).toHaveTextContent('5'))
+    expect(likeButton).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('비로그인 상태면 좋아요 버튼이 비활성화되고 API를 호출하지 않는다', async () => {
+    let likeCalled = false
+    server.use(
+      http.post('http://localhost:5001/api/v1/pms/:section/posts/:id/like', () => {
+        likeCalled = true
+        return new HttpResponse(null, { status: 200 })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    const likeButton = await screen.findByRole('button', { name: '좋아요' })
+    expect(likeButton).toBeDisabled()
+
+    await user.click(likeButton)
+
+    // 비활성 버튼 클릭은 무시 → 카운트 그대로, API 미호출
+    expect(likeButton).toHaveTextContent('5')
+    expect(likeCalled).toBe(false)
+  })
+
   // 댓글 목록 msw: '오래된 댓글'(id 101, uid 1) = 본인, '최신 댓글'(id 102, uid 2) = 타인
   it('본인 댓글에만 수정 버튼이 노출되고 타인 댓글엔 노출되지 않는다', async () => {
     loginAs(1)

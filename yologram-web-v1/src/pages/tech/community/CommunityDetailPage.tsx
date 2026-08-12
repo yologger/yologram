@@ -17,6 +17,7 @@ import {
 import { authAtom } from '../../../stores/auth'
 import usePostQuery from '../../../queries/usePostQuery'
 import useDeletePostMutation from '../../../queries/useDeletePostMutation'
+import useTogglePostLikeMutation from '../../../queries/useTogglePostLikeMutation'
 import useCreateCommentMutation from '../../../queries/useCreateCommentMutation'
 import useUpdateCommentMutation from '../../../queries/useUpdateCommentMutation'
 import useDeleteCommentMutation from '../../../queries/useDeleteCommentMutation'
@@ -41,6 +42,7 @@ export default function CommunityDetailPage() {
   const { message, modal } = App.useApp()
   const queryClient = useQueryClient()
   const { mutate: deletePost } = useDeletePostMutation()
+  const { mutate: toggleLikeMutate } = useTogglePostLikeMutation()
   const { mutate: createComment, isPending: isSubmitting } = useCreateCommentMutation()
   const { mutate: updateComment, isPending: isUpdating } = useUpdateCommentMutation()
   const { mutate: deleteComment } = useDeleteCommentMutation()
@@ -68,16 +70,6 @@ export default function CommunityDetailPage() {
     observer.observe(el)
     return () => observer.disconnect()
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
-
-  // 좋아요는 서버 API(count 도메인) 도입 전까지 로컬 임시 상태
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(0)
-  useEffect(() => {
-    if (post) {
-      setLiked(false)
-      setLikeCount(post.likeCount)
-    }
-  }, [post])
 
   if (isLoading) {
     return (
@@ -127,10 +119,22 @@ export default function CommunityDetailPage() {
   // 본인 글일 때만 수정 노출 (상세 응답 author.uid 와 로그인 uid 비교)
   const isAuthor = auth != null && auth.uid === post.author.uid
   const createdAtText = new Date(post.createdAt).toLocaleString('ko-KR')
+  const isAuthenticated = auth != null
+  // 좋아요 상태는 서버 metrics(likedByMe/likeCount)가 원본 — 옵티미스틱 반영은 캐시에서 수행
+  const { likeCount, commentCount, likedByMe } = post.metrics
 
   const toggleLike = () => {
-    setLiked((prev) => !prev)
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1))
+    // 미인증 시 무시 (버튼도 동일 조건으로 비활성)
+    if (!isAuthenticated) return
+    toggleLikeMutate(
+      { section: 'tech', id, like: !likedByMe },
+      {
+        onError: () => {
+          // 캐시 원복은 뮤테이션 훅이 처리, 여기서는 토스트만
+          message.error('좋아요 처리에 실패했어요. 잠시 후 다시 시도해주세요.')
+        },
+      },
+    )
   }
 
   const handleDelete = () => {
@@ -168,8 +172,6 @@ export default function CommunityDetailPage() {
         }),
     })
   }
-
-  const isAuthenticated = auth != null
 
   const submitComment = () => {
     // 미인증/빈 내용/전송 중에는 무시 (버튼도 동일 조건으로 비활성)
@@ -290,17 +292,24 @@ export default function CommunityDetailPage() {
         {post.title && <div className={styles.title}>{post.title}</div>}
         <div className={styles.content}>{post.content}</div>
         <div className={styles.actions}>
-          <span className={`${styles.action} ${liked ? styles.liked : ''}`} onClick={toggleLike}>
-            {liked ? <HeartFilled /> : <HeartOutlined />} {likeCount}
-          </span>
-          <span className={styles.action}><MessageOutlined /> {post.commentCount}</span>
+          {/* 미인증 시 비활성 (댓글 입력 비활성 관례와 동일) */}
+          <button
+            className={`${styles.likeButton} ${likedByMe ? styles.liked : ''}`}
+            aria-label="좋아요"
+            aria-pressed={likedByMe}
+            disabled={!isAuthenticated}
+            onClick={toggleLike}
+          >
+            {likedByMe ? <HeartFilled /> : <HeartOutlined />} {likeCount}
+          </button>
+          <span className={styles.action}><MessageOutlined /> {commentCount}</span>
           <span className={styles.action}><RetweetOutlined /></span>
           <span className={styles.action}><ShareAltOutlined /></span>
         </div>
       </div>
 
       <div className={styles.commentsHeader}>
-        <span className={styles.commentsTitle}>댓글 {post.commentCount}</span>
+        <span className={styles.commentsTitle}>댓글 {commentCount}</span>
         <div className={styles.sortToggle}>
           <button
             className={`${styles.sortButton} ${sort === 'latest' ? styles.sortActive : ''}`}

@@ -95,6 +95,24 @@
   cursor: pointer;
 }
 
+/* 좋아요 토글 — 버튼 기본 스타일 제거하고 액션 텍스트와 동일하게 */
+.likeButton {
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.likeButton:disabled {
+  cursor: default;
+}
+
 .liked {
   color: #ef4444;
 }
