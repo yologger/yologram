@@ -18,6 +18,7 @@ React 기반 하이브리드 웹앱. 투자/정치/기술 서비스를 반응형
 - src/pages/search/KeywordSearchPage.tsx: 키워드 검색 결과 placeholder 페이지 (섹션 공용, 라우트 3개)
 - src/components/common/FilterChips.tsx: 필터 칩 공통 컴포넌트
 - src/hooks/useIsMobile.ts: 모바일 판별 훅
+- src/hooks/useRequireAuth.ts: 미인증 로그인 유도 공용 훅 — 모달("로그인이 필요해요") → /login 이동(returnTo state) → 로그인 후 원위치 복귀. 하트·댓글(포커스 시점)·글쓰기 진입에서 사용, 미인증 진입점은 disabled 대신 이 훅 사용이 규칙
 
 ## 작업 규칙
 

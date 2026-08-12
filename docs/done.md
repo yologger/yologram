@@ -192,6 +192,8 @@
   - 미인증 하트·댓글: disabled → 활성 + 클릭 시 로그인 유도 — 대세 UX(YouTube·X·Reddit 등 "누르고 싶어진 순간이 로그인 전환 타이밍", disabled는 발견성·접근성 저하). useRequireAuth 공용 훅: modal.confirm("로그인이 필요해요") → 로그인 이동 → 성공 시 returnTo 원위치 복귀. returnTo는 라우터 차이로 v1 location.state / v2 쿼리 파라미터(내부 경로만 허용 — 오픈 리다이렉트 방지, useSearchParams 대신 window.location.search — Suspense 경계 회피로 /login 정적 프리렌더 유지). 댓글 입력값은 모달 취소 후에도 유지
   - 댓글 메타: 작성일을 닉네임 아래 줄로(세로 스택). 수정/삭제 버튼 텍스트 제거(아이콘만, aria-label 유지 — 게시글 상세 상단 버튼 포함), 삭제 아이콘 DeleteOutlined → CloseOutlined(X)
   - 테스트: web-v1 192(교체 3·신규 2) / web-v2 197(교체 3·신규 7 — 모달 이동·취소·returnTo 복귀·외부 경로 무시) 전체 통과, 빌드 통과
+  - 확장(2차): 로그인 유도를 전 진입점으로 통일 — ①글쓰기 진입 버튼(composeInput, 양쪽 유일 진입점 전수 확인): 비로그인 클릭 시 requireAuth('/tech/community/write') 모달 → 로그인 후 write로 직행 (requireAuth에 목적지 returnTo 인자 추가) ②RequireAuth 보호 라우트(v2 기준 8곳): 리다이렉트 시 returnTo 전달 — 직접 URL 진입도 로그인 후 원래 목적지 복귀(기존엔 홈으로 튕김) ③댓글은 제출 시점 → 포커스 시점 유도로 전환(YouTube 패턴): textarea 포커스 순간 blur+모달 — "다 쓴 댓글이 로그인 왕복에서 유실"되는 구조적 문제 소멸, 등록 시점 가드는 포커스 우회 대비 안전망 유지. 시점 원칙: 짧은 입력(댓글)도 작성 의도가 보이는 첫 클릭에서, 긴 입력(글 작성)은 진입에서 차단 — draft 유실 방지
+  - 확장 테스트: web-v1 199 / web-v2 206 전체 통과(작성바 모달·RequireAuth returnTo 신규, 등록 가드는 fireEvent.change로 포커스 우회 재현), 빌드 통과
 - [x] (Search) 섹션 검색 UI — web-v1·web-v2 (백엔드 미연동, saveticker.com/news 참고)
   - 배치: SubTabLayout의 타이틀("기술")과 탭 사이에 검색바(콘텐츠 전체 폭) — 데스크탑 인라인 Input(돋보기 prefix·allowClear·placeholder "검색어를 입력하세요"), 모바일(useIsMobile 768px)은 타이틀 행 우상단 돋보기 버튼 → 검색 오버레이(← 뒤로 + autoFocus, ESC 닫힘). collapseOnScroll 헤더에 포함돼 스크롤 시 함께 숨김. 세 섹션(tech/invest/politics) 자동 적용
   - 동작: Enter 시 trim·빈 값 무시, /{section}/keywords/{encodeURIComponent(키워드)} 이동. 키워드 페이지는 "'제미나이' 검색결과" placeholder 텍스트 + 재검색 바(initialValue) — 결과 목록은 검색 백엔드(todos Search 트랙)에서 연동

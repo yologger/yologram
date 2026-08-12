@@ -116,9 +116,9 @@
 - [ ] (web) 설정 — 다크 모드 (web-v1 theme + 설정 저장, web-v1/v2 설정 페이지)
 - [ ] (web) 설정 — 저장한 글 페이지 (web-v1 / web-v2)
 - [ ] (web) 커뮤니티 확장: 팔로우/리포스트/공유/이모지/정렬/작성 툴바 (web-v1 / web-v2)
-- [ ] (web) 로그인 리다이렉트(returnTo) + 미인증 진입점 로그인 유도 (web-v1 / web-v2)
+- [x] (web) 로그인 리다이렉트(returnTo) + 미인증 진입점 로그인 유도 (web-v1 / web-v2 완료, done.md)
   - [x] 하트·댓글 진입점 완료: useRequireAuth 공용 훅 — 클릭 시 "로그인이 필요해요" 모달 → 로그인 이동(returnTo: v1 state / v2 쿼리+오픈 리다이렉트 방지) → 성공 시 원위치 복귀 (done.md)
-  - [ ] 잔여 진입점 확장: RequireAuth 보호 라우트 진입·글 작성 버튼 등에도 returnTo 적용 (useRequireAuth 재사용)
+  - [x] 잔여 진입점 확장 완료: 글쓰기 진입 버튼 requireAuth('/tech/community/write') 모달, RequireAuth 보호 라우트 전체(8곳) returnTo 전달, 댓글은 포커스 시점 유도로 전환(YouTube 패턴 — 제출 시점의 draft 유실 문제 소멸, blur 처리·등록 가드는 안전망 유지)
   - 공통 인프라(returnTo)를 먼저 갖춘 뒤 각 진입점에 일괄 적용
 - [ ] (web-v1) 인증 게이팅
 - [ ] (UMS) 운영 보강 — 이메일 인증·비밀번호 찾기 (api-v1/v2 공통)
