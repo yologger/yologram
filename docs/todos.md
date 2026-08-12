@@ -18,8 +18,8 @@
   - [x] 좋아요 API: POST/DELETE /pms/tech/posts/{id}/like (인증 필수, 멱등 no-op 200) — api-v1(INSERT IGNORE+가드 UPDATE)·api-v2 미러
   - [x] 조회 조인 확장: like_count leftJoin + likedByMe(상세 exists·목록 원장 IN 배치, 선택 인증 — 헤더 없으면 비로그인 false·무효 토큰 401)
   - [x] web-v1/v2 하트 토글 실연동 (옵티미스틱 업데이트 + 실패 원복, 미인증은 disabled로 통일 — 사용자 확정)
-  - [ ] 배포 후 잔여: 로컬 api-v2 curl 검증(서버 hang으로 중단 — 재기동 후) + 검증 데이터 원복(글 1200 좋아요 1건) + prod 배포 확인
-  - [ ] 사장 컬럼 drop DDL: ALTER TABLE tech_post DROP COLUMN like_count, DROP COLUMN comment_count — 매핑 제거 버전 배포 확인 후 prod 수동 (SQL 준비해 제공)
+  - [x] prod 배포·검증 완료: CI 4종 성공·롤아웃 완료, api-v2 좋아요 사이클 prod 검증(신규 POST→1/true→중복 POST 멱등→DELETE→0/false→재DELETE 멱등) + 잔여 데이터 원복 + v1 교차 확인(같은 토큰으로 v1 metrics 동일 계약·값 확인). 로컬 v2 검증은 prod로 대체(사용자 확정)
+  - [ ] 사장 컬럼 drop DDL: ALTER TABLE tech_post DROP COLUMN like_count, DROP COLUMN comment_count — 매핑 제거 버전 배포 확인 완료 → 지금 실행 가능 (prod 수동)
   - 공통: 1차는 카운트 테이블 동기 갱신, MSA 분리 시 이벤트 기반 이관. 탈퇴·게시글 삭제 시 원장 정리는 worker 청크 삭제 트랙에서(무FK라 고아 무해)
 - [ ] (Infra/DB) DB 커넥션 타임아웃 방어 — Mac 슬립 half-open 커넥션으로 로컬 api-v2 전면 hang 재현(2026-08-12, PyMySQL 기본 read_timeout 무한 + pool_pre_ping SELECT 1 블록)
   - [ ] api-v2: create_engine connect_args={"connect_timeout": 5, "read_timeout": 10, "write_timeout": 10} + pool_recycle=3600 (수정안 승인 대기)
