@@ -98,6 +98,24 @@
   cursor: pointer;
 }
 
+/* 좋아요 버튼 — 주변 span 액션과 동일한 외형 유지 */
+.likeButton {
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 비로그인 등 비활성 상태 */
+.likeButton:disabled {
+  color: #d4d4d8;
+  cursor: not-allowed;
+}
+
 .liked {
   color: #ef4444;
 }

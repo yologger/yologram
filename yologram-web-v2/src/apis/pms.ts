@@ -29,6 +29,14 @@ export async function deletePost(section: string, id: number): Promise<void> {
   await api.delete(`/api/v2/pms/${section}/posts/${id}`)
 }
 
+// 게시글 지표 — 평면 likeCount/commentCount 대신 metrics 객체로 중첩 (api 계약)
+// likedByMe: 조회 요청에 Authorization 헤더가 있을 때만 서버가 실값을 채움 (없으면 false)
+export interface PostMetrics {
+  commentCount: number
+  likeCount: number
+  likedByMe: boolean
+}
+
 export interface PostDetail {
   id: number
   section: string
@@ -36,8 +44,7 @@ export interface PostDetail {
   title?: string
   content: string
   categoryIds: number[]
-  likeCount: number
-  commentCount: number
+  metrics: PostMetrics
   createdAt: string
 }
 
@@ -53,8 +60,7 @@ export interface PostSummary {
   title?: string
   content: string
   categoryIds: number[]
-  likeCount: number
-  commentCount: number
+  metrics: PostMetrics
   createdAt: string
 }
 
@@ -94,6 +100,16 @@ export async function getMyPosts(params: GetMyPostsParams = {}): Promise<PostPag
 
   const response = await api.get<PostPage>('/api/v2/pms/posts/me', { params: query })
   return response.data
+}
+
+// 좋아요 등록 — 멱등(이미 눌렀어도 200 no-op), 인증 필수
+export async function likePost(section: string, id: number): Promise<void> {
+  await api.post(`/api/v2/pms/${section}/posts/${id}/like`)
+}
+
+// 좋아요 취소 — 멱등(안 눌렀어도 200 no-op), 인증 필수
+export async function unlikePost(section: string, id: number): Promise<void> {
+  await api.delete(`/api/v2/pms/${section}/posts/${id}/like`)
 }
 
 export interface CreateCommentResponse {

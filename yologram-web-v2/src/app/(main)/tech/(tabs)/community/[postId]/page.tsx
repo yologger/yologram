@@ -21,6 +21,7 @@ import type { CommentSort } from '@/apis/pms'
 import usePostQuery from '@/queries/usePostQuery'
 import useCommentsQuery from '@/queries/useCommentsQuery'
 import useDeletePostMutation from '@/queries/useDeletePostMutation'
+import useToggleLikeMutation from '@/queries/useToggleLikeMutation'
 import useCreateCommentMutation from '@/queries/useCreateCommentMutation'
 import useUpdateCommentMutation from '@/queries/useUpdateCommentMutation'
 import useDeleteCommentMutation from '@/queries/useDeleteCommentMutation'
@@ -39,6 +40,7 @@ export default function CommunityDetail() {
   const { modal, message } = App.useApp()
   const queryClient = useQueryClient()
   const { mutate: deletePost } = useDeletePostMutation()
+  const { mutate: toggleLikeMutate } = useToggleLikeMutation()
   const { mutate: createComment, isPending: isCommentPending } = useCreateCommentMutation()
   const { mutate: updateComment, isPending: isUpdatePending } = useUpdateCommentMutation()
   const { mutate: deleteComment } = useDeleteCommentMutation()
@@ -70,16 +72,6 @@ export default function CommunityDetail() {
     observer.observe(el)
     return () => observer.disconnect()
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
-
-  // 좋아요는 서버 API(count 도메인) 도입 전까지 로컬 임시 상태
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(0)
-  useEffect(() => {
-    if (post) {
-      setLiked(false)
-      setLikeCount(post.likeCount)
-    }
-  }, [post])
 
   const goBack = () => router.back()
 
@@ -132,8 +124,17 @@ export default function CommunityDetail() {
   const createdAtText = new Date(post.createdAt).toLocaleString('ko-KR')
 
   const toggleLike = () => {
-    setLiked((prev) => !prev)
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1))
+    // 좋아요는 인증 필요 — 버튼 disabled로 차단되지만 방어적으로 한 번 더 확인
+    if (!auth) return
+    toggleLikeMutate(
+      // 옵티미스틱 반영·실패 원복은 훅(useToggleLikeMutation)에서 처리
+      { section: 'tech', id, like: !post.metrics.likedByMe },
+      {
+        onError: () => {
+          message.error('좋아요 처리에 실패했어요. 잠시 후 다시 시도해주세요.')
+        },
+      },
+    )
   }
 
   const handleDelete = () => {
@@ -306,17 +307,24 @@ export default function CommunityDetail() {
         {post.title && <div className={styles.title}>{post.title}</div>}
         <div className={styles.content}>{post.content}</div>
         <div className={styles.actions}>
-          <span className={`${styles.action} ${liked ? styles.liked : ''}`} onClick={toggleLike}>
-            {liked ? <HeartFilled /> : <HeartOutlined />} {likeCount}
-          </span>
-          <span className={styles.action}><MessageOutlined /> {post.commentCount}</span>
+          <button
+            type="button"
+            className={`${styles.action} ${styles.likeButton} ${post.metrics.likedByMe ? styles.liked : ''}`}
+            aria-label="좋아요"
+            aria-pressed={post.metrics.likedByMe}
+            disabled={!auth}
+            onClick={toggleLike}
+          >
+            {post.metrics.likedByMe ? <HeartFilled /> : <HeartOutlined />} {post.metrics.likeCount}
+          </button>
+          <span className={styles.action}><MessageOutlined /> {post.metrics.commentCount}</span>
           <span className={styles.action}><RetweetOutlined /></span>
           <span className={styles.action}><ShareAltOutlined /></span>
         </div>
       </div>
 
       <div className={styles.commentsHeader}>
-        <span className={styles.commentsTitle}>댓글 {post.commentCount}</span>
+        <span className={styles.commentsTitle}>댓글 {post.metrics.commentCount}</span>
         <div className={styles.sortToggle}>
           <button
             className={`${styles.sortButton} ${sort === 'latest' ? styles.sortActive : ''}`}

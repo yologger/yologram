@@ -72,3 +72,26 @@
   color: #71717a;
   font-size: 13px;
 }
+
+/* 좋아요 버튼 — 텍스트 span과 동일한 외형 유지 */
+.like {
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.liked {
+  color: #ef4444;
+}
+
+/* 비로그인 등 비활성 상태 */
+.like:disabled {
+  color: #d4d4d8;
+  cursor: not-allowed;
+}

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/server'
-import { createPost, updatePost, deletePost, getPosts, getMyPosts, createComment } from './pms'
+import { createPost, updatePost, deletePost, getPosts, getMyPosts, createComment, likePost, unlikePost } from './pms'
 import { getDefaultStore } from 'jotai'
 import { authAtom } from '../stores/auth'
 
@@ -175,6 +175,12 @@ describe('getPosts', () => {
     expect(page.nextCursor).toBe('next-cursor')
   })
 
+  it('metrics(commentCount/likeCount/likedByMe)를 중첩 구조로 반환한다', async () => {
+    const page = await getPosts('tech', { size: 15 })
+
+    expect(page.data[0].metrics).toEqual({ commentCount: 1, likeCount: 3, likedByMe: false })
+  })
+
   it('categoryId로 필터링한다', async () => {
     const page = await getPosts('tech', { categoryId: 2 })
 
@@ -230,6 +236,53 @@ describe('getMyPosts', () => {
     store.set(authAtom, null)
 
     await expect(getMyPosts()).rejects.toThrow()
+
+    store.set(authAtom, {
+      uid: 1,
+      email: 'test@yologram.link',
+      name: '테스트',
+      nickname: 'tester',
+      accessToken: 'mock-access-token',
+    })
+  })
+})
+
+describe('likePost / unlikePost', () => {
+  const store = getDefaultStore()
+
+  beforeAll(() => {
+    store.set(authAtom, {
+      uid: 1,
+      email: 'test@yologram.link',
+      name: '테스트',
+      nickname: 'tester',
+      accessToken: 'mock-access-token',
+    })
+  })
+
+  afterAll(() => store.set(authAtom, null))
+
+  it('좋아요 등록 성공 시 정상 resolve된다 (200)', async () => {
+    await expect(likePost('tech', 1)).resolves.toBeUndefined()
+  })
+
+  it('좋아요 취소 성공 시 정상 resolve된다 (200)', async () => {
+    await expect(unlikePost('tech', 1)).resolves.toBeUndefined()
+  })
+
+  it('존재하지 않는 글에 좋아요 등록 시 에러를 던진다 (404)', async () => {
+    await expect(likePost('tech', 99999)).rejects.toThrow()
+  })
+
+  it('존재하지 않는 글에 좋아요 취소 시 에러를 던진다 (404)', async () => {
+    await expect(unlikePost('tech', 99999)).rejects.toThrow()
+  })
+
+  it('인증 토큰이 없으면 에러를 던진다 (401)', async () => {
+    store.set(authAtom, null)
+
+    await expect(likePost('tech', 1)).rejects.toThrow()
+    await expect(unlikePost('tech', 1)).rejects.toThrow()
 
     store.set(authAtom, {
       uid: 1,

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeAll, afterEach, afterAll, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse, delay } from 'msw'
 import { QueryClient } from '@tanstack/react-query'
 import { getDefaultStore } from 'jotai'
 import { renderWithProviders } from '../../../../../../test/utils'
@@ -522,6 +522,130 @@ describe('CommunityDetail', () => {
     await user.click(screen.getByRole('button', { name: '저장' }))
 
     expect(await screen.findByText(/댓글 수정에 실패했어요/)).toBeInTheDocument()
+  })
+
+  it('좋아요 수와 댓글 수를 metrics 기반으로 표시한다', async () => {
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    expect(screen.getByRole('button', { name: '좋아요' })).toHaveTextContent('5')
+    expect(screen.getByText('댓글 0')).toBeInTheDocument()
+  })
+
+  it('로그인 상태에서 하트 클릭 시 응답 전에 즉시 카운트가 증가하고(옵티미스틱) 등록 요청이 발생한다', async () => {
+    let likeCalled = false
+    server.use(
+      http.post('http://localhost:5002/api/v2/pms/:section/posts/:id/like', async () => {
+        // 응답을 지연시켜 옵티미스틱 반영(응답 전 카운트 증가)을 검증
+        await delay(500)
+        likeCalled = true
+        return new HttpResponse(null, { status: 200 })
+      }),
+    )
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    await user.click(screen.getByRole('button', { name: '좋아요' }))
+
+    // 서버 응답(500ms 지연) 전에 캐시가 먼저 갱신됨
+    await waitFor(() => expect(screen.getByRole('button', { name: '좋아요' })).toHaveTextContent('6'))
+    expect(likeCalled).toBe(false)
+    expect(screen.getByRole('button', { name: '좋아요' })).toHaveAttribute('aria-pressed', 'true')
+
+    await waitFor(() => expect(likeCalled).toBe(true))
+  })
+
+  it('이미 좋아요한 글에서 하트 클릭 시 취소(DELETE) 요청이 발생하고 카운트가 감소한다', async () => {
+    let unlikeCalled = false
+    server.use(
+      // likedByMe true 상태로 조회되도록 상세 응답 재정의
+      http.get('http://localhost:5002/api/v2/pms/:section/posts/:id', ({ params }) =>
+        HttpResponse.json({
+          data: {
+            id: Number(params.id),
+            section: 'TECH',
+            author: { uid: 12, nickname: '테스터' },
+            title: 'API 제목',
+            content: 'API 본문 내용',
+            categoryIds: [1],
+            metrics: { commentCount: 0, likeCount: 5, likedByMe: true },
+            createdAt: '2026-01-01T00:00:00',
+          },
+        }),
+      ),
+      http.delete('http://localhost:5002/api/v2/pms/:section/posts/:id/like', () => {
+        unlikeCalled = true
+        return new HttpResponse(null, { status: 200 })
+      }),
+    )
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    expect(screen.getByRole('button', { name: '좋아요' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: '좋아요' }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: '좋아요' })).toHaveTextContent('4'))
+    expect(screen.getByRole('button', { name: '좋아요' })).toHaveAttribute('aria-pressed', 'false')
+    await waitFor(() => expect(unlikeCalled).toBe(true))
+  })
+
+  it('좋아요 실패 시 카운트를 원복하고 에러 토스트를 표시한다', async () => {
+    server.use(
+      http.post('http://localhost:5002/api/v2/pms/:section/posts/:id/like', () =>
+        HttpResponse.json(
+          { errorMessage: '서버 오류가 발생했습니다.', errorCode: 'INTERNAL_SERVER_ERROR' },
+          { status: 500 },
+        ),
+      ),
+    )
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    await user.click(screen.getByRole('button', { name: '좋아요' }))
+
+    expect(await screen.findByText(/좋아요 처리에 실패했어요/)).toBeInTheDocument()
+    // 옵티미스틱 반영분이 스냅샷으로 원복됨
+    await waitFor(() => expect(screen.getByRole('button', { name: '좋아요' })).toHaveTextContent('5'))
+    expect(screen.getByRole('button', { name: '좋아요' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('비로그인 상태에서는 하트 버튼이 비활성화되고 클릭해도 요청하지 않는다', async () => {
+    let called = false
+    server.use(
+      http.post('http://localhost:5002/api/v2/pms/:section/posts/:id/like', () => {
+        called = true
+        return new HttpResponse(null, { status: 200 })
+      }),
+    )
+    // 비로그인 상태 유지(afterEach에서 null 설정)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    const likeButton = screen.getByRole('button', { name: '좋아요' })
+    expect(likeButton).toBeDisabled()
+
+    await user.click(likeButton).catch(() => {})
+
+    await new Promise((r) => setTimeout(r, 50))
+    expect(called).toBe(false)
+    // 카운트 변화 없음
+    expect(likeButton).toHaveTextContent('5')
+  })
+
+  it('로그인 상태에서는 하트 버튼이 활성화된다', async () => {
+    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    expect(screen.getByRole('button', { name: '좋아요' })).toBeEnabled()
   })
 
   it('서버 오류 시 다시 시도 안내를 표시한다', async () => {
