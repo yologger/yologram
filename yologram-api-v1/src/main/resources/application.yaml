@@ -72,6 +72,14 @@ springdoc:
   api-docs:
     path: /api/v1/api-docs
 
+# Lettuce는 Hikari 같은 연결 INFO 로그가 없고 연결 성공 메시지가 DEBUG뿐 — 이 클래스만 열어
+# Redis(Valkey) 연결 여부를 로그로 확인한다 ("Connecting to Redis at {}: Success" / 실패 시 원인).
+# 연결 수립·재연결 시점에만 찍혀 볼륨이 작다(명령 단위 로그인 io.lettuce.core 전체 DEBUG는 금지).
+# 연결은 lazy라 부팅 시점이 아니라 첫 캐시 연산 때 나온다. 재연결·중단은 ConnectionWatchdog가 기본 INFO/WARN으로 남김
+logging:
+  level:
+    io.lettuce.core.AbstractRedisClient: DEBUG
+
 management:
   # 캐시는 부가 기능 — Redis 장애가 서비스 health DOWN으로 전파되지 않도록 Redis health indicator 비활성
   # (Redis 자동구성 exclude와 별개로 actuator RedisHealthContributorAutoConfiguration이 수동 빈으로 활성화됨)
