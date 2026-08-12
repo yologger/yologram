@@ -89,9 +89,3 @@
 .liked {
   color: #ef4444;
 }
-
-/* 비로그인 등 비활성 상태 */
-.like:disabled {
-  color: #d4d4d8;
-  cursor: not-allowed;
-}

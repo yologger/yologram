@@ -1,11 +1,10 @@
 'use client'
 
 import { App, Avatar } from 'antd'
-import { UserOutlined, HeartOutlined, HeartFilled, MessageOutlined, DeleteOutlined } from '@ant-design/icons'
-import { useAtomValue } from 'jotai'
-import { authAtom } from '@/stores/auth'
+import { UserOutlined, HeartOutlined, HeartFilled, MessageOutlined, CloseOutlined } from '@ant-design/icons'
 import type { PostSummary } from '@/apis/pms'
 import useToggleLikeMutation from '@/queries/useToggleLikeMutation'
+import useRequireAuth from '@/hooks/useRequireAuth'
 import { formatRelativeTime } from '@/lib/date'
 import styles from './PostCard.module.css'
 
@@ -17,17 +16,17 @@ interface Props {
 }
 
 export default function PostCard({ post, categoryNames = [], onClick, onDelete }: Props) {
-  const auth = useAtomValue(authAtom)
   const { message } = App.useApp()
   const { mutate: toggleLike } = useToggleLikeMutation()
+  const requireAuth = useRequireAuth()
 
   const liked = post.metrics.likedByMe
 
   const handleToggleLike = (e: React.MouseEvent) => {
     // 카드 클릭(상세 이동)과 분리
     e.stopPropagation()
-    // 좋아요는 인증 필요 — 버튼 disabled로 차단되지만 방어적으로 한 번 더 확인
-    if (!auth) return
+    // 비로그인이면 로그인 유도 모달만 띄우고 요청하지 않는다
+    if (!requireAuth()) return
     toggleLike(
       { section: post.section.toLowerCase(), id: post.id, like: !liked },
       {
@@ -55,7 +54,7 @@ export default function PostCard({ post, categoryNames = [], onClick, onDelete }
               onDelete()
             }}
           >
-            <DeleteOutlined />
+            <CloseOutlined />
           </button>
         )}
       </div>
@@ -74,7 +73,6 @@ export default function PostCard({ post, categoryNames = [], onClick, onDelete }
           className={`${styles.like} ${liked ? styles.liked : ''}`}
           aria-label="좋아요"
           aria-pressed={liked}
-          disabled={!auth}
           onClick={handleToggleLike}
         >
           {liked ? <HeartFilled /> : <HeartOutlined />} {post.metrics.likeCount}

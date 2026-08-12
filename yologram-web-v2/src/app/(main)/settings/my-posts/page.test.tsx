@@ -12,6 +12,7 @@ import MyPosts from './page'
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn() }),
+  usePathname: () => '/settings/my-posts',
 }))
 
 const store = getDefaultStore()

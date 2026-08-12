@@ -14,6 +14,8 @@ beforeAll(() => server.listen())
 afterEach(() => {
   server.resetHandlers()
   mockPush.mockClear()
+  // returnTo 테스트에서 변경한 주소 원복
+  window.history.replaceState(null, '', '/')
 })
 afterAll(() => server.close())
 
@@ -57,6 +59,35 @@ describe('LoginPage', () => {
 
   describe('로그인 성공', () => {
     it('성공 시 메인 페이지로 이동한다', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<LoginPage />)
+
+      await user.type(screen.getByPlaceholderText('이메일'), 'test@yologram.link')
+      await user.type(screen.getByPlaceholderText('비밀번호'), 'password123!')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalledWith('/')
+      })
+    })
+
+    it('returnTo 쿼리가 있으면 성공 시 해당 경로로 복귀한다', async () => {
+      // 로그인 유도 모달을 거쳐 온 경우 — /login?returnTo=... 형태로 진입
+      window.history.replaceState(null, '', `/login?returnTo=${encodeURIComponent('/tech/community/1')}`)
+      const user = userEvent.setup()
+      renderWithProviders(<LoginPage />)
+
+      await user.type(screen.getByPlaceholderText('이메일'), 'test@yologram.link')
+      await user.type(screen.getByPlaceholderText('비밀번호'), 'password123!')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalledWith('/tech/community/1')
+      })
+    })
+
+    it('returnTo가 내부 경로가 아니면(오픈 리다이렉트) 무시하고 메인으로 이동한다', async () => {
+      window.history.replaceState(null, '', `/login?returnTo=${encodeURIComponent('//evil.example.com')}`)
       const user = userEvent.setup()
       renderWithProviders(<LoginPage />)
 

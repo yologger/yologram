@@ -11,6 +11,7 @@ import TechCommunity from './page'
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
+  usePathname: () => '/tech/community',
 }))
 
 const store = getDefaultStore()
@@ -128,7 +129,7 @@ describe('TechCommunity 피드', () => {
     expect(screen.getAllByRole('button', { name: '좋아요' })[0]).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('비로그인 상태에서는 카드 하트 버튼이 비활성화되고 클릭해도 요청하지 않는다', async () => {
+  it('비로그인 상태에서 카드 하트 클릭 시 로그인 유도 모달을 띄우고 요청하지 않는다', async () => {
     let called = false
     server.use(
       http.post('http://localhost:5002/api/v2/pms/:section/posts/:id/like', () => {
@@ -142,20 +143,50 @@ describe('TechCommunity 피드', () => {
 
     await screen.findByText('API 피드 본문 1')
     const likeButton = screen.getAllByRole('button', { name: '좋아요' })[0]
-    expect(likeButton).toBeDisabled()
+    // 비로그인에도 버튼은 활성 상태
+    expect(likeButton).toBeEnabled()
 
-    await user.click(likeButton).catch(() => {})
+    await user.click(likeButton)
 
-    await new Promise((r) => setTimeout(r, 50))
+    // 로그인 유도 모달 노출 + 요청·카운트 변화 없음
+    // antd 모달은 노드가 중복 렌더될 수 있어 AllBy 계열로 확인
+    expect((await screen.findAllByText('로그인이 필요해요')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('좋아요와 댓글은 로그인 후 이용할 수 있어요.').length).toBeGreaterThan(0)
     expect(called).toBe(false)
     expect(likeButton).toHaveTextContent('3')
+    // 하트 클릭은 카드 클릭(상세 이동)으로 전파되지 않음
+    expect(mockPush).not.toHaveBeenCalled()
   })
 
-  it('로그인 상태에서는 카드 하트 버튼이 활성화된다', async () => {
-    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+  it('로그인 유도 모달에서 로그인을 누르면 returnTo와 함께 로그인 페이지로 이동한다', async () => {
+    const user = userEvent.setup()
     renderWithProviders(<TechCommunity />)
 
     await screen.findByText('API 피드 본문 1')
-    expect(screen.getAllByRole('button', { name: '좋아요' })[0]).toBeEnabled()
+    await user.click(screen.getAllByRole('button', { name: '좋아요' })[0])
+
+    await screen.findAllByText('로그인이 필요해요')
+    // 모달 확인(로그인) 버튼은 primary 스타일
+    const okButton = document.querySelector('.ant-modal-confirm-btns .ant-btn-primary') as HTMLElement
+    await user.click(okButton)
+
+    await waitFor(() =>
+      expect(mockPush).toHaveBeenCalledWith(`/login?returnTo=${encodeURIComponent('/tech/community')}`),
+    )
+  })
+
+  it('로그인 유도 모달에서 취소하면 이동하지 않는다', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<TechCommunity />)
+
+    await screen.findByText('API 피드 본문 1')
+    await user.click(screen.getAllByRole('button', { name: '좋아요' })[0])
+
+    await screen.findAllByText('로그인이 필요해요')
+    const cancelButton = document.querySelector('.ant-modal-confirm-btns .ant-btn:not(.ant-btn-primary)') as HTMLElement
+    await user.click(cancelButton)
+
+    await new Promise((r) => setTimeout(r, 50))
+    expect(mockPush).not.toHaveBeenCalled()
   })
 })

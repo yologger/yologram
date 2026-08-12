@@ -15,6 +15,7 @@ const mockUseParams = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ back: mockBack, push: mockPush }),
   useParams: () => mockUseParams(),
+  usePathname: () => '/tech/community/1',
 }))
 
 const store = getDefaultStore()
@@ -172,7 +173,7 @@ describe('CommunityDetail', () => {
     await waitFor(() => expect(getCount).toBeGreaterThan(initialGetCount))
   })
 
-  it('비로그인 상태에서 등록하면 로그인 안내만 하고 요청하지 않는다', async () => {
+  it('비로그인 상태에서 등록하면 로그인 유도 모달을 띄우고 요청하지 않는다', async () => {
     let called = false
     server.use(
       http.post('http://localhost:5002/api/v2/comments/:section/posts/:postId', () => {
@@ -188,8 +189,29 @@ describe('CommunityDetail', () => {
     await user.type(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), '댓글 내용')
     await user.click(screen.getByRole('button', { name: '등록' }))
 
-    expect(await screen.findByText('로그인 후 댓글을 남길 수 있어요.')).toBeInTheDocument()
+    // 로그인 유도 모달 노출 + 작성 요청 미발생
+    // antd 모달은 노드가 중복 렌더될 수 있어 AllBy 계열로 확인
+    expect((await screen.findAllByText('로그인이 필요해요')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('좋아요와 댓글은 로그인 후 이용할 수 있어요.').length).toBeGreaterThan(0)
     expect(called).toBe(false)
+  })
+
+  it('비로그인 댓글 등록의 로그인 유도 모달에서 로그인을 누르면 returnTo와 함께 로그인 페이지로 이동한다', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    await user.type(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), '댓글 내용')
+    await user.click(screen.getByRole('button', { name: '등록' }))
+
+    await screen.findAllByText('로그인이 필요해요')
+    // 모달 확인(로그인) 버튼은 primary 스타일
+    const okButton = document.querySelector('.ant-modal-confirm-btns .ant-btn-primary') as HTMLElement
+    await user.click(okButton)
+
+    await waitFor(() =>
+      expect(mockPush).toHaveBeenCalledWith(`/login?returnTo=${encodeURIComponent('/tech/community/1')}`),
+    )
   })
 
   it('댓글 등록 실패 시 에러 토스트를 표시한다', async () => {
@@ -616,7 +638,7 @@ describe('CommunityDetail', () => {
     expect(screen.getByRole('button', { name: '좋아요' })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('비로그인 상태에서는 하트 버튼이 비활성화되고 클릭해도 요청하지 않는다', async () => {
+  it('비로그인 상태에서 하트 클릭 시 로그인 유도 모달을 띄우고 요청하지 않는다', async () => {
     let called = false
     server.use(
       http.post('http://localhost:5002/api/v2/pms/:section/posts/:id/like', () => {
@@ -630,22 +652,49 @@ describe('CommunityDetail', () => {
 
     await screen.findByText('API 본문 내용')
     const likeButton = screen.getByRole('button', { name: '좋아요' })
-    expect(likeButton).toBeDisabled()
+    // 비로그인에도 버튼은 활성 상태
+    expect(likeButton).toBeEnabled()
 
-    await user.click(likeButton).catch(() => {})
+    await user.click(likeButton)
 
-    await new Promise((r) => setTimeout(r, 50))
+    // 로그인 유도 모달 노출 + 요청·카운트 변화 없음
+    // antd 모달은 노드가 중복 렌더될 수 있어 AllBy 계열로 확인
+    expect((await screen.findAllByText('로그인이 필요해요')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('좋아요와 댓글은 로그인 후 이용할 수 있어요.').length).toBeGreaterThan(0)
     expect(called).toBe(false)
-    // 카운트 변화 없음
     expect(likeButton).toHaveTextContent('5')
   })
 
-  it('로그인 상태에서는 하트 버튼이 활성화된다', async () => {
-    store.set(authAtom, { uid: 1, email: 't@yologram.link', name: '테스터', nickname: 'tester', accessToken: 't' })
+  it('비로그인 하트의 로그인 유도 모달에서 로그인을 누르면 returnTo와 함께 로그인 페이지로 이동한다', async () => {
+    const user = userEvent.setup()
     renderWithProviders(<CommunityDetail />)
 
     await screen.findByText('API 본문 내용')
-    expect(screen.getByRole('button', { name: '좋아요' })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: '좋아요' }))
+
+    await screen.findAllByText('로그인이 필요해요')
+    // 모달 확인(로그인) 버튼은 primary 스타일
+    const okButton = document.querySelector('.ant-modal-confirm-btns .ant-btn-primary') as HTMLElement
+    await user.click(okButton)
+
+    await waitFor(() =>
+      expect(mockPush).toHaveBeenCalledWith(`/login?returnTo=${encodeURIComponent('/tech/community/1')}`),
+    )
+  })
+
+  it('로그인 유도 모달에서 취소하면 이동하지 않는다', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetail />)
+
+    await screen.findByText('API 본문 내용')
+    await user.click(screen.getByRole('button', { name: '좋아요' }))
+
+    await screen.findAllByText('로그인이 필요해요')
+    const cancelButton = document.querySelector('.ant-modal-confirm-btns .ant-btn:not(.ant-btn-primary)') as HTMLElement
+    await user.click(cancelButton)
+
+    await new Promise((r) => setTimeout(r, 50))
+    expect(mockPush).not.toHaveBeenCalled()
   })
 
   it('서버 오류 시 다시 시도 안내를 표시한다', async () => {

@@ -8,7 +8,7 @@ import { App, Avatar } from 'antd'
 import {
   ArrowLeftOutlined,
   EditOutlined,
-  DeleteOutlined,
+  CloseOutlined,
   UserOutlined,
   HeartOutlined,
   HeartFilled,
@@ -25,6 +25,7 @@ import useToggleLikeMutation from '@/queries/useToggleLikeMutation'
 import useCreateCommentMutation from '@/queries/useCreateCommentMutation'
 import useUpdateCommentMutation from '@/queries/useUpdateCommentMutation'
 import useDeleteCommentMutation from '@/queries/useDeleteCommentMutation'
+import useRequireAuth from '@/hooks/useRequireAuth'
 import { getErrorStatus } from '@/lib/error'
 import styles from './CommunityDetail.module.css'
 
@@ -44,6 +45,7 @@ export default function CommunityDetail() {
   const { mutate: createComment, isPending: isCommentPending } = useCreateCommentMutation()
   const { mutate: updateComment, isPending: isUpdatePending } = useUpdateCommentMutation()
   const { mutate: deleteComment } = useDeleteCommentMutation()
+  const requireAuth = useRequireAuth()
 
   // 인라인 편집 중인 댓글 하나만 관리(commentId + 편집 텍스트)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -124,8 +126,8 @@ export default function CommunityDetail() {
   const createdAtText = new Date(post.createdAt).toLocaleString('ko-KR')
 
   const toggleLike = () => {
-    // 좋아요는 인증 필요 — 버튼 disabled로 차단되지만 방어적으로 한 번 더 확인
-    if (!auth) return
+    // 비로그인이면 로그인 유도 모달만 띄우고 요청하지 않는다
+    if (!requireAuth()) return
     toggleLikeMutate(
       // 옵티미스틱 반영·실패 원복은 훅(useToggleLikeMutation)에서 처리
       { section: 'tech', id, like: !post.metrics.likedByMe },
@@ -176,11 +178,8 @@ export default function CommunityDetail() {
     const content = text.trim()
     if (!content || isCommentPending) return
 
-    // 댓글 작성은 인증 필요. 미로그인 시 안내만 하고 요청하지 않는다.
-    if (!auth) {
-      message.warning('로그인 후 댓글을 남길 수 있어요.')
-      return
-    }
+    // 비로그인이면 로그인 유도 모달만 띄우고 요청하지 않는다
+    if (!requireAuth()) return
 
     createComment(
       { section: 'tech', postId: id, content },
@@ -283,14 +282,14 @@ export default function CommunityDetail() {
               aria-label="수정"
               onClick={() => router.push(`/tech/community/${id}/edit`)}
             >
-              <EditOutlined /> 수정
+              <EditOutlined />
             </button>
             <button
               className={styles.delete}
               aria-label="삭제"
               onClick={handleDelete}
             >
-              <DeleteOutlined /> 삭제
+              <CloseOutlined />
             </button>
           </div>
         )}
@@ -312,7 +311,6 @@ export default function CommunityDetail() {
             className={`${styles.action} ${styles.likeButton} ${post.metrics.likedByMe ? styles.liked : ''}`}
             aria-label="좋아요"
             aria-pressed={post.metrics.likedByMe}
-            disabled={!auth}
             onClick={toggleLike}
           >
             {post.metrics.likedByMe ? <HeartFilled /> : <HeartOutlined />} {post.metrics.likeCount}
@@ -356,8 +354,11 @@ export default function CommunityDetail() {
           <div key={c.id} className={styles.comment}>
             <div className={styles.authorRow}>
               <Avatar size={28} icon={<UserOutlined />} />
-              <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
-              <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
+              {/* 닉네임·작성일 세로 스택 — 작성일은 닉네임 아래 줄에 표시 */}
+              <div className={styles.commentMeta}>
+                <span className={styles.author}>{c.author.nickname ?? '알 수 없음'}</span>
+                <span className={styles.time}>{new Date(c.createdAt).toLocaleString('ko-KR')}</span>
+              </div>
               {isCommentOwner && !isEditing && (
                 <div className={styles.commentActions}>
                   <button
@@ -365,14 +366,14 @@ export default function CommunityDetail() {
                     aria-label="댓글 수정"
                     onClick={() => startEditComment(c.id, c.content)}
                   >
-                    <EditOutlined /> 수정
+                    <EditOutlined />
                   </button>
                   <button
                     className={styles.commentDelete}
                     aria-label="댓글 삭제"
                     onClick={() => handleDeleteComment(c.id)}
                   >
-                    <DeleteOutlined /> 삭제
+                    <CloseOutlined />
                   </button>
                 </div>
               )}
