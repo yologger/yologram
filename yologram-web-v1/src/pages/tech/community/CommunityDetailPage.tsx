@@ -409,13 +409,17 @@ export default function CommunityDetailPage() {
       {hasNextPage && <div ref={sentinelRef} className={styles.sentinel} />}
 
       <div className={styles.commentBar}>
-        {/* 비로그인에도 활성 — 등록 시도 시 로그인 유도 모달 (useRequireAuth) */}
+        {/* 비로그인에도 활성 — 포커스 시점에 로그인 유도 모달 (YouTube 패턴), 등록 시점 가드는 안전망 */}
         <input
           className={styles.commentInput}
           placeholder="댓글로 의견을 남겨보세요"
           value={text}
           disabled={isSubmitting}
           maxLength={1000}
+          onFocus={(e) => {
+            // 비로그인 포커스 순간 모달 노출 + 포커스 해제 (남아 있으면 그대로 타이핑돼버림)
+            if (!requireAuth()) e.target.blur()
+          }}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') submitComment()

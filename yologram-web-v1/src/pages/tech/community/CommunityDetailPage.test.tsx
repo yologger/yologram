@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterEach, afterAll, beforeEach } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { QueryClient } from '@tanstack/react-query'
@@ -201,7 +201,50 @@ describe('CommunityDetailPage', () => {
     expect(screen.getByRole('button', { name: '등록' })).toBeDisabled()
   })
 
-  it('비로그인 상태에서도 댓글 입력창은 활성 상태이고, 등록 시도 시 로그인 유도 모달을 띄운다', async () => {
+  it('비로그인 상태에서 댓글 입력창에 포커스하면 로그인 유도 모달을 띄우고 포커스를 해제한다', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('API 본문 내용')
+
+    // 비로그인에도 입력창은 활성 (disabled 아님)
+    const input = screen.getByPlaceholderText('댓글로 의견을 남겨보세요')
+    expect(input).toBeEnabled()
+    await user.click(input)
+
+    // 포커스 순간 모달 노출 (YouTube 패턴)
+    const dialog = await latestDialog()
+    // antd confirm은 제목을 header/본문에 두 번 렌더링 → getAllByText 사용
+    expect(within(dialog).getAllByText('로그인이 필요해요').length).toBeGreaterThan(0)
+    expect(within(dialog).getByText('좋아요와 댓글은 로그인 후 이용할 수 있어요.')).toBeInTheDocument()
+    // 포커스 해제 — 남아 있으면 모달 뒤에서 그대로 타이핑돼버림
+    expect(input).not.toHaveFocus()
+
+    // 취소해도 포커스는 해제된 상태 유지, 이동 없음
+    await user.click(within(dialog).getByRole('button', { name: '취소' }))
+    expect(input).not.toHaveFocus()
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('로그인 상태에서 댓글 입력창에 포커스하면 모달 없이 그대로 입력할 수 있다', async () => {
+    loginAs(1)
+    const user = userEvent.setup()
+    renderWithProviders(<CommunityDetailPage />)
+
+    await screen.findByText('API 본문 내용')
+
+    const input = screen.getByPlaceholderText('댓글로 의견을 남겨보세요')
+    const dialogsBefore = screen.queryAllByRole('dialog').length
+    await user.click(input)
+
+    // 모달 없음 + 포커스 유지 → 바로 타이핑 가능
+    expect(screen.queryAllByRole('dialog').length).toBe(dialogsBefore)
+    expect(input).toHaveFocus()
+    await user.keyboard('로그인 상태 댓글')
+    expect(input).toHaveValue('로그인 상태 댓글')
+  })
+
+  it('포커스 유도를 우회해 입력해도 비로그인 등록 시도 시 로그인 유도 모달을 띄운다 (안전망)', async () => {
     let createCalled = false
     server.use(
       http.post('http://localhost:5001/api/v1/comments/:section/posts/:postId', () => {
@@ -214,17 +257,14 @@ describe('CommunityDetailPage', () => {
 
     await screen.findByText('API 본문 내용')
 
-    // 비로그인에도 입력창·등록 버튼은 활성 (disabled 아님)
+    // 포커스 이벤트 없이 값만 주입 — 포커스 시점 유도를 우회한 케이스 재현
     const input = screen.getByPlaceholderText('댓글로 의견을 남겨보세요')
-    expect(input).toBeEnabled()
-    await user.type(input, '비로그인 댓글')
+    fireEvent.change(input, { target: { value: '비로그인 댓글' } })
     await user.click(screen.getByRole('button', { name: '등록' }))
 
-    // 로그인 유도 모달 노출 + API 미호출
+    // 등록 시점 가드(안전망)로 로그인 유도 모달 노출 + API 미호출
     const dialog = await latestDialog()
-    // antd confirm은 제목을 header/본문에 두 번 렌더링 → getAllByText 사용
     expect(within(dialog).getAllByText('로그인이 필요해요').length).toBeGreaterThan(0)
-    expect(within(dialog).getByText('좋아요와 댓글은 로그인 후 이용할 수 있어요.')).toBeInTheDocument()
     expect(createCalled).toBe(false)
 
     // 취소하면 이동하지 않고 입력값은 유지
@@ -239,7 +279,10 @@ describe('CommunityDetailPage', () => {
 
     await screen.findByText('API 본문 내용')
 
-    await user.type(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), '비로그인 댓글')
+    // 포커스 이벤트 없이 값만 주입 후 등록 → 등록 시점 가드의 모달
+    fireEvent.change(screen.getByPlaceholderText('댓글로 의견을 남겨보세요'), {
+      target: { value: '비로그인 댓글' },
+    })
     await user.click(screen.getByRole('button', { name: '등록' }))
 
     const dialog = await latestDialog()

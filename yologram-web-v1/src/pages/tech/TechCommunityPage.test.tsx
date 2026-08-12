@@ -73,13 +73,49 @@ describe('TechCommunityPage', () => {
     expect(screen.queryByText('API 피드 본문 1')).not.toBeInTheDocument()
   })
 
-  it('작성바 클릭 시 글 작성 페이지로 이동한다', async () => {
+  it('로그인 상태에서 작성바 클릭 시 글 작성 페이지로 즉시 이동한다', async () => {
+    login()
     const user = userEvent.setup()
     renderWithProviders(<TechCommunityPage />)
 
     await user.click(screen.getByRole('button', { name: '기술 커뮤니티에 글을 남겨보세요' }))
 
     expect(mockNavigate).toHaveBeenCalledWith('/tech/community/write')
+  })
+
+  it('비로그인 상태에서 작성바 클릭 시 로그인 유도 모달을 띄우고, 확인하면 write 경로를 returnTo로 넘긴다', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<TechCommunityPage />)
+
+    await user.click(screen.getByRole('button', { name: '기술 커뮤니티에 글을 남겨보세요' }))
+
+    // 로그인 유도 모달 노출 + write 페이지로 이동하지 않음
+    const dialogs = await screen.findAllByRole('dialog')
+    const dialog = dialogs[dialogs.length - 1]
+    // antd confirm은 제목을 header/본문에 두 번 렌더링 → getAllByText 사용
+    expect(within(dialog).getAllByText('로그인이 필요해요').length).toBeGreaterThan(0)
+    expect(mockNavigate).not.toHaveBeenCalled()
+
+    // 확인 시 로그인 후 write 페이지로 바로 진입할 수 있게 returnTo에 write 경로 전달
+    await user.click(within(dialog).getByRole('button', { name: '로그인' }))
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith('/login', {
+        state: { returnTo: '/tech/community/write' },
+      }),
+    )
+  })
+
+  it('비로그인 작성바 모달에서 취소하면 아무 곳으로도 이동하지 않는다', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<TechCommunityPage />)
+
+    await user.click(screen.getByRole('button', { name: '기술 커뮤니티에 글을 남겨보세요' }))
+
+    const dialogs = await screen.findAllByRole('dialog')
+    const dialog = dialogs[dialogs.length - 1]
+    await user.click(within(dialog).getByRole('button', { name: '취소' }))
+
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 
   // 목록 msw 기본값: 첫 글(id 1050) metrics { likeCount: 3, likedByMe: false }
