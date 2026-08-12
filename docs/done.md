@@ -188,6 +188,10 @@
   - web-v1/v2: 하트 토글 실연동 — 공용 뮤테이션 훅(v1 useTogglePostLikeMutation / v2 useToggleLikeMutation)의 onMutate에서 상세·피드(카테고리 변형 포함)·내 글 캐시 옵티미스틱 갱신(likedByMe 토글+likeCount ±1, 0 미만 방어) + 스냅샷, onError 원복+토스트. 멱등 API라 성공 후 invalidate 생략. 미인증은 하트 disabled로 통일(사용자 확정 — 추후 returnTo 로그인 유도 트랙에서 개선). 토큰은 기존 axios 인터셉터 전역 첨부라 likedByMe 자동 수신
   - 로컬 검증: api-v1 curl 사이클(좋아요→중복 no-op→비로그인 false→취소→미좋아요 no-op→404) + 원복 확인. api-v2 curl은 서버 hang(Mac 슬립 half-open — 별도 todos)으로 중단, 재기동 후 잔여
   - 테스트: api-v1 481(신규 30 — 카운트 upsert/가드·서비스 통합 멱등·리소스·조인·선택 인증) / api-v2 403(신규 34) / web-v1 190(신규 13) / web-v2 190 전부 통과 + 양쪽 프로덕션 빌드
+- [x] (web) 커뮤니티 UI 개선 4종 — 로그인 유도 전환 + 댓글 메타·버튼 정리 (web-v1·web-v2)
+  - 미인증 하트·댓글: disabled → 활성 + 클릭 시 로그인 유도 — 대세 UX(YouTube·X·Reddit 등 "누르고 싶어진 순간이 로그인 전환 타이밍", disabled는 발견성·접근성 저하). useRequireAuth 공용 훅: modal.confirm("로그인이 필요해요") → 로그인 이동 → 성공 시 returnTo 원위치 복귀. returnTo는 라우터 차이로 v1 location.state / v2 쿼리 파라미터(내부 경로만 허용 — 오픈 리다이렉트 방지, useSearchParams 대신 window.location.search — Suspense 경계 회피로 /login 정적 프리렌더 유지). 댓글 입력값은 모달 취소 후에도 유지
+  - 댓글 메타: 작성일을 닉네임 아래 줄로(세로 스택). 수정/삭제 버튼 텍스트 제거(아이콘만, aria-label 유지 — 게시글 상세 상단 버튼 포함), 삭제 아이콘 DeleteOutlined → CloseOutlined(X)
+  - 테스트: web-v1 192(교체 3·신규 2) / web-v2 197(교체 3·신규 7 — 모달 이동·취소·returnTo 복귀·외부 경로 무시) 전체 통과, 빌드 통과
 - [x] (Search) 섹션 검색 UI — web-v1·web-v2 (백엔드 미연동, saveticker.com/news 참고)
   - 배치: SubTabLayout의 타이틀("기술")과 탭 사이에 검색바(콘텐츠 전체 폭) — 데스크탑 인라인 Input(돋보기 prefix·allowClear·placeholder "검색어를 입력하세요"), 모바일(useIsMobile 768px)은 타이틀 행 우상단 돋보기 버튼 → 검색 오버레이(← 뒤로 + autoFocus, ESC 닫힘). collapseOnScroll 헤더에 포함돼 스크롤 시 함께 숨김. 세 섹션(tech/invest/politics) 자동 적용
   - 동작: Enter 시 trim·빈 값 무시, /{section}/keywords/{encodeURIComponent(키워드)} 이동. 키워드 페이지는 "'제미나이' 검색결과" placeholder 텍스트 + 재검색 바(initialValue) — 결과 목록은 검색 백엔드(todos Search 트랙)에서 연동
