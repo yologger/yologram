@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager
 import link.yologram.api.v1.domain.pms.tech.entity.TechPost
 import link.yologram.api.v1.domain.pms.tech.entity.TechPostCategoryMapping
 import link.yologram.api.v1.domain.pms.tech.entity.TechPostCommentCount
+import link.yologram.api.v1.domain.pms.tech.entity.TechPostLikeCount
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -30,12 +31,16 @@ class TechPostRepositoryImplTest {
     lateinit var postCommentCountRepository: TechPostCommentCountRepository
 
     @Autowired
+    lateinit var postLikeCountRepository: TechPostLikeCountRepository
+
+    @Autowired
     lateinit var entityManager: EntityManager
 
     @BeforeEach
     fun setUp() {
         postCategoryMappingRepository.deleteAll()
         postCommentCountRepository.deleteAll()
+        postLikeCountRepository.deleteAll()
         postRepository.deleteAll()
         entityManager.flush()
     }
@@ -45,6 +50,11 @@ class TechPostRepositoryImplTest {
 
     private fun saveCommentCount(postId: Long, count: Long) {
         postCommentCountRepository.save(TechPostCommentCount(postId = postId, commentCount = count))
+        entityManager.flush()
+    }
+
+    private fun saveLikeCount(postId: Long, count: Long) {
+        postLikeCountRepository.save(TechPostLikeCount(postId = postId, likeCount = count))
         entityManager.flush()
     }
 
@@ -231,7 +241,7 @@ class TechPostRepositoryImplTest {
             val post = savePost()
             saveCommentCount(post.id, 5L)
 
-            val result = postRepository.findPostWithCommentCount(post.id)
+            val result = postRepository.findPostWithCounts(post.id)
 
             assertEquals(post.id, result?.post?.id)
             assertEquals(5L, result?.commentCount)
@@ -241,14 +251,14 @@ class TechPostRepositoryImplTest {
         fun `상세에서 count row가 없는 글은 0을 반환한다 (coalesce)`() {
             val post = savePost()
 
-            val result = postRepository.findPostWithCommentCount(post.id)
+            val result = postRepository.findPostWithCounts(post.id)
 
             assertEquals(0L, result?.commentCount)
         }
 
         @Test
         fun `상세에서 없는 글이면 null을 반환한다`() {
-            assertNull(postRepository.findPostWithCommentCount(9999L))
+            assertNull(postRepository.findPostWithCounts(9999L))
         }
 
         @Test
@@ -278,6 +288,55 @@ class TechPostRepositoryImplTest {
             val secondPage = postRepository.findPosts(null, cursorId, 2)
             assertEquals(listOf(p1.id), secondPage.map { it.post.id })
             assertEquals(listOf(1L), secondPage.map { it.commentCount })
+        }
+    }
+
+    @Nested
+    inner class 좋아요_수_조인 {
+
+        @Test
+        fun `목록에서 like count row가 있는 글은 실값, 없는 글은 0으로 반환한다`() {
+            val withLikes = savePost()
+            val withoutLikes = savePost()
+            saveLikeCount(withLikes.id, 3L)
+
+            // id desc → withoutLikes(0), withLikes(3). leftJoin+coalesce라 row 없는 글도 목록에 남는다
+            val result = postRepository.findPosts(null, null, 10)
+
+            assertEquals(listOf(withoutLikes.id, withLikes.id), result.map { it.post.id })
+            assertEquals(listOf(0L, 3L), result.map { it.likeCount })
+        }
+
+        @Test
+        fun `상세에서 like count row가 있는 글은 실값, 없는 글은 0을 반환한다 (coalesce)`() {
+            val withLikes = savePost()
+            val withoutLikes = savePost()
+            saveLikeCount(withLikes.id, 5L)
+
+            assertEquals(5L, postRepository.findPostWithCounts(withLikes.id)?.likeCount)
+            assertEquals(0L, postRepository.findPostWithCounts(withoutLikes.id)?.likeCount)
+        }
+
+        @Test
+        fun `댓글 수·좋아요 수 조인이 서로 독립적으로 채워진다`() {
+            // 카운트 테이블 2개를 동시에 leftJoin — 한쪽만 row가 있어도 각자 coalesce로 채워진다
+            val post = savePost()
+            saveCommentCount(post.id, 2L)
+
+            val result = postRepository.findPostWithCounts(post.id)
+
+            assertEquals(2L, result?.commentCount)
+            assertEquals(0L, result?.likeCount)
+        }
+
+        @Test
+        fun `내 글 목록에도 좋아요 수가 실린다`() {
+            val mine = savePost(userId = 1L)
+            saveLikeCount(mine.id, 4L)
+
+            val result = postRepository.findMyPosts(1L, 0L, 10)
+
+            assertEquals(listOf(4L), result.map { it.likeCount })
         }
     }
 

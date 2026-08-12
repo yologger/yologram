@@ -9,6 +9,8 @@ import java.time.LocalDateTime
 /**
  * 테크 게시판 게시글. 섹션은 테이블명(tech_post)이 담당 — section 컬럼 없음.
  * 인덱스(idx_tech_post_user_id)는 DDL로만 관리 (엔티티 @Index 선언 금지 — 프로젝트 관례).
+ * 카운트(댓글 수·좋아요 수)는 별도 1:1 테이블(tech_post_comment_count·tech_post_like_count) 소관 —
+ * 사장된 like_count·comment_count 컬럼은 매핑 제거(이 버전 배포 후 drop DDL 예정, INSERT에서 제외돼야 drop 가능).
  */
 @Entity
 @Table(name = "tech_post")
@@ -26,12 +28,6 @@ class TechPost(
 
     @Column(nullable = false, columnDefinition = "TEXT")
     var content: String,
-
-    @Column(nullable = false)
-    var likeCount: Int = 0,
-
-    @Column(nullable = false)
-    var commentCount: Int = 0,
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

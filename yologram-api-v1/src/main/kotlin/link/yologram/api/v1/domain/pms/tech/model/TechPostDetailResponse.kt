@@ -4,7 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
 /**
- * 응답 JSON 스키마는 분리 전(PostDetailResponse)과 동일해야 한다 — web 사용 중.
+ * 카운트는 metrics 객체로 중첩 (레거시 product.metrics 미러, 2026-08-10 계약 전환 —
+ * 평면 likeCount/commentCount 제거는 브레이킹이라 web-v1/v2 metrics 참조 전환과 한 트랙 배포).
  * section 필드는 테이블 분리 후에도 호환을 위해 "TECH" 고정으로 유지.
  */
 @Schema(description = "테크 게시글 상세")
@@ -27,11 +28,8 @@ data class TechPostDetailResponse(
     @Schema(description = "카테고리 ID 목록", example = "[1, 2]")
     val categoryIds: List<Long>,
 
-    @Schema(description = "좋아요 수", example = "0")
-    val likeCount: Int,
-
-    @Schema(description = "댓글 수", example = "0")
-    val commentCount: Int,
+    @Schema(description = "지표 (댓글 수·좋아요 수·likedByMe)")
+    val metrics: TechPostMetrics,
 
     @Schema(description = "작성 시각")
     val createdAt: LocalDateTime,

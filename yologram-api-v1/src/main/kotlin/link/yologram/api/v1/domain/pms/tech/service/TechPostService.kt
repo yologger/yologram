@@ -10,9 +10,12 @@ import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostResponse
 import link.yologram.api.v1.domain.pms.tech.model.TechPostCursor
 import link.yologram.api.v1.domain.pms.tech.model.TechPostDetailResponse
+import link.yologram.api.v1.domain.pms.tech.model.TechPostMetrics
 import link.yologram.api.v1.domain.pms.tech.model.TechPostSummaryResponse
+import link.yologram.api.v1.domain.pms.tech.model.TechPostWithCounts
 import link.yologram.api.v1.domain.pms.tech.model.UpdateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostCategoryMappingRepository
+import link.yologram.api.v1.domain.pms.tech.repository.TechPostLikeRepository
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostRepository
 import link.yologram.api.v1.infra.client.cms.CmsApiClient
 import link.yologram.api.v1.infra.client.comment.CommentApiClient
@@ -27,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional
 class TechPostService(
     private val postRepository: TechPostRepository,
     private val postCategoryMappingRepository: TechPostCategoryMappingRepository,
+    private val likeRepository: TechPostLikeRepository,
     private val cmsApiClient: CmsApiClient,
     private val umsApiClient: UmsApiClient,
     private val commentApiClient: CommentApiClient,
@@ -105,21 +109,25 @@ class TechPostService(
         if (post.userId != userId) throw TechPostForbiddenException()
 
         // 연관 데이터 정리 후 게시글 삭제 — 카테고리 매핑 + 댓글(고아 방지, CommentApiClient로 경계 추상화).
-        // 같은 트랜잭션이라 글·매핑·댓글 삭제가 원자적 (좋아요 도메인은 미구현)
+        // 같은 트랜잭션이라 글·매핑·댓글 삭제가 원자적
+        // (좋아요 원장·카운트 row는 잔존해도 무해 — 목록·상세에서 글이 사라지면 참조되지 않음. 정리는 soft delete/worker 트랙)
         postCategoryMappingRepository.deleteByPostId(post.id)
         commentApiClient.deleteByPostId(post.id)
         postRepository.delete(post)
     }
 
-    // 게시글 단건 조회
+    // 게시글 단건 조회. viewerUid는 선택 인증(로그인 시 likedByMe 계산, 비로그인 null → false)
     @Transactional(readOnly = true)
-    fun getPost(id: Long): TechPostDetailResponse {
-        // 댓글 수는 tech_post_comment_count leftJoin + coalesce(0) — count row가 없으면 0
-        val postWithCount = postRepository.findPostWithCommentCount(id) ?: throw TechPostNotFoundException()
-        val post = postWithCount.post
+    fun getPost(id: Long, viewerUid: Long? = null): TechPostDetailResponse {
+        // 카운트는 tech_post_comment_count·tech_post_like_count leftJoin + coalesce(0) — count row가 없으면 0
+        val postWithCounts = postRepository.findPostWithCounts(id) ?: throw TechPostNotFoundException()
+        val post = postWithCounts.post
 
         val categoryIds = postCategoryMappingRepository.findByPostId(post.id).map { it.categoryId }
         val nickname = umsApiClient.findNickname(post.userId)
+
+        // likedByMe: 개인화 값이라 프로젝션이 아닌 원장 단건 exists (비로그인은 조회 생략)
+        val likedByMe = viewerUid != null && likeRepository.existsByPostIdAndUid(post.id, viewerUid)
 
         return TechPostDetailResponse(
             id = post.id,
@@ -127,17 +135,16 @@ class TechPostService(
             title = post.title,
             content = post.content,
             categoryIds = categoryIds,
-            likeCount = post.likeCount,
-            commentCount = postWithCount.commentCount.toInt(),
+            metrics = toMetrics(postWithCounts, likedByMe),
             createdAt = post.createdAt,
         )
     }
 
     /**
-     * 테크 피드 목록 조회 (cursor 페이지네이션)
+     * 테크 피드 목록 조회 (cursor 페이지네이션). viewerUid는 선택 인증 (로그인 시 likedByMe)
      */
     @Transactional(readOnly = true)
-    fun getPostsByCursor(categoryId: Long?, cursor: String?, size: Int): ApiEnvelopCursorPage<TechPostSummaryResponse> {
+    fun getPostsByCursor(categoryId: Long?, cursor: String?, size: Int, viewerUid: Long? = null): ApiEnvelopCursorPage<TechPostSummaryResponse> {
 
         // 1) size 보정: 0·음수·과도한 값 방어를 위해 1~50으로 강제
         val pageSize = size.coerceIn(1, MAX_PAGE_SIZE)
@@ -146,7 +153,7 @@ class TechPostService(
         val cursorId = cursor?.let { TechPostCursor.decode(it) }
 
         // 3) 목록 조회: categoryId 있으면 EXISTS 필터 + id < cursorId, id desc, pageSize개.
-        //    댓글 수는 tech_post_comment_count leftJoin + coalesce(0)로 함께 조회 (1:1이라 커서 영향 없음)
+        //    댓글 수·좋아요 수는 카운트 테이블 leftJoin + coalesce(0)로 함께 조회 (1:1이라 커서 영향 없음)
         val posts = postRepository.findPosts(categoryId, cursorId, pageSize)
 
         // 4) 작성자 닉네임 배치 조회 (N+1 회피): 글들의 userId를 모아 ums에 1번 질의 → uid→nickname Map
@@ -158,22 +165,24 @@ class TechPostService(
         val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.post.id })
             .groupBy({ it.postId }, { it.categoryId })
 
-        // 6) DTO 매핑: 4·5에서 만든 Map에서 닉네임·카테고리를 꺼내 TechPostSummaryResponse로 변환
-        val data = posts.map { postWithCount ->
-            val post = postWithCount.post
+        // 6) likedByMe 배치 조회 (N+1 회피): 로그인 유저가 누른 글만 원장 IN 1번 질의로 Set 구성
+        val likedPostIds = findLikedPostIds(viewerUid, posts.map { it.post.id })
+
+        // 7) DTO 매핑: 4~6에서 만든 Map/Set에서 닉네임·카테고리·likedByMe를 꺼내 TechPostSummaryResponse로 변환
+        val data = posts.map { postWithCounts ->
+            val post = postWithCounts.post
             TechPostSummaryResponse(
                 id = post.id,
                 author = TechPostDetailResponse.Author(uid = post.userId, nickname = nicknames[post.userId]),
                 title = post.title,
                 content = post.content,
                 categoryIds = categoryIdsByPost[post.id] ?: emptyList(),
-                likeCount = post.likeCount,
-                commentCount = postWithCount.commentCount.toInt(),
+                metrics = toMetrics(postWithCounts, likedByMe = post.id in likedPostIds),
                 createdAt = post.createdAt,
             )
         }
 
-        // 7) 다음 커서: 마지막(가장 과거) 글 id를 인코딩. 빈 결과면 null → 클라이언트는 빈 응답으로 끝을 판단
+        // 8) 다음 커서: 마지막(가장 과거) 글 id를 인코딩. 빈 결과면 null → 클라이언트는 빈 응답으로 끝을 판단
         val nextCursor = posts.lastOrNull()?.let { TechPostCursor.encode(it.post.id) }
 
         return ApiEnvelopCursorPage(data = data, nextCursor = nextCursor)
@@ -183,7 +192,7 @@ class TechPostService(
      * 테크 피드 목록 조회 (offset 페이지네이션) — 학습용. 엔드포인트는 비활성(Resource 주석).
      */
     @Transactional(readOnly = true)
-    fun getPostsByOffset(categoryId: Long?, page: Int, size: Int): ApiEnvelopPage<TechPostSummaryResponse> {
+    fun getPostsByOffset(categoryId: Long?, page: Int, size: Int, viewerUid: Long? = null): ApiEnvelopPage<TechPostSummaryResponse> {
         val pageNumber = page.coerceAtLeast(0)
         val pageSize = size.coerceIn(1, MAX_PAGE_SIZE)
         val offset = pageNumber.toLong() * pageSize
@@ -194,17 +203,17 @@ class TechPostService(
         val nicknames = umsApiClient.findNicknames(posts.map { it.post.userId })
         val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.post.id })
             .groupBy({ it.postId }, { it.categoryId })
+        val likedPostIds = findLikedPostIds(viewerUid, posts.map { it.post.id })
 
-        val data = posts.map { postWithCount ->
-            val post = postWithCount.post
+        val data = posts.map { postWithCounts ->
+            val post = postWithCounts.post
             TechPostSummaryResponse(
                 id = post.id,
                 author = TechPostDetailResponse.Author(uid = post.userId, nickname = nicknames[post.userId]),
                 title = post.title,
                 content = post.content,
                 categoryIds = categoryIdsByPost[post.id] ?: emptyList(),
-                likeCount = post.likeCount,
-                commentCount = postWithCount.commentCount.toInt(),
+                metrics = toMetrics(postWithCounts, likedByMe = post.id in likedPostIds),
                 createdAt = post.createdAt,
             )
         }
@@ -225,6 +234,7 @@ class TechPostService(
      * 내 글 목록 조회 (cursor 페이지네이션) — 실사용. id desc 최신순 +
      * 피드(getPostsByCursor)와 동일 방식. 무한스크롤에 적합(일관성·인덱스 범위 스캔).
      * sectionPath는 구 API 호환용 쿼리 파라미터 — null 또는 "tech"만 허용.
+     * viewer = 본인(인증 필수)이라 likedByMe도 userId 기준.
      */
     @Transactional(readOnly = true)
     fun getMyPostsByCursor(userId: Long, sectionPath: String?, cursor: String?, size: Int): ApiEnvelopCursorPage<TechPostSummaryResponse> {
@@ -237,17 +247,17 @@ class TechPostService(
         val nickname = umsApiClient.findNickname(userId)
         val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.post.id })
             .groupBy({ it.postId }, { it.categoryId })
+        val likedPostIds = findLikedPostIds(userId, posts.map { it.post.id })
 
-        val data = posts.map { postWithCount ->
-            val post = postWithCount.post
+        val data = posts.map { postWithCounts ->
+            val post = postWithCounts.post
             TechPostSummaryResponse(
                 id = post.id,
                 author = TechPostDetailResponse.Author(uid = post.userId, nickname = nickname),
                 title = post.title,
                 content = post.content,
                 categoryIds = categoryIdsByPost[post.id] ?: emptyList(),
-                likeCount = post.likeCount,
-                commentCount = postWithCount.commentCount.toInt(),
+                metrics = toMetrics(postWithCounts, likedByMe = post.id in likedPostIds),
                 createdAt = post.createdAt,
             )
         }
@@ -279,18 +289,18 @@ class TechPostService(
         val nickname = umsApiClient.findNickname(userId)
         val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.post.id })
             .groupBy({ it.postId }, { it.categoryId })
+        val likedPostIds = findLikedPostIds(userId, posts.map { it.post.id })
 
         // 5) DTO 매핑
-        val data = posts.map { postWithCount ->
-            val post = postWithCount.post
+        val data = posts.map { postWithCounts ->
+            val post = postWithCounts.post
             TechPostSummaryResponse(
                 id = post.id,
                 author = TechPostDetailResponse.Author(uid = post.userId, nickname = nickname),
                 title = post.title,
                 content = post.content,
                 categoryIds = categoryIdsByPost[post.id] ?: emptyList(),
-                likeCount = post.likeCount,
-                commentCount = postWithCount.commentCount.toInt(),
+                metrics = toMetrics(postWithCounts, likedByMe = post.id in likedPostIds),
                 createdAt = post.createdAt,
             )
         }
@@ -306,5 +316,21 @@ class TechPostService(
             first = pageNumber == 0,
             last = totalPages == 0L || pageNumber.toLong() >= totalPages - 1,
         )
+    }
+
+    /** 프로젝션 카운트 + likedByMe → metrics 응답 변환 (목록·상세 공유) */
+    private fun toMetrics(postWithCounts: TechPostWithCounts, likedByMe: Boolean) = TechPostMetrics(
+        commentCount = postWithCounts.commentCount.toInt(),
+        likeCount = postWithCounts.likeCount.toInt(),
+        likedByMe = likedByMe,
+    )
+
+    /**
+     * 목록의 likedByMe 배치 조회: 로그인 유저(viewerUid)가 누른 글의 postId Set.
+     * 비로그인(null)·빈 목록이면 조회 생략 — 전부 false.
+     */
+    private fun findLikedPostIds(viewerUid: Long?, postIds: List<Long>): Set<Long> {
+        if (viewerUid == null || postIds.isEmpty()) return emptySet()
+        return likeRepository.findByUidAndPostIdIn(viewerUid, postIds).mapTo(mutableSetOf()) { it.postId }
     }
 }

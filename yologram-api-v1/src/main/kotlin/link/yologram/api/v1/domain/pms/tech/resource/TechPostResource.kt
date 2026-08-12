@@ -13,6 +13,7 @@ import link.yologram.api.v1.domain.pms.tech.model.UpdateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.service.TechPostService
 import link.yologram.api.v1.domain.ums.resolver.AuthData
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUser
+import link.yologram.api.v1.domain.ums.resolver.OptionalAuthenticatedUser
 import link.yologram.api.v1.global.model.ApiEnvelop
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import org.springframework.http.HttpStatus
@@ -87,19 +88,21 @@ class TechPostResource(
         postService.delete(id, authData.uid)
     }
 
-    // 게시글 피드 (cursor-based pagination)
+    // 게시글 피드 (cursor-based pagination). 공개 API지만 로그인 시 metrics.likedByMe를 채운다 (선택 인증)
     @GetMapping("/tech/posts")
-    @Operation(summary = "테크 게시글 목록 조회", description = "테크 피드. 최신순 cursor 페이지네이션 (공개)")
+    @Operation(summary = "테크 게시글 목록 조회", description = "테크 피드. 최신순 cursor 페이지네이션 (공개, 로그인 시 likedByMe 포함)")
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "조회 성공"),
         ApiResponse(responseCode = "400", description = "유효하지 않은 커서"),
+        ApiResponse(responseCode = "401", description = "무효 토큰 (헤더를 보낸 경우만 검증)"),
     )
     fun getPosts(
+        @OptionalAuthenticatedUser authData: AuthData?,
         @RequestParam(required = false) cursor: String?,
         @RequestParam(required = false, defaultValue = "20") size: Int,
         @RequestParam(required = false) categoryId: Long?,
     ): ApiEnvelopCursorPage<TechPostSummaryResponse> {
-        return postService.getPostsByCursor(categoryId, cursor, size)
+        return postService.getPostsByCursor(categoryId, cursor, size, authData?.uid)
     }
 
     // 게시글 피드 (offset 페이지네이션) — 학습용. 코드는 TechPostService.getPostsByOffset에 보존, 엔드포인트는 비활성(필요 시 주석 해제)
@@ -150,14 +153,16 @@ class TechPostResource(
 //    }
 
     @GetMapping("/tech/posts/{id}")
-    @Operation(summary = "테크 게시글 상세 조회", description = "테크 게시판의 게시글 단건 조회 (공개)")
+    @Operation(summary = "테크 게시글 상세 조회", description = "테크 게시판의 게시글 단건 조회 (공개, 로그인 시 likedByMe 포함)")
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "조회 성공"),
+        ApiResponse(responseCode = "401", description = "무효 토큰 (헤더를 보낸 경우만 검증)"),
         ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음"),
     )
     fun getPost(
         @PathVariable id: Long,
+        @OptionalAuthenticatedUser authData: AuthData?,
     ): ApiEnvelop<TechPostDetailResponse> {
-        return ApiEnvelop(data = postService.getPost(id))
+        return ApiEnvelop(data = postService.getPost(id, authData?.uid))
     }
 }

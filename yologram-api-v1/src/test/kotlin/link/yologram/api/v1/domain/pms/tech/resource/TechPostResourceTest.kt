@@ -12,11 +12,13 @@ import link.yologram.api.v1.domain.pms.tech.exception.TechPostNotFoundException
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostResponse
 import link.yologram.api.v1.domain.pms.tech.model.TechPostDetailResponse
+import link.yologram.api.v1.domain.pms.tech.model.TechPostMetrics
 import link.yologram.api.v1.domain.pms.tech.model.TechPostSummaryResponse
 import link.yologram.api.v1.domain.pms.tech.model.UpdateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.service.TechPostService
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUserResolver
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
+import link.yologram.api.v1.domain.ums.resolver.OptionalAuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.util.AdminJwtUtil
 import link.yologram.api.v1.domain.ums.util.JwtUtil
 import link.yologram.api.v1.global.exception.GlobalExceptionHandler
@@ -27,6 +29,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -47,6 +50,7 @@ import java.time.LocalDateTime
     GlobalExceptionHandler::class,
     AuthenticatedUserResolver::class,
     AuthenticatedAdminUserResolver::class,
+    OptionalAuthenticatedUserResolver::class,
 )
 class TechPostResourceTest {
 
@@ -283,16 +287,15 @@ class TechPostResourceTest {
     }
 
     @Test
-    fun `게시글 상세 조회 시 200과 게시글을 반환한다`() {
-        whenever(postService.getPost(1L)).thenReturn(
+    fun `게시글 상세 조회 시 200과 게시글을 반환한다 (비로그인 - viewerUid null)`() {
+        whenever(postService.getPost(eq(1L), isNull())).thenReturn(
             TechPostDetailResponse(
                 id = 1L,
                 author = TechPostDetailResponse.Author(uid = 12L, nickname = "tester"),
                 title = "제목",
                 content = "내용",
                 categoryIds = listOf(1L, 2L),
-                likeCount = 0,
-                commentCount = 0,
+                metrics = TechPostMetrics(commentCount = 2, likeCount = 5, likedByMe = false),
                 createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
             ),
         )
@@ -305,12 +308,50 @@ class TechPostResourceTest {
                 jsonPath("$.data.author.nickname") { value("tester") }
                 jsonPath("$.data.content") { value("내용") }
                 jsonPath("$.data.categoryIds[0]") { value(1) }
+                jsonPath("$.data.metrics.commentCount") { value(2) }
+                jsonPath("$.data.metrics.likeCount") { value(5) }
+                jsonPath("$.data.metrics.likedByMe") { value(false) }
             }
     }
 
     @Test
+    fun `로그인 상태로 상세 조회하면 viewerUid가 전달된다 (선택 인증)`() {
+        whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(7L)
+        whenever(postService.getPost(eq(1L), eq(7L))).thenReturn(
+            TechPostDetailResponse(
+                id = 1L,
+                author = TechPostDetailResponse.Author(uid = 12L, nickname = "tester"),
+                title = "제목",
+                content = "내용",
+                categoryIds = listOf(1L),
+                metrics = TechPostMetrics(commentCount = 0, likeCount = 1, likedByMe = true),
+                createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
+            ),
+        )
+
+        mockMvc.get("/api/v1/pms/tech/posts/1") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.data.metrics.likedByMe") { value(true) }
+        }
+    }
+
+    @Test
+    fun `상세 조회에 무효 토큰을 보내면 401 반환 (선택 인증은 헤더가 있으면 검증)`() {
+        whenever(jwtUtil.validateAndGetUid("bad-token")).thenThrow(link.yologram.api.v1.domain.ums.exception.AuthTokenInvalidException())
+
+        mockMvc.get("/api/v1/pms/tech/posts/1") {
+            header("Authorization", "Bearer bad-token")
+        }.andExpect {
+            status { isUnauthorized() }
+            jsonPath("$.errorCode") { value("AUTH_INVALID_TOKEN") }
+        }
+    }
+
+    @Test
     fun `존재하지 않는 게시글이면 404 반환`() {
-        whenever(postService.getPost(99L)).thenThrow(TechPostNotFoundException())
+        whenever(postService.getPost(eq(99L), isNull())).thenThrow(TechPostNotFoundException())
 
         mockMvc.get("/api/v1/pms/tech/posts/99")
             .andExpect {
@@ -321,7 +362,7 @@ class TechPostResourceTest {
 
     @Test
     fun `게시글 목록 조회 시 200과 data·nextCursor를 반환한다`() {
-        whenever(postService.getPostsByCursor(anyOrNull(), anyOrNull(), any())).thenReturn(
+        whenever(postService.getPostsByCursor(anyOrNull(), anyOrNull(), any(), anyOrNull())).thenReturn(
             ApiEnvelopCursorPage(
                 data = listOf(
                     TechPostSummaryResponse(
@@ -330,8 +371,7 @@ class TechPostResourceTest {
                         title = "제목",
                         content = "내용",
                         categoryIds = listOf(1L),
-                        likeCount = 0,
-                        commentCount = 0,
+                        metrics = TechPostMetrics(commentCount = 3, likeCount = 1, likedByMe = false),
                         createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
                     ),
                 ),
@@ -345,13 +385,16 @@ class TechPostResourceTest {
                 jsonPath("$.data[0].id") { value(2) }
                 jsonPath("$.data[0].section") { value("TECH") }
                 jsonPath("$.data[0].author.nickname") { value("tester") }
+                jsonPath("$.data[0].metrics.commentCount") { value(3) }
+                jsonPath("$.data[0].metrics.likeCount") { value(1) }
+                jsonPath("$.data[0].metrics.likedByMe") { value(false) }
                 jsonPath("$.nextCursor") { value("next-cursor") }
             }
     }
 
     @Test
     fun `목록 조회 시 유효하지 않은 커서면 400 반환`() {
-        doThrow(InvalidTechPostCursorException()).whenever(postService).getPostsByCursor(anyOrNull(), eq("@@@"), any())
+        doThrow(InvalidTechPostCursorException()).whenever(postService).getPostsByCursor(anyOrNull(), eq("@@@"), any(), anyOrNull())
 
         mockMvc.get("/api/v1/pms/tech/posts?cursor=@@@")
             .andExpect {
@@ -380,8 +423,7 @@ class TechPostResourceTest {
                         title = "제목",
                         content = "내용",
                         categoryIds = listOf(1L),
-                        likeCount = 0,
-                        commentCount = 0,
+                        metrics = TechPostMetrics(commentCount = 0, likeCount = 0, likedByMe = false),
                         createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
                     ),
                 ),
