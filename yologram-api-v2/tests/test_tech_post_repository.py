@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from testcontainers.mysql import MySqlContainer
 
 from app.config.database import Base
-from app.domain.pms.tech.model import TechPost, TechPostCommentCount
+from app.domain.pms.tech.model import TechPost, TechPostCommentCount, TechPostLikeCount
 from app.domain.pms.tech.repository import TechPostRepository
 
 
@@ -26,6 +26,7 @@ def clean_tables(db_session):
     """테스트 간 격리: 게시글·카운트 테이블 초기화."""
     db_session.query(TechPost).delete()
     db_session.query(TechPostCommentCount).delete()
+    db_session.query(TechPostLikeCount).delete()
     db_session.commit()
 
 
@@ -47,7 +48,7 @@ class TestTechPostRepositoryCommentCount:
             db_session.commit()
             repo = TechPostRepository(db_session)
 
-            result = repo.find_post_with_comment_count(post.id)
+            result = repo.find_post_with_counts(post.id)
 
             assert result.post.id == post.id
             assert result.comment_count == 3
@@ -56,7 +57,7 @@ class TestTechPostRepositoryCommentCount:
             post = _save_post(db_session)
             repo = TechPostRepository(db_session)
 
-            result = repo.find_post_with_comment_count(post.id)
+            result = repo.find_post_with_counts(post.id)
 
             assert result.post.id == post.id
             assert result.comment_count == 0
@@ -64,7 +65,7 @@ class TestTechPostRepositoryCommentCount:
         def test_없는_글이면_None(self, db_session):
             repo = TechPostRepository(db_session)
 
-            assert repo.find_post_with_comment_count(999) is None
+            assert repo.find_post_with_counts(999) is None
 
     class TestFindPosts:
 
@@ -95,3 +96,42 @@ class TestTechPostRepositoryCommentCount:
 
             assert [r.post.id for r in results] == [mine.id]
             assert results[0].comment_count == 5
+
+
+class TestTechPostRepositoryLikeCount:
+    """좋아요 수 outerjoin + coalesce(0) 프로젝션 — 댓글 수와 독립적으로 채워진다."""
+
+    def test_상세에서_like_count_row가_있는_글은_실값_없는_글은_0(self, db_session):
+        with_likes = _save_post(db_session)
+        without_likes = _save_post(db_session)
+        db_session.add(TechPostLikeCount(post_id=with_likes.id, like_count=5))
+        db_session.commit()
+        repo = TechPostRepository(db_session)
+
+        assert repo.find_post_with_counts(with_likes.id).like_count == 5
+        assert repo.find_post_with_counts(without_likes.id).like_count == 0
+
+    def test_목록에서_like_count_row_유무와_무관하게_실값과_0으로_나온다(self, db_session):
+        with_likes = _save_post(db_session)
+        without_likes = _save_post(db_session)
+        db_session.add(TechPostLikeCount(post_id=with_likes.id, like_count=2))
+        db_session.commit()
+        repo = TechPostRepository(db_session)
+
+        results = repo.find_posts(None, None, 10)
+
+        # id desc — 나중 글(카운트 없음)이 먼저, 카운트 테이블 2개 outerjoin에도 row 불어남 없음
+        assert [r.post.id for r in results] == [without_likes.id, with_likes.id]
+        assert [r.like_count for r in results] == [0, 2]
+
+    def test_댓글_수와_좋아요_수_조인이_서로_독립적으로_채워진다(self, db_session):
+        # 한쪽 카운트 테이블만 row가 있어도 각자 coalesce로 채워진다
+        post = _save_post(db_session)
+        db_session.add(TechPostCommentCount(post_id=post.id, comment_count=2))
+        db_session.commit()
+        repo = TechPostRepository(db_session)
+
+        result = repo.find_post_with_counts(post.id)
+
+        assert result.comment_count == 2
+        assert result.like_count == 0

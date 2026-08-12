@@ -7,7 +7,7 @@ os.environ.setdefault("JWT_SECRET", "test-jwt-secret-key-for-testing")
 from fastapi.testclient import TestClient
 
 from app.config.database import get_db
-from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping, TechPostWithCommentCount
+from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping, TechPostWithCounts
 from app.domain.ums.auth_dependency import get_authenticated_user
 from app.domain.ums.auth_schema import AuthData
 from app.main import app
@@ -121,12 +121,11 @@ class TestTechPostRouter:
         post = _saved_post(1)
         post.user_id = 12
         post.title = "제목"
-        post.like_count = 0
         post.created_at = datetime(2026, 1, 1, 0, 0)
         mock_post_repo = MagicMock()
-        # 상세는 프로젝션(find_post_with_comment_count)으로 조회 — 댓글 수는 coalesce 실값
-        mock_post_repo.find_post_with_comment_count.return_value = TechPostWithCommentCount(
-            post=post, comment_count=2
+        # 상세는 프로젝션(find_post_with_counts)으로 조회 — 카운트는 coalesce 실값
+        mock_post_repo.find_post_with_counts.return_value = TechPostWithCounts(
+            post=post, comment_count=2, like_count=5
         )
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
@@ -145,14 +144,17 @@ class TestTechPostRouter:
         assert body["author"]["nickname"] == "tester"
         assert body["content"] == "내용"
         assert body["categoryIds"] == [1]
-        assert body["commentCount"] == 2
+        # 카운트는 metrics 객체로 중첩 (평면 필드 제거), 비로그인이라 likedByMe False
+        assert body["metrics"] == {"commentCount": 2, "likeCount": 5, "likedByMe": False}
+        assert "commentCount" not in body
+        assert "likeCount" not in body
 
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
     @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_존재하지_않는_게시글이면_404(self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls):
         mock_post_repo = MagicMock()
-        mock_post_repo.find_post_with_comment_count.return_value = None
+        mock_post_repo.find_post_with_counts.return_value = None
         mock_post_repo_cls.return_value = mock_post_repo
 
         response = self.client.get("/api/v2/pms/tech/posts/99")
@@ -167,11 +169,10 @@ class TestTechPostRouter:
         post = _saved_post(2)
         post.user_id = 12
         post.title = "제목"
-        post.like_count = 0
         post.created_at = datetime(2026, 1, 1, 0, 0)
         mock_post_repo = MagicMock()
-        # 목록도 프로젝션(TechPostWithCommentCount) 반환 — 댓글 수는 coalesce 실값
-        mock_post_repo.find_posts.return_value = [TechPostWithCommentCount(post=post, comment_count=3)]
+        # 목록도 프로젝션(TechPostWithCounts) 반환 — 카운트는 coalesce 실값
+        mock_post_repo.find_posts.return_value = [TechPostWithCounts(post=post, comment_count=3, like_count=1)]
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
         mock_pc_repo.find_by_post_ids.return_value = [TechPostCategoryMapping(post_id=2, category_id=1)]
@@ -188,7 +189,7 @@ class TestTechPostRouter:
         assert body["data"][0]["section"] == "TECH"
         assert body["data"][0]["author"]["nickname"] == "tester"
         assert body["data"][0]["categoryIds"] == [1]
-        assert body["data"][0]["commentCount"] == 3
+        assert body["data"][0]["metrics"] == {"commentCount": 3, "likeCount": 1, "likedByMe": False}
         assert body["nextCursor"] is not None
 
     def test_목록_조회_시_다른_section_경로면_404(self):
@@ -197,20 +198,23 @@ class TestTechPostRouter:
         assert response.status_code == 404
         assert response.json()["errorCode"] == "NOT_FOUND"
 
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
     @patch("app.domain.pms.tech.service.TechPostRepository")
-    def test_내_글_목록_조회_시_200과_data_nextCursor(self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls):
+    def test_내_글_목록_조회_시_200과_data_nextCursor(self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_like_repo_cls):
         self._authenticate()
         post = _saved_post(5)
         post.user_id = 1
         post.title = "제목"
-        post.like_count = 0
         post.created_at = datetime(2026, 1, 1, 0, 0)
         mock_post_repo = MagicMock()
-        # 내 글 목록도 프로젝션(TechPostWithCommentCount) 반환 — count row 없는 글은 coalesce 0
-        mock_post_repo.find_my_posts_by_cursor.return_value = [TechPostWithCommentCount(post=post, comment_count=0)]
+        # 내 글 목록도 프로젝션(TechPostWithCounts) 반환 — count row 없는 글은 coalesce 0
+        mock_post_repo.find_my_posts_by_cursor.return_value = [TechPostWithCounts(post=post, comment_count=0, like_count=0)]
         mock_post_repo_cls.return_value = mock_post_repo
+        mock_like_repo = MagicMock()
+        mock_like_repo.find_liked_post_ids.return_value = set()
+        mock_like_repo_cls.return_value = mock_like_repo
         mock_pc_repo = MagicMock()
         mock_pc_repo.find_by_post_ids.return_value = []
         mock_pc_repo_cls.return_value = mock_pc_repo

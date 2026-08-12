@@ -10,7 +10,7 @@ from app.core.exception import (
     PostNotFoundException,
 )
 from app.domain.pms.tech.cursor import TechPostCursor
-from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping, TechPostWithCommentCount
+from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping, TechPostWithCounts
 from app.domain.pms.tech.schema import CreatePostRequest, UpdatePostRequest
 from app.domain.pms.tech.service import TechPostService
 
@@ -24,15 +24,17 @@ def _saved_post(post_id: int = 10) -> TechPost:
 def _post(post_id: int, user_id: int | None = None) -> TechPost:
     post = TechPost(user_id=user_id or post_id, content=f"내용{post_id}")
     post.id = post_id
-    post.like_count = 0
-    post.comment_count = 0
     post.created_at = datetime(2026, 1, 1, 0, 0)
     return post
 
 
-def _post_with_count(post_id: int, comment_count: int = 0, user_id: int | None = None) -> TechPostWithCommentCount:
+def _post_with_counts(
+    post_id: int, comment_count: int = 0, like_count: int = 0, user_id: int | None = None
+) -> TechPostWithCounts:
     """리포지토리 프로젝션(outerjoin+coalesce 결과) 모형 — 목록·상세 조회 반환값."""
-    return TechPostWithCommentCount(post=_post(post_id, user_id=user_id), comment_count=comment_count)
+    return TechPostWithCounts(
+        post=_post(post_id, user_id=user_id), comment_count=comment_count, like_count=like_count
+    )
 
 
 class TestTechPostService:
@@ -225,19 +227,21 @@ class TestTechPostServiceDelete:
 
 class TestTechPostServiceGetPost:
 
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.LocalCmsApiClient")
     @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
     @patch("app.domain.pms.tech.service.TechPostRepository")
-    def test_게시글과_카테고리_작성자_닉네임을_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
+    def test_게시글과_카테고리_작성자_닉네임_metrics를_반환(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls, mock_like_repo_cls
+    ):
         post = TechPost(user_id=12, title="제목", content="내용")
         post.id = 1
-        post.like_count = 3
         post.created_at = datetime(2026, 1, 1, 0, 0)
         mock_post_repo = MagicMock()
-        # 상세는 프로젝션(find_post_with_comment_count)으로 조회 — 댓글 수는 coalesce 실값
-        mock_post_repo.find_post_with_comment_count.return_value = TechPostWithCommentCount(
-            post=post, comment_count=2
+        # 상세는 프로젝션(find_post_with_counts)으로 조회 — 카운트는 coalesce 실값
+        mock_post_repo.find_post_with_counts.return_value = TechPostWithCounts(
+            post=post, comment_count=2, like_count=5
         )
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
@@ -249,6 +253,8 @@ class TestTechPostServiceGetPost:
         mock_user = MagicMock()
         mock_user.find_nickname.return_value = "tester"
         mock_user_cls.return_value = mock_user
+        mock_like_repo = MagicMock()
+        mock_like_repo_cls.return_value = mock_like_repo
 
         service = TechPostService(MagicMock())
         result = service.get_post(1)
@@ -259,7 +265,64 @@ class TestTechPostServiceGetPost:
         assert result.author.nickname == "tester"
         assert result.category_ids == [1, 2]
         assert result.content == "내용"
-        assert result.comment_count == 2
+        assert result.metrics.comment_count == 2
+        assert result.metrics.like_count == 5
+        # 비로그인(viewer_uid 없음) — likedByMe False, 원장 조회도 하지 않는다
+        assert result.metrics.liked_by_me is False
+        mock_like_repo.exists_by_post_id_and_uid.assert_not_called()
+
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.LocalCmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_로그인_유저가_좋아요한_글이면_likedByMe_true(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls, mock_like_repo_cls
+    ):
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_post_with_counts.return_value = TechPostWithCounts(
+            post=_post(1, user_id=12), comment_count=0, like_count=1
+        )
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo.find_by_post_id.return_value = []
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_user_cls.return_value = MagicMock(find_nickname=MagicMock(return_value="tester"))
+        mock_like_repo = MagicMock()
+        mock_like_repo.exists_by_post_id_and_uid.return_value = True
+        mock_like_repo_cls.return_value = mock_like_repo
+
+        service = TechPostService(MagicMock())
+        result = service.get_post(1, viewer_uid=7)
+
+        assert result.metrics.liked_by_me is True
+        mock_like_repo.exists_by_post_id_and_uid.assert_called_once_with(1, 7)
+
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.LocalCmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_로그인_유저가_좋아요하지_않은_글이면_likedByMe_false(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls, mock_like_repo_cls
+    ):
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_post_with_counts.return_value = TechPostWithCounts(
+            post=_post(1, user_id=12), comment_count=0, like_count=1
+        )
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo.find_by_post_id.return_value = []
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_user_cls.return_value = MagicMock(find_nickname=MagicMock(return_value="tester"))
+        mock_like_repo = MagicMock()
+        mock_like_repo.exists_by_post_id_and_uid.return_value = False
+        mock_like_repo_cls.return_value = mock_like_repo
+
+        service = TechPostService(MagicMock())
+        result = service.get_post(1, viewer_uid=7)
+
+        assert result.metrics.liked_by_me is False
 
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.LocalCmsApiClient")
@@ -267,7 +330,7 @@ class TestTechPostServiceGetPost:
     @patch("app.domain.pms.tech.service.TechPostRepository")
     def test_존재하지_않는_게시글이면_예외(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
         mock_post_repo = MagicMock()
-        mock_post_repo.find_post_with_comment_count.return_value = None
+        mock_post_repo.find_post_with_counts.return_value = None
         mock_post_repo_cls.return_value = mock_post_repo
 
         service = TechPostService(MagicMock())
@@ -278,13 +341,19 @@ class TestTechPostServiceGetPost:
 
 class TestTechPostServiceGetPosts:
 
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.LocalCmsApiClient")
     @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
     @patch("app.domain.pms.tech.service.TechPostRepository")
-    def test_결과가_있으면_마지막_글_id를_nextCursor로_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
+    def test_결과가_있으면_마지막_글_id를_nextCursor로_반환(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls, mock_like_repo_cls
+    ):
         mock_post_repo = MagicMock()
-        mock_post_repo.find_posts.return_value = [_post_with_count(3, comment_count=5), _post_with_count(2)]
+        mock_post_repo.find_posts.return_value = [
+            _post_with_counts(3, comment_count=5, like_count=2),
+            _post_with_counts(2),
+        ]
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
         mock_pc_repo.find_by_post_ids.return_value = [TechPostCategoryMapping(post_id=3, category_id=10)]
@@ -292,6 +361,8 @@ class TestTechPostServiceGetPosts:
         mock_user = MagicMock()
         mock_user.find_nicknames.return_value = {3: "u3", 2: "u2"}
         mock_user_cls.return_value = mock_user
+        mock_like_repo = MagicMock()
+        mock_like_repo_cls.return_value = mock_like_repo
 
         service = TechPostService(MagicMock())
         result = service.get_posts_by_cursor(None, None, 2)
@@ -300,10 +371,39 @@ class TestTechPostServiceGetPosts:
         assert result.data[0].section == "TECH"
         assert result.data[0].category_ids == [10]
         assert result.data[0].author.nickname == "u3"
-        # 댓글 수는 프로젝션 실값 그대로 (count row 없는 글은 coalesce 0)
-        assert result.data[0].comment_count == 5
-        assert result.data[1].comment_count == 0
+        # 카운트는 프로젝션 실값 그대로 (count row 없는 글은 coalesce 0)
+        assert [p.metrics.comment_count for p in result.data] == [5, 0]
+        assert [p.metrics.like_count for p in result.data] == [2, 0]
+        # 비로그인 — 전부 False, 원장 배치 조회도 하지 않는다
+        assert [p.metrics.liked_by_me for p in result.data] == [False, False]
+        mock_like_repo.find_liked_post_ids.assert_not_called()
         assert result.next_cursor == TechPostCursor.encode(2)
+
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.LocalCmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_로그인_시_좋아요한_글만_likedByMe_true(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls, mock_like_repo_cls
+    ):
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_posts.return_value = [_post_with_counts(3, like_count=2), _post_with_counts(2)]
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo.find_by_post_ids.return_value = []
+        mock_pc_repo_cls.return_value = mock_pc_repo
+        mock_user_cls.return_value = MagicMock(find_nicknames=MagicMock(return_value={}))
+        mock_like_repo = MagicMock()
+        # viewer(7)는 글 3만 좋아요 — 원장 IN 조회 1번으로 배치 판정
+        mock_like_repo.find_liked_post_ids.return_value = {3}
+        mock_like_repo_cls.return_value = mock_like_repo
+
+        service = TechPostService(MagicMock())
+        result = service.get_posts_by_cursor(None, None, 2, viewer_uid=7)
+
+        assert [p.metrics.liked_by_me for p in result.data] == [True, False]
+        mock_like_repo.find_liked_post_ids.assert_called_once_with(7, [3, 2])
 
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.LocalCmsApiClient")
@@ -369,39 +469,50 @@ class TestTechPostServiceGetPosts:
 
 class TestTechPostServiceGetMyPosts:
 
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.LocalCmsApiClient")
     @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
     @patch("app.domain.pms.tech.service.TechPostRepository")
-    def test_내_글_cursor_목록과_nextCursor를_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
+    def test_내_글_cursor_목록과_nextCursor를_반환(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls, mock_like_repo_cls
+    ):
         mock_post_repo = MagicMock()
         mock_post_repo.find_my_posts_by_cursor.return_value = [
-            _post_with_count(3, comment_count=1),
-            _post_with_count(2),
+            _post_with_counts(3, comment_count=1, like_count=4, user_id=1),
+            _post_with_counts(2, user_id=1),
         ]
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
         mock_pc_repo.find_by_post_ids.return_value = [TechPostCategoryMapping(post_id=3, category_id=10)]
         mock_pc_repo_cls.return_value = mock_pc_repo
         mock_user = MagicMock()
-        mock_user.find_nicknames.return_value = {3: "me", 2: "me"}
+        mock_user.find_nicknames.return_value = {1: "me"}
         mock_user_cls.return_value = mock_user
+        mock_like_repo = MagicMock()
+        # 본인이 자기 글 3에 좋아요한 상태 — 내 글 목록도 likedByMe 배치 판정 (viewer = 본인)
+        mock_like_repo.find_liked_post_ids.return_value = {3}
+        mock_like_repo_cls.return_value = mock_like_repo
 
         service = TechPostService(MagicMock())
         result = service.get_my_posts_by_cursor(1, None, None, 2)
 
         assert [p.id for p in result.data] == [3, 2]
         assert result.data[0].category_ids == [10]
-        # 댓글 수는 프로젝션 실값 그대로 (count row 없는 글은 coalesce 0)
-        assert result.data[0].comment_count == 1
-        assert result.data[1].comment_count == 0
+        assert [p.metrics.comment_count for p in result.data] == [1, 0]
+        assert [p.metrics.like_count for p in result.data] == [4, 0]
+        assert [p.metrics.liked_by_me for p in result.data] == [True, False]
+        mock_like_repo.find_liked_post_ids.assert_called_once_with(1, [3, 2])
         assert result.next_cursor == TechPostCursor.encode(2)
 
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.LocalCmsApiClient")
     @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
     @patch("app.domain.pms.tech.service.TechPostRepository")
-    def test_내_글_section_tech_지정시_정상_조회(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
+    def test_내_글_section_tech_지정시_정상_조회(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls, mock_like_repo_cls
+    ):
         mock_post_repo = MagicMock()
         mock_post_repo.find_my_posts_by_cursor.return_value = []
         mock_post_repo_cls.return_value = mock_post_repo
@@ -411,17 +522,21 @@ class TestTechPostServiceGetMyPosts:
         mock_user = MagicMock()
         mock_user.find_nicknames.return_value = {}
         mock_user_cls.return_value = mock_user
+        mock_like_repo_cls.return_value = MagicMock()
 
         service = TechPostService(MagicMock())
         service.get_my_posts_by_cursor(1, "tech", None, 20)
 
         mock_post_repo.find_my_posts_by_cursor.assert_called_once_with(1, None, 20)
 
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.LocalCmsApiClient")
     @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
     @patch("app.domain.pms.tech.service.TechPostRepository")
-    def test_내_글_section_대문자_TECH도_허용(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
+    def test_내_글_section_대문자_TECH도_허용(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls, mock_like_repo_cls
+    ):
         mock_post_repo = MagicMock()
         mock_post_repo.find_my_posts_by_cursor.return_value = []
         mock_post_repo_cls.return_value = mock_post_repo
@@ -431,17 +546,21 @@ class TestTechPostServiceGetMyPosts:
         mock_user = MagicMock()
         mock_user.find_nicknames.return_value = {}
         mock_user_cls.return_value = mock_user
+        mock_like_repo_cls.return_value = MagicMock()
 
         service = TechPostService(MagicMock())
         service.get_my_posts_by_cursor(1, "TECH", None, 20)
 
         mock_post_repo.find_my_posts_by_cursor.assert_called_once_with(1, None, 20)
 
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.LocalCmsApiClient")
     @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
     @patch("app.domain.pms.tech.service.TechPostRepository")
-    def test_내_글_section_없으면_전체_조회(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
+    def test_내_글_section_없으면_전체_조회(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls, mock_like_repo_cls
+    ):
         mock_post_repo = MagicMock()
         mock_post_repo.find_my_posts_by_cursor.return_value = []
         mock_post_repo_cls.return_value = mock_post_repo
@@ -451,6 +570,7 @@ class TestTechPostServiceGetMyPosts:
         mock_user = MagicMock()
         mock_user.find_nicknames.return_value = {}
         mock_user_cls.return_value = mock_user
+        mock_like_repo_cls.return_value = MagicMock()
 
         service = TechPostService(MagicMock())
         service.get_my_posts_by_cursor(1, None, None, 20)
@@ -496,7 +616,7 @@ class TestTechPostServiceGetMyPosts:
     # def test_내_글_offset_목록과_페이지_메타를_반환(self, mock_post_repo_cls, mock_pc_repo_cls, mock_cat_cls, mock_user_cls):
     #     mock_post_repo = MagicMock()
     #     mock_post_repo.count_my_posts.return_value = 3
-    #     mock_post_repo.find_my_posts_by_offset.return_value = [_post_with_count(3), _post_with_count(2), _post_with_count(1)]
+    #     mock_post_repo.find_my_posts_by_offset.return_value = [_post_with_counts(3), _post_with_counts(2), _post_with_counts(1)]
     #     mock_post_repo_cls.return_value = mock_post_repo
     #     mock_pc_repo = MagicMock()
     #     mock_pc_repo.find_by_post_ids.return_value = []
