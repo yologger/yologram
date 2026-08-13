@@ -319,8 +319,8 @@ export const handlers = [
     }
 
     const all = [
-      { id: 1050, section: 'TECH', author: { uid: 1, nickname: '테스터' }, title: '피드 첫 글', content: 'API 피드 본문 1', categoryIds: [1], metrics: { commentCount: 1, likeCount: 3, likedByMe: false }, createdAt: '2026-06-10T00:00:00' },
-      { id: 1049, section: 'TECH', author: { uid: 2, nickname: '다른유저' }, content: 'API 피드 본문 2', categoryIds: [2], metrics: { commentCount: 0, likeCount: 0, likedByMe: false }, createdAt: '2026-06-09T00:00:00' },
+      { id: 1050, section: 'TECH', author: { uid: 1, nickname: '테스터' }, title: '피드 첫 글', content: 'API 피드 본문 1', categoryIds: [1], metrics: { commentCount: 1, likeCount: 3, viewCount: 0, likedByMe: false }, createdAt: '2026-06-10T00:00:00' },
+      { id: 1049, section: 'TECH', author: { uid: 2, nickname: '다른유저' }, content: 'API 피드 본문 2', categoryIds: [2], metrics: { commentCount: 0, likeCount: 0, viewCount: 0, likedByMe: false }, createdAt: '2026-06-09T00:00:00' },
     ]
     const data = categoryId ? all.filter((p) => p.categoryIds.includes(Number(categoryId))) : all
 
@@ -346,9 +346,9 @@ export const handlers = [
     }
 
     const all = [
-      { id: 2001, section: 'TECH', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 기술 글', categoryIds: [1], metrics: { commentCount: 1, likeCount: 3, likedByMe: false }, createdAt: '2026-06-18T09:00:00' },
-      { id: 2002, section: 'INVEST', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 투자 글', categoryIds: [9], metrics: { commentCount: 2, likeCount: 5, likedByMe: false }, createdAt: '2026-06-17T09:00:00' },
-      { id: 2003, section: 'POLITICS', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 정치 글', categoryIds: [16], metrics: { commentCount: 0, likeCount: 1, likedByMe: false }, createdAt: '2026-06-16T09:00:00' },
+      { id: 2001, section: 'TECH', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 기술 글', categoryIds: [1], metrics: { commentCount: 1, likeCount: 3, viewCount: 0, likedByMe: false }, createdAt: '2026-06-18T09:00:00' },
+      { id: 2002, section: 'INVEST', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 투자 글', categoryIds: [9], metrics: { commentCount: 2, likeCount: 5, viewCount: 0, likedByMe: false }, createdAt: '2026-06-17T09:00:00' },
+      { id: 2003, section: 'POLITICS', author: { uid: 1, nickname: '테스터' }, content: '내가 쓴 정치 글', categoryIds: [16], metrics: { commentCount: 0, likeCount: 1, viewCount: 0, likedByMe: false }, createdAt: '2026-06-16T09:00:00' },
     ]
     const data = section ? all.filter((p) => p.section.toLowerCase() === section.toLowerCase()) : all
 
@@ -376,7 +376,7 @@ export const handlers = [
         title: 'API 제목',
         content: 'API 본문 내용',
         categoryIds: [1],
-        metrics: { commentCount: 0, likeCount: 5, likedByMe: false },
+        metrics: { commentCount: 0, likeCount: 5, viewCount: 0, likedByMe: false },
         createdAt: '2026-01-01T00:00:00',
       },
     })

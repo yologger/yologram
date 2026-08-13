@@ -485,7 +485,7 @@ describe('CommunityDetailPage', () => {
             title: 'API 제목',
             content: 'API 본문 내용',
             categoryIds: [1],
-            metrics: { commentCount: 0, likeCount: 5, likedByMe: true },
+            metrics: { commentCount: 0, likeCount: 5, viewCount: 0, likedByMe: true },
             createdAt: '2026-01-01T00:00:00',
           },
         }),

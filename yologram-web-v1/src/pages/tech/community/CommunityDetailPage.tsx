@@ -9,6 +9,7 @@ import {
   HeartOutlined,
   HeartFilled,
   MessageOutlined,
+  EyeOutlined,
   RetweetOutlined,
   ShareAltOutlined,
   EditOutlined,
@@ -122,7 +123,7 @@ export default function CommunityDetailPage() {
   const isAuthor = auth != null && auth.uid === post.author.uid
   const createdAtText = new Date(post.createdAt).toLocaleString('ko-KR')
   // 좋아요 상태는 서버 metrics(likedByMe/likeCount)가 원본 — 옵티미스틱 반영은 캐시에서 수행
-  const { likeCount, commentCount, likedByMe } = post.metrics
+  const { likeCount, commentCount, viewCount, likedByMe } = post.metrics
 
   const toggleLike = () => {
     // 비로그인 시 로그인 유도 모달을 띄우고 중단
@@ -305,6 +306,7 @@ export default function CommunityDetailPage() {
             {likedByMe ? <HeartFilled /> : <HeartOutlined />} {likeCount}
           </button>
           <span className={styles.action}><MessageOutlined /> {commentCount}</span>
+          <span className={styles.action}><EyeOutlined /> {viewCount}</span>
           <span className={styles.action}><RetweetOutlined /></span>
           <span className={styles.action}><ShareAltOutlined /></span>
         </div>

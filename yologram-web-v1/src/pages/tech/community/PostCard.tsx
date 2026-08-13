@@ -1,6 +1,6 @@
 import type { MouseEvent } from 'react'
 import { App, Avatar } from 'antd'
-import { UserOutlined, HeartOutlined, HeartFilled, MessageOutlined } from '@ant-design/icons'
+import { UserOutlined, HeartOutlined, HeartFilled, MessageOutlined, EyeOutlined } from '@ant-design/icons'
 import useTogglePostLikeMutation from '../../../queries/useTogglePostLikeMutation'
 import useRequireAuth from '../../../hooks/useRequireAuth'
 import type { PostSummary } from '../../../apis/pms'
@@ -17,7 +17,7 @@ export default function PostCard({ post, categoryNames = [], onClick }: Props) {
   const { message } = App.useApp()
   const { mutate: toggleLike } = useTogglePostLikeMutation()
   const requireAuth = useRequireAuth()
-  const { likeCount, commentCount, likedByMe } = post.metrics
+  const { likeCount, commentCount, viewCount, likedByMe } = post.metrics
 
   const handleToggleLike = (e: MouseEvent<HTMLButtonElement>) => {
     // 카드 클릭(상세 이동)과 분리
@@ -63,6 +63,7 @@ export default function PostCard({ post, categoryNames = [], onClick }: Props) {
           {likedByMe ? <HeartFilled /> : <HeartOutlined />} {likeCount}
         </button>
         <span><MessageOutlined /> {commentCount}</span>
+        <span><EyeOutlined /> {viewCount}</span>
       </div>
     </div>
   )
