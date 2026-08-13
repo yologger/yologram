@@ -27,6 +27,7 @@
 - admin-web: S3 + CloudFront (admin.yologram.link)
 - worker: ECS Fargate (인바운드 없음)
 - 캐시: ElastiCache Valkey (valkey-prod, cache.t4g.micro)
+- 스트림: Kinesis (yologram-post-view-event-prod — 게시글 조회수 이벤트, provisioned 1샤드) + DynamoDB (yologram-post-view-event-lease-prod — KCL 리스·체크포인트 1테이블, 온디맨드) — api-v1·v2가 발행하고 worker가 Spring Cloud Stream Kinesis binder(KCL 모드)로 소비
 
 
 ```mermaid

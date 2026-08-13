@@ -178,12 +178,12 @@
   - web-v1/v2: 표시 UI는 기존(목록 카드·상세 "댓글 N") — 댓글 작성/삭제 onSuccess에 ['post','tech',id] 무효화 2줄만 추가(카운트 즉시 갱신)
   - prod DDL: 테이블 생성+backfill 실행 완료(사용자). 배포 후 차분 보정 1회 실행 완료(INSERT...SELECT COUNT ON DUPLICATE KEY UPDATE — 배포 전 댓글 0건이라 0행, count=actual 정합·prod API commentCount 서빙 확인). 로컬 E2E: 작성→1→삭제→0 curl 검증 완료
   - 테스트: api-v1 신규(카운트 upsert/음수 방어 Testcontainers·서비스 호출·조인 coalesce) 총 451 / api-v2 369(신규 통합 12) / web-v1 176·web-v2 175
-- [x] (Count/Like) 게시글 좋아요 — tech_post_like 원장 + tech_post_like_count + metrics 응답 계약 전환 (api-v1·v2 + web-v1·v2)
-  - 구조: 원장(tech_post_like — post_id·uid·created_at, UNIQUE(post_id,uid))이 진실, 1:1 카운트(tech_post_like_count)는 표시용 비정규화(불일치 시 원장 COUNT 재계산 복구). 댓글 수와 같은 카운트 패턴이되 "누가"가 필요해 원장 추가 — 레거시 BoardLike 미러
-  - 갱신(레거시 개선 3): ①원자 쿼리만(INSERT IGNORE 원장 + upsert/가드 UPDATE 카운트 — 엔티티 ±1 save 금지) ②멱등(중복 좋아요 POST·미좋아요 DELETE는 no-op 200, 동시 uk 충돌도 0행 수렴 — 더블클릭·재시도 안전, 레거시는 409) ③count 0 row 유지. INSERT IGNORE 채택 근거: save+flush 후 uk 예외 catch는 Hibernate 세션 오염(예외 후 사용 불가)으로 같은 트랜잭션의 카운트 갱신이 깨짐 — 삽입 행수(1/0) 반환으로 "실제 삽입 시만 +1" 분기까지 한 문장. v2는 mysql insert().prefix_with("IGNORE") 미러
+- [x] (Count/Like) 게시글 좋아요 — tech_post_like 이력 + tech_post_like_count + metrics 응답 계약 전환 (api-v1·v2 + web-v1·v2)
+  - 구조: 이력(tech_post_like — post_id·uid·created_at, UNIQUE(post_id,uid))이 진실, 1:1 카운트(tech_post_like_count)는 표시용 비정규화(불일치 시 이력 COUNT 재계산 복구). 댓글 수와 같은 카운트 패턴이되 "누가"가 필요해 이력 추가 — 레거시 BoardLike 미러
+  - 갱신(레거시 개선 3): ①원자 쿼리만(INSERT IGNORE 이력 + upsert/가드 UPDATE 카운트 — 엔티티 ±1 save 금지) ②멱등(중복 좋아요 POST·미좋아요 DELETE는 no-op 200, 동시 uk 충돌도 0행 수렴 — 더블클릭·재시도 안전, 레거시는 409) ③count 0 row 유지. INSERT IGNORE 채택 근거: save+flush 후 uk 예외 catch는 Hibernate 세션 오염(예외 후 사용 불가)으로 같은 트랜잭션의 카운트 갱신이 깨짐 — 삽입 행수(1/0) 반환으로 "실제 삽입 시만 +1" 분기까지 한 문장. v2는 mysql insert().prefix_with("IGNORE") 미러
   - API: POST/DELETE /pms/tech/posts/{id}/like (인증 필수, 성공 항상 200). 없는 글 404(고아 방지, 취소도 대칭 404)
   - metrics 전환(브레이킹, 사용자 확정): 목록·상세 응답의 평면 likeCount/commentCount 제거 → metrics: {commentCount, likeCount, likedByMe} 중첩(레거시 product.metrics 미러). likedByMe도 metrics 안. api+web 한 트랙 배포, 배포 창 순단 수용(비공개 서비스). viewCount는 조회수 도입 시 필드 추가(무브레이킹)
-  - likedByMe·선택 인증: 공개 GET(목록·상세)에 v1 @OptionalAuthenticatedUser 리졸버 / v2 get_optional_authenticated_user 신설 — 헤더 없으면 null(비로그인 false), 헤더가 있으면 필수 인증과 동일 검증(무효 토큰 401 — 만료 토큰 방치 버그를 숨기지 않음). 상세는 원장 exists 단건, 목록은 원장 IN 배치(N+1 회피). 프로젝션(TechPostWithCounts — 댓글·좋아요 coalesce(0) 이중 leftJoin)에 넣지 않고 service에서 조회(개인화 값 분리)
+  - likedByMe·선택 인증: 공개 GET(목록·상세)에 v1 @OptionalAuthenticatedUser 리졸버 / v2 get_optional_authenticated_user 신설 — 헤더 없으면 null(비로그인 false), 헤더가 있으면 필수 인증과 동일 검증(무효 토큰 401 — 만료 토큰 방치 버그를 숨기지 않음). 상세는 이력 exists 단건, 목록은 이력 IN 배치(N+1 회피). 프로젝션(TechPostWithCounts — 댓글·좋아요 coalesce(0) 이중 leftJoin)에 넣지 않고 service에서 조회(개인화 값 분리)
   - 사장 컬럼: tech_post.like_count·comment_count 엔티티/모델 매핑 제거(prod 컬럼 DEFAULT 0 확인 — INSERT 안전). drop DDL은 매핑 제거 버전 배포 후 (todos 잔여)
   - web-v1/v2: 하트 토글 실연동 — 공용 뮤테이션 훅(v1 useTogglePostLikeMutation / v2 useToggleLikeMutation)의 onMutate에서 상세·피드(카테고리 변형 포함)·내 글 캐시 옵티미스틱 갱신(likedByMe 토글+likeCount ±1, 0 미만 방어) + 스냅샷, onError 원복+토스트. 멱등 API라 성공 후 invalidate 생략. 미인증은 하트 disabled로 통일(사용자 확정 — 추후 returnTo 로그인 유도 트랙에서 개선). 토큰은 기존 axios 인터셉터 전역 첨부라 likedByMe 자동 수신
   - 로컬 검증: api-v1 curl 사이클(좋아요→중복 no-op→비로그인 false→취소→미좋아요 no-op→404) + 원복 확인. api-v2 curl은 서버 hang(Mac 슬립 half-open — 별도 todos)으로 중단, 재기동 후 잔여
@@ -241,3 +241,16 @@
   - 코드: api-v1·v2 domain/tech/news(TechNews*, 공개 조회 GET /api/v{n}/news/{section} — deprecated 위임 없이 전환), worker 파이프라인 TechNews*(설정 키 yologram.tech-news.* — SSM 비주입 인라인 값이라 안전), web-v1/v2 라우트 /tech/news·/tech/favorite-news(invest/politics 동일)·NewsCard·useNewsQuery·쿼리키 ['news']·표기 '뉴스'
   - 근거: 어드민 메뉴(뉴스 관리)·서비스 표기와 명명 일치, News/Article 혼용 제거 — 과거 News→Article 결정 회귀. 크롤러 테스트의 시맨틱 HTML &lt;article&gt; 태그는 도메인 명명이 아니라 유지
   - 테스트: api-v1 283 / api-v2 258 / worker 74 / web-v1 156 / web-v2 153 전부 통과, 전 프로젝트 article 잔여 참조 0
+- [x] (Count/View) 조회수 백엔드 — Kinesis 이벤트 스트리밍 + KCL 소비 → 이력·카운트 적재 (응답·web 노출은 잔여, todos)
+  - 스택: api-v1·v2가 상세 조회 성공 후 PutRecord(partitionKey=postId, 6필드 JSON) → Kinesis 1샤드(PROVISIONED, 24h 보관) → worker가 Spring Cloud Stream Kinesis binder **KCL 모드**로 batch consume → tech_post_view(이력) + tech_post_view_count(1:1). 댓글·좋아요의 동기 DB 카운트와 대비되는 고빈도 쓰기 패턴 전시
+  - 발행: 실패를 삼킨다(runCatching) — 조회 응답이 스트림 장애로 깨지지 않게. 스트림 이름 미설정이면 발행 스킵(로컬·테스트 기본값), apiCallTimeout 1s/attempt 500ms
+  - 멱등: view_key UNIQUE(`{postId}:{viewer}:{viewDate}`)가 전부다. viewer=u{uid}/i{ip}/unknown, viewDate=occurredAt 절삭. Kinesis at-least-once 재전달과 새로고침 중복 발행을 uk 하나로 흡수해 Redis SETNX 같은 별도 dedup 장치가 불필요. viewDate를 처리 시각이 아니라 occurredAt 기준으로 잡는 게 핵심 — 재처리 시 날짜가 달라지면 같은 조회가 새 키를 얻어 멱등이 깨진다
+  - 적재: 배치 내 distinct → 기존 view_key 배치 제외 → INSERT IGNORE(반환 행수 1/0으로 신규 확정) → postId별 delta 합산해 카운트 upsert 1회. 이력·카운트 한 트랜잭션, 체크포인트는 커밋 이후(먼저 찍으면 유실, 나중이면 중복이고 중복은 uk가 흡수)
+  - KCL 모드 선택: 샤드·워커 증설 여지(리샤딩은 binder 기본 모드가 취약) 때문에 kpl-kcl-enabled=true. 대신 EFO(fan-out=false — 샤드×컨슈머 시간당 과금 회피)와 CloudWatch 메트릭(metrics-level=NONE, 지표는 OTLP로 봄)은 껐다. DynamoDB는 리스 테이블 **1개**로 일원화 — KCL이 샤드 리스와 체크포인트를 같은 테이블로 관리하고 부팅 시 자동 생성(PAY_PER_REQUEST). tf의 테이블 정의는 제거하고 IAM에 CreateTable만 부여
+  - 이력 정리: 30일 초과분 청크 삭제(1000행·청크마다 별도 트랜잭션 — 대량 DELETE가 소비와 락 경합하지 않게), 회차 상한 100청크. 임계 시각은 UTC(occurred_at이 producer 기준 UTC 벽시계라 JVM TZ(KST)로 잡으면 실제 보관이 29일 15시간이 된다)
+  - 하루 경계: producer 컨테이너가 TZ 미설정이라 occurredAt이 UTC 벽시계이고, worker가 변환 없이 절삭해 경계가 KST 09:00이다. 조회수는 누적값만 노출하므로 현행 유지 — 일별 통계를 노출하는 시점에 이벤트에 오프셋을 싣는 쪽으로 전환
+  - 사고 ①CI·prod 기동 실패: binder가 awspring CredentialsProviderAutoConfiguration을 끌어오는데 이 자동설정이 빈 생성 시점에 리전을 요구한다. 자동 탐색 체인(AWS_REGION→프로파일→EC2 IMDS)이 CI·ECS Fargate 어디서도 채워지지 않아 "Unable to load region"으로 컨텍스트를 띄우는 모든 테스트가 실패 → spring.cloud.aws.region.static 고정으로 해소
+  - 사고 ②조회 IP가 VPC 내부 주소(10.0.2.195): API Gateway HTTP API + private integration(VPC Link)은 백엔드 remoteAddr이 게이트웨이 ENI 주소이고 X-Forwarded-For는 파라미터 매핑 예약 헤더라 채울 수 없다. 원 IP 경로는 $context.identity.sourceIp뿐 → 통합에 `overwrite:header.X-Client-Ip` 매핑 추가 + 양쪽 IP 리졸버가 이 헤더를 최우선 사용(overwrite라 클라이언트 위조값은 덮인다). 방치하면 비로그인 조회 전체가 한 키로 접혀 글당 하루 1건으로 과소집계
+  - 사고 ③소비 정지: 0.25vCPU/512MB에서 KCL의 Netty 이벤트 루프가 CPU를 얻지 못해 SDK 커넥션 획득 타임아웃이 반복되고 iterator가 전진하지 못했다(IteratorAge 0→40분, 체크포인트 고정, ECS exec까지 무응답). 뉴스 배치(RSS+LLM read timeout 60초)와 같은 코어를 다투는 구조가 원인 → 0.5vCPU/1GB 상향으로 해소. 진단이 늦어진 이유는 로그가 OTLP(Grafana Cloud) 전용이고 CloudWatch Logs가 없어서 — 비용 때문에 로그 적재는 추가하지 않기로 결정
+  - prod 검증: 리스 테이블 자동 생성(PAY_PER_REQUEST) → v1·v2 양쪽 경로 발행 → 소비 → 이력·카운트 적재 → 실 IP 기록 → 같은 글 재조회 시 카운트 불변(멱등). 스트림 get-records로 발행 페이로드 직접 확인
+  - 패키지: worker domain/pms/tech/subscriber/event (구독 진입점을 도메인 하위에 두는 결정 — 뉴스 수집이 domain/news/tech/client에 있는 것과 같은 결). event=스트림(Kinesis)·message=SQS로 수단을 가른다

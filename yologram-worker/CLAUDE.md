@@ -17,6 +17,7 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 
 - global/llm/: LlmClient(Gemini→Groq fallback)·LlmConfig(Spring AI OpenAI 호환, read timeout 60초)·LlmProperties(yologram.llm.*)
 - global/discord/: DiscordNotifier(채널별 웹훅 send/sendEmbed)·DiscordConfig·DiscordProperties(yologram.webhooks.discord.{채널}.url/enabled)
 - domain/news/tech/: 테크 뉴스 도메인 — client(RssFeedClient·NewsContentCrawler — 외부 HTTP), service(Collect·Summarize·CategoryParser), scheduler(수집 10분·요약 5분 — yologram.batches.tech-news-{collect,summarize}.schedule). LLM 분류 어휘는 CmsApiClient로 배치마다 로드 — 어드민 카테고리 변경 자동 반영, 매핑은 categoryId
+- domain/pms/tech/: 게시글 조회수 도메인 — subscriber/event(PostViewEvent 계약 + Subscriber/SubscriberConfig — Kinesis 배치 소비, 포이즌 레코드 스킵·커밋 후 수동 체크포인트), service(PostViewKeyFactory — view_key `{postId}:{viewer}:{viewDate}` 멱등 정책의 유일한 지점 / TechPostViewIngestService — 배치 distinct→기존 키 제외→INSERT IGNORE→postId당 카운트 upsert 1회 / TechPostViewPurgeService — 30일 초과 청크 삭제, 임계는 UTC), scheduler(post-view-purge 04:30). 구독 on/off는 yologram.events.subscribe.post-view.enabled(prod만 true — 로컬이 prod 체크포인트를 오염시키지 않게)
 - infra/client/cms/: 도메인 간 경계 클라이언트 — CmsApiClient + LocalCmsApiClient + TechCategory 읽기 모델(tech_category 매핑은 이 층에만, api-v1 infra/client 규칙과 일관)
 - config/RedisConfig.kt·CacheRedisProperties.kt + infra/cache/TechNewsFirstPageCacheInvalidator.kt: Valkey 연결(api-v1 미러 — cache.data.redis.*, lazy·1s 타임아웃·REJECT_COMMANDS, Redis 없어도 기동 정상) + 뉴스 첫 페이지 캐시 무효화(clear — (all+활성 카테고리)×size 1~50 키 전수 열거 UNLINK 1왕복, 요약 배치 SUMMARIZED ≥1이면 배치당 1회·커밋 이후 호출. 실패 삼킴 — API 캐시 TTL 3분이 보험. 키 스킴은 api-v1 Cache.kt와 문자열 계약)
 - src/main/resources/application.yaml: 공통 설정 (database.main, 배치 스케줄 yologram.batches.{배치명}.schedule, 이벤트 구독 yologram.events.subscribe.{이벤트}.enabled, LLM 모델, Discord 채널)
@@ -24,9 +25,10 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 
 
 ## 도메인 구조
 
-- domain/{도메인}/{섹션} — news/tech(운영 중), invest·politics는 news/{섹션} 세트 추가, pms/search/ums(기능 도메인, 예정)
+- domain/{도메인}/{섹션} — news/tech·pms/tech(운영 중), invest·politics는 {도메인}/{섹션} 세트 추가, search/ums(예정)
 - 클래스명은 섹션 접두사 유지(TechNews...) — 추후 InvestNews/PoliticsNews와 JPA 엔티티 단순명 충돌 방지
 - 테이블: tech_news_source + tech_news + tech_news_category_mapping(categoryId) — 뉴스 파이프라인 소유(domain에서 repository 직접). tech_category(cms 소유 공용 마스터)는 infra/client/cms 경유 조회 전용. 전 테이블 FK 미사용(같은 도메인 포함), status(COLLECTED/SUMMARIZED/FAILED)+retry_count가 작업 큐
+- tech_post_view(조회 이력, UNIQUE view_key) + tech_post_view_count(1:1 카운트) — api-v1이 소유한 tech_post 계열의 위성 테이블이지만 쓰기는 worker 전담(조회수 파이프라인). 이력이 진실, 카운트는 비정규화
 
 ## 작업 규칙
 
@@ -35,6 +37,8 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 
 - 주기 작업은 단일 인스턴스 전제 — 인스턴스 확장 시 ShedLock 도입 (todos)
 - HTTP 호출은 WebClient 통일(WebClientFactory — 예외: Spring AI는 자체 RestClient에 타임아웃 주입). LLM 모델 선정은 실측 기준(/v1/models 조회, 429 quotaValue) — docs/rules.md 참조
 - SQS 컨슈머는 EventHandler(canHandle/handle) 라우팅 패턴으로 (해당 기능 진행 시)
+- 구독 코드는 domain/{도메인}/{섹션}/subscriber/{수단} — event=스트림(Kinesis)·message=SQS. Kinesis 소비 규칙(체크포인트 시점·포이즌 레코드·KCL 모드·자원 요건)은 docs/rules.md 「이벤트 스트리밍」 참조
+- AWS SDK 리전은 spring.cloud.aws.region.static으로 고정 — 자동 탐색 체인이 CI·Fargate에서 비어 기동이 실패한다
 
 ## 설정 관리
 
@@ -56,5 +60,5 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 
 ## 배포
 
 - Docker (amazoncorretto:17-alpine, jar copy only)
-- ECS Fargate Spot 0.25vCPU/512MB (yologram-infra aws/services/yologram-worker — 인바운드 없음, API GW/Cloud Map 미사용)
+- ECS Fargate Spot 0.5vCPU/1GB (yologram-infra aws/services/yologram-worker — 인바운드 없음, API GW/Cloud Map 미사용). 0.25vCPU에서 KCL 소비가 멈춘 선례로 상향 — docs/done.md 사고 ③
 - GitHub Actions: Gradle build → Docker build → ECR push → ECS 재배포

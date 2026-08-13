@@ -6,6 +6,12 @@
 - 코드 패키지는 도메인 우선: domain/{도메인}/{섹션} (예: pms/tech, cms/tech, comment/tech, news/tech — MSA 분리 시 도메인 패키지째 이관, API 경로 /pms/{section}과 정합). 섹션(tech/invest/politics)은 경로 세그먼트이자 테이블 접두사이자 패키지의 섹션 세그먼트. 섹션별 코드는 완전 분리(공통 베이스 금지), 신규 섹션 = 테이블·코드 세트 복제(예: domain/pms/invest + InvestPostResource + /pms/invest/posts)
 - 어드민: 도메인 경로 뒤 admin 세그먼트 → /{domain}/admin/... (게이트웨이 라우팅과 일관). 톱레벨 domain/admin 금지 — 어드민은 역할이지 도메인이 아니며, 전 도메인 repository를 관통해 경계 규칙 위반. 코드는 별도 admin 하위 패키지 없이 각 도메인 평면 구조에 클래스명 Admin 접두사(AdminUserService 등)로 구분
 
+### 클라이언트 IP
+
+- 원 클라이언트 IP는 X-Client-Ip 헤더에서 읽는다(v1 ClientIpResolver / v2 resolve_client_ip) — API Gateway HTTP API + private integration(VPC Link)은 백엔드 remoteAddr이 게이트웨이 ENI 주소이고, X-Forwarded-For는 파라미터 매핑 예약 헤더라 채울 수 없다. 원 IP 경로는 $context.identity.sourceIp뿐이라 통합에서 `overwrite:header.X-Client-Ip`로 주입한다(yologram-infra api-v1·v2 integration)
+- overwrite여야 한다 — append면 클라이언트가 보낸 위조값이 앞에 남아 첫 값을 읽는 로직이 속는다. IP를 카운트 dedup 키로 쓰는 한 이건 조회수 조작 경로다
+- 해석 순서는 X-Client-Ip → X-Forwarded-For 첫 값 → remoteAddr — XFF 폴백은 CloudFront·ALB 경로용으로 남긴다
+
 ### DB DDL 정책
 - hbm2ddl: local=update(개발 편의 자동 반영), prod=validate(검증만) — prod 테이블 생성·변경은 사용자가 수동 DDL로 직접 수행 (api-v1·worker 공통)
 - 신규 엔티티 추가 시: Testcontainers 테스트(create-drop) 로그에서 Hibernate 생성 DDL을 확인해 그대로 prod에 수동 실행 후 배포 (테스트 리포트 XML system-out에 create 문 포함)
@@ -33,10 +39,21 @@
 
 - 카운트 갱신은 원자 쿼리로만 — INSERT...ON DUPLICATE KEY UPDATE(+1) / 가드 UPDATE(count>0, -1). "엔티티 읽고 ±1 후 save"는 lost update 레이스라 금지 (레거시 방식 답습 금지)
 - 1:1 카운트 테이블(post_id PK)은 대상 도메인 소유(pms) — 타 도메인(comment 등)의 갱신은 ApiClient 경유. count 0 row는 삭제하지 않음(조회 coalesce가 0 처리)
-- 목록·상세 조회는 leftJoin+ON 명시(무FK)+coalesce(0) — 1:1이라 row 뻥튀기 없음. 고빈도 쓰기 카운트(조회수)는 이 패턴 대신 Redis 버퍼링(todos Count/View)
-- 토글류(좋아요 등 "누가"가 필요한 카운트)는 원장(UNIQUE(대상,uid))+카운트 분리 — 원장이 진실, API는 멱등(중복/무상태 호출 no-op 200). 원장 삽입은 INSERT IGNORE(v2는 insert().prefix_with("IGNORE")) 한 문장 — save 후 uk 예외 catch는 Hibernate 세션 오염이라 금지. 카운트 증감은 원장 변경 행수(1/0)로만 분기
+- 목록·상세 조회는 leftJoin+ON 명시(무FK)+coalesce(0) — 1:1이라 row 뻥튀기 없음. 고빈도 쓰기 카운트(조회수)는 동기 갱신 대신 이벤트 스트리밍(Kinesis→worker 적재, done.md)
+- 토글류(좋아요 등 "누가"가 필요한 카운트)는 이력(UNIQUE(대상,uid))+카운트 분리 — 이력이 진실, API는 멱등(중복/무상태 호출 no-op 200). 이력 삽입은 INSERT IGNORE(v2는 insert().prefix_with("IGNORE")) 한 문장 — save 후 uk 예외 catch는 Hibernate 세션 오염이라 금지. 카운트 증감은 이력 변경 행수(1/0)로만 분기
 - 게시글 응답의 카운트는 metrics 객체로 중첩(metrics: {commentCount, likeCount, likedByMe}) — 새 카운트(viewCount 등)는 metrics에 필드 추가(무브레이킹). 평면 카운트 필드 신설 금지. tech_post의 like_count·comment_count 컬럼은 사장(매핑 제거됨 — drop 예정, 참조 금지)
-- 개인화 값(likedByMe)은 카운트 프로젝션에 넣지 않고 service에서 원장 조회(상세 exists·목록 IN 배치). 공개 GET에서 개인화가 필요하면 선택 인증(v1 @OptionalAuthenticatedUser / v2 get_optional_authenticated_user) — 헤더 없으면 비로그인, 있으면 검증(무효 401)
+- 개인화 값(likedByMe)은 카운트 프로젝션에 넣지 않고 service에서 이력 조회(상세 exists·목록 IN 배치). 공개 GET에서 개인화가 필요하면 선택 인증(v1 @OptionalAuthenticatedUser / v2 get_optional_authenticated_user) — 헤더 없으면 비로그인, 있으면 검증(무효 401)
+
+### 이벤트 스트리밍 (Kinesis)
+
+- 조회 이벤트는 섹션별로 스트림을 나누지 않는다 — 스트림 하나 + 페이로드 section 필드로 분기(과금 단위가 샤드라 스트림 분리는 비용 배수). 스트림을 나눌 근거는 샤드 한계 초과·보관/보안 경계 상이·head-of-line 차단뿐
+- 구독 코드는 domain/{도메인}/{섹션}/subscriber/{수단} — 수단은 event(스트림·Kinesis) / message(SQS). 의미(도메인 이벤트 vs 명령)가 아니라 전송 수단 기준이다
+- 발행은 실패를 삼킨다(사용자 응답이 스트림 장애로 깨지지 않게) — 대신 소비 쪽이 at-least-once를 전제로 멱등해야 한다. 멱등 키는 발생 시각(occurredAt) 기준으로 만들 것(처리 시각 기준이면 재처리 때 키가 달라져 멱등이 깨진다)
+- 수동 체크포인트는 반드시 DB 커밋 이후 — 먼저 찍으면 유실, 나중이면 중복이고 중복은 uk가 흡수한다
+- 포이즌 레코드(깨진 JSON·미지원 eventType/section)는 예외를 올리지 않고 스킵+warn — 예외를 올리면 그 배치가 체크포인트되지 못해 영구 재처리로 소비가 멈춘다
+- binder는 KCL 모드(kpl-kcl-enabled=true)로 쓴다 — 리샤딩·워커 증설 대응. EFO(fan-out)와 CloudWatch 메트릭은 끈다(과금 회피, 지표는 OTLP). DynamoDB 리스 테이블은 KCL이 자동 생성하므로 tf로 만들지 않고 IAM에 CreateTable만 부여 — 이 테이블을 지우면 체크포인트가 사라져 그 사이 이벤트가 유실된다
+- KCL 컨슈머를 얹는 태스크는 CPU 여유가 필요하다 — 0.25vCPU에서 Netty 이벤트 루프가 굶어 SDK 커넥션 획득 타임아웃으로 소비가 멈춘 선례(done.md 사고 ③). 배치·LLM 호출과 코어를 공유하면 0.5vCPU 이상
+- AWS SDK를 쓰는 서비스는 리전을 명시한다 — 클라이언트마다 .region() 또는 spring.cloud.aws.region.static. 자동 탐색 체인은 CI·ECS Fargate에서 채워지지 않아 기동이 실패한다
 
 ### 캐시 (Valkey)
 

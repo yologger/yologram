@@ -2,7 +2,8 @@
 
 비동기 워커 서비스. 요청 경로에서 분리할 주기/배치/후속 작업을 담당한다.
 
-- 테크 뉴스 파이프라인(운영 중): RSS 수집(cron 10분) → LLM 요약(cron 5분, 배치 10건) → Discord 채널별 embed 알림
+- 테크 뉴스 파이프라인(운영 중): RSS 수집(10분) → LLM 요약(5분, 배치 10건) → Discord 채널별 embed 알림
+- 게시글 조회수 파이프라인(운영 중): Kinesis 조회 이벤트 배치 소비 → 이력(tech_post_view, view_key 멱등) + 카운트(tech_post_view_count) 적재, 이력 30일 정리 배치(04:30)
 - SQS 컨슈머: API가 큐에 넣은 배치 작업 풀링 — OpenSearch full index, 회원탈퇴 연관 데이터 청크 삭제, 게시글 삭제 시 댓글 정리 이관 (예정)
 
 ## 기술 스택
@@ -15,6 +16,7 @@
 - Spring AI 1.1.8 (OpenAI 호환 ChatModel — Gemini flash-lite 1순위, Groq llama-3.3 fallback)
 - Spring Cloud AWS Parameter Store (설정 주입)
 - Spring Data Redis + Lettuce (api-v1 미러) — 뉴스 첫 페이지 캐시 무효화 발행 (요약 배치 시 키 전수 열거 UNLINK)
+- Spring Cloud Stream Kinesis binder 4.0.4 + KCL 2.5.8 (게시글 조회 이벤트 배치 소비 — KCL 모드, EFO·CloudWatch 메트릭 끔, 리스 테이블은 KCL 자동 생성)
 - kotlin-logging (로깅)
 - OpenTelemetry (logs/metrics/traces → Grafana Cloud OTLP direct push)
 - Gradle (Kotlin DSL), Testcontainers(MySQL)
@@ -34,12 +36,12 @@
 
 ## 설정
 
-- application.yaml: 공통 (database.main·cron·LLM 모델·Discord 채널 — 비밀값은 Parameter Store에서 주입)
+- application.yaml: 공통 (database.main·배치 스케줄 yologram.batches.{배치명}.schedule·이벤트 구독 yologram.events.subscribe.{이벤트}.enabled·LLM 모델·Discord 채널 — 비밀값은 Parameter Store에서 주입)
 - application-local.yaml: 로컬 (포트 5003, OTLP 비활성, DB는 worker_local SSM)
 - application-prod.yaml: 프로덕션 (Parameter Store /yologram/service/yologram-worker_prod/ — OTLP 6·DB 6·LLM 키 2·Discord 웹훅 3·cache 1)
 
 ## 배포
 
 - Docker (amazoncorretto:17-alpine)
-- ECS Fargate Spot 0.25vCPU/512MB (yologram-infra aws/services/yologram-worker)
+- ECS Fargate Spot 0.5vCPU/1GB (yologram-infra aws/services/yologram-worker) — 0.25vCPU에서 KCL 소비 정지 선례로 상향(docs/done.md)
 - GitHub Actions: Gradle build → Docker build → ECR push → ECS 재배포
