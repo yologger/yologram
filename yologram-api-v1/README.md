@@ -18,23 +18,6 @@ Spring Boot MVC (Kotlin) API 서버.
 - OpenTelemetry: micrometer-registry-otlp, micrometer-tracing-bridge-otel, opentelemetry-logback-appender
 - AWS SDK v2 (SES), Spring Cloud AWS (Parameter Store)
 
-## 사전 준비
+## API 문서
 
-- Java 17+
-- Gradle
-
-## 로컬 실행
-
-```bash
-./gradlew bootRun
-```
-
-로컬 캐시는 localhost:16379 Redis (application-local.yaml) — 미기동이어도 DB 폴백으로 정상 동작.
-
-서버 기본 주소: http://localhost:5001
-
-## 테스트
-
-```bash
-./gradlew test
-```
+- Swagger UI: [https://api.yologram.link/api/v1/docs](https://api.yologram.link/api/v1/docs)

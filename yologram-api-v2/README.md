@@ -15,10 +15,10 @@ FastAPI 기반 API 서버.
 - ApiEnvelop 응답 래퍼, AppException 예외 처리, CORS 전체 허용
 - Dockerfile (python:3.12-slim multi-stage)
 
-## 사전 준비
 
-- Python 3.12+
-- uv (https://docs.astral.sh/uv/)
+## API 문서
+
+- Swagger UI: [https://api.yologram.link/api/v2/docs](https://api.yologram.link/api/v2/docs)
 
 ## 의존성 설치
 

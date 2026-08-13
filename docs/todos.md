@@ -35,8 +35,9 @@
   - [x] tech_post_view_count 조인 확장(metrics.viewCount, api-v1·v2 — 읽기 전용 엔티티) + web-v1/v2 카드·상세 표시(EyeOutlined)
 - [x] (Infra/Worker) 구 Discord 웹훅 SSM 파라미터 3개 삭제 완료 — prod 알림 정상 확인 후 CLI 삭제(tf 관리 밖이라 state 무관, apply No changes 확인)
   - 프로퍼티 경로 개편(yologram.discord.webhooks.{채널} → yologram.webhooks.discord.{채널}-news): 신규 이름에 값 복사 → tf state rm/import로 관리 이관 → 배포·알림 확인 → 구 이름 삭제. 삭제 전 두 세트 값 해시 비교로 동일성 확인
-- [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
-  - [ ] 도입 시점 판단
+- [ ] (Search) OpenSearch 도입 — 인프라는 셀프호스팅으로 구축 완료(2026-08-13), 인덱스·인덱서·검색 API가 잔여
+  - [x] 인프라: Lightsail small_3_0(2GB) 단일 노드 + Dashboards + Caddy(Let's Encrypt) — opensearch.yologram.link / opensearch-dashboard.yologram.link, 자동 스냅샷 일 1회(7일 롤링). 관리형 t3.small.search($40.88/월) 대비 $10로 약 $30 절감
+  - [ ] 인프라 잔여: 인덱스 템플릿 number_of_replicas=0(단일 노드라 기본 1이면 yellow), 앱 전용 유저 생성(admin 분리 — api-v1·v2가 admin 자격증명을 쓰지 않게), tf의 compose 비밀번호 특수문자 처리(env_file 분리 — `$`가 compose 보간에 먹힌다)
   - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)
   - [ ] 검색 인덱서(yologram-search-indexer): pms 변경 이벤트 → OpenSearch 동기화
   - [ ] 검색 API(yologram-search-api): 키워드/카테고리/섹션 검색·필터·정렬·집계
@@ -46,6 +47,7 @@
   - CQRS: pms = 쓰기 원본(MySQL, 권한·개인화) / search = 읽기 최적화(OpenSearch). 동기화는 pms 쓰기 → 변경 이벤트(SQS/Kinesis) → indexer가 MySQL 읽어 문서화 → OpenSearch 인덱싱 (최종 일관성)
   - QueryDSL vs search 역할: QueryDSL은 관계형 복잡성(권한 한정 "내 것/정확"), search는 탐색 복잡성(풀텍스트·연관도·패싯, 공개 카탈로그 발견)
   - 도입 전략: 초기엔 pms cursor 목록으로 시작 → 필요 시 OpenSearch+indexer 도입. 별도 서비스(yologram-search-api, yologram-search-indexer)
+- [ ] (Infra/DB) RDS MySQL → Lightsail MySQL 전환 검토 (요금 절감)
 - [ ] (Cache) Redis(Valkey) 도입 — 대규모 트래픽 가정 하 캐시 예시 (포트폴리오: 가정→결정 근거를 done.md에 기록)
   - [x] 인프라: ElastiCache Valkey(valkey-prod, cache.t4g.micro — 서버리스도 검토했으나 인스턴스형 확정) apply·엔드포인트 SSM 등록(spring.data.redis.host) + 로컬 compose.yaml(valkey:8) (완료, done.md)
   - [x] 닉네임 캐시(api-v1·api-v2) — 레거시 infra/cache 스타일 이식 + v2 redis-py 미러(키·JSON 바이트 호환), UserNicknameCache 공용 cache-aside, 변경·탈퇴 시 DEL, prod env(CACHE_REDIS_HOST) tf 반영 (완료, done.md)
@@ -168,6 +170,12 @@
 - [ ] (UMS) OAuth 로그인 (Gmail, Kakao)
 - [ ] (UMS) 프로필 이미지 업로드
 - [ ] (web-v2/Observability) browser RUM, client-side tracing, logs, custom metrics
+- [ ] (Infra/Security) 인프라 보안 강화 — 자동 보안 리뷰(2026-08-13) 지적분 중 실질 항목 2개. 즉시 침해 경로는 아니라 우선순위 낮게
+  - [ ] RDS 자동 백업: backup_retention_period 0 → 7일 (프리티어 스냅샷 20GB 무료 범위). 보안보다 가용성 — 지금은 실수로 지우면 복구 수단이 없다. skip_final_snapshot=true도 함께 검토
+  - [ ] RDS publicly_accessible=true 재검토 — SG가 VPC CIDR만 허용해 실제 도달은 막혀 있으나(3306 외부 접속 불가 실측), SG 규칙 실수 하나로 노출되는 구조. 프라이빗 서브넷 이전은 로컬 접근 방식 변경이 필요해 함께 판단
+  - [ ] GitHub Actions 배포 유저: AmazonS3FullAccess → 버킷 2개(yologram-web-v1·yologram-admin-web) 한정 인라인 정책. 정적 액세스 키를 GitHub OIDC 페더레이션으로 전환하면 키 자체가 없어진다
+  - 제외 판단: OpenSearch 접근 정책(es:*·Principal root)은 도메인 미생성 + self-host 전환 대상이라 해당 없음. n8n user_data의 docker-compose latest 미고정은 n8n 제거 예정이라 해당 없음
+  - storage_encrypted=false는 크로스 계정 스냅샷 이전을 고려한 기존 결정(terraform/AGENTS.md) — 변경 대상 아님
   - 향후 선택지: Grafana Alloy + spanmetrics로 trace에서 request 메트릭 추출, access log 보강
 
 
