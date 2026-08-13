@@ -10,6 +10,15 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
 
+  cloud:
+    aws:
+      # 리전 고정 — awspring의 CredentialsProviderAutoConfiguration이 기동 시 리전을 요구한다.
+      # 자동 탐색 체인(AWS_REGION 환경변수 → 프로파일 → EC2 IMDS)은 ECS Fargate·CI 어디서도 채워지지 않아
+      # 명시하지 않으면 "Unable to load region"으로 컨텍스트 기동이 실패한다.
+      # 자격증명은 체인 그대로 둔다 (prod=ECS Task Role, 로컬=AWS_PROFILE)
+      region:
+        static: ap-northeast-2
+
 cache:
   data:
     redis:
