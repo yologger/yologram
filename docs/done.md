@@ -241,9 +241,9 @@
   - 코드: api-v1·v2 domain/tech/news(TechNews*, 공개 조회 GET /api/v{n}/news/{section} — deprecated 위임 없이 전환), worker 파이프라인 TechNews*(설정 키 yologram.tech-news.* — SSM 비주입 인라인 값이라 안전), web-v1/v2 라우트 /tech/news·/tech/favorite-news(invest/politics 동일)·NewsCard·useNewsQuery·쿼리키 ['news']·표기 '뉴스'
   - 근거: 어드민 메뉴(뉴스 관리)·서비스 표기와 명명 일치, News/Article 혼용 제거 — 과거 News→Article 결정 회귀. 크롤러 테스트의 시맨틱 HTML &lt;article&gt; 태그는 도메인 명명이 아니라 유지
   - 테스트: api-v1 283 / api-v2 258 / worker 74 / web-v1 156 / web-v2 153 전부 통과, 전 프로젝트 article 잔여 참조 0
-- [x] (Count/View) 조회수 백엔드 — Kinesis 이벤트 스트리밍 + KCL 소비 → 이력·카운트 적재 (응답·web 노출은 잔여, todos)
+- [x] (Count/View) 조회수 — Kinesis 이벤트 스트리밍 + KCL 소비 → 이력·카운트 적재 → metrics.viewCount 응답·web 표시 (api-v1·v2·worker·web-v1·v2 전 스택 완료)
   - 스택: api-v1·v2가 상세 조회 성공 후 PutRecord(partitionKey=postId, 6필드 JSON) → Kinesis 1샤드(PROVISIONED, 24h 보관) → worker가 Spring Cloud Stream Kinesis binder **KCL 모드**로 batch consume → tech_post_view(이력) + tech_post_view_count(1:1). 댓글·좋아요의 동기 DB 카운트와 대비되는 고빈도 쓰기 패턴 전시
-  - 발행: 실패를 삼킨다(runCatching) — 조회 응답이 스트림 장애로 깨지지 않게. 스트림 이름 미설정이면 발행 스킵(로컬·테스트 기본값), apiCallTimeout 1s/attempt 500ms
+  - 발행: 실패를 삼킨다(runCatching) — 조회 응답이 스트림 장애로 깨지지 않게. 발행 비활성(기본값)이거나 스트림 미설정이면 스킵하고, enabled=true인데 스트림이 비면 warn(조용한 0건 방지). apiCallTimeout 1s/attempt 500ms
   - 멱등: view_key UNIQUE(`{postId}:{viewer}:{viewDate}`)가 전부다. viewer=u{uid}/i{ip}/unknown, viewDate=occurredAt 절삭. Kinesis at-least-once 재전달과 새로고침 중복 발행을 uk 하나로 흡수해 Redis SETNX 같은 별도 dedup 장치가 불필요. viewDate를 처리 시각이 아니라 occurredAt 기준으로 잡는 게 핵심 — 재처리 시 날짜가 달라지면 같은 조회가 새 키를 얻어 멱등이 깨진다
   - 적재: 배치 내 distinct → 기존 view_key 배치 제외 → INSERT IGNORE(반환 행수 1/0으로 신규 확정) → postId별 delta 합산해 카운트 upsert 1회. 이력·카운트 한 트랜잭션, 체크포인트는 커밋 이후(먼저 찍으면 유실, 나중이면 중복이고 중복은 uk가 흡수)
   - KCL 모드 선택: 샤드·워커 증설 여지(리샤딩은 binder 기본 모드가 취약) 때문에 kpl-kcl-enabled=true. 대신 EFO(fan-out=false — 샤드×컨슈머 시간당 과금 회피)와 CloudWatch 메트릭(metrics-level=NONE, 지표는 OTLP로 봄)은 껐다. DynamoDB는 리스 테이블 **1개**로 일원화 — KCL이 샤드 리스와 체크포인트를 같은 테이블로 관리하고 부팅 시 자동 생성(PAY_PER_REQUEST). tf의 테이블 정의는 제거하고 IAM에 CreateTable만 부여
