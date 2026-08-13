@@ -197,8 +197,8 @@ resource "aws_ssm_parameter" "grafana_logs_auth_prod" {
 }
 
 # Discord 웹훅 — 채널별 url (요약 알림. enabled는 yaml에서 관리, 실제 값은 콘솔에서 직접 입력).
-# 프로퍼티 경로 개편(yologram.webhooks.discord.{채널})에 맞춰 신규 이름으로 이관 — 구 이름 파라미터는
-# prod 배포·검증 후 삭제 예정(todos)
+# 프로퍼티 경로 개편(yologram.webhooks.discord.{채널}-news)으로 이관 완료 —
+# 구 이름(yologram.discord.webhooks.{채널}.url) 3개는 배포·알림 확인 후 삭제했다(tf 관리 밖이라 CLI 삭제)
 resource "aws_ssm_parameter" "discord_webhook_tech_url_prod" {
   name  = "/yologram/service/yologram-worker_prod/yologram.webhooks.discord.tech-news.url"
   type  = "SecureString"

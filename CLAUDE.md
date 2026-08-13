@@ -107,10 +107,11 @@ yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스�
 - VPC 무관
 
 ### yologram-worker (aws/services/yologram-worker/)
-- ECS Fargate SPOT (0.25 vCPU, 512MB)
+- ECS Fargate SPOT (0.5 vCPU, 1GB) — 0.25vCPU/512MB에서 Kinesis 컨슈머(KCL)의 Netty 이벤트 루프가 CPU를 얻지 못해 소비가 멈춘 선례로 상향
 - Spring Boot 비동기 워커, 인바운드 트래픽 없음 (API Gateway·Cloud Map·portMappings 미사용, SG는 egress만)
 - ECR: yologram-worker
-- SSM(prod): Grafana OTLP (metrics/traces/logs) + DB writer/reader 접속정보 + LLM API 키(yologram.llm.gemini/groq.api-key) + Discord 웹훅 채널별 url(yologram.discord.webhooks.tech.url — enabled는 yaml, politics/invest 도입 시 추가)
+- SSM(prod): Grafana OTLP (metrics/traces/logs) + DB writer/reader 접속정보 + LLM API 키(yologram.llm.gemini/groq.api-key) + Discord 웹훅 채널별 url(yologram.webhooks.discord.{tech,invest,politics}-news.url — enabled는 yaml) + cache.data.redis.host
+- IAM: kinesis-get 정책 — 조회 이벤트 스트림 읽기(DescribeStream·DescribeStreamSummary·GetRecords·GetShardIterator·ListShards) + ListStreams + KCL 리스 테이블(yologram-post-view-event-lease-prod) CRUD·CreateTable. 리스 테이블은 tf가 아니라 KCL이 부팅 시 자동 생성한다(PAY_PER_REQUEST) — 지우면 체크포인트가 사라져 그 사이 이벤트가 유실된다
 - 컨테이너 환경변수는 SPRING_PROFILES_ACTIVE만 주입, 나머지는 앱이 SSM에서 직접 read
 - actuator(5000)는 ECS exec로 localhost 접근
 
