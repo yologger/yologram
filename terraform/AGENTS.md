@@ -1,23 +1,17 @@
 # AGENTS.md
 
-이 저장소(yologram-infra)에서 작업하는 에이전트를 위한 지침. CLAUDE.md는 이 파일을 가리키는 포인터다.
+yologram 모노레포의 terraform/ (AWS 인프라)에서 작업하는 에이전트를 위한 지침. CLAUDE.md는 이 파일을 가리키는 포인터다.
+원래 별도 레포(yologram-infra)였고 2026-08 히스토리째 모노레포로 이관했다.
 
-## 프로젝트 개요
-
-yologram AWS 인프라 관리. Terraform으로 환경별/서비스별 리소스를 분리 관리.
-
-## 구조
-
-- aws/global/ - 환경 공통 리소스 (VPC, ECS 클러스터, API Gateway, Database, ElastiCache, OpenSearch, IAM)
-- aws/services/ - 개별 서비스 인프라 (yologram-api-v1, yologram-api-v2, yologram-web-v1, yologram-web-v2, yologram-worker, yologram-admin-web)
-- aws/tools/ - 운영 보조 도구 (n8n)
-- 각 디렉토리가 독립된 terraform state를 가짐
+> 모노레포 구성·서비스 도메인·CI/CD는 루트 AGENTS.md, 디렉토리 트리와 요금은 README.md 참조.
+> 이 파일은 terraform 고유 규칙(디렉토리별 리소스·명령어·패턴)만 둔다.
 
 ## 공통
 
 - AWS profile: yologram
 - 리전: ap-northeast-2 (서울)
-- state: 로컬
+- 디렉토리별 독립 state — aws/{global,services,tools}/{리소스}. state는 로컬 (각 디렉토리의 terraform.tfstate — gitignore. 디렉토리를 옮길 때는 git이 아니라 파일시스템으로 함께 옮겨야 리소스가 재생성되지 않는다)
+- provider 캐시: ~/.terraformrc의 plugin_cache_dir로 공용화 — 지정하지 않으면 AWS provider(648MB)가 디렉토리마다 복사돼 18개 기준 11GB가 중복된다
 - terraform apply는 사용자가 직접 실행. Claude는 코드 변경까지만 수행
 
 ## Global

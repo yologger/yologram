@@ -1,72 +1,33 @@
-# yologram-infra
+# terraform
 
-yologram AWS 인프라 관리 (Terraform).
+yologram AWS 인프라 (Terraform). 디렉토리별로 독립된 state를 가진다.
 
-## 서비스
-
-- [https://github.com/yologger/yologram](https://github.com/yologger/yologram)
-- API Gateway: https://api.yologram.link
-- web-v1 (CloudFront): https://web.v1.yologram.link
-- web-v2 (ECS): https://web.v2.yologram.link
-- admin-web (CloudFront): https://admin.yologram.link
-
-## 아키텍처
-
-```mermaid
-flowchart LR
-    Client([Client])
-
-    Client -- "web.v1.yologram.link" --> CloudFront
-    Client -- "admin.yologram.link" --> CloudFrontAdmin
-    Client -- "api.yologram.link<br/>web.v2.yologram.link" --> APIGW
-
-    subgraph AWS
-        CloudFront --> S3["S3<br/>yologram-web-v1"]
-
-        APIGW["API Gateway<br/>yologram-gateway (HTTP API)"]
-        APIGW -- "/api/v1/*" --> ECS_API_V1["ECS Fargate<br/>yologram-api-v1"]
-        APIGW -- "/api/v2/*" --> ECS_API_V2["ECS Fargate<br/>yologram-api-v2"]
-        APIGW -- "/* (catch-all)" --> ECS_WEB_V2["ECS Fargate<br/>yologram-web-v2"]
-
-        %% Message Broker (SQS / Kinesis)
-        MessageBroker[("Amazon SQS<br/>Kinesis</br>(비동기/실시간스트림)")]
-
-        %% Publishers
-        ECS_API_V1 -- "Publish" --> MessageBroker
-        ECS_API_V2 -- "Publish" --> MessageBroker
-
-        %% Subscriber
-        ECS_WORKER["ECS Fargate<br/>yologram-worker<br/>☑️ SQS message 처리<br/>☑️ Kinesis record 처리<br/>⏱️ Cron(@Scheduled))"]
-        MessageBroker -- "Subscribe" --> ECS_WORKER
-        
-        CloudFrontAdmin --> S3Admin["S3<br/>yologram-admin-web"]
-    end
-```
-
-> API Gateway → ECS 연결은 VPC Link + Cloud Map(service discovery) 경유.
-> ElastiCache(Valkey)와 OpenSearch는 프로비저닝되어 있으나 앱 연결은 별도 (다이어그램 생략).
+> 서비스 도메인·아키텍처 다이어그램은 [루트 README](../README.md), 작업 규칙은 [AGENTS.md](AGENTS.md) 참조.
 
 ## 구조
 
 ```
 aws/
   global/
-    vpc/                    # VPC (vpc-prod, 10.0.0.0/16)
-    ecs/                    # ECS 클러스터 (ecs-prod, Fargate SPOT) + Cloud Map + IAM
+    vpc/                    # VPC (vpc-prod, 10.0.0.0/16) + 서브넷 pub-a·pub-b
+    ecs/                    # ECS 클러스터 (ecs-prod, Fargate SPOT) + Cloud Map + ecs-task-execution-role
+    iam/                    # GitHub Actions 배포 유저
     api-gateway/            # HTTP API Gateway (yologram-gateway), VPC Link, Custom Domain
-    database/               # RDS MySQL 8.0 (db.t4g.micro)
-    elasticache/            # Valkey 8.0 (cache.t3.micro)
-    kinesis/                # Kinesis 스트림 (yologram-post-view-event-prod — 게시글 조회수 이벤트)
-    opensearch/             # OpenSearch 2.19 (t3.small.search)
+    database/               # RDS MySQL 8.0 (mysql-prod, db.t4g.micro)
+    elasticache/            # Valkey 8.0 (valkey-prod, cache.t4g.micro)
+    ses/                    # SES 도메인 인증 (no-reply@yologram.link)
+    kinesis/                # Kinesis 스트림 (yologram-post-view-event-prod — 게시글 조회 이벤트, 1샤드)
+    dynamodb/               # (테이블 정의 없음 — KCL 리스 테이블은 워커가 자동 생성, state·provider만 잔존)
+    opensearch/             # OpenSearch 2.19 t3.small.search — 코드만 있고 도메인 미생성(요금 때문에 self-host 검토 중)
   services/
     yologram-api-v1/        # Spring Boot API (ECS Fargate SPOT)
     yologram-api-v2/        # FastAPI (ECS Fargate SPOT)
     yologram-web-v1/        # S3 + CloudFront (SPA)
     yologram-web-v2/        # Next.js (ECS Fargate SPOT)
-    yologram-worker/        # Spring Boot 비동기 워커 (ECS Fargate SPOT, 인바운드 없음)
+    yologram-worker/        # Spring Boot 비동기 워커 (ECS Fargate SPOT 0.5vCPU/1GB, 인바운드 없음)
     yologram-admin-web/     # 어드민 웹, S3 + CloudFront (SPA)
   tools/
-    n8n/                    # n8n 워크플로우 자동화 (Lightsail)
+    n8n/                    # n8n 워크플로우 자동화 (Lightsail) — 제거 예정, 리소스 없음
     yologger-blog/          # 기술 블로그 (S3 + CloudFront, blog.yologram.link)
 ```
 

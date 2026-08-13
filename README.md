@@ -19,15 +19,15 @@
 
 ## 인프라
 
-- IaC: Terraform
-    - [https://github.com/yologger/yologram-infra](https://github.com/yologger/yologram-infra)
+- IaC: Terraform ([terraform/](terraform/README.md))
 - ECS Fargate: api-v1(5000), api-v2(5000), web-v2(3000)
 - API Gateway: api.yologram.link / web.v2.yologram.link → /api/v1/{proxy+}는 api-v1, /api/v2/{proxy+}는 api-v2, /{proxy+}는 web-v2
 - web-v1: S3 + CloudFront (web.v1.yologram.link)
 - admin-web: S3 + CloudFront (admin.yologram.link)
 - worker: ECS Fargate (인바운드 없음)
 - 캐시: ElastiCache Valkey (valkey-prod, cache.t4g.micro)
-- 스트림: Kinesis (yologram-post-view-event-prod — 게시글 조회수 이벤트, provisioned 1샤드) + DynamoDB (yologram-post-view-event-lease-prod — KCL 리스·체크포인트 1테이블, 온디맨드) — api-v1·v2가 발행하고 worker가 Spring Cloud Stream Kinesis binder(KCL 모드)로 소비
+- 스트림: Kinesis + DynamoDB (checkpoint + shedlock)
+    - api-v1·v2가 발행하고 worker가 Spring Cloud Stream Kinesis binder로 소비
 
 
 ```mermaid

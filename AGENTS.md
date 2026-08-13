@@ -9,11 +9,12 @@
 - yologram-web-v2/: Next.js
 - yologram-worker/: Spring Boot 비동기 워커 (Kotlin) — 주기 작업(@Scheduled)·SQS 배치 소비
 - yologram-admin-web/: 어드민 웹 (React, web-v1과 동일 스택)
+- terraform/: AWS 인프라 (Terraform, 디렉토리별 독립 state)
 - .github/workflows/: GitHub Actions
 
 ## 인프라
 
-- IaC: Terraform (~/Workspace/yologger/yologram-infra/ 에서 관리)
+- IaC: Terraform (terraform/ — 2026-08 별도 레포 yologram-infra에서 히스토리째 이관, 지침은 terraform/AGENTS.md)
 - ECS Fargate: api-v1(5000), api-v2(5000), web-v2(3000)
 - API Gateway: api.yologram.link → /api/v1/{proxy+}는 api-v1, /api/v2/{proxy+}는 api-v2, /{proxy+}는 web-v2
 - web-v1: S3 + CloudFront (web.v1.yologram.link)
