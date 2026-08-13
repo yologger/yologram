@@ -13,6 +13,7 @@ import {
   HeartOutlined,
   HeartFilled,
   MessageOutlined,
+  EyeOutlined,
   RetweetOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons'
@@ -324,6 +325,7 @@ export default function CommunityDetail() {
             {post.metrics.likedByMe ? <HeartFilled /> : <HeartOutlined />} {post.metrics.likeCount}
           </button>
           <span className={styles.action}><MessageOutlined /> {post.metrics.commentCount}</span>
+          <span className={styles.action}><EyeOutlined /> {post.metrics.viewCount}</span>
           <span className={styles.action}><RetweetOutlined /></span>
           <span className={styles.action}><ShareAltOutlined /></span>
         </div>

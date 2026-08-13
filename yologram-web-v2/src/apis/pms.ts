@@ -34,6 +34,8 @@ export async function deletePost(section: string, id: number): Promise<void> {
 export interface PostMetrics {
   commentCount: number
   likeCount: number
+  // 조회 수 — 서버가 조회 이벤트(Kinesis)를 worker에서 집계한 값. 같은 사용자·같은 날 재조회는 오르지 않는다
+  viewCount: number
   likedByMe: boolean
 }
 

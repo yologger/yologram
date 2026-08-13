@@ -175,10 +175,10 @@ describe('getPosts', () => {
     expect(page.nextCursor).toBe('next-cursor')
   })
 
-  it('metrics(commentCount/likeCount/likedByMe)를 중첩 구조로 반환한다', async () => {
+  it('metrics(commentCount/likeCount/viewCount/likedByMe)를 중첩 구조로 반환한다', async () => {
     const page = await getPosts('tech', { size: 15 })
 
-    expect(page.data[0].metrics).toEqual({ commentCount: 1, likeCount: 3, likedByMe: false })
+    expect(page.data[0].metrics).toEqual({ commentCount: 1, likeCount: 3, viewCount: 0, likedByMe: false })
   })
 
   it('categoryId로 필터링한다', async () => {

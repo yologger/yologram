@@ -1,7 +1,7 @@
 'use client'
 
 import { App, Avatar } from 'antd'
-import { UserOutlined, HeartOutlined, HeartFilled, MessageOutlined, CloseOutlined } from '@ant-design/icons'
+import { UserOutlined, HeartOutlined, HeartFilled, MessageOutlined, EyeOutlined, CloseOutlined } from '@ant-design/icons'
 import type { PostSummary } from '@/apis/pms'
 import useToggleLikeMutation from '@/queries/useToggleLikeMutation'
 import useRequireAuth from '@/hooks/useRequireAuth'
@@ -78,6 +78,7 @@ export default function PostCard({ post, categoryNames = [], onClick, onDelete }
           {liked ? <HeartFilled /> : <HeartOutlined />} {post.metrics.likeCount}
         </button>
         <span><MessageOutlined /> {post.metrics.commentCount}</span>
+        <span><EyeOutlined /> {post.metrics.viewCount}</span>
       </div>
     </div>
   )
