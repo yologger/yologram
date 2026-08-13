@@ -2,7 +2,7 @@
 
 모노레포 기반 프로젝트
 
-## 하위 프로젝트 & 기술 스택
+## 프로젝트 & 기술 스택
 
 - `yologram-api-v1`: Spring Boot MVC + Kotlin ([기술 스택](yologram-api-v1/README.md))
 - `yologram-api-v2`: FastAPI + Python ([기술 스택](yologram-api-v2/README.md))
@@ -39,23 +39,23 @@ flowchart LR
     Client -- "api.yologram.link<br/>web.v2.yologram.link" --> APIGW
 
     subgraph AWS
-        CloudFront --> S3["S3<br/>yologram-web-v1"]
-        CloudFrontAdmin --> S3Admin["S3<br/>yologram-admin-web"]
+        CloudFront --> S3["yologram-web-v1</br> (S3)"]
+        CloudFrontAdmin --> S3Admin["yologram-admin-web</br> (S3)"]
         APIGW["API Gateway"]
-        APIGW -- "/api/v1/*" --> ECS_API_V1["ECS Fargate<br/>yologram-api-v1<br/>:5000"]
-        APIGW -- "/api/v2/*" --> ECS_API_V2["ECS Fargate<br/>yologram-api-v2<br/>:5000"]
+        APIGW -- "/api/v1/*" --> ECS_API_V1["yologram-api-v1:5000</br> (ECS Fargate)"]
+        APIGW -- "/api/v2/*" --> ECS_API_V2["yologram-api-v2:5000</br> (ECS Fargate)"]
 
-        APIGW -- "/* (catch-all)" --> ECS_WEB_V2["ECS Fargate<br/>yologram-web-v2<br/>:3000"]
+        APIGW -- "/* (catch-all)" --> ECS_WEB_V2["yologram-web-v2:3000</br> (ECS Fargate)"]
 
         ECS_API_V1 --> RDS[(RDS MySQL)]
         ECS_API_V2 --> RDS
-        ECS_API_V1 --> VALKEY[(ElastiCache<br/>Valkey)]
+        ECS_API_V1 --> VALKEY["ElastiCache</br> (Redis)"]
         ECS_API_V2 --> VALKEY
 
-        ECS_API_V1 -- "publish" --> MQ[["SQS<br/>Kinesis"]]
+        ECS_API_V1 -- "publish" --> MQ[["SQS/Kinesis"]]
         ECS_API_V2 -- "publish" --> MQ
 
-        ECS_WORKER["ECS Fargate<br/>yologram-worker<br/>(인바운드 없음)"]
+        ECS_WORKER["yologram-worker<br/> (ECS Fargate)"]
         MQ -. "consume" .-> ECS_WORKER
     end
 ```
@@ -65,3 +65,11 @@ flowchart LR
 - GitHub Actions (디렉토리별 독립 트리거)
 - ECR push 시 이미지 태그: {branch}-{commit SHA 8자리}
 - 배포 결과 Discord 웹훅 알림
+
+## Todos
+
+해야 할 작업은 [/docs/todos.md](/docs/todos.md) 참조
+
+## Dones
+
+완료 된 작업은 [/docs/done.md](/docs/done.md) 참조
