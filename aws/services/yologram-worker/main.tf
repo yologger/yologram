@@ -87,7 +87,7 @@ resource "aws_iam_role_policy" "task_ssm_read" {
   })
 }
 
-# 조회수 이벤트 컨슈머(Spring Cloud Stream Kinesis binder) — 스트림 읽기 + 체크포인트/락 DynamoDB
+# 조회수 이벤트 컨슈머(Spring Cloud Stream Kinesis binder, KCL 모드) — 스트림 읽기 + KCL 리스 테이블
 resource "aws_iam_role_policy" "task_kinesis_get" {
   name = "kinesis-get"
   role = aws_iam_role.task.id
@@ -113,21 +113,21 @@ resource "aws_iam_role_policy" "task_kinesis_get" {
         Resource = "*"
       },
       {
-        # 체크포인트(MetadataStore)·샤드 락(LockRegistry) 테이블 — tf 선생성(aws/global/kinesis)
+        # KCL 리스 테이블 — 샤드 리스와 체크포인트를 이 테이블 하나로 관리.
+        # 테이블은 tf가 아니라 KCL이 부팅 시 자동 생성한다(없을 때만 CreateTable, 있으면 DescribeTable만 — 소스·실측 확인).
+        # 리스 테이블은 KCL 내부 상태라 수명주기를 KCL에 맡기는 편이 단순하다. Scan은 리스 목록 조회용
         Effect = "Allow"
         Action = [
+          "dynamodb:CreateTable",
           "dynamodb:DescribeTable",
-          "dynamodb:DescribeTimeToLive",
           "dynamodb:GetItem",
           "dynamodb:PutItem",
           "dynamodb:UpdateItem",
           "dynamodb:DeleteItem",
           "dynamodb:Query",
+          "dynamodb:Scan",
         ]
-        Resource = [
-          "arn:aws:dynamodb:ap-northeast-2:${data.aws_caller_identity.current.account_id}:table/yologram-post-view-event-checkpoint-prod",
-          "arn:aws:dynamodb:ap-northeast-2:${data.aws_caller_identity.current.account_id}:table/yologram-post-view-event-lock-prod",
-        ]
+        Resource = "arn:aws:dynamodb:ap-northeast-2:${data.aws_caller_identity.current.account_id}:table/yologram-post-view-event-lease-prod"
       }
     ]
   })

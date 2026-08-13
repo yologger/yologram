@@ -57,7 +57,6 @@ aws/
     database/               # RDS MySQL 8.0 (db.t4g.micro)
     elasticache/            # Valkey 8.0 (cache.t3.micro)
     kinesis/                # Kinesis 스트림 (yologram-post-view-event-prod — 게시글 조회수 이벤트)
-    dynamodb/               # DynamoDB (Kinesis 컨슈머 체크포인트·샤드 락 테이블)
     opensearch/             # OpenSearch 2.19 (t3.small.search)
   services/
     yologram-api-v1/        # Spring Boot API (ECS Fargate SPOT)
@@ -90,7 +89,7 @@ aws/
 | RDS MySQL | $0 | $13.50 (RI) | db.t4g.micro |
 | OpenSearch | $0 | $40.88 (온디멘드) | t3.small.search, RI 불가 |
 | Kinesis | $13.51 | $13.51 | yologram-post-view-event-prod, provisioned 1샤드 $0.0185/h (프리티어 없음) |
-| DynamoDB | $0 | $0 | 컨슈머 체크포인트·락 2테이블, provisioned 5/5 — 상시 무료 티어(25 RCU/WCU) 내 |
+| DynamoDB | $0 | $0 | KCL 리스 테이블 1개(워커가 자동 생성, on-demand) — 항목 수개라 사실상 무과금 |
 | Lightsail (n8n) | $0 (첫 3개월 무료) | $5 | 무료 종료 후 $5/월 |
 | S3 | ~$0 | ~$0 | 사용량 비례 |
 | SES | ~$0 | ~$0 | 사용량 비례 |
