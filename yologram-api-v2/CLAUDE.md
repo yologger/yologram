@@ -61,7 +61,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - N+1 회피: find_nicknames·find_by_post_ids 배치 조회, categoryId 필터는 EXISTS
 - 댓글 수: tech_post_comment_count 매핑(pms 소유 1:1) — insert().on_duplicate_key_update(+1)/가드 UPDATE(-1)만 사용, 댓글 서비스는 PmsApiClient 경유
 - 좋아요: tech_post_like 이력(UNIQUE(post_id,uid), 진실) + tech_post_like_count(1:1) — 이력은 insert().prefix_with("IGNORE") 한 문장(멱등, rowcount로 실삽입 분기), 카운트 증감은 이력 변경 행수(1/0)로만. TechPostLikeService(like_service.py), POST/DELETE /pms/tech/posts/{id}/like 멱등 no-op 200
-- 카운트 조회: outerjoin+coalesce(0) 이중 조인 프로젝션(TechPostWithCounts). 응답은 metrics: {commentCount, likeCount, likedByMe} 중첩 — likedByMe는 선택 인증(get_optional_authenticated_user — 헤더 없으면 None, 무효 토큰 401) + 이력 exists/IN 배치. tech_post의 comment_count·like_count 컬럼은 사장(매핑 제거 — drop 예정)
+- 카운트 조회: outerjoin+coalesce(0) 삼중 조인 프로젝션(TechPostWithCounts — 댓글 수·좋아요 수·조회 수). 응답은 metrics: {commentCount, likeCount, viewCount, likedByMe} 중첩. 조회 수는 TechPostViewCount 읽기 전용 모델(쓰기는 worker 전담) — likedByMe는 선택 인증(get_optional_authenticated_user — 헤더 없으면 None, 무효 토큰 401) + 이력 exists/IN 배치. tech_post의 comment_count·like_count 컬럼은 사장(매핑 제거 — drop 예정)
 - 응답 스키마의 section 필드는 "TECH" 고정. ApiEnvelopCursorPage는 null 커서 필드 생략(v1 @JsonInclude NON_NULL 정합)
 - (데이터 모델·엔드포인트·설계 근거는 docs/done.md, 경로 규칙은 docs/rules.md 참조)
 

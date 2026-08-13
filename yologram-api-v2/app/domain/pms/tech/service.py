@@ -250,6 +250,7 @@ class TechPostService:
         return PostMetrics(
             comment_count=post_with_counts.comment_count,
             like_count=post_with_counts.like_count,
+            view_count=post_with_counts.view_count,
             liked_by_me=liked_by_me,
         )
 

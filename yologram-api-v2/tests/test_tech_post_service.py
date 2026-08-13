@@ -29,11 +29,18 @@ def _post(post_id: int, user_id: int | None = None) -> TechPost:
 
 
 def _post_with_counts(
-    post_id: int, comment_count: int = 0, like_count: int = 0, user_id: int | None = None
+    post_id: int,
+    comment_count: int = 0,
+    like_count: int = 0,
+    view_count: int = 0,
+    user_id: int | None = None,
 ) -> TechPostWithCounts:
     """리포지토리 프로젝션(outerjoin+coalesce 결과) 모형 — 목록·상세 조회 반환값."""
     return TechPostWithCounts(
-        post=_post(post_id, user_id=user_id), comment_count=comment_count, like_count=like_count
+        post=_post(post_id, user_id=user_id),
+        comment_count=comment_count,
+        like_count=like_count,
+        view_count=view_count,
     )
 
 
@@ -241,7 +248,7 @@ class TestTechPostServiceGetPost:
         mock_post_repo = MagicMock()
         # 상세는 프로젝션(find_post_with_counts)으로 조회 — 카운트는 coalesce 실값
         mock_post_repo.find_post_with_counts.return_value = TechPostWithCounts(
-            post=post, comment_count=2, like_count=5
+            post=post, comment_count=2, like_count=5, view_count=0
         )
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
@@ -281,7 +288,7 @@ class TestTechPostServiceGetPost:
     ):
         mock_post_repo = MagicMock()
         mock_post_repo.find_post_with_counts.return_value = TechPostWithCounts(
-            post=_post(1, user_id=12), comment_count=0, like_count=1
+            post=_post(1, user_id=12), comment_count=0, like_count=1, view_count=0
         )
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()
@@ -308,7 +315,7 @@ class TestTechPostServiceGetPost:
     ):
         mock_post_repo = MagicMock()
         mock_post_repo.find_post_with_counts.return_value = TechPostWithCounts(
-            post=_post(1, user_id=12), comment_count=0, like_count=1
+            post=_post(1, user_id=12), comment_count=0, like_count=1, view_count=0
         )
         mock_post_repo_cls.return_value = mock_post_repo
         mock_pc_repo = MagicMock()

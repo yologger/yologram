@@ -60,13 +60,14 @@ class PostAuthor(BaseModel):
 
 class PostMetrics(BaseModel):
     """게시글 카운트 지표 묶음 — 목록·상세 응답 공용 (레거시 product.metrics 미러, api-v1 TechPostMetrics 정합).
-    평면 likeCount/commentCount 필드를 대체. viewCount는 조회수 도입 시 필드 추가(무브레이킹).
+    평면 likeCount/commentCount 필드를 대체. 새 카운트는 이 객체에 필드 추가(무브레이킹) — viewCount가 그 사례.
     likedByMe는 개인화 값이지만 사용자 결정으로 metrics 안에 포함 — 비로그인이면 False."""
 
     model_config = ConfigDict(populate_by_name=True)
 
     comment_count: int = Field(serialization_alias="commentCount")
     like_count: int = Field(serialization_alias="likeCount")
+    view_count: int = Field(serialization_alias="viewCount")
     liked_by_me: bool = Field(serialization_alias="likedByMe")
 
 

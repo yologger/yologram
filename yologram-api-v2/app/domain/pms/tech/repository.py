@@ -8,6 +8,7 @@ from app.domain.pms.tech.model import (
     TechPostCommentCount,
     TechPostLike,
     TechPostLikeCount,
+    TechPostViewCount,
     TechPostWithCounts,
 )
 
@@ -29,7 +30,7 @@ class TechPostRepository:
     def delete(self, post: TechPost) -> None:
         self.db.delete(post)
 
-    # --- 카운트(댓글 수·좋아요 수) 프로젝션 ---
+    # --- 카운트(댓글 수·좋아요 수·조회 수) 프로젝션 ---
 
     def _with_counts_query(self) -> Query:
         """게시글 + 카운트 프로젝션 쿼리. 각 카운트는 1:1 카운트 테이블을 outerjoin해
@@ -41,17 +42,21 @@ class TechPostRepository:
                 TechPost,
                 func.coalesce(TechPostCommentCount.comment_count, 0),
                 func.coalesce(TechPostLikeCount.like_count, 0),
+                func.coalesce(TechPostViewCount.view_count, 0),
             )
             .outerjoin(TechPostCommentCount, TechPost.id == TechPostCommentCount.post_id)
             .outerjoin(TechPostLikeCount, TechPost.id == TechPostLikeCount.post_id)
+            .outerjoin(TechPostViewCount, TechPost.id == TechPostViewCount.post_id)
         )
 
     @staticmethod
     def _to_with_counts(rows) -> list[TechPostWithCounts]:
-        """(TechPost, coalesce 댓글 수, coalesce 좋아요 수) row → 프로젝션 변환. 목록 조회들이 공유."""
+        """(TechPost, coalesce 댓글 수, coalesce 좋아요 수, coalesce 조회 수) row → 프로젝션 변환. 목록 조회들이 공유."""
         return [
-            TechPostWithCounts(post=post, comment_count=comment_count, like_count=like_count)
-            for post, comment_count, like_count in rows
+            TechPostWithCounts(
+                post=post, comment_count=comment_count, like_count=like_count, view_count=view_count
+            )
+            for post, comment_count, like_count, view_count in rows
         ]
 
     def find_post_with_counts(self, id: int) -> TechPostWithCounts | None:
@@ -59,7 +64,9 @@ class TechPostRepository:
         row = self._with_counts_query().filter(TechPost.id == id).first()
         if row is None:
             return None
-        return TechPostWithCounts(post=row[0], comment_count=row[1], like_count=row[2])
+        return TechPostWithCounts(
+            post=row[0], comment_count=row[1], like_count=row[2], view_count=row[3]
+        )
 
     # --- 피드 ---
 

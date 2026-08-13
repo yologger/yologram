@@ -71,12 +71,27 @@ class TechPostLikeCount(Base):
     like_count = Column(BigInteger, nullable=False, default=0)
 
 
+class TechPostViewCount(Base):
+    """테크 게시글 조회 수 — pms 소유 비정규화 (TechPostLikeCount 미러).
+
+    댓글 수·좋아요 수와 달리 api-v2는 이 테이블을 갱신하지 않는다 — 쓰기는 worker 전담이다.
+    조회 이벤트를 Kinesis로 발행하고 worker가 이력(tech_post_view)과 함께 적재하므로,
+    여기서는 조회(outerjoin+coalesce) 전용 읽기 모델이다(증감 리포지토리를 두지 않는 이유)."""
+
+    __tablename__ = "tech_post_view_count"
+
+    post_id = Column(BigInteger, primary_key=True, autoincrement=False)
+    view_count = Column(BigInteger, nullable=False, default=0)
+
+
 @dataclass
 class TechPostWithCounts:
-    """게시글 + 카운트(댓글 수·좋아요 수) 조회 프로젝션 (리포지토리 조회 결과용, 응답 스키마 아님).
-    각 카운트는 tech_post_comment_count / tech_post_like_count outerjoin + coalesce(0) 결과 —
-    count row가 없는 글은 0. liked_by_me는 개인화 값이라 프로젝션이 아닌 service에서 이력 배치 조회."""
+    """게시글 + 카운트(댓글 수·좋아요 수·조회 수) 조회 프로젝션 (리포지토리 조회 결과용, 응답 스키마 아님).
+    각 카운트는 tech_post_comment_count / tech_post_like_count / tech_post_view_count
+    outerjoin + coalesce(0) 결과 — count row가 없는 글은 0.
+    liked_by_me는 개인화 값이라 프로젝션이 아닌 service에서 이력 배치 조회."""
 
     post: TechPost
     comment_count: int
     like_count: int
+    view_count: int
