@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 from botocore.exceptions import ClientError, EndpointConnectionError
 
-from app.domain.pms.tech.event import PostViewEvent
-from app.infra.event.post_view_event_publisher import KinesisPostViewEventPublisher
+from app.domain.pms.tech.publisher.event.post_view_event import PostViewEvent
+from app.domain.pms.tech.publisher.event.post_view_event_publisher import KinesisPostViewEventPublisher
 
 STREAM_NAME = "yologram-post-view-event-test"
 
@@ -14,12 +14,14 @@ STREAM_NAME = "yologram-post-view-event-test"
 ISO_SECONDS_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$")
 
 
-def _publish(event: PostViewEvent, stream_name: str | None = STREAM_NAME) -> MagicMock:
+def _publish(
+    event: PostViewEvent, stream_name: str | None = STREAM_NAME, enabled: bool = True
+) -> MagicMock:
     """publisher로 발행하고 mock Kinesis 클라이언트를 반환 (put_record 인자 검증용)."""
-    with patch("app.infra.event.post_view_event_publisher.get_kinesis_client") as mock_get_client:
+    with patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_kinesis_client") as mock_get_client:
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        KinesisPostViewEventPublisher(stream_name=stream_name).publish(event)
+        KinesisPostViewEventPublisher(stream_name=stream_name, enabled=enabled).publish(event)
         return mock_client
 
 
@@ -94,24 +96,37 @@ class TestKinesisPostViewEventPublisher:
 
         mock_client.put_record.assert_not_called()
 
-    def test_스트림_이름_미설정이면_클라이언트를_만들지도_않는다(self):
-        # 로컬·테스트 기본(설정값 빈 문자열) — 자격증명 없는 환경에서도 안전
-        with patch("app.infra.event.post_view_event_publisher.get_settings") as mock_get_settings:
-            mock_get_settings.return_value = MagicMock(post_view_stream_name="")
-            with patch("app.infra.event.post_view_event_publisher.get_kinesis_client") as mock_get_client:
+    def test_발행_비활성이면_스트림이_있어도_발행하지_않는다(self):
+        # 로컬·테스트 기본 — prod 스트림 오염 방지 (api-v1 enabled=false와 동일 판단)
+        mock_client = _publish(PostViewEvent(post_id=1), stream_name=STREAM_NAME, enabled=False)
+
+        mock_client.put_record.assert_not_called()
+
+    def test_발행_비활성이면_클라이언트를_만들지도_않는다(self):
+        # 설정 기본값(enabled=False) — 자격증명 없는 환경에서도 안전
+        with patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_settings") as mock_get_settings:
+            mock_get_settings.return_value = MagicMock(
+                post_view_publish_enabled=False, post_view_publish_stream=STREAM_NAME
+            )
+            with patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_kinesis_client") as mock_get_client:
                 KinesisPostViewEventPublisher().publish(PostViewEvent(post_id=1))
 
                 mock_get_client.assert_not_called()
 
     def test_설정값이_있으면_스트림_이름으로_사용한다(self):
-        with patch("app.infra.event.post_view_event_publisher.get_settings") as mock_get_settings:
-            mock_get_settings.return_value = MagicMock(post_view_stream_name=STREAM_NAME)
+        with patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_settings") as mock_get_settings:
+            mock_get_settings.return_value = MagicMock(
+                post_view_publish_enabled=True, post_view_publish_stream=STREAM_NAME
+            )
 
-            assert KinesisPostViewEventPublisher().stream_name == STREAM_NAME
+            publisher = KinesisPostViewEventPublisher()
+
+            assert publisher.enabled is True
+            assert publisher.stream_name == STREAM_NAME
 
     def test_발행_실패는_삼킨다(self):
         # 부가 기능이므로 예외를 전파하지 않는다 (조회 API 가용성 우선)
-        with patch("app.infra.event.post_view_event_publisher.get_kinesis_client") as mock_get_client:
+        with patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_kinesis_client") as mock_get_client:
             mock_client = MagicMock()
             mock_client.put_record.side_effect = ClientError(
                 {"Error": {"Code": "ProvisionedThroughputExceededException", "Message": "throttled"}},
@@ -122,7 +137,7 @@ class TestKinesisPostViewEventPublisher:
             KinesisPostViewEventPublisher(stream_name=STREAM_NAME).publish(PostViewEvent(post_id=1))
 
     def test_네트워크_예외도_삼킨다(self):
-        with patch("app.infra.event.post_view_event_publisher.get_kinesis_client") as mock_get_client:
+        with patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_kinesis_client") as mock_get_client:
             mock_client = MagicMock()
             mock_client.put_record.side_effect = EndpointConnectionError(endpoint_url="https://kinesis")
             mock_get_client.return_value = mock_client
@@ -131,7 +146,7 @@ class TestKinesisPostViewEventPublisher:
 
     def test_클라이언트_생성_실패도_삼킨다(self):
         # 자격증명 없음 등으로 클라이언트 생성 자체가 실패해도 조회는 정상이어야 한다
-        with patch("app.infra.event.post_view_event_publisher.get_kinesis_client") as mock_get_client:
+        with patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_kinesis_client") as mock_get_client:
             mock_get_client.side_effect = Exception("no credentials")
 
             KinesisPostViewEventPublisher(stream_name=STREAM_NAME).publish(PostViewEvent(post_id=1))

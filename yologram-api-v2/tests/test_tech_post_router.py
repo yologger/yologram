@@ -481,8 +481,8 @@ class TestTechPostRouterPostViewEvent:
         assert response.status_code == 404
         mock_publisher_cls.return_value.publish.assert_not_called()
 
-    @patch("app.infra.event.post_view_event_publisher.get_kinesis_client")
-    @patch("app.infra.event.post_view_event_publisher.get_settings")
+    @patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_kinesis_client")
+    @patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_settings")
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
     @patch("app.domain.pms.tech.service.TechPostRepository")
@@ -491,7 +491,7 @@ class TestTechPostRouterPostViewEvent:
     ):
         # 실제 publisher 경로(설정 → 클라이언트 → put_record)까지 태워 페이로드를 확인
         self._stub_repositories(mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls)
-        mock_get_settings.return_value = MagicMock(post_view_stream_name="yologram-post-view-event-test")
+        mock_get_settings.return_value = MagicMock(post_view_publish_enabled=True, post_view_publish_stream="yologram-post-view-event-test")
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
 
@@ -508,8 +508,8 @@ class TestTechPostRouterPostViewEvent:
         assert payload["uid"] is None
         assert payload["ip"] == "1.2.3.4"
 
-    @patch("app.infra.event.post_view_event_publisher.get_kinesis_client")
-    @patch("app.infra.event.post_view_event_publisher.get_settings")
+    @patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_kinesis_client")
+    @patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_settings")
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
     @patch("app.domain.pms.tech.service.TechPostRepository")
@@ -517,7 +517,7 @@ class TestTechPostRouterPostViewEvent:
         self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_get_settings, mock_get_client
     ):
         self._stub_repositories(mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls)
-        mock_get_settings.return_value = MagicMock(post_view_stream_name="yologram-post-view-event-test")
+        mock_get_settings.return_value = MagicMock(post_view_publish_enabled=True, post_view_publish_stream="yologram-post-view-event-test")
         mock_client = MagicMock()
         mock_client.put_record.side_effect = ClientError(
             {"Error": {"Code": "ResourceNotFoundException", "Message": "no stream"}}, "PutRecord"
@@ -529,7 +529,7 @@ class TestTechPostRouterPostViewEvent:
         assert response.status_code == 200
         assert response.json()["data"]["id"] == 1
 
-    @patch("app.infra.event.post_view_event_publisher.get_kinesis_client")
+    @patch("app.domain.pms.tech.publisher.event.post_view_event_publisher.get_kinesis_client")
     @patch("app.domain.pms.tech.service.LocalUmsApiClient")
     @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
     @patch("app.domain.pms.tech.service.TechPostRepository")

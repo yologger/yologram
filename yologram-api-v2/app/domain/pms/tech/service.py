@@ -8,7 +8,7 @@ from app.core.exception import (
 )
 from app.core.response import ApiEnvelopCursorPage, ApiEnvelopPage
 from app.domain.pms.tech.cursor import TechPostCursor
-from app.domain.pms.tech.event import PostViewEvent
+from app.domain.pms.tech.publisher.event.post_view_event import PostViewEvent
 from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping, TechPostWithCounts
 from app.domain.pms.tech.repository import (
     TechPostCategoryMappingRepository,
@@ -33,7 +33,7 @@ from app.infra.client.comment.comment_api_client import (
     CommentApiClient,
 )
 from app.infra.client.ums.ums_api_client import LocalUmsApiClient, UmsApiClient
-from app.infra.event.post_view_event_publisher import (
+from app.domain.pms.tech.publisher.event.post_view_event_publisher import (
     KinesisPostViewEventPublisher,
     PostViewEventPublisher,
 )

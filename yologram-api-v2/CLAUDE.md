@@ -12,6 +12,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - app/config/settings.py: Pydantic Settings (환경변수 매핑)
 - app/config/database.py: engine, SessionLocal, get_db
 - app/config/logging.py · metrics.py · tracing.py: OTLP 로그/메트릭/트레이스
+- app/domain/pms/tech/publisher/event/: 조회 이벤트 발행 (api-v1 미러) — post_view_event.py(계약, api-v1·worker와 문자열 미러) + post_view_event_publisher.py(put_record, PartitionKey=post_id, 예외 삼킴, 클라이언트 lazy 생성). 스위치는 POST_VIEW_PUBLISH_ENABLED/POST_VIEW_PUBLISH_STREAM
 - app/infra/client/{ums,cms,pms,comment}: 도메인 간 경계 클라이언트 — {대상도메인}ApiClient(Protocol) + Local 구현 (api-v1 미러)
 - app/infra/cache/ + config/redis.py: Valkey 캐시 — cache-aside(UserNicknameCache·TechNewsFirstPageCache), 전 연산 예외 삼킴(DB 폴백), 1초 타임아웃. 키·JSON api-v1과 바이트 호환 — 닉네임 ums:users:v1:nickname:{uid}(TTL 1h), 뉴스 첫 페이지 news:tech:v1:first-page:{category|all}:{size}(TTL 3분, worker UNLINK 무효화·camelCase envelope). 설정 CACHE_REDIS_HOST/PORT(로컬 .env 16379)
 - app/domain/ums: AuthService(JWT 로그인/로그아웃/검증), UserService(가입/수정/비번변경/탈퇴), UserEmailVerificationService + EmailSender(Stub/Ses), UserPasswordResetService
@@ -22,7 +23,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 
 - .env 파일로 로컬 설정
 - ECS secrets (Parameter Store)에서 환경변수로 주입
-- DB 환경변수: DB_URL, DB_USERNAME, DB_PASSWORD / JWT: JWT_SECRET, ADMIN_JWT_SECRET / 캐시: CACHE_REDIS_HOST(기본 localhost)
+- DB 환경변수: DB_URL, DB_USERNAME, DB_PASSWORD / JWT: JWT_SECRET, ADMIN_JWT_SECRET / 캐시: CACHE_REDIS_HOST(기본 localhost) / 조회 이벤트 발행: POST_VIEW_PUBLISH_ENABLED·POST_VIEW_PUBLISH_STREAM(기본 false·빈 값 = 발행 스킵, prod는 Dockerfile ENV — api-v1 yologram.events.publish.post-view.*와 대칭)
 - OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS는 OpenTelemetry SDK가 자동으로 읽음
 - SES 발신 주소: ses_from_address (기본 no-reply@yologram.link)
 - 자격증명: prod ECS Task Role, 로컬 AWS_PROFILE (scripts/run-prod.sh에서 export)

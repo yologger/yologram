@@ -35,12 +35,14 @@ class Settings(BaseSettings):
     cache_redis_host: str = "localhost"
     cache_redis_port: int = 6379
 
-    # 이벤트 스트림(Kinesis) — 게시글 조회 이벤트 발행 대상 스트림 이름 (env POST_VIEW_STREAM_NAME).
-    # 스트림 이름은 비밀값이 아니라 고정 이름이므로 Parameter Store가 아닌 설정 기본값/환경변수에 직접 둔다
-    # (api-v1 application.yaml event.stream.post-view.name과 동일 판단).
-    # 기본값은 빈 값 = 발행 스킵 (로컬·테스트에서 prod 스트림이 오염되지 않도록).
+    # 이벤트 발행(Kinesis) — 게시글 조회 이벤트. api-v1의
+    # yologram.events.publish.post-view.{enabled,stream}에 대응하는 두 축을,
+    # pydantic-settings 평면 대문자 매핑 관례에 맞춰 POST_VIEW_PUBLISH_ENABLED/POST_VIEW_PUBLISH_STREAM으로 둔다.
+    # 스트림 이름은 비밀값이 아니라 고정 이름이므로 Parameter Store가 아닌 설정 기본값/환경변수에 직접 둔다.
+    # 기본은 비활성 = 발행 스킵 (로컬·테스트에서 prod 스트림이 오염되지 않도록).
     # prod는 컨테이너 이미지에서 주입 (Dockerfile ENV — api-v1 application-prod.yaml에 대응)
-    post_view_stream_name: str = ""
+    post_view_publish_enabled: bool = False
+    post_view_publish_stream: str = ""
 
     # OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS는
     # OpenTelemetry SDK가 자동으로 읽음 (ECS secrets에서 주입)
