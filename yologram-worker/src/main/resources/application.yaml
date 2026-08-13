@@ -61,6 +61,11 @@ yologram:
     subscribe:
       post-view:
         enabled: false
+  webhooks:
+    discord:
+      tech-news:
+        url:  # /yologram/service/yologram-worker_{ENV}/yologram.webhooks.discord.tech-news.url
+        enabled: false
   llm:
     gemini:
       base-url: https://generativelanguage.googleapis.com/v1beta/openai
@@ -74,12 +79,6 @@ yologram:
       # /v1/models 실조회 기준 (llama-4-scout는 Groq에서 내려감)
       model: llama-3.3-70b-versatile
       api-key:  # /yologram/service/yologram-worker_{ENV}/yologram.llm.groq.api-key
-  discord:
-    # 채널별 웹훅 — enabled=false거나 미등록이면 해당 채널 발송 스킵 (politics/invest는 도입 시 추가)
-    webhooks:
-      tech:
-        url:  # /yologram/service/yologram-worker_{ENV}/yologram.discord.webhooks.tech.url
-        enabled: false
 
 management:
   # 캐시는 부가 기능 — Redis 장애가 서비스 health DOWN(ECS 태스크 교체·CI health 테스트 실패)으로

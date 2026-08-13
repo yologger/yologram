@@ -13,8 +13,8 @@ import kotlin.test.assertTrue
 class DiscordNotifierTest {
 
     private val properties = DiscordProperties(
-        webhooks = mapOf(
-            "tech" to DiscordProperties.Webhook(url = "https://discord.example.com/webhook", enabled = true),
+        discord = mapOf(
+            "tech-news" to DiscordProperties.Webhook(url = "https://discord.example.com/webhook", enabled = true),
             "disabled-channel" to DiscordProperties.Webhook(url = "https://discord.example.com/webhook2", enabled = false),
         )
     )
@@ -31,7 +31,7 @@ class DiscordNotifierTest {
     fun `메시지를 웹훅으로 1회 발송한다`() {
         val counter = AtomicInteger()
 
-        notifierCountingRequests(counter).send("tech", "새 테크 뉴스 1건")
+        notifierCountingRequests(counter).send("tech-news", "새 테크 뉴스 1건")
 
         assertEquals(1, counter.get())
     }
@@ -40,7 +40,7 @@ class DiscordNotifierTest {
     fun `빈 메시지는 발송하지 않는다`() {
         val counter = AtomicInteger()
 
-        notifierCountingRequests(counter).send("tech", "  ")
+        notifierCountingRequests(counter).send("tech-news", "  ")
 
         assertEquals(0, counter.get())
     }
@@ -50,7 +50,7 @@ class DiscordNotifierTest {
         val counter = AtomicInteger()
         val content = (1..300).joinToString("\n") { "라인 $it - 0123456789" } // 2,000자 훌쩍 초과
 
-        notifierCountingRequests(counter).send("tech", content)
+        notifierCountingRequests(counter).send("tech-news", content)
 
         assertTrue(counter.get() >= 2)
     }
@@ -60,7 +60,7 @@ class DiscordNotifierTest {
         val exchange = ExchangeFunction { Mono.error(RuntimeException("connection refused")) }
         val notifier = DiscordNotifier(WebClient.builder().exchangeFunction(exchange).build(), properties)
 
-        notifier.send("tech", "실패해도 안전") // 예외 없이 통과하면 성공
+        notifier.send("tech-news", "실패해도 안전") // 예외 없이 통과하면 성공
     }
 
     @Test
@@ -86,7 +86,7 @@ class DiscordNotifierTest {
         val counter = AtomicInteger()
 
         notifierCountingRequests(counter).sendEmbed(
-            channel = "tech",
+            channel = "tech-news",
             title = "코루틴 딥다이브",
             url = "https://tech.example.com/posts/1",
             description = "요약 내용",
@@ -101,7 +101,7 @@ class DiscordNotifierTest {
         val exchange = ExchangeFunction { Mono.error(RuntimeException("connection refused")) }
         val notifier = DiscordNotifier(WebClient.builder().exchangeFunction(exchange).build(), properties)
 
-        notifier.sendEmbed(channel = "tech", title = "t", url = "https://a/1", description = "d") // 예외 없이 통과하면 성공
+        notifier.sendEmbed(channel = "tech-news", title = "t", url = "https://a/1", description = "d") // 예외 없이 통과하면 성공
     }
 
     @Test

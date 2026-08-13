@@ -53,16 +53,16 @@ yologram:
     subscribe:
       post-view:
         enabled: true   # prod만 구독 활성 (로컬·테스트는 기본 false — 체크포인트 오염 방지)
-  discord:
-    webhooks:
-      tech:  # yologram-news-tech 채널
-        url:  # Parameter Store 주입 (/yologram/service/yologram-worker_prod/yologram.discord.webhooks.tech.url)
+  webhooks:
+    discord:
+      tech-news:  # yologram-news-tech 채널
+        url:  # Parameter Store 주입 (/yologram/service/yologram-worker_prod/yologram.webhooks.discord.tech-news.url)
         enabled: true
-      invest:  # yologram-news-invest 채널
-        url:  # Parameter Store 주입 (/yologram/service/yologram-worker_prod/yologram.discord.webhooks.invest.url)
+      invest-news:  # yologram-news-invest 채널
+        url:  # Parameter Store 주입 (/yologram/service/yologram-worker_prod/yologram.webhooks.discord.invest-news.url)
         enabled: true
-      politics:  # yologram-news-politics 채널
-        url:  # Parameter Store 주입 (/yologram/service/yologram-worker_prod/yologram.discord.webhooks.politics.url)
+      politics-news:  # yologram-news-politics 채널
+        url:  # Parameter Store 주입 (/yologram/service/yologram-worker_prod/yologram.webhooks.discord.politics-news.url)
         enabled: true
   llm:
     gemini:

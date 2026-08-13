@@ -22,17 +22,17 @@ class DiscordConfigTest {
     fun `채널별 웹훅 설정이 바인딩된다`() {
         contextRunner
             .withPropertyValues(
-                "yologram.discord.webhooks.tech.url=https://discord.example.com/webhook",
-                "yologram.discord.webhooks.tech.enabled=true",
-                "yologram.discord.webhooks.politics.url=https://discord.example.com/webhook2",
-                "yologram.discord.webhooks.politics.enabled=false",
+                "yologram.webhooks.discord.tech-news.url=https://discord.example.com/webhook",
+                "yologram.webhooks.discord.tech-news.enabled=true",
+                "yologram.webhooks.discord.politics-news.url=https://discord.example.com/webhook2",
+                "yologram.webhooks.discord.politics-news.enabled=false",
             )
             .run { context ->
                 val properties = context.getBean(DiscordProperties::class.java)
-                assertEquals(2, properties.webhooks.size)
-                assertEquals("https://discord.example.com/webhook", properties.webhooks["tech"]!!.url)
-                assertTrue(properties.webhooks["tech"]!!.enabled)
-                assertEquals(false, properties.webhooks["politics"]!!.enabled)
+                assertEquals(2, properties.discord.size)
+                assertEquals("https://discord.example.com/webhook", properties.discord["tech-news"]!!.url)
+                assertTrue(properties.discord["tech-news"]!!.enabled)
+                assertEquals(false, properties.discord["politics-news"]!!.enabled)
             }
     }
 }

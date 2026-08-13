@@ -38,7 +38,7 @@ class DiscordNotifier(
     }
 
     private fun post(channel: String, body: Map<String, Any>) {
-        val webhook = properties.webhooks[channel]
+        val webhook = properties.discord[channel]
         if (webhook == null || !webhook.enabled) {
             // 미등록/비활성 채널은 의도된 상태일 수 있어 debug만
             logger.debug { "Discord 채널 비활성 — 발송 스킵: channel=$channel" }
@@ -63,7 +63,7 @@ class DiscordNotifier(
 
     companion object {
         // 채널 키 (yologram.discord.webhooks.* 와 일치)
-        const val CHANNEL_TECH = "tech"
+        const val CHANNEL_TECH = "tech-news"
 
         const val MAX_CONTENT_LENGTH = 2_000
         const val MAX_EMBED_TITLE_LENGTH = 256
