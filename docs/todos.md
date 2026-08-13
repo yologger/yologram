@@ -33,9 +33,8 @@
   - [x] worker: tech_post_view(이력) + tech_post_view_count(1:1) 적재 — 배치 distinct → 기존 키 제외 → INSERT IGNORE → postId당 카운트 upsert 1회. 30일 보관 정리 배치(청크 삭제, 임계는 UTC)
   - [x] prod 검증 완료: 리스 테이블 자동 생성, 발행→소비→적재→카운트, 실 IP 기록, 같은 글 재조회 멱등(카운트 불변)
   - [ ] tech_post_view_count 조인 확장(metrics.viewCount, api-v1·v2) + web-v1/v2 표시
-- [ ] (Infra/Worker) 구 Discord 웹훅 SSM 파라미터 3개 삭제 — prod 배포·알림 정상 확인 후
-  - 프로퍼티 경로 개편(yologram.discord.webhooks.{채널} → yologram.webhooks.discord.{채널}-news)으로 신규 이름 파라미터에 값 복사·tf state 이관 완료. 구 이름은 롤백 대비로 남겨둔 상태
-  - 삭제 대상: /yologram/service/yologram-worker_prod/yologram.discord.webhooks.{tech,invest,politics}.url
+- [x] (Infra/Worker) 구 Discord 웹훅 SSM 파라미터 3개 삭제 완료 — prod 알림 정상 확인 후 CLI 삭제(tf 관리 밖이라 state 무관, apply No changes 확인)
+  - 프로퍼티 경로 개편(yologram.discord.webhooks.{채널} → yologram.webhooks.discord.{채널}-news): 신규 이름에 값 복사 → tf state rm/import로 관리 이관 → 배포·알림 확인 → 구 이름 삭제. 삭제 전 두 세트 값 해시 비교로 동일성 확인
 - [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)
   - [ ] 도입 시점 판단
   - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)
