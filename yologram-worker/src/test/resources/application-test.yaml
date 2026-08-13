@@ -24,6 +24,14 @@ database:
 
 # 스케줄러가 테스트 중 돌지 않도록 비활성화 ("-" = Scheduled.CRON_DISABLED)
 yologram:
+  batches:
+    post-view-purge:
+      schedule: "-"
+  events:
+    subscribe:
+      # Kinesis 구독 비활성 (기본값과 동일하지만 명시) — 테스트가 prod 스트림·체크포인트에 접근하지 않게
+      post-view:
+        enabled: false
   tech-news:
     collect:
       cron: "-"

@@ -60,6 +60,11 @@ dependencies {
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.1.0"))
     implementation("io.awspring.cloud:spring-cloud-aws-starter-parameter-store")
 
+    // Kinesis
+    implementation(platform("org.springframework.cloud:spring-cloud-dependencies:2025.0.0"))
+    implementation("org.springframework.cloud:spring-cloud-stream-binder-kinesis:4.0.4")
+    implementation("org.springframework.integration:spring-integration-aws:3.0.9")
+
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
@@ -67,6 +72,8 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:mysql")
     testImplementation("org.testcontainers:junit-jupiter")
+    // Kinesis·DynamoDB 소비 경로 통합 검증 (조회 이벤트 바인더 — PostViewEventConsumerIntegrationTest)
+    testImplementation("org.testcontainers:localstack")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

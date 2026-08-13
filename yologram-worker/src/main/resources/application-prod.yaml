@@ -3,6 +3,31 @@ spring:
     import:
       - 'aws-parameterstore:/yologram/service/yologram-worker_prod/'
 
+  cloud:
+    function:
+      definition: postViewEventSubscribe
+    stream:
+      bindings:
+        postViewEventSubscribe-in-0:
+          destination: yologram-post-view-event-prod
+          group: yologram-worker
+          consumer:
+            batch-mode: true
+            use-native-decoding: true
+      kinesis:
+        binder:
+          kpl-kcl-enabled: true
+          auto-create-stream: false
+        bindings:
+          postViewEventSubscribe-in-0:
+            consumer:
+              listener-mode: batch
+              checkpoint-mode: manual
+              fan-out: false
+              metrics-level: NONE
+              lease-table-name: yologram-post-view-event-lease-prod
+              shard-iterator-type: LATEST # 체크포인트가 없을때 스트림의 최신부터 읽는다
+
 cache:
   data:
     redis:
@@ -24,6 +49,10 @@ database:
         password:
 
 yologram:
+  events:
+    subscribe:
+      post-view:
+        enabled: true   # prod만 구독 활성 (로컬·테스트는 기본 false — 체크포인트 오염 방지)
   discord:
     webhooks:
       tech:  # yologram-news-tech 채널

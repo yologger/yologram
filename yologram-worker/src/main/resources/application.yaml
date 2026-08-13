@@ -49,6 +49,13 @@ database:
       open-in-view: false
 
 yologram:
+  batches:
+    post-view-purge:
+      schedule: "0 30 4 * * *"     # 하루 1회 04:30 — 조회 이력 30일 보관 정리 (트래픽 최저 시간대)
+  events:
+    subscribe:
+      post-view:
+        enabled: false
   tech-news:
     collect:
       cron: "0 0/10 * * * *"   # 10분마다 (매시 0,10,20,30,40,50분)
@@ -80,6 +87,11 @@ management:
   # RedisHealthContributorAutoConfiguration은 별개라 수동 RedisConnectionFactory 빈만으로 활성화됨
   health:
     redis:
+      enabled: false
+    # 조회 이벤트 소비도 부가 기능 — Kinesis 일시 장애가 health DOWN(ECS 태스크 교체)으로 번져
+    # 뉴스 파이프라인까지 함께 죽는 것을 막는다 (위 Redis와 동일한 판단).
+    # 소비 중단은 스트림 24시간 보관 + 재기동 후 체크포인트 이어읽기로 복구되므로 태스크 교체가 해법이 아니다
+    binders:
       enabled: false
   tracing:
     sampling:
