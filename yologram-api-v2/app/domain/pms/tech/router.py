@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
+from app.core.client_ip import resolve_client_ip
 from app.core.response import ApiEnvelop, ApiEnvelopCursorPage
 from app.domain.pms.tech.like_service import TechPostLikeService
 from app.domain.pms.tech.schema import CreatePostRequest, PostSummaryResponse, UpdatePostRequest
@@ -209,11 +210,12 @@ def get_my_posts_by_cursor(
 #     return service.get_my_posts_by_offset(auth_data.uid, section, page, size)
 
 
+# 상세 조회는 조회 이벤트(Kinesis) 발행 대상 — IP는 요청에서만 알 수 있어 여기서 추출해 서비스로 넘긴다
 @router.get(
     "/tech/posts/{id}",
     response_model=ApiEnvelop,
     summary="테크 게시글 상세 조회",
-    description="테크 게시판의 게시글 단건 조회 (공개, 로그인 시 likedByMe 포함)",
+    description="테크 게시판의 게시글 단건 조회 (공개, 로그인 시 likedByMe 포함). 조회 성공 시 조회 이벤트를 발행",
     responses={
         200: {"description": "조회 성공"},
         401: {"description": "무효 토큰 (헤더를 보낸 경우만 검증)"},
@@ -222,9 +224,10 @@ def get_my_posts_by_cursor(
 )
 def get_post(
     id: int,
+    request: Request,
     auth_data: AuthData | None = Depends(get_optional_authenticated_user),
     db: Session = Depends(get_db),
 ):
     service = TechPostService(db)
-    result = service.get_post(id, auth_data.uid if auth_data else None)
+    result = service.get_post(id, auth_data.uid if auth_data else None, resolve_client_ip(request))
     return ApiEnvelop(data=result)

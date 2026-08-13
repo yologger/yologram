@@ -339,6 +339,98 @@ class TestTechPostServiceGetPost:
             service.get_post(99)
 
 
+class TestTechPostServicePostViewEvent:
+    """상세 조회 시 조회 이벤트(Kinesis) 발행 — 조회 성공 뒤에만 1회, 404면 미발행."""
+
+    @staticmethod
+    def _service(publisher_cls, post_repo_cls, pc_repo_cls, user_cls, post_id: int = 1) -> TechPostService:
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_post_with_counts.return_value = _post_with_counts(post_id, user_id=12)
+        post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo = MagicMock()
+        mock_pc_repo.find_by_post_id.return_value = []
+        pc_repo_cls.return_value = mock_pc_repo
+        user_cls.return_value = MagicMock(find_nickname=MagicMock(return_value="tester"))
+        publisher_cls.return_value = MagicMock()
+        return TechPostService(MagicMock())
+
+    @patch("app.domain.pms.tech.service.KinesisPostViewEventPublisher")
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_조회_성공_시_이벤트를_1회_발행(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_like_repo_cls, mock_publisher_cls
+    ):
+        service = self._service(mock_publisher_cls, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls)
+
+        service.get_post(1, viewer_uid=7, client_ip="1.2.3.4")
+
+        publisher = mock_publisher_cls.return_value
+        publisher.publish.assert_called_once()
+        event = publisher.publish.call_args.args[0]
+        assert event.post_id == 1
+        assert event.uid == 7
+        assert event.ip == "1.2.3.4"
+        assert event.event_type == "POST_VIEW"
+        assert event.section == "TECH"
+
+    @patch("app.domain.pms.tech.service.KinesisPostViewEventPublisher")
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_비로그인_조회면_uid는_None(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_like_repo_cls, mock_publisher_cls
+    ):
+        service = self._service(mock_publisher_cls, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls)
+
+        service.get_post(1)
+
+        event = mock_publisher_cls.return_value.publish.call_args.args[0]
+        assert event.uid is None
+        # IP를 못 구한 경우도 None (router가 전달하지 않으면 기본값)
+        assert event.ip is None
+
+    @patch("app.domain.pms.tech.service.KinesisPostViewEventPublisher")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_존재하지_않는_게시글이면_발행하지_않는다(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_publisher_cls
+    ):
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_post_with_counts.return_value = None
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_publisher_cls.return_value = MagicMock()
+
+        service = TechPostService(MagicMock())
+
+        with pytest.raises(PostNotFoundException):
+            service.get_post(99)
+        mock_publisher_cls.return_value.publish.assert_not_called()
+
+    @patch("app.domain.pms.tech.service.KinesisPostViewEventPublisher")
+    @patch("app.domain.pms.tech.service.TechPostLikeRepository")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_목록_조회는_발행_대상이_아니다(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_like_repo_cls, mock_publisher_cls
+    ):
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_posts.return_value = [_post_with_counts(3)]
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo_cls.return_value = MagicMock(find_by_post_ids=MagicMock(return_value=[]))
+        mock_user_cls.return_value = MagicMock(find_nicknames=MagicMock(return_value={}))
+        mock_publisher_cls.return_value = MagicMock()
+
+        service = TechPostService(MagicMock())
+        service.get_posts_by_cursor(None, None, 20)
+
+        mock_publisher_cls.return_value.publish.assert_not_called()
+
+
 class TestTechPostServiceGetPosts:
 
     @patch("app.domain.pms.tech.service.TechPostLikeRepository")

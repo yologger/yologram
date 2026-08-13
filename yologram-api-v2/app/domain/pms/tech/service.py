@@ -8,6 +8,7 @@ from app.core.exception import (
 )
 from app.core.response import ApiEnvelopCursorPage, ApiEnvelopPage
 from app.domain.pms.tech.cursor import TechPostCursor
+from app.domain.pms.tech.event import PostViewEvent
 from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping, TechPostWithCounts
 from app.domain.pms.tech.repository import (
     TechPostCategoryMappingRepository,
@@ -32,6 +33,10 @@ from app.infra.client.comment.comment_api_client import (
     CommentApiClient,
 )
 from app.infra.client.ums.ums_api_client import LocalUmsApiClient, UmsApiClient
+from app.infra.event.post_view_event_publisher import (
+    KinesisPostViewEventPublisher,
+    PostViewEventPublisher,
+)
 
 MAX_PAGE_SIZE = 50
 SECTION_PATH = "tech"
@@ -46,6 +51,8 @@ class TechPostService:
         self.cms_api_client: CmsApiClient = LocalCmsApiClient(db)
         self.comment_api_client: CommentApiClient = LocalCommentApiClient(db)
         self.ums_api_client: UmsApiClient = LocalUmsApiClient(db)
+        # 조회 이벤트 발행 — 서비스는 Protocol만 알고 boto3는 infra 구현에 격리 (경계)
+        self.post_view_event_publisher: PostViewEventPublisher = KinesisPostViewEventPublisher()
 
     def create(self, user_id: int, request: CreatePostRequest) -> CreatePostResponse:
         category_ids = list(dict.fromkeys(request.category_ids))  # 중복 제거(순서 유지)
@@ -108,8 +115,9 @@ class TechPostService:
         self.comment_api_client.delete_by_post_id(post.id)
         self.post_repository.delete(post)
 
-    def get_post(self, id: int, viewer_uid: int | None = None) -> PostDetailResponse:
-        """게시글 단건 조회. viewer_uid는 선택 인증 (로그인 시 metrics.likedByMe 계산, 비로그인 None → False)."""
+    def get_post(self, id: int, viewer_uid: int | None = None, client_ip: str | None = None) -> PostDetailResponse:
+        """게시글 단건 조회. viewer_uid는 선택 인증 (로그인 시 metrics.likedByMe 계산, 비로그인 None → False).
+        client_ip는 조회 이벤트용 (router가 X-Forwarded-For에서 추출해 전달, 없으면 None)."""
         # 상세 단건 + 카운트 (tech_post_comment_count·tech_post_like_count outerjoin+coalesce 프로젝션 — 없는 글이면 404)
         post_with_counts = self.post_repository.find_post_with_counts(id)
         if post_with_counts is None:
@@ -121,6 +129,10 @@ class TechPostService:
 
         # likedByMe: 개인화 값이라 프로젝션이 아닌 원장 단건 exists (비로그인은 조회 생략)
         liked_by_me = viewer_uid is not None and self.like_repository.exists_by_post_id_and_uid(post.id, viewer_uid)
+
+        # 조회 이벤트 발행 — 조회가 성공한 뒤에만(404면 위에서 예외로 빠져 발행되지 않는다).
+        # 실패는 publisher가 삼킨다(부가 기능이므로 조회 API 가용성 우선). 중복 판정은 소비 쪽(worker) 몫
+        self.post_view_event_publisher.publish(PostViewEvent(post_id=post.id, uid=viewer_uid, ip=client_ip))
 
         return PostDetailResponse(
             id=post.id,

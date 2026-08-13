@@ -1,14 +1,16 @@
+import json
 import os
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("JWT_SECRET", "test-jwt-secret-key-for-testing")
 
+from botocore.exceptions import ClientError
 from fastapi.testclient import TestClient
 
 from app.config.database import get_db
 from app.domain.pms.tech.model import TechPost, TechPostCategoryMapping, TechPostWithCounts
-from app.domain.ums.auth_dependency import get_authenticated_user
+from app.domain.ums.auth_dependency import get_authenticated_user, get_optional_authenticated_user
 from app.domain.ums.auth_schema import AuthData
 from app.main import app
 
@@ -387,3 +389,157 @@ class TestTechPostRouter:
 
         assert response.status_code == 404
         assert response.json()["errorCode"] == "POST_NOT_FOUND"
+
+
+class TestTechPostRouterPostViewEvent:
+    """상세 조회 엔드포인트의 조회 이벤트 발행 — IP 추출·발행 여부·실패 격리를 라우터 경유로 검증."""
+
+    def setup_method(self):
+        self.mock_db = MagicMock()
+        app.dependency_overrides[get_db] = lambda: self.mock_db
+        # TestClient 기본 접속 주소는 "testclient" — X-Forwarded-For 폴백 검증에 사용
+        self.client = TestClient(app)
+
+    def teardown_method(self):
+        app.dependency_overrides.clear()
+
+    @staticmethod
+    def _stub_repositories(mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, found: bool = True):
+        post = _saved_post(1)
+        post.user_id = 12
+        post.created_at = datetime(2026, 1, 1, 0, 0)
+        mock_post_repo = MagicMock()
+        mock_post_repo.find_post_with_counts.return_value = (
+            TechPostWithCounts(post=post, comment_count=0, like_count=0) if found else None
+        )
+        mock_post_repo_cls.return_value = mock_post_repo
+        mock_pc_repo_cls.return_value = MagicMock(find_by_post_id=MagicMock(return_value=[]))
+        mock_user_cls.return_value = MagicMock(find_nickname=MagicMock(return_value="tester"))
+
+    @patch("app.domain.pms.tech.service.KinesisPostViewEventPublisher")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_X_Forwarded_For_첫_값이_이벤트_ip가_된다(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_publisher_cls
+    ):
+        self._stub_repositories(mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls)
+
+        response = self.client.get(
+            "/api/v2/pms/tech/posts/1",
+            headers={"X-Forwarded-For": "1.2.3.4, 70.41.3.18"},
+        )
+
+        assert response.status_code == 200
+        event = mock_publisher_cls.return_value.publish.call_args.args[0]
+        assert event.ip == "1.2.3.4"
+        assert event.uid is None  # 비로그인
+
+    @patch("app.domain.pms.tech.service.KinesisPostViewEventPublisher")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_헤더가_없으면_접속_주소로_폴백한다(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_publisher_cls
+    ):
+        self._stub_repositories(mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls)
+
+        response = self.client.get("/api/v2/pms/tech/posts/1")
+
+        assert response.status_code == 200
+        event = mock_publisher_cls.return_value.publish.call_args.args[0]
+        assert event.ip == "testclient"  # TestClient의 접속 주소
+
+    @patch("app.domain.pms.tech.service.KinesisPostViewEventPublisher")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_로그인_조회면_uid가_담긴다(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_publisher_cls
+    ):
+        self._stub_repositories(mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls)
+        # 선택 인증 의존성 재사용 — 헤더가 있으면 검증된 uid가 이벤트에 담긴다
+        app.dependency_overrides[get_optional_authenticated_user] = lambda: AuthData(uid=7, access_token="t")
+
+        response = self.client.get("/api/v2/pms/tech/posts/1", headers={"X-Forwarded-For": "1.2.3.4"})
+
+        assert response.status_code == 200
+        event = mock_publisher_cls.return_value.publish.call_args.args[0]
+        assert event.uid == 7
+
+    @patch("app.domain.pms.tech.service.KinesisPostViewEventPublisher")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_404면_발행하지_않는다(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_publisher_cls
+    ):
+        self._stub_repositories(mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, found=False)
+
+        response = self.client.get("/api/v2/pms/tech/posts/99")
+
+        assert response.status_code == 404
+        mock_publisher_cls.return_value.publish.assert_not_called()
+
+    @patch("app.infra.event.post_view_event_publisher.get_kinesis_client")
+    @patch("app.infra.event.post_view_event_publisher.get_settings")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_스트림이_설정되면_put_record로_발행한다(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_get_settings, mock_get_client
+    ):
+        # 실제 publisher 경로(설정 → 클라이언트 → put_record)까지 태워 페이로드를 확인
+        self._stub_repositories(mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls)
+        mock_get_settings.return_value = MagicMock(post_view_stream_name="yologram-post-view-event-test")
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+
+        response = self.client.get("/api/v2/pms/tech/posts/1", headers={"X-Forwarded-For": "1.2.3.4"})
+
+        assert response.status_code == 200
+        kwargs = mock_client.put_record.call_args.kwargs
+        assert kwargs["StreamName"] == "yologram-post-view-event-test"
+        assert kwargs["PartitionKey"] == "1"
+        payload = json.loads(kwargs["Data"].decode("utf-8"))
+        assert payload["eventType"] == "POST_VIEW"
+        assert payload["section"] == "TECH"
+        assert payload["postId"] == 1
+        assert payload["uid"] is None
+        assert payload["ip"] == "1.2.3.4"
+
+    @patch("app.infra.event.post_view_event_publisher.get_kinesis_client")
+    @patch("app.infra.event.post_view_event_publisher.get_settings")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_발행이_실패해도_상세_조회는_200(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_get_settings, mock_get_client
+    ):
+        self._stub_repositories(mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls)
+        mock_get_settings.return_value = MagicMock(post_view_stream_name="yologram-post-view-event-test")
+        mock_client = MagicMock()
+        mock_client.put_record.side_effect = ClientError(
+            {"Error": {"Code": "ResourceNotFoundException", "Message": "no stream"}}, "PutRecord"
+        )
+        mock_get_client.return_value = mock_client
+
+        response = self.client.get("/api/v2/pms/tech/posts/1")
+
+        assert response.status_code == 200
+        assert response.json()["data"]["id"] == 1
+
+    @patch("app.infra.event.post_view_event_publisher.get_kinesis_client")
+    @patch("app.domain.pms.tech.service.LocalUmsApiClient")
+    @patch("app.domain.pms.tech.service.TechPostCategoryMappingRepository")
+    @patch("app.domain.pms.tech.service.TechPostRepository")
+    def test_스트림_미설정_로컬_기본이면_발행_스킵(
+        self, mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls, mock_get_client
+    ):
+        # 설정 기본값(빈 문자열)을 그대로 사용 — 로컬·테스트에서 prod 스트림이 오염되지 않는지 확인
+        self._stub_repositories(mock_post_repo_cls, mock_pc_repo_cls, mock_user_cls)
+
+        response = self.client.get("/api/v2/pms/tech/posts/1")
+
+        assert response.status_code == 200
+        mock_get_client.assert_not_called()
