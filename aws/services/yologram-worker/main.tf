@@ -196,9 +196,11 @@ resource "aws_ssm_parameter" "grafana_logs_auth_prod" {
   }
 }
 
-# Discord 웹훅 — 채널별 url (요약 알림. enabled는 yaml에서 관리, 실제 값은 콘솔에서 직접 입력)
+# Discord 웹훅 — 채널별 url (요약 알림. enabled는 yaml에서 관리, 실제 값은 콘솔에서 직접 입력).
+# 프로퍼티 경로 개편(yologram.webhooks.discord.{채널})에 맞춰 신규 이름으로 이관 — 구 이름 파라미터는
+# prod 배포·검증 후 삭제 예정(todos)
 resource "aws_ssm_parameter" "discord_webhook_tech_url_prod" {
-  name  = "/yologram/service/yologram-worker_prod/yologram.discord.webhooks.tech.url"
+  name  = "/yologram/service/yologram-worker_prod/yologram.webhooks.discord.tech-news.url"
   type  = "SecureString"
   value = "PLACEHOLDER"
 
@@ -208,7 +210,7 @@ resource "aws_ssm_parameter" "discord_webhook_tech_url_prod" {
 }
 
 resource "aws_ssm_parameter" "discord_webhook_invest_url_prod" {
-  name  = "/yologram/service/yologram-worker_prod/yologram.discord.webhooks.invest.url"
+  name  = "/yologram/service/yologram-worker_prod/yologram.webhooks.discord.invest-news.url"
   type  = "SecureString"
   value = "PLACEHOLDER"
 
@@ -218,7 +220,7 @@ resource "aws_ssm_parameter" "discord_webhook_invest_url_prod" {
 }
 
 resource "aws_ssm_parameter" "discord_webhook_politics_url_prod" {
-  name  = "/yologram/service/yologram-worker_prod/yologram.discord.webhooks.politics.url"
+  name  = "/yologram/service/yologram-worker_prod/yologram.webhooks.discord.politics-news.url"
   type  = "SecureString"
   value = "PLACEHOLDER"
 
@@ -343,8 +345,12 @@ resource "aws_ecs_task_definition" "this" {
   family                   = "yologram-worker-prod"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
+  # 0.25vCPU/512MB에서 조회 이벤트 소비가 멈췄다 — KCL의 Netty 이벤트 루프가 CPU를 얻지 못해
+  # "Acquire operation took longer than the configured maximum time"(SDK 커넥션 획득 타임아웃)이 반복됐고,
+  # 뉴스 배치(RSS 크롤링 + LLM 호출 read timeout 60초)와 같은 코어를 다투는 구조가 원인이었다.
+  # 0.5vCPU/1GB로 상향 (Fargate Spot 월 약 $3 → $6)
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecs-task-execution-role"
   task_role_arn            = aws_iam_role.task.arn
 
