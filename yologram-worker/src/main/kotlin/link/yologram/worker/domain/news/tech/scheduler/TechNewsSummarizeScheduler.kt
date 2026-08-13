@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 class TechNewsSummarizeScheduler(
     private val techNewsSummarizeService: TechNewsSummarizeService,
 ) {
-    @Scheduled(cron = "\${yologram.tech-news.summarize.cron:0 0/5 * * * *}")
+    @Scheduled(cron = "\${yologram.batches.tech-news-summarize.schedule:0 0/5 * * * *}")
     fun summarize() {
         techNewsSummarizeService.summarize()
     }

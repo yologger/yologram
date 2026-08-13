@@ -50,17 +50,17 @@ database:
 
 yologram:
   batches:
+    # 주기 배치 스케줄 — 배치가 늘면 yologram.batches.{배치명}.schedule로 추가
+    tech-news-collect:
+      schedule: "0 0/10 * * * *"   # 10분마다 (매시 0,10,20,30,40,50분)
+    tech-news-summarize:
+      schedule: "0 0/5 * * * *"    # 5분마다
     post-view-purge:
       schedule: "0 30 4 * * *"     # 하루 1회 04:30 — 조회 이력 30일 보관 정리 (트래픽 최저 시간대)
   events:
     subscribe:
       post-view:
         enabled: false
-  tech-news:
-    collect:
-      cron: "0 0/10 * * * *"   # 10분마다 (매시 0,10,20,30,40,50분)
-    summarize:
-      cron: "0 0/5 * * * *"    # 5분마다
   llm:
     gemini:
       base-url: https://generativelanguage.googleapis.com/v1beta/openai

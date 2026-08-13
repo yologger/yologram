@@ -16,10 +16,10 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 
 - global/client/WebClientFactory.kt·HttpClientConfig.kt: 공용 WebClient (타임아웃·리다이렉트, 수집용 outboundWebClient 빈)
 - global/llm/: LlmClient(Gemini→Groq fallback)·LlmConfig(Spring AI OpenAI 호환, read timeout 60초)·LlmProperties(yologram.llm.*)
 - global/discord/: DiscordNotifier(채널별 웹훅 send/sendEmbed)·DiscordConfig·DiscordProperties(yologram.discord.webhooks.{채널}.url/enabled)
-- domain/news/tech/: 테크 뉴스 도메인 — client(RssFeedClient·NewsContentCrawler — 외부 HTTP), service(Collect·Summarize·CategoryParser), scheduler(cron 수집 10분·요약 5분). LLM 분류 어휘는 CmsApiClient로 배치마다 로드 — 어드민 카테고리 변경 자동 반영, 매핑은 categoryId
+- domain/news/tech/: 테크 뉴스 도메인 — client(RssFeedClient·NewsContentCrawler — 외부 HTTP), service(Collect·Summarize·CategoryParser), scheduler(수집 10분·요약 5분 — yologram.batches.tech-news-{collect,summarize}.schedule). LLM 분류 어휘는 CmsApiClient로 배치마다 로드 — 어드민 카테고리 변경 자동 반영, 매핑은 categoryId
 - infra/client/cms/: 도메인 간 경계 클라이언트 — CmsApiClient + LocalCmsApiClient + TechCategory 읽기 모델(tech_category 매핑은 이 층에만, api-v1 infra/client 규칙과 일관)
 - config/RedisConfig.kt·CacheRedisProperties.kt + infra/cache/TechNewsFirstPageCacheInvalidator.kt: Valkey 연결(api-v1 미러 — cache.data.redis.*, lazy·1s 타임아웃·REJECT_COMMANDS, Redis 없어도 기동 정상) + 뉴스 첫 페이지 캐시 무효화(clear — (all+활성 카테고리)×size 1~50 키 전수 열거 UNLINK 1왕복, 요약 배치 SUMMARIZED ≥1이면 배치당 1회·커밋 이후 호출. 실패 삼킴 — API 캐시 TTL 3분이 보험. 키 스킴은 api-v1 Cache.kt와 문자열 계약)
-- src/main/resources/application.yaml: 공통 설정 (database.main, cron, LLM 모델, Discord 채널)
+- src/main/resources/application.yaml: 공통 설정 (database.main, 배치 스케줄 yologram.batches.{배치명}.schedule, 이벤트 구독 yologram.events.subscribe.{이벤트}.enabled, LLM 모델, Discord 채널)
 - src/main/resources/logback-spring.xml: 로깅 (콘솔 + prod OTEL appender)
 
 ## 도메인 구조
@@ -46,7 +46,7 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 
 
 - 신규 기능 구현 시 모든 케이스(정상/예외/엣지)에 대해 테스트코드 작성
 - Testcontainers(MySQL) + 단위(mockito-kotlin, WebClient는 exchangeFunction 목)
-- 테스트 프로파일(test): OTLP 비활성, 스케줄러 cron "-"(CRON_DISABLED)
+- 테스트 프로파일(test): OTLP 비활성, 스케줄러 schedule "-"(CRON_DISABLED)
 
 ## 로컬 개발
 
