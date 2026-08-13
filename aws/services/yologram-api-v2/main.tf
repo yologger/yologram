@@ -403,6 +403,13 @@ resource "aws_apigatewayv2_integration" "this" {
   integration_method = "ANY"
   connection_type    = "VPC_LINK"
   connection_id      = var.vpc_link_id
+
+  # api-v1과 동일 — 원 클라이언트 IP를 커스텀 헤더로 전달 (조회 이벤트 발행이 이 IP를 dedup 키로 쓴다).
+  # HTTP API private integration은 remoteAddr이 VPC 내부 주소이고 X-Forwarded-For는 매핑 예약 헤더라
+  # $context.identity.sourceIp가 원 IP를 얻는 유일한 경로다. overwrite로 클라이언트 위조값을 덮는다
+  request_parameters = {
+    "overwrite:header.X-Client-Ip" = "$context.identity.sourceIp"
+  }
 }
 
 resource "aws_apigatewayv2_route" "this" {
