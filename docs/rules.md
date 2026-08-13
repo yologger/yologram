@@ -47,7 +47,9 @@
 ### 이벤트 스트리밍 (Kinesis)
 
 - 조회 이벤트는 섹션별로 스트림을 나누지 않는다 — 스트림 하나 + 페이로드 section 필드로 분기(과금 단위가 샤드라 스트림 분리는 비용 배수). 스트림을 나눌 근거는 샤드 한계 초과·보관/보안 경계 상이·head-of-line 차단뿐
-- 구독 코드는 domain/{도메인}/{섹션}/subscriber/{수단} — 수단은 event(스트림·Kinesis) / message(SQS). 의미(도메인 이벤트 vs 명령)가 아니라 전송 수단 기준이다
+- 설정 경로는 발행·구독 대칭 — 발행 yologram.events.publish.{이벤트}.{enabled,stream} / 구독 yologram.events.subscribe.{이벤트}.enabled. 둘 다 enabled 기본값 false(로컬·테스트가 prod 스트림·체크포인트를 건드리지 않게)이고 prod 프로파일에서만 켠다. api-v2는 yaml이 없어 pydantic-settings 평면 대문자 매핑으로 대응(POST_VIEW_PUBLISH_ENABLED/POST_VIEW_PUBLISH_STREAM)
+- enabled=true인데 대상(stream)이 비면 warn 로그를 남긴다 — 조용히 스킵하면 발행이 0건인 이유를 알 수 없다
+- 발행·구독 코드는 domain/{도메인}/{섹션}/{publisher|subscriber}/{수단} — 수단은 event(스트림·Kinesis) / message(SQS). 의미(도메인 이벤트 vs 명령)가 아니라 전송 수단 기준이다. 이벤트 계약 클래스도 같은 자리에 둔다(api-v1 publisher/event/PostViewEvent, worker subscriber/event/PostViewEvent — 문자열 계약이라 한쪽 변경 시 양쪽 동시 수정). SDK 클라이언트 빈·프로퍼티 클래스는 config/에 남긴다(SesConfig·RedisConfig와 같은 층)
 - 발행은 실패를 삼킨다(사용자 응답이 스트림 장애로 깨지지 않게) — 대신 소비 쪽이 at-least-once를 전제로 멱등해야 한다. 멱등 키는 발생 시각(occurredAt) 기준으로 만들 것(처리 시각 기준이면 재처리 때 키가 달라져 멱등이 깨진다)
 - 수동 체크포인트는 반드시 DB 커밋 이후 — 먼저 찍으면 유실, 나중이면 중복이고 중복은 uk가 흡수한다
 - 포이즌 레코드(깨진 JSON·미지원 eventType/section)는 예외를 올리지 않고 스킵+warn — 예외를 올리면 그 배치가 체크포인트되지 못해 영구 재처리로 소비가 멈춘다
