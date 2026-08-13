@@ -1,0 +1,8 @@
+# Claude Code
+.claude/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
