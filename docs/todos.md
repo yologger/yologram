@@ -24,7 +24,7 @@
 - [x] (Infra/DB) DB 커넥션 타임아웃 방어 — Mac 슬립 half-open 커넥션으로 로컬 api-v2 전면 hang 재현(2026-08-12) 후속 (완료, done.md)
   - [x] api-v2: create_engine connect_args(connect 5s·read/write 10s) + pool_recycle 900(15분 — 번장 미러), 설정 계약 테스트
   - [x] api-v1·worker: SSM url 파라미터 4개에 connectTimeout=5000&socketTimeout=10000 반영(재기동부터 적용) + Hikari max-lifetime 900000
-- [ ] (Count/View) 조회수 — 이벤트 스트리밍으로 구현. 백엔드(발행·소비·적재) 완료, 응답·web 노출만 잔여 (done.md)
+- [x] (Count/View) 조회수 — 이벤트 스트리밍으로 구현 완료 (발행·소비·적재·응답·web 표시, done.md)
   - 레거시 구조: board_view_event(bid·uid·ip 이력 — 동일 조합 1회 집계) + board_view_count 1:1, 상세 조회 시 event 확인 후 count++ save. 약점: 모든 상세 조회가 DB INSERT+UPDATE 유발(고빈도 쓰기), 이벤트 테이블 무한 증식, read-modify-write 레이스, uid/ip nullable이라 uk 부재로 동시 중복 이벤트
   - 구현 스택: ①Kinesis 1샤드(PROVISIONED $0.0185/h 서울 ≈ $13.5/월 — on-demand $35.8/월보다 저렴) — api-v1·v2가 상세 조회 성공 후 PutRecord ②worker가 Spring Cloud Stream Kinesis binder **KCL 모드**로 consume(kpl-kcl-enabled=true, EFO·CloudWatch 메트릭 끔) ③DynamoDB 리스 테이블 **1개** — KCL이 샤드 리스와 체크포인트를 이 테이블로 함께 관리, 부팅 시 자동 생성(PAY_PER_REQUEST)
   - 스택 선정 근거: MSK Serverless ~$550/월·MSK t3.small ~$70/월 탈락, Kafka 셀프호스팅(~$6/월)과 저울질 끝에 완전관리형+Spring 통합 우선. KCL 모드를 고른 이유는 샤드·워커 증설 여지(리샤딩은 binder 기본 모드가 취약) — 대신 EFO(샤드×컨슈머 시간당 과금)와 CloudWatch 메트릭은 껐다
@@ -32,7 +32,7 @@
   - [x] 멱등 설계 확정: view_key UNIQUE(`{postId}:{viewer}:{viewDate}`) — viewer는 u{uid}/i{ip}/unknown, viewDate는 occurredAt 절삭. Kinesis at-least-once 재전달과 새로고침 중복을 uk 하나로 흡수(Redis SETNX 불필요). 체크포인트는 이력·카운트 커밋 이후
   - [x] worker: tech_post_view(이력) + tech_post_view_count(1:1) 적재 — 배치 distinct → 기존 키 제외 → INSERT IGNORE → postId당 카운트 upsert 1회. 30일 보관 정리 배치(청크 삭제, 임계는 UTC)
   - [x] prod 검증 완료: 리스 테이블 자동 생성, 발행→소비→적재→카운트, 실 IP 기록, 같은 글 재조회 멱등(카운트 불변)
-  - [ ] tech_post_view_count 조인 확장(metrics.viewCount, api-v1·v2) + web-v1/v2 표시
+  - [x] tech_post_view_count 조인 확장(metrics.viewCount, api-v1·v2 — 읽기 전용 엔티티) + web-v1/v2 카드·상세 표시(EyeOutlined)
 - [x] (Infra/Worker) 구 Discord 웹훅 SSM 파라미터 3개 삭제 완료 — prod 알림 정상 확인 후 CLI 삭제(tf 관리 밖이라 state 무관, apply No changes 확인)
   - 프로퍼티 경로 개편(yologram.discord.webhooks.{채널} → yologram.webhooks.discord.{채널}-news): 신규 이름에 값 복사 → tf state rm/import로 관리 이관 → 배포·알림 확인 → 구 이름 삭제. 삭제 전 두 세트 값 해시 비교로 동일성 확인
 - [ ] (Search) OpenSearch 도입 (추후 도입, YAGNI — 검색·복잡 필터·대량 트래픽 필요 시. 세부는 진행 시 결정)

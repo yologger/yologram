@@ -41,7 +41,8 @@
 - 1:1 카운트 테이블(post_id PK)은 대상 도메인 소유(pms) — 타 도메인(comment 등)의 갱신은 ApiClient 경유. count 0 row는 삭제하지 않음(조회 coalesce가 0 처리)
 - 목록·상세 조회는 leftJoin+ON 명시(무FK)+coalesce(0) — 1:1이라 row 뻥튀기 없음. 고빈도 쓰기 카운트(조회수)는 동기 갱신 대신 이벤트 스트리밍(Kinesis→worker 적재, done.md)
 - 토글류(좋아요 등 "누가"가 필요한 카운트)는 이력(UNIQUE(대상,uid))+카운트 분리 — 이력이 진실, API는 멱등(중복/무상태 호출 no-op 200). 이력 삽입은 INSERT IGNORE(v2는 insert().prefix_with("IGNORE")) 한 문장 — save 후 uk 예외 catch는 Hibernate 세션 오염이라 금지. 카운트 증감은 이력 변경 행수(1/0)로만 분기
-- 게시글 응답의 카운트는 metrics 객체로 중첩(metrics: {commentCount, likeCount, likedByMe}) — 새 카운트(viewCount 등)는 metrics에 필드 추가(무브레이킹). 평면 카운트 필드 신설 금지. tech_post의 like_count·comment_count 컬럼은 사장(매핑 제거됨 — drop 예정, 참조 금지)
+- 쓰기 주체가 worker인 카운트(조회수)는 API에 읽기 전용 엔티티만 둔다 — 증감 리포지토리를 만들지 않는다(동기 갱신 경로가 생기면 이벤트 파이프라인과 이중 소스가 된다). 갱신은 이력 적재와 같은 트랜잭션에서 worker가 수행
+- 게시글 응답의 카운트는 metrics 객체로 중첩(metrics: {commentCount, likeCount, viewCount, likedByMe}) — 새 카운트(viewCount 등)는 metrics에 필드 추가(무브레이킹). 평면 카운트 필드 신설 금지. tech_post의 like_count·comment_count 컬럼은 사장(매핑 제거됨 — drop 예정, 참조 금지)
 - 개인화 값(likedByMe)은 카운트 프로젝션에 넣지 않고 service에서 이력 조회(상세 exists·목록 IN 배치). 공개 GET에서 개인화가 필요하면 선택 인증(v1 @OptionalAuthenticatedUser / v2 get_optional_authenticated_user) — 헤더 없으면 비로그인, 있으면 검증(무효 401)
 
 ### 이벤트 스트리밍 (Kinesis)
