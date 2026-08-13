@@ -9,6 +9,7 @@ import link.yologram.api.v1.domain.pms.tech.entity.QTechPost
 import link.yologram.api.v1.domain.pms.tech.entity.QTechPostCategoryMapping
 import link.yologram.api.v1.domain.pms.tech.entity.QTechPostCommentCount
 import link.yologram.api.v1.domain.pms.tech.entity.QTechPostLikeCount
+import link.yologram.api.v1.domain.pms.tech.entity.QTechPostViewCount
 import link.yologram.api.v1.domain.pms.tech.model.TechPostWithCounts
 
 class TechPostRepositoryImpl(
@@ -16,7 +17,7 @@ class TechPostRepositoryImpl(
 ) : TechPostRepositoryCustom {
 
     /**
-     * 게시글 + 카운트(댓글 수·좋아요 수) 프로젝션. 각 카운트는 1:1 카운트 테이블을 leftJoin해
+     * 게시글 + 카운트(댓글 수·좋아요 수·조회 수) 프로젝션. 각 카운트는 1:1 카운트 테이블을 leftJoin해
      * coalesce(0)로 — count row가 없는 글(카운트 0)도 목록·상세에서 빠지지 않고 0으로 나온다.
      * 무FK라 on(post.id = count.postId)을 명시. 글:카운트가 1:1(카운트 PK=post_id)이라
      * join으로 row가 불어나지 않아 기존 정렬·커서·limit에 영향 없다 (레거시 BoardCustomRepository 패턴).
@@ -25,25 +26,29 @@ class TechPostRepositoryImpl(
         post: QTechPost,
         commentCount: QTechPostCommentCount,
         likeCount: QTechPostLikeCount,
+        viewCount: QTechPostViewCount,
     ): ConstructorExpression<TechPostWithCounts> =
         Projections.constructor(
             TechPostWithCounts::class.java,
             post,
             commentCount.commentCount.coalesce(0L),
             likeCount.likeCount.coalesce(0L),
+            viewCount.viewCount.coalesce(0L),
         )
 
     override fun findPostWithCounts(id: Long): TechPostWithCounts? {
         val post = QTechPost.techPost
         val commentCount = QTechPostCommentCount.techPostCommentCount
         val likeCount = QTechPostLikeCount.techPostLikeCount
+        val viewCount = QTechPostViewCount.techPostViewCount
 
         // 상세 단건 + 카운트 (없는 글이면 null → 호출부 404)
         return queryFactory
-            .select(withCounts(post, commentCount, likeCount))
+            .select(withCounts(post, commentCount, likeCount, viewCount))
             .from(post)
             .leftJoin(commentCount).on(post.id.eq(commentCount.postId))
             .leftJoin(likeCount).on(post.id.eq(likeCount.postId))
+            .leftJoin(viewCount).on(post.id.eq(viewCount.postId))
             .where(post.id.eq(id))
             .fetchOne()
     }
@@ -53,6 +58,7 @@ class TechPostRepositoryImpl(
         val post = QTechPost.techPost
         val commentCount = QTechPostCommentCount.techPostCommentCount
         val likeCount = QTechPostLikeCount.techPostLikeCount
+        val viewCount = QTechPostViewCount.techPostViewCount
 
         // 카테고리 동적 조건 + 커서 조건(id < cursorId, 직전 페이지보다 과거 글).
         // OFFSET 없이 인덱스 범위 스캔으로 다음 페이지를 이어받는 keyset 방식
@@ -63,10 +69,11 @@ class TechPostRepositoryImpl(
 
         // 최신순(id desc) 정렬 후 limit개. 커서+정렬이 PK(id)를 그대로 탄다 (1:1 join이라 커서 영향 없음)
         return queryFactory
-            .select(withCounts(post, commentCount, likeCount))
+            .select(withCounts(post, commentCount, likeCount, viewCount))
             .from(post)
             .leftJoin(commentCount).on(post.id.eq(commentCount.postId))
             .leftJoin(likeCount).on(post.id.eq(likeCount.postId))
+            .leftJoin(viewCount).on(post.id.eq(viewCount.postId))
             .where(builder)
             .orderBy(post.id.desc())
             .limit(limit.toLong())
@@ -77,12 +84,14 @@ class TechPostRepositoryImpl(
         val post = QTechPost.techPost
         val commentCount = QTechPostCommentCount.techPostCommentCount
         val likeCount = QTechPostLikeCount.techPostLikeCount
+        val viewCount = QTechPostViewCount.techPostViewCount
         // 테크 피드 offset 페이지네이션(학습용). cursor와 동일 조건 + offset/limit
         return queryFactory
-            .select(withCounts(post, commentCount, likeCount))
+            .select(withCounts(post, commentCount, likeCount, viewCount))
             .from(post)
             .leftJoin(commentCount).on(post.id.eq(commentCount.postId))
             .leftJoin(likeCount).on(post.id.eq(likeCount.postId))
+            .leftJoin(viewCount).on(post.id.eq(viewCount.postId))
             .where(feedCondition(post, categoryId))
             .orderBy(post.id.desc())
             .offset(offset)
@@ -125,6 +134,7 @@ class TechPostRepositoryImpl(
         val post = QTechPost.techPost
         val commentCount = QTechPostCommentCount.techPostCommentCount
         val likeCount = QTechPostLikeCount.techPostLikeCount
+        val viewCount = QTechPostViewCount.techPostViewCount
         // 내 글 조건(userId) + cursorId 이후(과거) 글. 피드와 동일한 keyset 방식.
         // idx_tech_post_user_id(user_id, id)를 그대로 탄다
         val builder = BooleanBuilder()
@@ -133,10 +143,11 @@ class TechPostRepositoryImpl(
             builder.and(post.id.lt(cursorId))
         }
         return queryFactory
-            .select(withCounts(post, commentCount, likeCount))
+            .select(withCounts(post, commentCount, likeCount, viewCount))
             .from(post)
             .leftJoin(commentCount).on(post.id.eq(commentCount.postId))
             .leftJoin(likeCount).on(post.id.eq(likeCount.postId))
+            .leftJoin(viewCount).on(post.id.eq(viewCount.postId))
             .where(builder)
             .orderBy(post.id.desc())
             .limit(limit.toLong())
@@ -147,12 +158,14 @@ class TechPostRepositoryImpl(
         val post = QTechPost.techPost
         val commentCount = QTechPostCommentCount.techPostCommentCount
         val likeCount = QTechPostLikeCount.techPostLikeCount
+        val viewCount = QTechPostViewCount.techPostViewCount
         // 최신순(id desc) + OFFSET/LIMIT. 피드의 keyset과 달리 페이지 번호로 건너뛰는 offset 방식
         return queryFactory
-            .select(withCounts(post, commentCount, likeCount))
+            .select(withCounts(post, commentCount, likeCount, viewCount))
             .from(post)
             .leftJoin(commentCount).on(post.id.eq(commentCount.postId))
             .leftJoin(likeCount).on(post.id.eq(likeCount.postId))
+            .leftJoin(viewCount).on(post.id.eq(viewCount.postId))
             .where(post.userId.eq(userId))
             .orderBy(post.id.desc())
             .offset(offset)

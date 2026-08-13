@@ -296,7 +296,7 @@ class TechPostResourceTest {
                 title = "제목",
                 content = "내용",
                 categoryIds = listOf(1L, 2L),
-                metrics = TechPostMetrics(commentCount = 2, likeCount = 5, likedByMe = false),
+                metrics = TechPostMetrics(commentCount = 2, likeCount = 5, viewCount = 0, likedByMe = false),
                 createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
             ),
         )
@@ -325,7 +325,7 @@ class TechPostResourceTest {
                 title = "제목",
                 content = "내용",
                 categoryIds = listOf(1L),
-                metrics = TechPostMetrics(commentCount = 0, likeCount = 1, likedByMe = true),
+                metrics = TechPostMetrics(commentCount = 0, likeCount = 1, viewCount = 0, likedByMe = true),
                 createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
             ),
         )
@@ -394,7 +394,7 @@ class TechPostResourceTest {
         title = "제목",
         content = "내용",
         categoryIds = listOf(1L),
-        metrics = TechPostMetrics(commentCount = 0, likeCount = 0, likedByMe = false),
+        metrics = TechPostMetrics(commentCount = 0, likeCount = 0, viewCount = 0, likedByMe = false),
         createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
     )
 
@@ -409,7 +409,7 @@ class TechPostResourceTest {
                         title = "제목",
                         content = "내용",
                         categoryIds = listOf(1L),
-                        metrics = TechPostMetrics(commentCount = 3, likeCount = 1, likedByMe = false),
+                        metrics = TechPostMetrics(commentCount = 3, likeCount = 1, viewCount = 0, likedByMe = false),
                         createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
                     ),
                 ),
@@ -461,7 +461,7 @@ class TechPostResourceTest {
                         title = "제목",
                         content = "내용",
                         categoryIds = listOf(1L),
-                        metrics = TechPostMetrics(commentCount = 0, likeCount = 0, likedByMe = false),
+                        metrics = TechPostMetrics(commentCount = 0, likeCount = 0, viewCount = 0, likedByMe = false),
                         createdAt = LocalDateTime.of(2026, 1, 1, 0, 0),
                     ),
                 ),

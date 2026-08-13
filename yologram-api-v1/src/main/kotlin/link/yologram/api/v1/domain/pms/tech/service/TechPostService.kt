@@ -334,6 +334,7 @@ class TechPostService(
     private fun toMetrics(postWithCounts: TechPostWithCounts, likedByMe: Boolean) = TechPostMetrics(
         commentCount = postWithCounts.commentCount.toInt(),
         likeCount = postWithCounts.likeCount.toInt(),
+        viewCount = postWithCounts.viewCount.toInt(),
         likedByMe = likedByMe,
     )
 

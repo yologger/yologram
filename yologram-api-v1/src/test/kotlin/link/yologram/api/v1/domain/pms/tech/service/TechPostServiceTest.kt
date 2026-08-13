@@ -197,8 +197,8 @@ class TechPostServiceTest {
         @Test
         fun `게시글과 카테고리·작성자 닉네임·metrics를 반환한다`() {
             val post = TechPost(id = 1L, userId = 12L, title = "제목", content = "내용")
-            // 카운트는 tech_post_comment_count·tech_post_like_count leftJoin 프로젝션에서 온다 (엔티티 컬럼 아님)
-            whenever(postRepository.findPostWithCounts(1L)).thenReturn(TechPostWithCounts(post, 2L, 5L))
+            // 카운트는 tech_post_comment_count·tech_post_like_count·tech_post_view_count leftJoin 프로젝션에서 온다 (엔티티 컬럼 아님)
+            whenever(postRepository.findPostWithCounts(1L)).thenReturn(TechPostWithCounts(post, 2L, 5L, 42L))
             whenever(postCategoryMappingRepository.findByPostId(1L)).thenReturn(
                 listOf(TechPostCategoryMapping(id = 1L, postId = 1L, categoryId = 1L), TechPostCategoryMapping(id = 2L, postId = 1L, categoryId = 2L)),
             )
@@ -213,6 +213,8 @@ class TechPostServiceTest {
             assertEquals(listOf(1L, 2L), result.categoryIds)
             assertEquals("내용", result.content)
             assertEquals(2, result.metrics.commentCount)
+            // 조회 수는 worker가 적재한 tech_post_view_count 조인 결과 (api-v1은 읽기만)
+            assertEquals(42, result.metrics.viewCount)
             assertEquals(5, result.metrics.likeCount)
             // 비로그인(viewerUid 없음) — likedByMe false, 이력 조회도 하지 않는다
             assertFalse(result.metrics.likedByMe)
@@ -222,7 +224,7 @@ class TechPostServiceTest {
         @Test
         fun `로그인 유저가 좋아요한 글이면 likedByMe가 true다`() {
             val post = TechPost(id = 1L, userId = 12L, content = "내용")
-            whenever(postRepository.findPostWithCounts(1L)).thenReturn(TechPostWithCounts(post, 0L, 1L))
+            whenever(postRepository.findPostWithCounts(1L)).thenReturn(TechPostWithCounts(post, 0L, 1L, 0L))
             whenever(postCategoryMappingRepository.findByPostId(1L)).thenReturn(emptyList())
             whenever(umsApiClient.findNickname(12L)).thenReturn("tester")
             whenever(likeRepository.existsByPostIdAndUid(1L, 7L)).thenReturn(true)
@@ -235,7 +237,7 @@ class TechPostServiceTest {
         @Test
         fun `로그인 유저가 좋아요하지 않은 글이면 likedByMe가 false다`() {
             val post = TechPost(id = 1L, userId = 12L, content = "내용")
-            whenever(postRepository.findPostWithCounts(1L)).thenReturn(TechPostWithCounts(post, 0L, 1L))
+            whenever(postRepository.findPostWithCounts(1L)).thenReturn(TechPostWithCounts(post, 0L, 1L, 0L))
             whenever(postCategoryMappingRepository.findByPostId(1L)).thenReturn(emptyList())
             whenever(umsApiClient.findNickname(12L)).thenReturn("tester")
             whenever(likeRepository.existsByPostIdAndUid(1L, 7L)).thenReturn(false)
@@ -260,7 +262,7 @@ class TechPostServiceTest {
 
         private fun stubPostFound(postId: Long = 1L) {
             whenever(postRepository.findPostWithCounts(postId))
-                .thenReturn(TechPostWithCounts(TechPost(id = postId, userId = 12L, content = "내용"), 0L, 0L))
+                .thenReturn(TechPostWithCounts(TechPost(id = postId, userId = 12L, content = "내용"), 0L, 0L, 0L))
             whenever(postCategoryMappingRepository.findByPostId(postId)).thenReturn(emptyList())
             whenever(umsApiClient.findNickname(12L)).thenReturn("tester")
         }
@@ -349,8 +351,19 @@ class TechPostServiceTest {
     @Nested
     inner class 게시글_목록_조회 {
 
-        private fun post(id: Long, userId: Long = id, commentCount: Long = 0L, likeCount: Long = 0L) =
-            TechPostWithCounts(TechPost(id = id, userId = userId, content = "내용$id"), commentCount, likeCount)
+        private fun post(
+            id: Long,
+            userId: Long = id,
+            commentCount: Long = 0L,
+            likeCount: Long = 0L,
+            viewCount: Long = 0L,
+        ) =
+            TechPostWithCounts(
+                TechPost(id = id, userId = userId, content = "내용$id"),
+                commentCount,
+                likeCount,
+                viewCount,
+            )
 
         @Test
         fun `결과가 있으면 마지막 글 id를 nextCursor로 반환한다`() {
@@ -431,8 +444,13 @@ class TechPostServiceTest {
     @Nested
     inner class 내_글_목록_cursor {
 
-        private fun post(id: Long, commentCount: Long = 0L, likeCount: Long = 0L) =
-            TechPostWithCounts(TechPost(id = id, userId = 1L, content = "내용$id"), commentCount, likeCount)
+        private fun post(id: Long, commentCount: Long = 0L, likeCount: Long = 0L, viewCount: Long = 0L) =
+            TechPostWithCounts(
+                TechPost(id = id, userId = 1L, content = "내용$id"),
+                commentCount,
+                likeCount,
+                viewCount,
+            )
 
         @Test
         fun `결과가 있으면 마지막 글 id를 nextCursor로 반환한다`() {
