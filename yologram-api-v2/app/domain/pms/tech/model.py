@@ -44,9 +44,9 @@ class TechPostCommentCount(Base):
 
 
 class TechPostLike(Base):
-    """테크 게시글 좋아요 원장 — "누가 어떤 글에 좋아요를 눌렀나"의 진실(source of truth).
+    """테크 게시글 좋아요 이력 — "누가 어떤 글에 좋아요를 눌렀나"의 진실(source of truth).
     UNIQUE(post_id, uid)로 유저당 글당 1개 보장 — 동시 요청 uk 충돌은 no-op으로 수렴(멱등).
-    카운트(tech_post_like_count)는 이 원장의 비정규화 — 불일치 시 원장 기준 재계산 복구.
+    카운트(tech_post_like_count)는 이 이력의 비정규화 — 불일치 시 이력 기준 재계산 복구.
     삽입은 TechPostLikeRepository.insert_ignore(INSERT IGNORE)로만 — 세션 예외 오염 없이 한 문장 멱등
     (api-v1 TechPostLike 미러)."""
 
@@ -61,7 +61,7 @@ class TechPostLike(Base):
 
 class TechPostLikeCount(Base):
     """테크 게시글 좋아요 수 — pms 소유 비정규화 (TechPostCommentCount 미러).
-    원장(tech_post_like)이 진실, 이 테이블은 표시용 캐시 — 불일치 시 원장 COUNT로 재계산 복구.
+    이력(tech_post_like)이 진실, 이 테이블은 표시용 캐시 — 불일치 시 이력 COUNT로 재계산 복구.
     갱신은 TechPostLikeCountRepository의 원자 쿼리(increase/decrease)로만.
     count가 0이어도 row는 삭제하지 않는다 (조회 outerjoin+coalesce가 0을 처리)."""
 
@@ -75,7 +75,7 @@ class TechPostLikeCount(Base):
 class TechPostWithCounts:
     """게시글 + 카운트(댓글 수·좋아요 수) 조회 프로젝션 (리포지토리 조회 결과용, 응답 스키마 아님).
     각 카운트는 tech_post_comment_count / tech_post_like_count outerjoin + coalesce(0) 결과 —
-    count row가 없는 글은 0. liked_by_me는 개인화 값이라 프로젝션이 아닌 service에서 원장 배치 조회."""
+    count row가 없는 글은 0. liked_by_me는 개인화 값이라 프로젝션이 아닌 service에서 이력 배치 조회."""
 
     post: TechPost
     comment_count: int

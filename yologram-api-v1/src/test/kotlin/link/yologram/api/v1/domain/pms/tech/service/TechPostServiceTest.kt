@@ -214,7 +214,7 @@ class TechPostServiceTest {
             assertEquals("내용", result.content)
             assertEquals(2, result.metrics.commentCount)
             assertEquals(5, result.metrics.likeCount)
-            // 비로그인(viewerUid 없음) — likedByMe false, 원장 조회도 하지 않는다
+            // 비로그인(viewerUid 없음) — likedByMe false, 이력 조회도 하지 않는다
             assertFalse(result.metrics.likedByMe)
             verify(likeRepository, never()).existsByPostIdAndUid(any(), any())
         }
@@ -371,7 +371,7 @@ class TechPostServiceTest {
             assertEquals("TECH", result.data[0].section)
             assertEquals(listOf(5, 0), result.data.map { it.metrics.commentCount })
             assertEquals(listOf(2, 0), result.data.map { it.metrics.likeCount })
-            // 비로그인 — 전부 false, 원장 배치 조회도 하지 않는다
+            // 비로그인 — 전부 false, 이력 배치 조회도 하지 않는다
             assertEquals(listOf(false, false), result.data.map { it.metrics.likedByMe })
             verify(likeRepository, never()).findByUidAndPostIdIn(any(), any())
             // 마지막 글 id(2)를 인코딩한 값
@@ -379,12 +379,12 @@ class TechPostServiceTest {
         }
 
         @Test
-        fun `로그인 시 좋아요한 글만 likedByMe가 true다 (원장 배치 조회)`() {
+        fun `로그인 시 좋아요한 글만 likedByMe가 true다 (이력 배치 조회)`() {
             val fetched = listOf(post(3, likeCount = 2L), post(2))
             whenever(postRepository.findPosts(anyOrNull(), isNull<Long>(), eq(2))).thenReturn(fetched)
             whenever(umsApiClient.findNicknames(any())).thenReturn(emptyMap())
             whenever(postCategoryMappingRepository.findByPostIdIn(any())).thenReturn(emptyList())
-            // viewer(7)는 글 3만 좋아요 — 원장 IN 조회 1번으로 배치 판정
+            // viewer(7)는 글 3만 좋아요 — 이력 IN 조회 1번으로 배치 판정
             whenever(likeRepository.findByUidAndPostIdIn(7L, listOf(3L, 2L)))
                 .thenReturn(listOf(TechPostLike(id = 1L, postId = 3L, uid = 7L)))
 

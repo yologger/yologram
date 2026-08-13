@@ -113,7 +113,7 @@ class TechPostService(
 
         // 연관 데이터 정리 후 게시글 삭제 — 카테고리 매핑 + 댓글(고아 방지, CommentApiClient로 경계 추상화).
         // 같은 트랜잭션이라 글·매핑·댓글 삭제가 원자적
-        // (좋아요 원장·카운트 row는 잔존해도 무해 — 목록·상세에서 글이 사라지면 참조되지 않음. 정리는 soft delete/worker 트랙)
+        // (좋아요 이력·카운트 row는 잔존해도 무해 — 목록·상세에서 글이 사라지면 참조되지 않음. 정리는 soft delete/worker 트랙)
         postCategoryMappingRepository.deleteByPostId(post.id)
         commentApiClient.deleteByPostId(post.id)
         postRepository.delete(post)
@@ -132,7 +132,7 @@ class TechPostService(
         val categoryIds = postCategoryMappingRepository.findByPostId(post.id).map { it.categoryId }
         val nickname = umsApiClient.findNickname(post.userId)
 
-        // likedByMe: 개인화 값이라 프로젝션이 아닌 원장 단건 exists (비로그인은 조회 생략)
+        // likedByMe: 개인화 값이라 프로젝션이 아닌 이력 단건 exists (비로그인은 조회 생략)
         val likedByMe = viewerUid != null && likeRepository.existsByPostIdAndUid(post.id, viewerUid)
 
         // 조회 이벤트 발행 — 조회가 성공한 뒤에만(404면 위에서 예외로 빠져 발행되지 않는다).
@@ -177,7 +177,7 @@ class TechPostService(
         val categoryIdsByPost = postCategoryMappingRepository.findByPostIdIn(posts.map { it.post.id })
             .groupBy({ it.postId }, { it.categoryId })
 
-        // 6) likedByMe 배치 조회 (N+1 회피): 로그인 유저가 누른 글만 원장 IN 1번 질의로 Set 구성
+        // 6) likedByMe 배치 조회 (N+1 회피): 로그인 유저가 누른 글만 이력 IN 1번 질의로 Set 구성
         val likedPostIds = findLikedPostIds(viewerUid, posts.map { it.post.id })
 
         // 7) DTO 매핑: 4~6에서 만든 Map/Set에서 닉네임·카테고리·likedByMe를 꺼내 TechPostSummaryResponse로 변환

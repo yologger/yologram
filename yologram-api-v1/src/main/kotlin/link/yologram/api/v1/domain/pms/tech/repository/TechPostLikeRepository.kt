@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param
 interface TechPostLikeRepository : JpaRepository<TechPostLike, Long> {
 
     /**
-     * 좋아요 원장 삽입 (멱등). 반환값 = 실제 삽입된 행 수 —
+     * 좋아요 이력 삽입 (멱등). 반환값 = 실제 삽입된 행 수 —
      * 이미 (post_id, uid)가 있으면 INSERT IGNORE가 uk 충돌을 무시하고 0을 반환한다.
      * 동시 요청도 한쪽만 1을 받아 카운트 증가가 정확히 1회로 수렴.
      * save+flush 후 uk 예외를 잡는 방식은 Hibernate 세션이 오염돼(예외 후 세션 사용 불가)
@@ -23,7 +23,7 @@ interface TechPostLikeRepository : JpaRepository<TechPostLike, Long> {
     fun insertIgnore(@Param("postId") postId: Long, @Param("uid") uid: Long): Int
 
     /**
-     * 좋아요 원장 삭제 (멱등). 반환값 = 실제 삭제된 행 수 —
+     * 좋아요 이력 삭제 (멱등). 반환값 = 실제 삭제된 행 수 —
      * 안 누른 상태면 0 (호출부가 카운트 감소를 건너뛴다). JPQL 벌크 delete 한 문장.
      */
     @Modifying

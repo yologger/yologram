@@ -267,7 +267,7 @@ class TestTechPostServiceGetPost:
         assert result.content == "내용"
         assert result.metrics.comment_count == 2
         assert result.metrics.like_count == 5
-        # 비로그인(viewer_uid 없음) — likedByMe False, 원장 조회도 하지 않는다
+        # 비로그인(viewer_uid 없음) — likedByMe False, 이력 조회도 하지 않는다
         assert result.metrics.liked_by_me is False
         mock_like_repo.exists_by_post_id_and_uid.assert_not_called()
 
@@ -466,7 +466,7 @@ class TestTechPostServiceGetPosts:
         # 카운트는 프로젝션 실값 그대로 (count row 없는 글은 coalesce 0)
         assert [p.metrics.comment_count for p in result.data] == [5, 0]
         assert [p.metrics.like_count for p in result.data] == [2, 0]
-        # 비로그인 — 전부 False, 원장 배치 조회도 하지 않는다
+        # 비로그인 — 전부 False, 이력 배치 조회도 하지 않는다
         assert [p.metrics.liked_by_me for p in result.data] == [False, False]
         mock_like_repo.find_liked_post_ids.assert_not_called()
         assert result.next_cursor == TechPostCursor.encode(2)
@@ -487,7 +487,7 @@ class TestTechPostServiceGetPosts:
         mock_pc_repo_cls.return_value = mock_pc_repo
         mock_user_cls.return_value = MagicMock(find_nicknames=MagicMock(return_value={}))
         mock_like_repo = MagicMock()
-        # viewer(7)는 글 3만 좋아요 — 원장 IN 조회 1번으로 배치 판정
+        # viewer(7)는 글 3만 좋아요 — 이력 IN 조회 1번으로 배치 판정
         mock_like_repo.find_liked_post_ids.return_value = {3}
         mock_like_repo_cls.return_value = mock_like_repo
 

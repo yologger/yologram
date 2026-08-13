@@ -18,7 +18,7 @@ class TestTechPostLikeServiceLike:
     @patch("app.domain.pms.tech.like_service.TechPostLikeCountRepository")
     @patch("app.domain.pms.tech.like_service.TechPostLikeRepository")
     @patch("app.domain.pms.tech.like_service.TechPostRepository")
-    def test_처음_좋아요면_원장_삽입_후_카운트_증가(self, mock_post_repo_cls, mock_like_repo_cls, mock_count_repo_cls):
+    def test_처음_좋아요면_이력_삽입_후_카운트_증가(self, mock_post_repo_cls, mock_like_repo_cls, mock_count_repo_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_by_id.return_value = _post(1)
         mock_post_repo_cls.return_value = mock_post_repo
@@ -55,7 +55,7 @@ class TestTechPostLikeServiceLike:
     @patch("app.domain.pms.tech.like_service.TechPostLikeCountRepository")
     @patch("app.domain.pms.tech.like_service.TechPostLikeRepository")
     @patch("app.domain.pms.tech.like_service.TechPostRepository")
-    def test_없는_글이면_404_원장_삽입_미호출(self, mock_post_repo_cls, mock_like_repo_cls, mock_count_repo_cls):
+    def test_없는_글이면_404_이력_삽입_미호출(self, mock_post_repo_cls, mock_like_repo_cls, mock_count_repo_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_by_id.return_value = None
         mock_post_repo_cls.return_value = mock_post_repo
@@ -78,7 +78,7 @@ class TestTechPostLikeServiceUnlike:
     @patch("app.domain.pms.tech.like_service.TechPostLikeCountRepository")
     @patch("app.domain.pms.tech.like_service.TechPostLikeRepository")
     @patch("app.domain.pms.tech.like_service.TechPostRepository")
-    def test_좋아요_상태면_원장_삭제_후_카운트_감소(self, mock_post_repo_cls, mock_like_repo_cls, mock_count_repo_cls):
+    def test_좋아요_상태면_이력_삭제_후_카운트_감소(self, mock_post_repo_cls, mock_like_repo_cls, mock_count_repo_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_by_id.return_value = _post(1)
         mock_post_repo_cls.return_value = mock_post_repo
@@ -115,7 +115,7 @@ class TestTechPostLikeServiceUnlike:
     @patch("app.domain.pms.tech.like_service.TechPostLikeCountRepository")
     @patch("app.domain.pms.tech.like_service.TechPostLikeRepository")
     @patch("app.domain.pms.tech.like_service.TechPostRepository")
-    def test_없는_글이면_404_원장_삭제_미호출(self, mock_post_repo_cls, mock_like_repo_cls, mock_count_repo_cls):
+    def test_없는_글이면_404_이력_삭제_미호출(self, mock_post_repo_cls, mock_like_repo_cls, mock_count_repo_cls):
         mock_post_repo = MagicMock()
         mock_post_repo.find_by_id.return_value = None
         mock_post_repo_cls.return_value = mock_post_repo

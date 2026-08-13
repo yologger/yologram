@@ -187,13 +187,13 @@ class TechPostCommentCountRepository:
 
 
 class TechPostLikeRepository:
-    """tech_post_like 원장 접근 (api-v1 TechPostLikeRepository 미러)."""
+    """tech_post_like 이력 접근 (api-v1 TechPostLikeRepository 미러)."""
 
     def __init__(self, db: Session):
         self.db = db
 
     def insert_ignore(self, post_id: int, uid: int) -> int:
-        """좋아요 원장 삽입 (멱등). 반환값 = 실제 삽입된 행 수 —
+        """좋아요 이력 삽입 (멱등). 반환값 = 실제 삽입된 행 수 —
         이미 (post_id, uid)가 있으면 INSERT IGNORE가 uk 충돌을 무시하고 0을 반환한다.
         동시 요청도 한쪽만 1을 받아 카운트 증가가 정확히 1회로 수렴.
         ORM add 후 uk 예외를 잡는 방식은 세션이 오염돼 같은 트랜잭션의 카운트 갱신이 깨지므로
@@ -204,7 +204,7 @@ class TechPostLikeRepository:
         return result.rowcount
 
     def delete_by_post_id_and_uid(self, post_id: int, uid: int) -> int:
-        """좋아요 원장 삭제 (멱등). 반환값 = 실제 삭제된 행 수 —
+        """좋아요 이력 삭제 (멱등). 반환값 = 실제 삭제된 행 수 —
         안 누른 상태면 0 (호출부가 카운트 감소를 건너뛴다). 벌크 delete 한 문장."""
         return (
             self.db.query(TechPostLike)

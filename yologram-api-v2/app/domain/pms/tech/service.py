@@ -127,7 +127,7 @@ class TechPostService:
         category_ids = [pc.category_id for pc in self.post_category_repository.find_by_post_id(post.id)]
         nickname = self.ums_api_client.find_nickname(post.user_id)
 
-        # likedByMe: 개인화 값이라 프로젝션이 아닌 원장 단건 exists (비로그인은 조회 생략)
+        # likedByMe: 개인화 값이라 프로젝션이 아닌 이력 단건 exists (비로그인은 조회 생략)
         liked_by_me = viewer_uid is not None and self.like_repository.exists_by_post_id_and_uid(post.id, viewer_uid)
 
         # 조회 이벤트 발행 — 조회가 성공한 뒤에만(404면 위에서 예외로 빠져 발행되지 않는다).
@@ -223,7 +223,7 @@ class TechPostService:
         for pc in self.post_category_repository.find_by_post_ids([p.post.id for p in posts]):
             category_ids_by_post.setdefault(pc.post_id, []).append(pc.category_id)
 
-        # likedByMe 배치: 로그인 유저가 누른 글만 원장 IN 1번 질의로 Set 구성 (비로그인·빈 목록은 생략)
+        # likedByMe 배치: 로그인 유저가 누른 글만 이력 IN 1번 질의로 Set 구성 (비로그인·빈 목록은 생략)
         liked_post_ids: set[int] = set()
         if viewer_uid is not None and posts:
             liked_post_ids = self.like_repository.find_liked_post_ids(viewer_uid, [p.post.id for p in posts])

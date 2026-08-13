@@ -23,7 +23,7 @@ def db_session():
 
 @pytest.fixture(autouse=True)
 def clean_tables(db_session):
-    """테스트 간 격리: 원장·카운트 테이블 초기화."""
+    """테스트 간 격리: 이력·카운트 테이블 초기화."""
     db_session.query(TechPostLike).delete()
     db_session.query(TechPostLikeCount).delete()
     db_session.commit()
@@ -33,7 +33,7 @@ class TestTechPostLikeRepository:
 
     class TestInsertIgnore:
 
-        def test_처음_삽입하면_1을_반환하고_원장_row가_생긴다(self, db_session):
+        def test_처음_삽입하면_1을_반환하고_이력_row가_생긴다(self, db_session):
             repo = TechPostLikeRepository(db_session)
 
             inserted = repo.insert_ignore(100, 7)

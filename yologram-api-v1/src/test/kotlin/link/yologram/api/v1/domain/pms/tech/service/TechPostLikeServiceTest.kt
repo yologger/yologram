@@ -21,7 +21,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 
 /**
- * 좋아요 통합 테스트 — 원장(tech_post_like)과 카운트(tech_post_like_count)의 정합·멱등을
+ * 좋아요 통합 테스트 — 이력(tech_post_like)과 카운트(tech_post_like_count)의 정합·멱등을
  * 실제 DB(Testcontainers MySQL)로 검증. INSERT IGNORE·가드 UPDATE는 mock으로 의미가 없어 통합으로 작성.
  */
 @SpringBootTest
@@ -64,7 +64,7 @@ class TechPostLikeServiceTest {
     inner class 좋아요 {
 
         @Test
-        fun `좋아요 시 원장 삽입 + 카운트 1이 된다`() {
+        fun `좋아요 시 이력 삽입 + 카운트 1이 된다`() {
             val post = savePost()
 
             likeService.like(post.id, 7L)
@@ -80,7 +80,7 @@ class TechPostLikeServiceTest {
             likeService.like(post.id, 7L)
             likeService.like(post.id, 7L)
 
-            // INSERT IGNORE가 중복을 0행 삽입으로 무시 → 카운트 증가 생략, 원장도 1건 유지
+            // INSERT IGNORE가 중복을 0행 삽입으로 무시 → 카운트 증가 생략, 이력도 1건 유지
             assertEquals(1L, likeCountOf(post.id))
             assertEquals(1, likeRepository.findByUidAndPostIdIn(7L, listOf(post.id)).size)
         }
@@ -110,7 +110,7 @@ class TechPostLikeServiceTest {
     inner class 좋아요_취소 {
 
         @Test
-        fun `취소 시 원장 삭제 + 카운트가 줄어든다`() {
+        fun `취소 시 이력 삭제 + 카운트가 줄어든다`() {
             val post = savePost()
             likeService.like(post.id, 7L)
 
@@ -128,7 +128,7 @@ class TechPostLikeServiceTest {
 
             likeService.unlike(post.id, 7L) // 7은 안 누른 상태
 
-            // 원장 0행 삭제 → 카운트 감소 생략 (8의 좋아요가 깎이지 않는다)
+            // 이력 0행 삭제 → 카운트 감소 생략 (8의 좋아요가 깎이지 않는다)
             assertEquals(1L, likeCountOf(post.id))
         }
 
