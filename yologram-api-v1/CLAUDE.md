@@ -12,6 +12,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - src/main/resources/logback-spring.xml: 로깅 설정 (콘솔 + OTEL appender)
 - src/main/kotlin/.../config/OpenTelemetryLoggingConfig.kt: OTEL logback 초기화
 - src/main/kotlin/.../config/QuerydslConfig.kt: JPAQueryFactory 빈
+- src/main/kotlin/.../domain/pms/tech/publisher/event/: 조회 이벤트 발행 — PostViewEvent(계약, worker와 문자열 미러) + PostViewEventPublisher(PutRecord, partitionKey=postId, 실패 삼킴). 스위치는 yologram.events.publish.post-view.{enabled,stream}(EventPublishProperties) — 기본 비활성이라 로컬·테스트는 발행 스킵. SDK 클라이언트 빈은 config/KinesisConfig(리전 명시·타임아웃 1s)
 - src/main/kotlin/.../infra/client/{ums,cms,pms,comment}/: 도메인 간 경계 클라이언트 — {대상도메인}ApiClient + Local 구현 (타 도메인 리포지토리 import는 이 층에서만, MSA 시 Rest 구현으로 교체)
 - src/main/kotlin/.../config/RedisConfig.kt·CacheRedisProperties.kt + infra/cache/: Valkey 캐시 — cache.data.redis.* 커스텀 프로퍼티 + 수동 Lettuce 빈(자동구성 exclude, DataSource와 동일 패턴). Cache<V> 키 팩토리(prefix:v1:entity:id)·CacheService(runCatching 폴백, getAllAsMap 배치)·UserNicknameCache(cache-aside 공용, loader 주입)·TechNewsFirstPageCache(뉴스 첫 페이지 응답 통째, 키 news:tech:v1:first-page:{categoryId|all}:{size}·TTL 3분 — worker가 요약 시 키 전수 열거 UNLINK로 무효화)
 - src/main/kotlin/.../domain/ums/service/AuthService.kt: JWT 로그인/로그아웃/토큰 검증. validate-token은 master DB 조회

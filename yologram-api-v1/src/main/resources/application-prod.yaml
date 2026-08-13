@@ -9,11 +9,13 @@ cache:
       host:  # Parameter Store 주입 (/yologram/service/yologram-api-v1_prod/cache.data.redis.host)
       port: 6379
 
-# 조회 이벤트 발행 대상 스트림 (aws/global/kinesis, PROVISIONED 1샤드 · ap-northeast-2)
-event:
-  stream:
-    post-view:
-      name: yologram-post-view-event-prod
+# 조회 이벤트 발행 (aws/global/kinesis — PROVISIONED 1샤드, ap-northeast-2)
+yologram:
+  events:
+    publish:
+      post-view:
+        enabled: true
+        stream: yologram-post-view-event-prod
 
 database:
   main:

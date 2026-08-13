@@ -8,7 +8,7 @@ import link.yologram.api.v1.domain.pms.tech.exception.TechPostForbiddenException
 import link.yologram.api.v1.domain.pms.tech.exception.TechPostNotFoundException
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostResponse
-import link.yologram.api.v1.domain.pms.tech.model.PostViewEvent
+import link.yologram.api.v1.domain.pms.tech.publisher.event.PostViewEvent
 import link.yologram.api.v1.domain.pms.tech.model.TechPostCursor
 import link.yologram.api.v1.domain.pms.tech.model.TechPostDetailResponse
 import link.yologram.api.v1.domain.pms.tech.model.TechPostMetrics
@@ -21,7 +21,7 @@ import link.yologram.api.v1.domain.pms.tech.repository.TechPostRepository
 import link.yologram.api.v1.infra.client.cms.CmsApiClient
 import link.yologram.api.v1.infra.client.comment.CommentApiClient
 import link.yologram.api.v1.infra.client.ums.UmsApiClient
-import link.yologram.api.v1.infra.event.PostViewEventPublisher
+import link.yologram.api.v1.domain.pms.tech.publisher.event.PostViewEventPublisher
 import link.yologram.api.v1.global.model.ApiEnvelopCursorPage
 import link.yologram.api.v1.global.model.ApiEnvelopPage
 import org.springframework.data.repository.findByIdOrNull

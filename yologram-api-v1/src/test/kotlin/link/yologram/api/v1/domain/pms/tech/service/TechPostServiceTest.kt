@@ -7,9 +7,9 @@ import link.yologram.api.v1.domain.pms.tech.exception.InvalidTechCategoryExcepti
 import link.yologram.api.v1.domain.pms.tech.exception.InvalidTechSectionException
 import link.yologram.api.v1.domain.pms.tech.exception.TechPostForbiddenException
 import link.yologram.api.v1.domain.pms.tech.exception.TechPostNotFoundException
-import link.yologram.api.v1.config.EventStreamProperties
+import link.yologram.api.v1.config.EventPublishProperties
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostRequest
-import link.yologram.api.v1.domain.pms.tech.model.PostViewEvent
+import link.yologram.api.v1.domain.pms.tech.publisher.event.PostViewEvent
 import link.yologram.api.v1.domain.pms.tech.model.TechPostCursor
 import link.yologram.api.v1.domain.pms.tech.model.TechPostWithCounts
 import link.yologram.api.v1.domain.pms.tech.model.UpdateTechPostRequest
@@ -19,7 +19,7 @@ import link.yologram.api.v1.domain.pms.tech.repository.TechPostRepository
 import link.yologram.api.v1.infra.client.cms.CmsApiClient
 import link.yologram.api.v1.infra.client.comment.CommentApiClient
 import link.yologram.api.v1.infra.client.ums.UmsApiClient
-import link.yologram.api.v1.infra.event.PostViewEventPublisher
+import link.yologram.api.v1.domain.pms.tech.publisher.event.PostViewEventPublisher
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -334,7 +334,7 @@ class TechPostServiceTest {
                 PostViewEventPublisher(
                     kinesisClient,
                     Jackson2ObjectMapperBuilder.json().build(),
-                    EventStreamProperties(postView = EventStreamProperties.Stream(name = "yologram-post-view-event-test")),
+                    EventPublishProperties(postView = EventPublishProperties.Publish(enabled = true, stream = "yologram-post-view-event-test")),
                 ),
             )
 

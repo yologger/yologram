@@ -1,4 +1,4 @@
-package link.yologram.api.v1.domain.pms.tech.model
+package link.yologram.api.v1.domain.pms.tech.publisher.event
 
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit

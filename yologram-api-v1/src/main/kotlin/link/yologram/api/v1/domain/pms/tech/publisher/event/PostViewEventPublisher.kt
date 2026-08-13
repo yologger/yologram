@@ -1,9 +1,8 @@
-package link.yologram.api.v1.infra.event
+package link.yologram.api.v1.domain.pms.tech.publisher.event
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import link.yologram.api.v1.config.EventStreamProperties
-import link.yologram.api.v1.domain.pms.tech.model.PostViewEvent
+import link.yologram.api.v1.config.EventPublishProperties
 import org.springframework.stereotype.Component
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisClient
@@ -19,15 +18,21 @@ import software.amazon.awssdk.services.kinesis.model.PutRecordRequest
 class PostViewEventPublisher(
     private val kinesisClient: KinesisClient,
     private val objectMapper: ObjectMapper,
-    private val properties: EventStreamProperties,
+    private val properties: EventPublishProperties,
 ) {
 
     private val logger = KotlinLogging.logger {}
 
     fun publish(event: PostViewEvent) {
-        // 스트림 이름 미설정(로컬·테스트 기본)이면 발행 스킵 — prod 스트림 오염 방지
-        val streamName = properties.postView.name
-        if (streamName.isNullOrBlank()) return
+        // 발행 비활성(로컬·테스트 기본)이면 스킵 — prod 스트림 오염 방지
+        if (!properties.postView.enabled) return
+
+        val streamName = properties.postView.stream
+        if (streamName.isNullOrBlank()) {
+            // 켰는데 대상이 없는 설정 실수 — 조용히 스킵하면 발행이 0건인 이유를 알 수 없다
+            logger.warn { "post view event publish is enabled but stream is not configured — skipped: postId=${event.postId}" }
+            return
+        }
 
         runCatching {
             val request = PutRecordRequest.builder()

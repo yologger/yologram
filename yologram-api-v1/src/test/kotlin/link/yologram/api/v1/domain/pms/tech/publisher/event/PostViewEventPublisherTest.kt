@@ -1,10 +1,9 @@
-package link.yologram.api.v1.infra.event
+package link.yologram.api.v1.domain.pms.tech.publisher.event
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
-import link.yologram.api.v1.config.EventStreamProperties
-import link.yologram.api.v1.domain.pms.tech.model.PostViewEvent
+import link.yologram.api.v1.config.EventPublishProperties
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -38,10 +37,10 @@ class PostViewEventPublisherTest {
         .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
         .build()
 
-    private fun publisher(streamName: String?) = PostViewEventPublisher(
+    private fun publisher(streamName: String?, enabled: Boolean = true) = PostViewEventPublisher(
         kinesisClient,
         objectMapper,
-        EventStreamProperties(postView = EventStreamProperties.Stream(name = streamName)),
+        EventPublishProperties(postView = EventPublishProperties.Publish(enabled = enabled, stream = streamName)),
     )
 
     private fun capturedRequest(): PutRecordRequest {
@@ -118,6 +117,19 @@ class PostViewEventPublisherTest {
 
             val payload = capturedPayload()
             assertTrue(Regex("""^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$""").matches(payload["occurredAt"] as String))
+        }
+    }
+
+    @Nested
+    inner class 발행_비활성 {
+
+        @Test
+        fun `enabled=false면 스트림이 있어도 PutRecord를 호출하지 않는다`() {
+            // 로컬·테스트 기본값 — prod 스트림 오염 방지
+            publisher("yologram-post-view-event-prod", enabled = false)
+                .publish(PostViewEvent(postId = 1L, uid = null, ip = null))
+
+            verify(kinesisClient, never()).putRecord(any<PutRecordRequest>())
         }
     }
 

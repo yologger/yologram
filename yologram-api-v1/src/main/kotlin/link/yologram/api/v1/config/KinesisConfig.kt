@@ -12,7 +12,7 @@ import java.time.Duration
  * 자격증명은 기본 체인(prod: ECS Task Role, 로컬: AWS_PROFILE 환경변수).
  *
  * SesConfig(@Profile("prod"))와 달리 프로파일을 제한하지 않는다 — 발행 스킵 판단은
- * 스트림 이름(event.stream.post-view.name) 유무로만 하고(PostViewEventPublisher),
+ * 발행 스위치(yologram.events.publish.post-view.enabled·stream)로만 하고(PostViewEventPublisher),
  * 빈 생성 자체는 자격증명을 요구하지 않아 로컬·테스트 부팅에 영향이 없다.
  */
 @Configuration
