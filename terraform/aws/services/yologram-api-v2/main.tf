@@ -367,6 +367,20 @@ resource "aws_ecs_task_definition" "this" {
           name      = "CACHE_REDIS_HOST"
           valueFrom = aws_ssm_parameter.cache_redis_host_prod.arn
         },
+        # 검색(OpenSearch) 접속 — 스위치(OPENSEARCH_MAIN_ENABLED)는 Dockerfile ENV.
+        # api-v1은 앱이 SSM을 직접 읽지만 api-v2는 컨테이너 주입 방식이라 여기에 매핑이 필요하다
+        {
+          name      = "OPENSEARCH_MAIN_URI"
+          valueFrom = aws_ssm_parameter.opensearch_uri_prod.arn
+        },
+        {
+          name      = "OPENSEARCH_MAIN_USERNAME"
+          valueFrom = aws_ssm_parameter.opensearch_username_prod.arn
+        },
+        {
+          name      = "OPENSEARCH_MAIN_PASSWORD"
+          valueFrom = aws_ssm_parameter.opensearch_password_prod.arn
+        },
       ]
     }
   ])

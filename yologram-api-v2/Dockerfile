@@ -21,4 +21,7 @@ ENV POST_VIEW_PUBLISH_STREAM=yologram-post-view-event-prod
 # IAM은 태스크 롤의 sqs-send 정책(SendMessage·GetQueueUrl만)이 담당한다
 ENV POST_INDEX_PUBLISH_ENABLED=true
 ENV POST_INDEX_PUBLISH_QUEUE=yologram-search-indexing-prod
+# 검색 스위치 — 접속 3개(URI·USERNAME·PASSWORD)는 task definition secrets로 SSM에서 주입한다.
+# api-v1은 yaml(opensearch.main.enabled)에 대응
+ENV OPENSEARCH_MAIN_ENABLED=true
 ENTRYPOINT ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000"]
