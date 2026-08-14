@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { renderWithProviders } from '../../../../../test/utils'
 import userEvent from '@testing-library/user-event'
 import TechKeywordPage from './page'
 
@@ -8,6 +9,7 @@ const mockUseParams = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
   useParams: () => mockUseParams(),
+  usePathname: () => '/tech/keywords/test',
 }))
 
 beforeEach(() => {
@@ -18,14 +20,14 @@ beforeEach(() => {
 
 describe('TechKeywordPage', () => {
   it('디코딩된 키워드로 검색결과 텍스트를 렌더링한다', () => {
-    render(<TechKeywordPage />)
+    renderWithProviders(<TechKeywordPage />)
 
     expect(screen.getByText("'제미나이' 검색결과")).toBeInTheDocument()
   })
 
   it('검색바에서 재검색 시 /tech 키워드 경로로 이동한다', async () => {
     const user = userEvent.setup()
-    render(<TechKeywordPage />)
+    renderWithProviders(<TechKeywordPage />)
 
     const input = screen.getByPlaceholderText('검색어를 입력하세요')
     await user.clear(input)

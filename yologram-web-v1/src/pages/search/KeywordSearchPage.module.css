@@ -11,3 +11,7 @@
     justify-content: flex-start;
   }
 }
+
+.tabs {
+  margin-top: 8px;
+}

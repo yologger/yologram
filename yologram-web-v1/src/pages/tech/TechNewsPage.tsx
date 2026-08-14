@@ -1,41 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Tag } from 'antd'
-import ReactMarkdown from 'react-markdown'
 import FilterChips, { type ChipItem } from '../../components/common/FilterChips'
+import NewsCard from '../../components/news/NewsCard'
 import ScrollToTopButton from '../../components/common/ScrollToTopButton'
 import useNewsQuery from '../../queries/useNewsQuery'
 import usePostCategoriesQuery from '../../queries/usePostCategoriesQuery'
-import { formatRelativeTime } from '../../lib/date'
-import type { News } from '../../apis/news'
 import styles from './TechNewsPage.module.css'
-
-function NewsCard({ news }: { news: News }) {
-  return (
-    <div className={styles.card}>
-      <div className={styles.head}>
-        <span className={styles.source}>{news.sourceName}</span>
-        <span className={styles.dot}>·</span>
-        <span className={styles.time}>{formatRelativeTime(news.publishedAt)}</span>
-        <span className={styles.tags}>
-          {news.categories.map((c) => (
-            <Tag key={c} color="cyan">{c}</Tag>
-          ))}
-        </span>
-      </div>
-      <a
-        className={styles.title}
-        href={news.link}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {news.title}
-      </a>
-      <div className={styles.summary}>
-        <ReactMarkdown>{news.summary}</ReactMarkdown>
-      </div>
-    </div>
-  )
-}
 
 export default function TechNewsPage() {
   // 칩 어휘는 게시판·뉴스 공용 카테고리 API가 단일 소스 (커뮤니티 피드와 동일)

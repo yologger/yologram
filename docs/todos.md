@@ -47,7 +47,9 @@
   - [x] 어드민 인덱싱 페이지 (admin-web) — 전체·범위·단건 3블록 (완료, done.md)
   - [x] api-v2 인덱싱 발행 미러링 — 소비는 worker 단일. 검색 엔드포인트는 확정 후 별도 미러링 (완료, done.md)
   - [ ] 검색 API(api-v1): 키워드/카테고리/섹션 검색·필터·정렬·집계
-  - [ ] web-v1·v2 검색 결과 페이지 연결 — 검색바·키워드 페이지는 placeholder 구현 완료(done.md), 결과 목록을 붙인다. 무한 스크롤 대신 페이지 네비게이션, 항목 클릭 시 상세로
+  - [x] web-v1·v2 검색 결과 UI — 대상별 탭(커뮤니티·뉴스)·페이지 네비게이션·정렬 전환 (목 데이터, done.md)
+  - [ ] web-v1·v2 검색 결과 실데이터 연결 — searchResultMock.ts를 검색 API 쿼리로 교체
+  - [ ] 뉴스 인덱싱·검색 — tech-news-index 신설(게시글과 별도 인덱스), 검색 결과 뉴스 탭 연결
   - [ ] User 인덱싱 (후순위 — 게시글 검색이 끝난 뒤)
   - [ ] 프론트 이관: 공개 다건 탐색 → search (단건·쓰기·내 글은 pms 유지)
   - [ ] 키워드 검색 실데이터 연동 — web-v1/v2 검색바·/{section}/keywords/{키워드} 페이지(placeholder 구현 완료, done.md)에 결과 목록 연결. 1차 DB LIKE(pms/news q 파라미터) 또는 OpenSearch 도입과 함께 결정

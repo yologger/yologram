@@ -305,3 +305,11 @@
   - api-v2는 코드가 아니라 컨테이너 ENV로 스위치를 준다(POST_INDEX_PUBLISH_ENABLED/QUEUE, Dockerfile). IAM sqs-send 정책은 인프라 작업에서 미리 넣어둬 tf 변경이 없었다
   - 경로 파라미터 타입 오류는 api-v2도 400이다 — ValidationExceptionHandler가 FastAPI의 422를 400으로 매핑해 api-v1과 동작이 같다(테스트로 확인)
   - 테스트: admin-web 신규 8개(총 132, 상단 메뉴 개수 검증을 5→6으로 갱신) / api-v2 신규 38개(총 485). 빌드 통과
+- [x] (Search) 검색 결과 UI — web-v1·web-v2 (목 데이터, 엔드포인트 연동 전)
+  - 대상별 탭으로 나눴다: [커뮤니티 N | 뉴스 M]. 한 목록에 섞지 않은 이유는 ①스키마가 다르고(author·metrics vs source·publishedAt) ②_score가 인덱스별 IDF로 계산돼 서로 비교하면 문서 수가 적은 쪽이 유리해지기 때문. 각 탭이 자기 페이징·정렬을 갖는다
+  - 섹션 탭(뉴스·관심뉴스·커뮤니티·채용)과는 별개다 — 검색 결과 탭에는 검색 가능한 대상만 올라온다(관심뉴스는 개인화 목록, 채용은 화면 미구현). 검색 결과 페이지는 이미 (tabs) 밖 독립 라우트라 섹션 탭을 물려받지 않는다
+  - 페이징은 무한 스크롤이 아니라 페이지 네비게이션(antd Pagination). 피드·뉴스·내 글은 모두 커서 무한 스크롤인데 검색만 다르게 한 이유: 총 건수가 검색 품질의 피드백이고(커서로는 만들 수 없다), 결과에서 상세로 들어갔다 돌아올 때 위치가 유지돼야 한다. 백엔드를 offset으로 만들면 프론트에서 둘 다 가능하지만 커서로 만들면 페이지 번호가 불가능하다 — 번장 검색 API도 PageRequest(from, size, sort)로 offset이다
+  - 정렬은 연관도순(기본)·최신순 전환. 정렬이 바뀌면 순서가 달라지므로 1페이지로 되돌린다
+  - web-v1은 NewsCard가 TechNewsPage의 로컬 컴포넌트여서 components/news로 추출했다(카드 CSS가 페이지 스타일과 겹치지 않아 깨끗하게 분리됨) — web-v2와 같은 위치가 되어 구조도 맞아졌다
+  - 함정: 결과 목록에 PostCard를 쓰면서 react-query가 필요해져 기존 검색 페이지 테스트가 깨졌다(QueryClient 없음 → renderWithProviders로 교체 → 그 Provider가 usePathname을 참조해 모킹 추가)
+  - 테스트: web-v2 206 / web-v1 199 전체 통과, 빌드 통과

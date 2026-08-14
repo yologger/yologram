@@ -1,0 +1,27 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.count {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.empty {
+  padding: 48px 0;
+}
