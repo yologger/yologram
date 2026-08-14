@@ -292,4 +292,8 @@
   - 같은 뿌리의 선례가 이미 있었다: 조회 이벤트의 occurredAt이 UTC 벽시계라 하루 경계가 KST 09:00이 되고, 이력 정리 임계를 UTC로 잡아야 했던 문제(위 항목). 그때는 우회했고 이번에 근본을 고쳤다
   - 방향은 UTC 통일이 아니라 KST 통일을 택했다 — 번장 전 서비스(bun-pms-api·bun-myhome-api·bun-video-api·bun-proshop-worker 등)가 예외 없이 Application.kt에서 KST를 고정하는 방식이고, 국내 서비스라 UTC를 경유할 이유가 없다. 변환 지점이 없으면 변환 실수도 없다. UTC로 가면 이미 저장된 값의 의미가 바뀌어 마이그레이션 판단이 더 커진다
   - api-v1은 App.kt에서 TimeZone.setDefault, api-v2는 Dockerfile ENV TZ=Asia/Seoul (Python은 코드가 아니라 환경변수로 잡는다. python:3.12-slim에 tzdata가 포함돼 있어 추가 설치가 필요 없음을 컨테이너로 실측 확인)
-  - 기존 데이터는 배포 후 +9시간 UPDATE로 보정(tech_post·tech_post_comment·user·admin_user·tech_category·tech_news_source). worker가 쓰는 tech_news·tech_post_view 계열은 이미 KST라 대상이 아니다. 순서가 중요하다 — SQL을 먼저 돌리면 배포 전까지 생성된 데이터가 다시 어긋난다
+  - 기존 데이터는 배포 후 +9시간 UPDATE로 보정(tech_post·tech_post_comment·user·admin_user·tech_category·tech_news_source). 순서가 중요하다 — SQL을 먼저 돌리면 배포 전까지 생성된 데이터가 다시 어긋난다
+  - tech_post_view.occurred_at도 대상이었다 — worker가 저장하지만 값을 만든 건 api-v1이라 UTC 벽시계였다. "worker 소유 테이블은 이미 KST"라는 첫 판단이 틀렸고, 소유자가 아니라 값을 만든 주체를 봐야 했다
+  - 보정 중 tech_post·tech_post_comment에만 +9가 두 번 적용됐다. 판정 근거 두 가지 — ①배포 전 API로 관측해둔 값(tech_post#1200 = 05:23:50) 대비 +18h인데 admin_user는 +9h였다 ②tech_post_view는 view_key에 발급 당시 날짜가 박혀 한 번만 적용됐음이 자명한데, 그 조회 기록과 댓글 시각이 9시간 벌어져 있었다. -9h로 되돌리자 21:16~21:30 한 세션으로 인터리브됐다(view→comment→view→comment). 되돌리기 전 90행 원본 값을 파일로 백업
+  - 교훈: 이런 보정은 "배포 전 관측값"을 남겨두면 사후 판정이 가능하다. 관측값이 없던 user·tech_category는 인접 구문(admin_user)의 판정과 테이블 간 정합성(tech_news_source 등록 19:24 → 첫 수집 19:50, 26분 간격)으로 간접 판정했다
+  - 최종 검증: DB·api-v1·OpenSearch 3자가 게시글 1200·1199·1175에서 모두 일치. 재인덱싱 86건, DLQ 0
