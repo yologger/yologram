@@ -12,8 +12,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class SearchExceptionHandler {
 
-    @ExceptionHandler(InvalidIndexRangeException::class)
-    fun handleInvalidIndexRange(e: InvalidIndexRangeException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(
+        InvalidIndexRangeException::class,
+        BlankSearchKeywordException::class,
+        SearchPageTooDeepException::class,
+    )
+    fun handleBadRequest(e: SearchException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
 }

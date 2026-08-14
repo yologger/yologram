@@ -10,6 +10,15 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
 
+# 검색 엔진 (셀프호스팅 OpenSearch) — prod는 접속 3개를 Parameter Store에서 주입.
+# enabled=false면 클라이언트·검색 서비스·검색 API 빈을 만들지 않는다 (로컬이 prod 인덱스를 건드리지 못하게)
+opensearch:
+  main:
+    enabled: false
+    uri:
+    username:
+    password:
+
 cache:
   data:
     redis:

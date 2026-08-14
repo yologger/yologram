@@ -52,6 +52,12 @@ dependencies {
     // Logging
     implementation("io.github.oshai:kotlin-logging-jvm:6.0.3")
 
+    // 검색 (셀프호스팅 OpenSearch) — worker와 같은 클라이언트를 쓴다.
+    // httpclient5는 opensearch-java의 transport 구현이고 클라이언트가 optional 의존으로 두어 직접 선언한다.
+    // 버전은 Spring Boot BOM에 맡긴다 (직접 박으면 BOM의 httpcore5-h2와 어긋나 런타임에 NoSuchMethodError)
+    implementation("org.opensearch.client:opensearch-java:2.25.0")
+    implementation("org.apache.httpcomponents.client5:httpclient5")
+
     // Observability
     implementation("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.15.0-alpha")
     implementation("io.micrometer:micrometer-registry-otlp")

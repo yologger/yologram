@@ -313,3 +313,13 @@
   - web-v1은 NewsCard가 TechNewsPage의 로컬 컴포넌트여서 components/news로 추출했다(카드 CSS가 페이지 스타일과 겹치지 않아 깨끗하게 분리됨) — web-v2와 같은 위치가 되어 구조도 맞아졌다
   - 함정: 결과 목록에 PostCard를 쓰면서 react-query가 필요해져 기존 검색 페이지 테스트가 깨졌다(QueryClient 없음 → renderWithProviders로 교체 → 그 Provider가 usePathname을 참조해 모킹 추가)
   - 테스트: web-v2 206 / web-v1 199 전체 통과, 빌드 통과
+- [x] (Search) 게시글 검색 엔드포인트 — api-v1 (GET /search/tech/posts)
+  - multi_match(title^2·content)로 nori 형태소 기준 검색. 제목 가중치 2배 — 제목이 맞는 글이 본문만 맞는 글보다 위로 온다. 실측: "쿠"는 0건이고 "쿠쿠쿠"는 1건(형태소 토큰이 맞아야 걸린다), "게시글" 44건·"내용" 7건
+  - 페이징은 offset(page→from). 프론트가 페이지 네비게이션을 쓰고 총건수·페이지 수가 필요하다. max_result_window(10000) 초과는 SEARCH_PAGE_TOO_DEEP(400)으로 끊는다 — 방치하면 엔진 예외가 500이 된다
+  - trackTotalHits(true): 기본값이면 10000건에서 카운트가 고정돼 마지막 페이지가 틀어진다
+  - 정렬 RELEVANCE(_score→createdAt) / LATEST(createdAt→_score). 2차 키를 둔 이유는 동점 시 순서가 흔들려 페이징에서 중복·누락이 생기는 것을 막는 것. 실측으로 두 정렬이 다른 순서를 내는 것 확인
+  - 색인에 없는 두 값은 응답 조립 시 채운다 — 닉네임(ums 배치, Redis cache-aside)·likedByMe(좋아요 이력 배치). 개인화 값은 문서에 담을 수 없고 닉네임은 변경 시 재색인이 필요해서다. 왕복은 결과 건수와 무관하게 고정(OpenSearch 1 + 좋아요 1 + 닉네임 1) — 번장도 pipeline/resultenhancer로 같은 구조를 쓴다
+  - alias(tech-post-index)만 참조 — 실제 인덱스명을 쓰면 무중단 재색인 전략이 깨진다
+  - 응답은 목록 API와 같은 스키마(TechPostSummaryResponse) + ApiEnvelopPage. 프론트가 같은 카드를 재사용한다
+  - 조건부 빈(opensearch.main.enabled)이라 통합 테스트에서 컨트롤러가 등록되지 않아 404가 났다 — @TestPropertySource로 켜서 해결. worker에서 조건부 빈 때문에 배포 후에야 mapper 문제를 발견한 선례가 있어 문서 역직렬화 계약도 단위 테스트로 고정했다
+  - 테스트 34개(검증·페이지 계산·응답 조립·개인화·역직렬화 계약) 통과. 로컬 prod 프로파일로 실 OpenSearch 조회·정렬·페이징·400 4종 실측

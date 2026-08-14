@@ -46,7 +46,9 @@
   - [ ] worker 소비 prod 검증 — worker 배포 → 큐에 쌓인 작업 소비 → 인덱스·alias 생성, 문서 수, DLQ 확인 (SSM 자격증명은 입력 완료, admin 계정으로 인증 확인)
   - [x] 어드민 인덱싱 페이지 (admin-web) — 전체·범위·단건 3블록 (완료, done.md)
   - [x] api-v2 인덱싱 발행 미러링 — 소비는 worker 단일. 검색 엔드포인트는 확정 후 별도 미러링 (완료, done.md)
-  - [ ] 검색 API(api-v1): 키워드/카테고리/섹션 검색·필터·정렬·집계
+  - [x] 검색 API(api-v1) — 키워드 검색·정렬·offset 페이징 (done.md). 카테고리 필터·집계는 필요 시 추가
+  - [ ] 검색 API api-v2 미러링
+  - [ ] ValidationExceptionHandler 로그 레벨 — 400(파라미터 누락·enum 변환 실패)을 ERROR로 남겨 실제 서버 오류를 가린다. WARN이 적절
   - [x] web-v1·v2 검색 결과 UI — 대상별 탭(커뮤니티·뉴스)·페이지 네비게이션·정렬 전환 (목 데이터, done.md)
   - [ ] web-v1·v2 검색 결과 실데이터 연결 — searchResultMock.ts를 검색 API 쿼리로 교체
   - [ ] 뉴스 인덱싱·검색 — tech-news-index 신설(게시글과 별도 인덱스), 검색 결과 뉴스 탭 연결

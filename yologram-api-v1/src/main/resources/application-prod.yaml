@@ -39,3 +39,11 @@ database:
       properties:
         hibernate.hbm2ddl.auto: validate
       show-sql: false
+
+opensearch:
+  main:
+    enabled: true   # 스위치는 yaml (환경별 고정값 — SSM에 두면 값 하나 바꾸려고 파라미터를 고쳐야 한다)
+    # Parameter Store 주입 (/yologram/service/yologram-api-v1_prod/opensearch.main.*)
+    uri:
+    username:
+    password:
