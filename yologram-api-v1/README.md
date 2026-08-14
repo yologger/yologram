@@ -15,6 +15,7 @@ Spring Boot MVC (Kotlin) API 서버.
 - Auth0 java-jwt (JWT)
 - kotlin-logging (로깅)
 - springdoc-openapi (Swagger)
+- OpenSearch Java Client 2.25.0 + httpclient5 (게시글 검색 — nori 형태소, alias 참조)
 - OpenTelemetry: micrometer-registry-otlp, micrometer-tracing-bridge-otel, opentelemetry-logback-appender
 - AWS SDK v2 (SES), Spring Cloud AWS (Parameter Store)
 

@@ -11,6 +11,7 @@ FastAPI 기반 API 서버.
 - 도메인 경계: app/infra/client/{대상도메인}의 ApiClient — 타 도메인 DB 접근은 이 층에서만 (api-v1 규칙 미러)
 - bcrypt (비밀번호 해싱), PyJWT (JWT)
 - boto3 (AWS SES)
+- opensearch-py (게시글 검색 — nori 형태소, alias 참조)
 - OpenTelemetry SDK + OTLP exporter (logs/metrics/traces) + FastAPI·system-metrics 자동 계측
 - ApiEnvelop 응답 래퍼, AppException 예외 처리, CORS 전체 허용
 - Dockerfile (python:3.12-slim multi-stage)
