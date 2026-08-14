@@ -5,6 +5,7 @@ import org.apache.hc.client5.http.auth.UsernamePasswordCredentials
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider
 import org.apache.hc.core5.http.HttpHost
 import org.opensearch.client.opensearch.OpenSearchClient
+import org.opensearch.client.transport.OpenSearchTransport
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -26,8 +27,13 @@ import java.net.URI
 @ConditionalOnProperty(prefix = "opensearch.main", name = ["enabled"], havingValue = "true")
 class OpenSearchConfig {
 
+    /**
+     * 커넥션 풀을 쥐고 있는 쪽은 transport다 — 클라이언트가 아니라 여기에 destroyMethod를 건다.
+     * OpenSearchClient에는 close()가 없어 클라이언트 빈에 걸면 기동 시점에
+     * "Could not find a destroy method named 'close'"로 컨텍스트가 죽는다.
+     */
     @Bean(destroyMethod = "close")
-    fun openSearchClient(properties: OpenSearchProperties): OpenSearchClient {
+    fun openSearchTransport(properties: OpenSearchProperties): OpenSearchTransport {
         val uri = URI(properties.uri)
         val host = HttpHost(uri.scheme, uri.host, if (uri.port == -1) defaultPort(uri.scheme) else uri.port)
 
@@ -38,14 +44,15 @@ class OpenSearchConfig {
             )
         }
 
-        val transport = ApacheHttpClient5TransportBuilder.builder(host)
+        return ApacheHttpClient5TransportBuilder.builder(host)
             .setHttpClientConfigCallback { builder ->
                 builder.setDefaultCredentialsProvider(credentialsProvider)
             }
             .build()
-
-        return OpenSearchClient(transport)
     }
+
+    @Bean
+    fun openSearchClient(transport: OpenSearchTransport): OpenSearchClient = OpenSearchClient(transport)
 
     private fun defaultPort(scheme: String) = if (scheme == "https") 443 else 80
 }

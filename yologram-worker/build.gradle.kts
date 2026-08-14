@@ -63,8 +63,10 @@ dependencies {
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
     // OpenSearch 공식 Java 클라이언트. 레거시가 쓰던 RestHighLevelClient는 지원 종료 계열이라 채택하지 않는다
     implementation("org.opensearch.client:opensearch-java:2.25.0")
-    // opensearch-java의 transport 구현 — 클라이언트가 optional 의존으로 두어 직접 선언해야 한다
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.1")
+    // opensearch-java의 transport 구현 — 클라이언트가 optional 의존으로 두어 직접 선언해야 한다.
+    // 버전은 Spring Boot BOM에 맡긴다: 직접 박으면(5.4.1) BOM이 관리하는 httpcore5-h2와 어긋나
+    // 런타임에 NoSuchMethodError(ClientH2UpgradeHandler.<init>)가 난다
+    implementation("org.apache.httpcomponents.client5:httpclient5")
 
     // Kinesis
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies:2025.0.0"))
