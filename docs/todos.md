@@ -52,7 +52,8 @@
   - [x] web-v1·v2 검색 결과 UI — 대상별 탭(커뮤니티·뉴스)·페이지 네비게이션·정렬 전환 (목 데이터, done.md)
   - [x] web-v1·v2 검색 결과 실데이터 연결 — 커뮤니티 탭 (done.md). 뉴스 탭은 색인 후 연결
   - [ ] 뉴스 인덱싱·검색 — tech-news-index 신설(게시글과 별도 인덱스), 검색 결과 뉴스 탭 연결
-  - [ ] 무중단 재색인 — 현재 색인이 alias로 나가 v2를 먼저 채울 수 없다(alias를 옮긴 뒤 채우므로 그 사이 검색 0건). 색인 대상을 실제 인덱스명으로 바꾸면 v2를 채운 뒤 alias만 이동하면 된다. 데이터가 늘어 재색인이 길어지면 필요
+  - [ ] worker 인덱스 자동 생성 alias 충돌 — v2를 만들 때 alias에 isWriteIndex(true)를 붙이는데 기존 버전이 이미 write index라 충돌하고, runCatching이 예외를 삼켜 조용히 실패한다(v1→v2 전환에서 수동으로 넘겼다). 새 버전은 alias 없이 만들고 이동은 운영 절차(_reindex → alias 원자적 이동)로 분리할 것
+  - [ ] 검색 정확도 — operator AND라 여러 단어 검색이 엄격하다("검색 기능을" 0건). 문서가 늘면 minimum_should_match나 bool should(nori AND + standard) 조합 재검토
   - [ ] User 인덱싱 (후순위 — 게시글 검색이 끝난 뒤)
   - [ ] 프론트 이관: 공개 다건 탐색 → search (단건·쓰기·내 글은 pms 유지)
   - [ ] 키워드 검색 실데이터 연동 — web-v1/v2 검색바·/{section}/keywords/{키워드} 페이지(placeholder 구현 완료, done.md)에 결과 목록 연결. 1차 DB LIKE(pms/news q 파라미터) 또는 OpenSearch 도입과 함께 결정
