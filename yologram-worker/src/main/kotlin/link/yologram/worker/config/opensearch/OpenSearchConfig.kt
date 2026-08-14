@@ -4,6 +4,8 @@ import org.apache.hc.client5.http.auth.AuthScope
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider
 import org.apache.hc.core5.http.HttpHost
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.opensearch.client.json.jackson.JacksonJsonpMapper
 import org.opensearch.client.opensearch.OpenSearchClient
 import org.opensearch.client.transport.OpenSearchTransport
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder
@@ -33,7 +35,7 @@ class OpenSearchConfig {
      * "Could not find a destroy method named 'close'"로 컨텍스트가 죽는다.
      */
     @Bean(destroyMethod = "close")
-    fun openSearchTransport(properties: OpenSearchProperties): OpenSearchTransport {
+    fun openSearchTransport(properties: OpenSearchProperties, objectMapper: ObjectMapper): OpenSearchTransport {
         val uri = URI(properties.uri)
         val host = HttpHost(uri.scheme, uri.host, if (uri.port == -1) defaultPort(uri.scheme) else uri.port)
 
@@ -48,6 +50,12 @@ class OpenSearchConfig {
             .setHttpClientConfigCallback { builder ->
                 builder.setDefaultCredentialsProvider(credentialsProvider)
             }
+            // Spring Boot가 구성한 ObjectMapper를 넘긴다 — JacksonJsonpMapper의 기본 ObjectMapper는
+            // Java 8 날짜 타입을 모르는 상태(공식 USER_GUIDE: "by default supports Java 7 objects")라
+            // LocalDateTime을 담은 문서를 색인하는 순간 직렬화가 실패한다.
+            // Boot의 것은 JavaTimeModule이 등록되고 WRITE_DATES_AS_TIMESTAMPS가 꺼져 있어
+            // 매핑의 date_optional_time과 맞는 ISO-8601 문자열로 나간다
+            .setMapper(JacksonJsonpMapper(objectMapper))
             .build()
     }
 
