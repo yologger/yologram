@@ -297,3 +297,11 @@
   - 보정 중 tech_post·tech_post_comment에만 +9가 두 번 적용됐다. 판정 근거 두 가지 — ①배포 전 API로 관측해둔 값(tech_post#1200 = 05:23:50) 대비 +18h인데 admin_user는 +9h였다 ②tech_post_view는 view_key에 발급 당시 날짜가 박혀 한 번만 적용됐음이 자명한데, 그 조회 기록과 댓글 시각이 9시간 벌어져 있었다. -9h로 되돌리자 21:16~21:30 한 세션으로 인터리브됐다(view→comment→view→comment). 되돌리기 전 90행 원본 값을 파일로 백업
   - 교훈: 이런 보정은 "배포 전 관측값"을 남겨두면 사후 판정이 가능하다. 관측값이 없던 user·tech_category는 인접 구문(admin_user)의 판정과 테이블 간 정합성(tech_news_source 등록 19:24 → 첫 수집 19:50, 26분 간격)으로 간접 판정했다
   - 최종 검증: DB·api-v1·OpenSearch 3자가 게시글 1200·1199·1175에서 모두 일치. 재인덱싱 86건, DLQ 0
+- [x] (Search) 어드민 인덱싱 페이지 (admin-web) + api-v2 인덱싱 미러링
+  - admin-web: 전체(확인 모달 — 게시글 수에 비례한 부하 경고)·범위(from~to)·단건(id) 세 블록. 세 요청 모두 202라 "발행됨"까지만 알리고 진행률은 표시하지 않는다 — 큐 깊이를 노출하는 엔드포인트가 없어서다(필요해지면 상태 조회 API를 추가). 「검색 관리」 메뉴 섹션 신설
+  - 범위 검증은 프론트에서 중복하지 않고 서버 400(INVALID_INDEX_RANGE) 메시지를 그대로 노출한다 — 규칙이 한 곳에만 있는 편이 어긋날 여지가 없다
+  - api-v2 미러링: publisher/message(계약 + SQS 발행자, 큐 URL 캐시, 실패 전파)·service(20건 청크·max(id) 전체)·router(PUT 3개 202 + 어드민 가드). 메시지 본문은 api-v1(Jackson)과 바이트 수준 동일(`{"target":"TECH_POST","from":1,"to":1}`)하도록 separators로 공백을 제거했고 테스트로 고정
+  - api-v1의 @Async("sqsTaskExecutor")에 대응하는 것은 FastAPI BackgroundTasks다 — 전체 인덱싱만 넘기고 즉시 202. 백그라운드 예외도 호출자에게 전달되지 않으므로 동기 full_index는 실패를 전파하고 백그라운드 진입점만 삼킨다(양쪽을 각각 테스트로 고정)
+  - api-v2는 코드가 아니라 컨테이너 ENV로 스위치를 준다(POST_INDEX_PUBLISH_ENABLED/QUEUE, Dockerfile). IAM sqs-send 정책은 인프라 작업에서 미리 넣어둬 tf 변경이 없었다
+  - 경로 파라미터 타입 오류는 api-v2도 400이다 — ValidationExceptionHandler가 FastAPI의 422를 400으로 매핑해 api-v1과 동작이 같다(테스트로 확인)
+  - 테스트: admin-web 신규 8개(총 132, 상단 메뉴 개수 검증을 5→6으로 갱신) / api-v2 신규 38개(총 485). 빌드 통과

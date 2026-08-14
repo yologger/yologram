@@ -4,6 +4,7 @@ import RequireAuth from './components/auth/RequireAuth'
 import LoginPage from './pages/auth/LoginPage'
 import AdminUsersPage from './pages/ums/AdminUsersPage'
 import NewsSourcesPage from './pages/news/NewsSourcesPage'
+import PostIndexingPage from './pages/search/PostIndexingPage'
 import ComingSoon from './components/common/ComingSoon'
 
 /**
@@ -28,6 +29,14 @@ export default function Router() {
           <Route path="/news/invest" element={<ComingSoon title="투자 뉴스 관리" />} />
           <Route path="/news/politics" element={<ComingSoon title="정치 뉴스 관리" />} />
           <Route path="/news/tech/sources" element={<NewsSourcesPage />} />
+          <Route path="/search" element={<Navigate to="/search/tech/posts/indexing" replace />} />
+          <Route
+            path="/search/tech/posts/indexing"
+            element={<PostIndexingPage section="tech" sectionLabel="기술" />}
+          />
+          {/* 투자·정치는 게시판 자체가 미구현이라 인덱싱 API도 없다 — 백엔드가 생기면 위와 같은 형태로 교체 */}
+          <Route path="/search/invest/posts/indexing" element={<ComingSoon title="투자 게시글 인덱싱" />} />
+          <Route path="/search/politics/posts/indexing" element={<ComingSoon title="정치 게시글 인덱싱" />} />
           <Route path="*" element={<Navigate to="/notices" replace />} />
         </Route>
       </Route>

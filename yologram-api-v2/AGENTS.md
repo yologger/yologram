@@ -13,6 +13,7 @@ FastAPI 기반 API 서버. ECS Fargate에서 운영.
 - app/config/database.py: engine, SessionLocal, get_db
 - app/config/logging.py · metrics.py · tracing.py: OTLP 로그/메트릭/트레이스
 - app/domain/pms/tech/publisher/event/: 조회 이벤트 발행 (api-v1 미러) — post_view_event.py(계약, api-v1·worker와 문자열 미러) + post_view_event_publisher.py(put_record, PartitionKey=post_id, 예외 삼킴, 클라이언트 lazy 생성). 스위치는 POST_VIEW_PUBLISH_ENABLED/POST_VIEW_PUBLISH_STREAM
+- app/domain/search/tech/: 검색 인덱싱 요청 (api-v1 미러) — publisher/message/(계약 + SqsTechPostIndexMessagePublisher: 큐 URL 캐시, 조회 이벤트와 달리 실패를 전파한다), service.py(20건 청크 분할·max(id) 기반 전체), router.py(PUT /search/admin/tech/posts/indexing{,/{id},/{from}/{to}} 전부 202 + 어드민 가드). 전체 인덱싱만 BackgroundTasks로 넘긴다(api-v1의 @Async에 대응 — 발행 루프를 요청 처리 중에 돌리면 게이트웨이 타임아웃). 실제 색인은 하지 않는다(worker 담당). 스위치는 POST_INDEX_PUBLISH_ENABLED/POST_INDEX_PUBLISH_QUEUE, SDK 클라이언트는 config/sqs.py
 - app/infra/client/{ums,cms,pms,comment}: 도메인 간 경계 클라이언트 — {대상도메인}ApiClient(Protocol) + Local 구현 (api-v1 미러)
 - app/infra/cache/ + config/redis.py: Valkey 캐시 — cache-aside(UserNicknameCache·TechNewsFirstPageCache), 전 연산 예외 삼킴(DB 폴백), 1초 타임아웃. 키·JSON api-v1과 바이트 호환 — 닉네임 ums:users:v1:nickname:{uid}(TTL 1h), 뉴스 첫 페이지 news:tech:v1:first-page:{category|all}:{size}(TTL 3분, worker UNLINK 무효화·camelCase envelope). 설정 CACHE_REDIS_HOST/PORT(로컬 .env 16379)
 - app/domain/ums: AuthService(JWT 로그인/로그아웃/검증), UserService(가입/수정/비번변경/탈퇴), UserEmailVerificationService + EmailSender(Stub/Ses), UserPasswordResetService

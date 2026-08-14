@@ -72,12 +72,12 @@ describe('AdminLayout (데스크탑)', () => {
     mockUseIsMobile.mockReturnValue(false)
   })
 
-  it('상단 바에 로고와 최상위 메뉴 5개를 순서대로 렌더한다', () => {
+  it('상단 바에 로고와 최상위 메뉴 6개를 순서대로 렌더한다', () => {
     renderLayout()
     const header = getHeader()
     expect(within(header).getByText('yologram admin')).toBeInTheDocument()
     const topLabels = Array.from(header.querySelectorAll('li.ant-menu-item')).map((li) => li.textContent)
-    expect(topLabels).toEqual(['공지', '유저 관리', '게시글 관리', '뉴스 관리', '카테고리 관리'])
+    expect(topLabels).toEqual(['공지', '유저 관리', '게시글 관리', '검색 관리', '뉴스 관리', '카테고리 관리'])
   })
 
   it('현재 경로가 속한 최상위 메뉴가 상단 바에서 선택 상태다', () => {

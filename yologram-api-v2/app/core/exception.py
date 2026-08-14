@@ -150,6 +150,11 @@ class TechNewsSourceDuplicateException(AppException):
         super().__init__(409, "이미 등록된 뉴스 소스 URL입니다.", "NEWS_SOURCE_DUPLICATE")
 
 
+class InvalidIndexRangeException(AppException):
+    def __init__(self):
+        super().__init__(400, "인덱싱 범위가 유효하지 않습니다.", "INVALID_INDEX_RANGE")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:

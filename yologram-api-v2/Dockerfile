@@ -17,4 +17,8 @@ ENV TZ=Asia/Seoul
 # 로컬 실행(uvicorn·scripts/run-prod.sh)은 이 변수가 없어 빈 값 = 발행 스킵
 ENV POST_VIEW_PUBLISH_ENABLED=true
 ENV POST_VIEW_PUBLISH_STREAM=yologram-post-view-event-prod
+# 검색 인덱싱 작업 발행 (SQS) — api-v1 yologram.messages.publish.post-index.{enabled,queue}에 대응.
+# IAM은 태스크 롤의 sqs-send 정책(SendMessage·GetQueueUrl만)이 담당한다
+ENV POST_INDEX_PUBLISH_ENABLED=true
+ENV POST_INDEX_PUBLISH_QUEUE=yologram-search-indexing-prod
 ENTRYPOINT ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000"]

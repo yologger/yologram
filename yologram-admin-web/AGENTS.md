@@ -20,6 +20,7 @@ React 기반 어드민 웹. 유저/카테고리/게시글/뉴스 관리 기능�
 - src/pages/auth/LoginPage.tsx: 로그인 (어드민은 회원가입·비밀번호찾기 없음)
 - src/pages/ums/AdminUsersPage.tsx + apis/adminUsers.ts: 어드민 관리 — 목록 Table(서버사이드 페이지네이션·역할 Tag(OWNER gold)·이메일 옆 '나' Tag·본인/OWNER 삭제 비활성·상태는 OWNER에게 Switch 토글(ADMIN에겐 읽기 전용 Tag))·추가 Modal·삭제 confirm
 - src/pages/news/NewsSourcesPage.tsx + apis/newsSources.ts + queries/useNewsSources*·use*NewsSourceMutation: 뉴스 소스 관리 — 목록 Table·추가/수정 Modal·삭제 confirm·활성 Switch 토글(실패 시 쿼리 기반 자동 원복)
+- src/pages/search/PostIndexingPage.tsx + apis/postIndexing.ts + queries/useIndex*Mutation: 게시글 검색 인덱싱 — 전체(확인 모달)·범위(from~to)·단건(id) 세 블록. 세 요청 모두 202라 "발행됨"까지만 알리고 진행률은 표시하지 않는다(큐 깊이 조회 API가 없다). 범위 검증은 프론트에서 중복하지 않고 서버 400(INVALID_INDEX_RANGE) 메시지를 그대로 노출
 
 ## 작업 규칙
 

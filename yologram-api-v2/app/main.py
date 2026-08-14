@@ -13,6 +13,7 @@ from app.domain.comment.tech.router import router as tech_comment_router
 from app.domain.news.tech.admin_router import router as admin_tech_news_source_router
 from app.domain.news.tech.router import router as tech_news_router
 from app.domain.pms.tech.router import router as tech_post_router
+from app.domain.search.tech.router import router as admin_tech_post_indexing_router
 from app.domain.test.router import router as test_router
 from app.domain.ums.admin_router import router as admin_router
 from app.domain.ums.auth_router import router as auth_router
@@ -46,3 +47,4 @@ app.include_router(admin_tech_news_source_router)
 app.include_router(tech_category_router)
 app.include_router(tech_post_router)
 app.include_router(tech_comment_router)
+app.include_router(admin_tech_post_indexing_router)

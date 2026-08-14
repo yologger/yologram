@@ -6,6 +6,7 @@ import {
   TagsOutlined,
   FileTextOutlined,
   NotificationOutlined,
+  SearchOutlined,
 } from '@ant-design/icons'
 
 export interface MenuChild {
@@ -50,6 +51,22 @@ export const MENU_SECTIONS: MenuSection[] = [
     icon: <FileTextOutlined />,
     label: '게시글 관리',
     children: [{ key: '/posts', label: '게시글 관리' }],
+  },
+  {
+    key: '/search',
+    icon: <SearchOutlined />,
+    label: '검색 관리',
+    children: [
+      {
+        key: 'post-indexing',
+        label: '게시글 인덱싱',
+        children: [
+          { key: '/search/tech/posts/indexing', label: '기술' },
+          { key: '/search/politics/posts/indexing', label: '정치' },
+          { key: '/search/invest/posts/indexing', label: '투자' },
+        ],
+      },
+    ],
   },
   {
     key: '/news',

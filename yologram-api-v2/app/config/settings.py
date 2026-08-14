@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     post_view_publish_enabled: bool = False
     post_view_publish_stream: str = ""
 
+    # 검색 인덱싱 작업 발행(SQS) — 위 Kinesis 발행과 같은 규칙(기본 비활성, prod만 Dockerfile ENV로 주입).
+    # api-v1의 yologram.messages.publish.post-index.{enabled,queue}에 대응
+    post_index_publish_enabled: bool = False
+    post_index_publish_queue: str = ""
+
     # OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS는
     # OpenTelemetry SDK가 자동으로 읽음 (ECS secrets에서 주입)
 

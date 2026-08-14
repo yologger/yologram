@@ -24,6 +24,12 @@ class TechPostRepository:
         self.db.refresh(post)
         return post
 
+    def find_max_id(self) -> int | None:
+        """전체 인덱싱 범위 상한 — 글이 없으면 None.
+        count가 아니라 max(id)인 이유: 쪼갤 대상이 개수가 아니라 id 범위이고,
+        삭제로 id에 구멍이 있으면 count 기준으로는 뒷부분이 잡히지 않는다 (api-v1·레거시 동일)."""
+        return self.db.query(func.max(TechPost.id)).scalar()
+
     def find_by_id(self, id: int) -> TechPost | None:
         return self.db.query(TechPost).filter(TechPost.id == id).first()
 
