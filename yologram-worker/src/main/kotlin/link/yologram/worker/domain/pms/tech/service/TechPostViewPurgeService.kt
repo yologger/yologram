@@ -5,7 +5,6 @@ import link.yologram.worker.domain.pms.tech.repository.TechPostViewRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionOperations
 import java.time.LocalDateTime
-import java.time.ZoneOffset
 
 private val logger = KotlinLogging.logger {}
 
@@ -29,11 +28,12 @@ class TechPostViewPurgeService(
      * 같은 테이블 락을 기다리게 된다. chunkSize씩 각각 별도 트랜잭션으로 커밋해 락 구간을 짧게 끊는다
      * (Fargate Spot 중단으로 중간에 끊겨도 이미 커밋된 청크는 유효 — 다음 회차가 이어서 지운다).
      *
-     * 기준 시각은 UTC로 잡는다 — 비교 대상 occurred_at이 producer(api-v1·api-v2, 컨테이너 TZ 미설정)
-     * 기준 UTC 벽시계 값이기 때문이다. 워커 JVM 기본 TZ(Asia/Seoul)로 now()를 만들면 임계가 9시간
-     * 미래로 잡혀 실제 보관이 30일이 아니라 29일 15시간이 된다.
+     * 기준 시각은 JVM 기본 TZ(KST)로 잡는다 — 비교 대상 occurred_at도 producer가 KST 벽시계로 만든다.
+     * 전에는 producer(api-v1·api-v2)의 컨테이너 TZ가 미설정이라 occurred_at이 UTC 벽시계였고
+     * 그에 맞춰 임계도 UTC로 잡는 우회가 있었다. 전 서비스 TZ를 KST로 통일하면서 그 전제가 사라졌다
+     * (docs/rules.md 「타임존」). 우회를 남겨두면 임계가 9시간 이르게 잡혀 실제 보관이 29일 15시간이 된다.
      */
-    fun purge(now: LocalDateTime = LocalDateTime.now(ZoneOffset.UTC)): PurgeResult {
+    fun purge(now: LocalDateTime = LocalDateTime.now()): PurgeResult {
         val threshold = now.minusDays(RETENTION_DAYS)
         var deleted = 0
         var chunks = 0

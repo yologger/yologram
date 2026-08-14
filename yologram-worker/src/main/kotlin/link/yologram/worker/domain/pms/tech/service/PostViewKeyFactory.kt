@@ -20,9 +20,11 @@ import java.time.LocalDateTime
  * 과소집계를 허용한다. 신원 근거가 없는 이벤트를 개별 조회로 세면 카운트를 임의로 부풀릴 수 있고,
  * 정상 경로에서는 producer가 최소한 remoteAddr은 채우므로 실제 발생 빈도가 낮다.
  *
- * 경계 정책: occurredAt은 producer 컨테이너 기준 UTC 벽시계 값이고(api-v1·api-v2 이미지 모두 TZ 미설정),
- * 오프셋 정보가 없으므로 변환하지 않고 그대로 절삭한다. 결과적으로 "하루" 경계는 KST 09:00이 된다.
- * 경계를 KST 자정으로 바꾸려면 이 파일의 viewDateOf만 수정한다 (다른 곳에 날짜 계산이 없다).
+ * 경계 정책: occurredAt은 producer가 KST 벽시계로 만든 값이고(전 서비스 TZ 통일 — docs/rules.md 「타임존」)
+ * 오프셋 정보가 없으므로 변환하지 않고 그대로 절삭한다. 따라서 "하루" 경계는 KST 자정이다.
+ * TZ 통일 전에는 producer가 UTC 벽시계를 실어 경계가 KST 09:00이었다 — 그때 발급된 키는
+ * 그 기준으로 남아 있고, 이미 멱등 키로 쓰인 값이라 소급 변경하지 않는다(경계일 1건 중복은 감수).
+ * 경계를 바꾸려면 이 파일의 viewDateOf만 수정한다 (다른 곳에 날짜 계산이 없다).
  */
 object PostViewKeyFactory {
 

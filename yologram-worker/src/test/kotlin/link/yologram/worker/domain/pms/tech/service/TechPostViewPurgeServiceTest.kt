@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionOperations
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.ZoneOffset
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -114,19 +113,20 @@ class TechPostViewPurgeServiceTest {
         }
 
         @Test
-        fun `기준 시각 기본값은 UTC다 (occurred_at과 같은 시간축)`() {
-            // 워커 JVM 기본 TZ는 Asia/Seoul이라 now()를 그대로 쓰면 임계가 9시간 미래로 잡혀
-            // 보관이 30일보다 짧아진다. occurred_at은 producer 기준 UTC 벽시계라 임계도 UTC여야 한다
+        fun `기준 시각 기본값은 JVM 기본 TZ다 (occurred_at과 같은 시간축)`() {
+            // 전 서비스 TZ를 KST로 통일해 occurred_at도 KST 벽시계다 — 임계도 같은 축이어야 한다.
+            // 통일 전에는 producer만 UTC라 임계를 UTC로 잡는 우회가 있었고, 그 우회를 남겨두면
+            // 이제는 임계가 9시간 이르게 잡혀 실제 보관이 29일 15시간이 된다
             val repository = mock<TechPostViewRepository>()
             whenever(repository.deleteOlderThan(any(), any())).thenReturn(0)
 
             val result = TechPostViewPurgeService(repository, TransactionOperations.withoutTransaction()).purge()
 
-            val expected = LocalDateTime.now(ZoneOffset.UTC).minusDays(TechPostViewPurgeService.RETENTION_DAYS)
-            // 실행 시각 차이를 허용하되 KST 오차(9시간)는 걸러낼 수 있는 폭
+            val expected = LocalDateTime.now().minusDays(TechPostViewPurgeService.RETENTION_DAYS)
+            // 실행 시각 차이를 허용하되 9시간 오차는 걸러낼 수 있는 폭
             assertTrue(
                 Duration.between(result.threshold, expected).abs() < Duration.ofMinutes(1),
-                "임계가 UTC 기준이 아니다: threshold=${result.threshold} expected≈$expected",
+                "임계가 JVM 기본 TZ 기준이 아니다: threshold=${result.threshold} expected≈$expected",
             )
         }
     }
