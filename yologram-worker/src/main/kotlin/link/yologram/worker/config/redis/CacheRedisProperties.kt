@@ -1,4 +1,4 @@
-package link.yologram.worker.config
+package link.yologram.worker.config.redis
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

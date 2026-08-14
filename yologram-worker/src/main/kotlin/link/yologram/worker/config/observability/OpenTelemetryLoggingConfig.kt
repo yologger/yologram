@@ -1,4 +1,4 @@
-package link.yologram.worker.config
+package link.yologram.worker.config.observability
 
 import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender
 import io.opentelemetry.sdk.OpenTelemetrySdk
