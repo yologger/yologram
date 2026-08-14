@@ -323,3 +323,11 @@
   - 응답은 목록 API와 같은 스키마(TechPostSummaryResponse) + ApiEnvelopPage. 프론트가 같은 카드를 재사용한다
   - 조건부 빈(opensearch.main.enabled)이라 통합 테스트에서 컨트롤러가 등록되지 않아 404가 났다 — @TestPropertySource로 켜서 해결. worker에서 조건부 빈 때문에 배포 후에야 mapper 문제를 발견한 선례가 있어 문서 역직렬화 계약도 단위 테스트로 고정했다
   - 테스트 34개(검증·페이지 계산·응답 조립·개인화·역직렬화 계약) 통과. 로컬 prod 프로파일로 실 OpenSearch 조회·정렬·페이징·400 4종 실측
+- [x] (Search) 게시글 검색 api-v2 미러링 + 비활성 응답 계약 통일(503)
+  - api-v1과 같은 계약: 경로·파라미터·camelCase 응답·에러 코드·정렬 enum이 동일. 실측으로 두 API가 같은 질의에 같은 총건수(44)·같은 순서(LATEST: 1050·1049·1048…)·검증 4종 400을 내는 것 확인
+  - api-v2 구조: document.py가 worker의 camelCase JSON을 snake_case로 매핑, repository가 질의, search_service가 페이지 계산·조립, search_router가 선택 인증. 인덱싱 서비스와 파일을 분리했다(service.py / search_service.py — 관심사가 다르다)
+  - 비활성 환경 응답을 503 SEARCH_UNAVAILABLE로 통일했다. 처음에 api-v1은 조건부 빈(404), api-v2는 조건부 라우터로 갈렸는데, 미러링 프로젝트에서 응답 코드가 다른 것은 혼란을 부르고 404는 "없는 경로"로 오해된다. api-v1은 @Lazy 빈 + ObjectProvider로 늦게 만들어 조건부를 없애고(설정이 비면 URI 파싱에서 실패하므로 기동 시점 생성을 피해야 한다) 서비스가 판정한다
+  - api-v2 조건부 라우터를 없앤 계기: 전체 테스트에서 검색 라우터 테스트만 깨졌다 — app.main이 다른 테스트에 먼저 임포트되면 그 시점엔 enabled=false라 라우터가 등록되지 않는다. conftest로 전역 환경변수를 심는 것은 테스트 편의로 프로덕션 구조를 비트는 것이라 택하지 않았다
+  - 함정: UmsApiClient가 Protocol인데 인스턴스화해 TypeError가 났다. 단위 테스트는 목을 주입해 통과하고 실제 호출에서만 드러난다 — 로컬 실측으로 잡았다
+  - 로컬 검증 중 DB 연결 실패가 두 번 있었는데 둘 다 VPN 때문이었다(RDS SG). 해제 후 정상 — 조회 IP 문제(done.md 사고 ②)와 같은 계열이라 로컬 검증 시 먼저 확인할 것
+  - 테스트: api-v2 신규 38개(총 523) / api-v1 503 케이스 추가 후 전체 통과

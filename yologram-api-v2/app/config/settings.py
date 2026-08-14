@@ -49,6 +49,14 @@ class Settings(BaseSettings):
     post_index_publish_enabled: bool = False
     post_index_publish_queue: str = ""
 
+    # 검색 (셀프호스팅 OpenSearch) — api-v1 opensearch.main.*에 대응.
+    # 스위치는 환경변수, 접속 3개는 prod에서 SSM → 컨테이너 주입.
+    # enabled=false(로컬·테스트 기본)면 검색 라우터·서비스를 등록하지 않는다
+    opensearch_main_enabled: bool = False
+    opensearch_main_uri: str = ""
+    opensearch_main_username: str = ""
+    opensearch_main_password: str = ""
+
     # OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS는
     # OpenTelemetry SDK가 자동으로 읽음 (ECS secrets에서 주입)
 

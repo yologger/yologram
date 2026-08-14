@@ -1,9 +1,11 @@
 package link.yologram.api.v1.domain.search.tech.service
 
+import link.yologram.api.v1.config.opensearch.OpenSearchProperties
 import link.yologram.api.v1.domain.pms.tech.entity.TechPostLike
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostLikeRepository
 import link.yologram.api.v1.domain.search.exception.BlankSearchKeywordException
 import link.yologram.api.v1.domain.search.exception.SearchPageTooDeepException
+import link.yologram.api.v1.domain.search.exception.SearchUnavailableException
 import link.yologram.api.v1.domain.search.tech.document.TechPostDocument
 import link.yologram.api.v1.domain.search.tech.model.TechPostSearchSort
 import link.yologram.api.v1.domain.search.tech.repository.TechPostSearchRepository
@@ -28,7 +30,10 @@ class TechPostSearchServiceTest {
     private val umsApiClient = mock<UmsApiClient>()
     private val likeRepository = mock<TechPostLikeRepository>()
 
-    private val service = TechPostSearchService(searchRepository, umsApiClient, likeRepository)
+    /** 검색 활성 상태 — 비활성이면 503으로 끊기므로 기본은 켜둔다 */
+    private val properties = OpenSearchProperties(enabled = true, uri = "https://opensearch.test")
+
+    private val service = TechPostSearchService(properties, searchRepository, umsApiClient, likeRepository)
 
     private fun document(id: Long, uid: Long = 12) = TechPostDocument(
         id = id,
@@ -43,6 +48,27 @@ class TechPostSearchServiceTest {
     private fun givenResult(docs: List<TechPostDocument>, total: Long) {
         whenever(searchRepository.search(any(), any(), any(), any()))
             .thenReturn(TechPostSearchRepository.Result(documents = docs, totalCount = total))
+    }
+
+    @Nested
+    inner class 활성_여부 {
+
+        @Test
+        fun `검색 설정이 없으면 503 예외를 던지고 질의하지 않는다`() {
+            // 조건부 빈으로 막으면 404가 되어 "없는 경로"로 오해된다 — api-v2와 같이 503으로 알린다
+            val disabled = TechPostSearchService(
+                OpenSearchProperties(enabled = false),
+                searchRepository,
+                umsApiClient,
+                likeRepository,
+            )
+
+            assertFailsWith<SearchUnavailableException> {
+                disabled.search("제미나이", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            }
+
+            verify(searchRepository, never()).search(any(), any(), any(), any())
+        }
     }
 
     @Nested

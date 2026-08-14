@@ -20,4 +20,9 @@ class SearchExceptionHandler {
     fun handleBadRequest(e: SearchException): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(e.message, e.errorCode))
     }
+
+    @ExceptionHandler(SearchUnavailableException::class)
+    fun handleSearchUnavailable(e: SearchUnavailableException): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ErrorResponse(e.message, e.errorCode))
+    }
 }

@@ -192,3 +192,29 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=500,
             content={"errorMessage": "서버 내부 오류가 발생했습니다.", "errorCode": "INTERNAL_SERVER_ERROR"},
         )
+
+
+class BlankSearchKeywordException(AppException):
+    def __init__(self):
+        super().__init__(400, "검색어를 입력해주세요.", "BLANK_SEARCH_KEYWORD")
+
+
+class SearchPageTooDeepException(AppException):
+    """
+    OpenSearch의 max_result_window(기본 10000) 초과 — from + size가 그 값을 넘으면 엔진이 예외를 낸다.
+    막지 않으면 500이 되므로 400으로 돌려준다(요청이 잘못된 것이지 서버 오류가 아니다).
+    """
+
+    def __init__(self):
+        super().__init__(400, "더 이상 조회할 수 없는 페이지입니다.", "SEARCH_PAGE_TOO_DEEP")
+
+
+class SearchUnavailableException(AppException):
+    """
+    검색 설정(opensearch.main.*)이 없는 환경에서 검색을 호출한 경우.
+    라우터는 항상 등록한다(클라이언트가 lazy라 설정 없이도 부팅된다) — 대신 호출 시점에 막고
+    "설정이 없다"는 것을 503으로 알린다(엔진 접속 실패로 500이 나는 것보다 원인이 분명하다).
+    """
+
+    def __init__(self):
+        super().__init__(503, "검색 기능을 사용할 수 없습니다.", "SEARCH_UNAVAILABLE")

@@ -4,14 +4,15 @@ import link.yologram.api.v1.domain.pms.tech.model.TechPostDetailResponse
 import link.yologram.api.v1.domain.pms.tech.model.TechPostMetrics
 import link.yologram.api.v1.domain.pms.tech.model.TechPostSummaryResponse
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostLikeRepository
+import link.yologram.api.v1.config.opensearch.OpenSearchProperties
 import link.yologram.api.v1.domain.search.exception.BlankSearchKeywordException
 import link.yologram.api.v1.domain.search.exception.SearchPageTooDeepException
+import link.yologram.api.v1.domain.search.exception.SearchUnavailableException
 import link.yologram.api.v1.domain.search.tech.document.TechPostDocument
 import link.yologram.api.v1.domain.search.tech.model.TechPostSearchSort
 import link.yologram.api.v1.domain.search.tech.repository.TechPostSearchRepository
 import link.yologram.api.v1.global.model.ApiEnvelopPage
 import link.yologram.api.v1.infra.client.ums.UmsApiClient
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -27,8 +28,8 @@ import java.time.LocalDateTime
  * 검색은 그 둘이 필요하다(docs/rules.md).
  */
 @Service
-@ConditionalOnProperty(prefix = "opensearch.main", name = ["enabled"], havingValue = "true")
 class TechPostSearchService(
+    private val openSearchProperties: OpenSearchProperties,
     private val searchRepository: TechPostSearchRepository,
     private val umsApiClient: UmsApiClient,
     private val likeRepository: TechPostLikeRepository,
@@ -41,6 +42,9 @@ class TechPostSearchService(
         sort: TechPostSearchSort,
         viewerUid: Long?,
     ): ApiEnvelopPage<TechPostSummaryResponse> {
+        // 설정이 없는 환경(로컬·테스트 기본)에서는 엔진에 붙지 않고 503으로 끊는다 (api-v2와 동일)
+        if (!openSearchProperties.enabled) throw SearchUnavailableException()
+
         val trimmed = keyword.trim()
         if (trimmed.isEmpty()) throw BlankSearchKeywordException()
 

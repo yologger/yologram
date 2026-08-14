@@ -5,7 +5,7 @@ import link.yologram.api.v1.domain.search.tech.model.TechPostSearchSort
 import org.opensearch.client.opensearch.OpenSearchClient
 import org.opensearch.client.opensearch._types.SortOrder
 import org.opensearch.client.opensearch.core.SearchRequest
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Repository
 
 /**
@@ -15,9 +15,10 @@ import org.springframework.stereotype.Repository
  * 매핑 변경 시 v2 재색인 + alias 이동으로 무중단 전환하는 전략이 깨진다.
  */
 @Repository
-@ConditionalOnProperty(prefix = "opensearch.main", name = ["enabled"], havingValue = "true")
 class TechPostSearchRepository(
-    private val client: OpenSearchClient,
+    // ObjectProvider로 늦게 꺼낸다 — 클라이언트 빈이 @Lazy라서 여기서 직접 주입하면 즉시 생성된다.
+    // 검색 설정이 없는 환경(로컬·테스트)에서도 이 리포지토리가 만들어져야 컨텍스트가 뜬다
+    private val clientProvider: ObjectProvider<OpenSearchClient>,
 ) {
 
     /** 검색 결과 — 문서 목록과 전체 매칭 수(페이지 네비게이션의 분모) */
@@ -55,7 +56,7 @@ class TechPostSearchRepository(
             .trackTotalHits { t -> t.enabled(true) }
             .build()
 
-        val response = client.search(request, TechPostDocument::class.java)
+        val response = clientProvider.getObject().search(request, TechPostDocument::class.java)
 
         return Result(
             documents = response.hits().hits().mapNotNull { it.source() },

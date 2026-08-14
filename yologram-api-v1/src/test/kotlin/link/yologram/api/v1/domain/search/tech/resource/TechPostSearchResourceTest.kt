@@ -8,6 +8,7 @@ import link.yologram.api.v1.domain.pms.tech.model.TechPostSummaryResponse
 import link.yologram.api.v1.domain.search.exception.BlankSearchKeywordException
 import link.yologram.api.v1.domain.search.exception.SearchExceptionHandler
 import link.yologram.api.v1.domain.search.exception.SearchPageTooDeepException
+import link.yologram.api.v1.domain.search.exception.SearchUnavailableException
 import link.yologram.api.v1.domain.search.tech.model.TechPostSearchSort
 import link.yologram.api.v1.domain.search.tech.service.TechPostSearchService
 import link.yologram.api.v1.domain.ums.exception.AuthTokenInvalidException
@@ -29,16 +30,12 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import java.time.LocalDateTime
 
 @WebMvcTest(TechPostSearchResource::class)
-// 검색 API·서비스는 조건부 빈(opensearch.main.enabled) — 켜지 않으면 컨트롤러가 등록되지 않아 404가 된다.
-// 실제 OpenSearch에는 붙지 않는다(서비스가 MockitoBean)
-@TestPropertySource(properties = ["opensearch.main.enabled=true"])
 @Import(
     SearchExceptionHandler::class,
     ValidationExceptionHandler::class,
@@ -205,6 +202,17 @@ class TechPostSearchResourceTest {
             mockMvc.get(baseUrl) { param("q", "  ") }.andExpect {
                 status { isBadRequest() }
                 jsonPath("$.errorCode") { value("BLANK_SEARCH_KEYWORD") }
+            }
+        }
+
+        @Test
+        fun `검색 설정이 없으면 503 SEARCH_UNAVAILABLE`() {
+            whenever(techPostSearchService.search(any(), any(), any(), any(), isNull()))
+                .thenThrow(SearchUnavailableException())
+
+            mockMvc.get(baseUrl) { param("q", "제미나이") }.andExpect {
+                status { isServiceUnavailable() }
+                jsonPath("$.errorCode") { value("SEARCH_UNAVAILABLE") }
             }
         }
 

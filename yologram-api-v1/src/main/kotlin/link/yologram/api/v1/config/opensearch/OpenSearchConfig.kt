@@ -9,10 +9,10 @@ import org.opensearch.client.json.jackson.JacksonJsonpMapper
 import org.opensearch.client.opensearch.OpenSearchClient
 import org.opensearch.client.transport.OpenSearchTransport
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Lazy
 import java.net.URI
 
 /**
@@ -26,7 +26,6 @@ import java.net.URI
  */
 @Configuration
 @EnableConfigurationProperties(OpenSearchProperties::class)
-@ConditionalOnProperty(prefix = "opensearch.main", name = ["enabled"], havingValue = "true")
 class OpenSearchConfig {
 
     /**
@@ -35,6 +34,7 @@ class OpenSearchConfig {
      * "Could not find a destroy method named 'close'"로 컨텍스트가 죽는다.
      */
     @Bean(destroyMethod = "close")
+    @Lazy
     fun openSearchTransport(properties: OpenSearchProperties, objectMapper: ObjectMapper): OpenSearchTransport {
         val uri = URI(properties.uri)
         val host = HttpHost(uri.scheme, uri.host, if (uri.port == -1) defaultPort(uri.scheme) else uri.port)
@@ -60,6 +60,7 @@ class OpenSearchConfig {
     }
 
     @Bean
+    @Lazy
     fun openSearchClient(transport: OpenSearchTransport): OpenSearchClient = OpenSearchClient(transport)
 
     private fun defaultPort(scheme: String) = if (scheme == "https") 443 else 80

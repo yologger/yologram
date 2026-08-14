@@ -92,6 +92,7 @@
 - 페이징은 offset(page→from) — 검색은 총건수·페이지 번호가 필요하고 커서로는 만들 수 없다. max_result_window(10000) 초과는 400으로 끊는다(방치하면 엔진 예외가 500이 된다)
 - 정렬에는 2차 키를 둔다 — 1차 키 동점 시 순서가 흔들리면 페이징에서 같은 문서가 두 페이지에 나오거나 빠진다
 - trackTotalHits를 켠다 — 기본값이면 10000건에서 카운트가 고정돼 마지막 페이지가 틀어진다
+- 검색 비활성(opensearch.main.enabled=false) 환경에서는 503 SEARCH_UNAVAILABLE로 응답한다 — 조건부 빈·조건부 라우터로 경로를 없애면 404가 되어 "없는 경로"로 오해된다. api-v1은 @Lazy 빈 + ObjectProvider로 늦게 만들고 서비스가 판정, api-v2는 클라이언트가 lru_cache로 lazy라 라우터를 항상 등록한다
 - 애플리케이션은 alias만 참조한다(tech-post-index) — 실제 인덱스명(-v1)을 쓰면 v2 재색인 후 alias 이동으로 무중단 전환하는 전략이 깨진다
 
 ### 비동기 (@Async)
