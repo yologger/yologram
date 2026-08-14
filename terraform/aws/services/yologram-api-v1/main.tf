@@ -133,6 +133,28 @@ resource "aws_iam_role_policy" "task_kinesis_put" {
 ################################
 ## SSM Parameter Store (prod) ##
 ################################
+
+# 검색 인덱싱 큐 발행 — 어드민 인덱싱 요청(풀·범위)과 게시글 CRUD 시 단건 메시지를 넣는다.
+# 소비는 worker 전담이라 여기에는 Send 권한만 준다(ReceiveMessage 없음)
+resource "aws_iam_role_policy" "task_sqs_send" {
+  name = "sqs-send"
+  role = aws_iam_role.task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage",
+          "sqs:GetQueueUrl",
+        ]
+        Resource = "arn:aws:sqs:ap-northeast-2:${data.aws_caller_identity.current.account_id}:yologram-search-indexing-prod"
+      }
+    ]
+  })
+}
+
 resource "aws_ssm_parameter" "jwt_secret_prod" {
   name  = "/yologram/service/yologram-api-v1_prod/yologram.auth.jwt.secret"
   type  = "SecureString"
@@ -407,4 +429,36 @@ resource "aws_apigatewayv2_route" "this" {
   api_id    = local.api_gateway_id
   route_key = "ANY /api/v1/{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.this.id}"
+}
+
+# OpenSearch(셀프호스팅, Lightsail) 접속 설정 — 검색 API 구현 전 미리 자리를 잡아둔다.
+# 지금은 이 서비스가 읽지 않는다: 인덱싱 발행은 SQS(IAM Task Role)로 끝나고 OpenSearch에 직접 붙지 않는다.
+# 검색 API를 붙일 때 yaml에서 enabled를 올리면 된다.
+# 이름은 worker와 동일(opensearch.main.*) — 같은 클러스터를 가리키는 값이 서비스마다 다른 키를 갖지 않게.
+# uri는 tf가 실제 값을 관리하고, 자격증명만 PLACEHOLDER로 두고 콘솔에서 채운다.
+# on/off 스위치(opensearch.main.enabled)는 SSM이 아니라 각 앱의 application-{env}.yaml에 둔다 — 환경별 고정값이라
+resource "aws_ssm_parameter" "opensearch_uri_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/opensearch.main.uri"
+  type  = "SecureString"
+  value = "https://opensearch.yologram.link"
+}
+
+resource "aws_ssm_parameter" "opensearch_username_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/opensearch.main.username"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "opensearch_password_prod" {
+  name  = "/yologram/service/yologram-api-v1_prod/opensearch.main.password"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

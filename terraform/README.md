@@ -18,7 +18,9 @@ aws/
     ses/                    # SES 도메인 인증 (no-reply@yologram.link)
     kinesis/                # Kinesis 스트림 (yologram-post-view-event-prod — 게시글 조회 이벤트, 1샤드)
     dynamodb/               # (테이블 정의 없음 — KCL 리스 테이블은 워커가 자동 생성, state·provider만 잔존)
-    opensearch/             # OpenSearch 2.19 t3.small.search — 코드만 있고 도메인 미생성(요금 때문에 self-host 검토 중)
+    opensearch/             # OpenSearch 관리형 — 코드만 있고 도메인 미생성(요금 때문에 self-host로 대체)
+    lightsail/opensearch/   # OpenSearch 셀프호스팅 (small_3_0 + Dashboards + Caddy, opensearch.yologram.link)
+    sqs/                    # SQS (yologram-search-indexing-prod — 검색 인덱싱 작업 + DLQ)
   services/
     yologram-api-v1/        # Spring Boot API (ECS Fargate SPOT)
     yologram-api-v2/        # FastAPI (ECS Fargate SPOT)

@@ -136,6 +136,33 @@ resource "aws_iam_role_policy" "task_kinesis_get" {
 ################################
 ## SSM Parameter Store (prod) ##
 ################################
+
+# 검색 인덱싱 큐 소비 — 메시지를 받아 DB 조회 후 OpenSearch에 bulk 인덱싱한다.
+# 발행은 api-v1·v2 몫이라 SendMessage는 주지 않는다.
+# ChangeMessageVisibility는 처리 실패 시 재시도 시점을 조정하는 데 쓴다(레거시 패턴).
+# DLQ는 SQS가 리드라이브 정책으로 직접 옮기므로 워커에 DLQ 권한이 필요하지 않다
+resource "aws_iam_role_policy" "task_sqs_receive" {
+  name = "sqs-receive"
+  role = aws_iam_role.task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:ChangeMessageVisibility",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl",
+        ]
+        Resource = "arn:aws:sqs:ap-northeast-2:${data.aws_caller_identity.current.account_id}:yologram-search-indexing-prod"
+      }
+    ]
+  })
+}
+
 resource "aws_ssm_parameter" "grafana_metrics_url_prod" {
   name  = "/yologram/service/yologram-worker_prod/management.otlp.metrics.export.url"
   type  = "String"
@@ -349,10 +376,10 @@ resource "aws_ecs_task_definition" "this" {
   # "Acquire operation took longer than the configured maximum time"(SDK 커넥션 획득 타임아웃)이 반복됐고,
   # 뉴스 배치(RSS 크롤링 + LLM 호출 read timeout 60초)와 같은 코어를 다투는 구조가 원인이었다.
   # 0.5vCPU/1GB로 상향 (Fargate Spot 월 약 $3 → $6)
-  cpu                      = "512"
-  memory                   = "1024"
-  execution_role_arn       = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecs-task-execution-role"
-  task_role_arn            = aws_iam_role.task.arn
+  cpu                = "512"
+  memory             = "1024"
+  execution_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecs-task-execution-role"
+  task_role_arn      = aws_iam_role.task.arn
 
   # portMappings 없음 — 외부 노출 불필요 (actuator는 ECS exec로 localhost:5000 접근)
   container_definitions = jsonencode([
@@ -386,5 +413,35 @@ resource "aws_ecs_service" "this" {
     subnets          = [data.aws_subnet.pub_a.id, data.aws_subnet.pub_b.id]
     security_groups  = [aws_security_group.this.id]
     assign_public_ip = true
+  }
+}
+
+# OpenSearch(셀프호스팅, Lightsail) 접속 설정 — security plugin의 basic auth.
+# uri는 tf가 실제 값을 관리하고, 자격증명만 PLACEHOLDER로 두고 콘솔에서 채운다.
+# on/off 스위치(opensearch.main.enabled)는 SSM이 아니라 각 앱의 application-{env}.yaml에 둔다 — 환경별 고정값이라
+# (tf 코드·state에 비밀이 남지 않게 — 다른 시크릿 파라미터와 동일 패턴)
+resource "aws_ssm_parameter" "opensearch_uri_prod" {
+  name  = "/yologram/service/yologram-worker_prod/opensearch.main.uri"
+  type  = "SecureString"
+  value = "https://opensearch.yologram.link"
+}
+
+resource "aws_ssm_parameter" "opensearch_username_prod" {
+  name  = "/yologram/service/yologram-worker_prod/opensearch.main.username"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "opensearch_password_prod" {
+  name  = "/yologram/service/yologram-worker_prod/opensearch.main.password"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+
+  lifecycle {
+    ignore_changes = [value]
   }
 }

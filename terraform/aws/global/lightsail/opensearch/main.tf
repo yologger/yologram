@@ -44,16 +44,39 @@ resource "aws_lightsail_instance" "opensearch" {
     mkdir -p /opt/opensearch/data
     chown -R 1000:1000 /opt/opensearch/data
 
+    # ── 비밀번호는 .env로 분리한다. compose 파일에 직접 쓰면 값의 `$`가 변수 보간으로 먹히고
+    #    `#`는 YAML 주석으로 잘린다(실측: `A$B-C`가 `A-C`로 들어가 로그인 실패).
+    #    env_file은 보간 없이 그대로 컨테이너에 전달된다
+    umask 077
+    cat > /opt/opensearch/os.env << 'ENVFILE'
+    OPENSEARCH_INITIAL_ADMIN_PASSWORD=${var.admin_password}
+    ENVFILE
+    umask 022
+
     cat > /opt/opensearch/docker-compose.yml << 'COMPOSE'
     services:
       opensearch:
         image: opensearchproject/opensearch:${var.opensearch_version}
         restart: always
+        # nori(한국어 형태소 분석기)는 공식 이미지에 없다 — standard analyzer는 한글을 글자 단위로 쪼개
+        # 키워드 검색이 무의미해지므로 기동 시 설치한다.
+        # 이미지를 빌드하지 않는 이유: docker compose v5의 build는 buildx 0.17+를 요구하고
+        # compose 플러그인만 설치한 환경에서 "compose build requires buildx" 로 실패한다(실측).
+        # 설치는 멱등이라(list로 확인 후 install) 컨테이너 재시작에도 안전하다
+        command:
+          - sh
+          - -c
+          - |
+            if ! ./bin/opensearch-plugin list | grep -q analysis-nori; then
+              ./bin/opensearch-plugin install --batch analysis-nori
+            fi
+            exec ./opensearch-docker-entrypoint.sh
+        env_file:
+          - ./os.env
         environment:
           - discovery.type=single-node
           - bootstrap.memory_lock=true
           - "OPENSEARCH_JAVA_OPTS=-Xms${var.opensearch_heap} -Xmx${var.opensearch_heap}"
-          - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${var.admin_password}
         ulimits:
           memlock: { soft: -1, hard: -1 }
           nofile: { soft: 65536, hard: 65536 }
