@@ -13,6 +13,8 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - src/main/kotlin/.../config/observability/OpenTelemetryLoggingConfig.kt: OTEL logback 초기화
 - src/main/kotlin/.../config/database/QuerydslConfig.kt: JPAQueryFactory 빈
 - src/main/kotlin/.../domain/pms/tech/publisher/event/: 조회 이벤트 발행 — PostViewEvent(계약, worker와 문자열 미러) + PostViewEventPublisher(PutRecord, partitionKey=postId, 실패 삼킴). 스위치는 yologram.events.publish.post-view.{enabled,stream}(EventPublishProperties) — 기본 비활성이라 로컬·테스트는 발행 스킵. SDK 클라이언트 빈은 config/kinesis/KinesisConfig(리전 명시·타임아웃 1s)
+- src/main/kotlin/.../domain/search/tech/: 검색 인덱싱 요청 — publisher/message(TechPostIndexMessage 계약, worker와 문자열 미러 + Publisher — SQS SendMessage, 큐 URL 캐시. 조회 이벤트와 달리 실패를 전파한다: 어드민이 명시 요청한 작업), service/AdminTechPostIndexingService(범위를 20건 청크로 쪼개 발행 — 가시성 타임아웃 초과·재시도 단위·병렬성 때문), resource(PUT /search/admin/tech/posts/indexing{,/{id},/{from}/{to}} — 전부 202 + 어드민 토큰. indexing은 조작 세그먼트 — /posts에 PUT을 걸면 게시글 수정으로 읽힌다). 스위치는 yologram.messages.publish.post-index.{enabled,queue}(MessagePublishProperties), SDK 빈은 config/sqs/SqsConfig. 전체 인덱싱만 @Async("sqsTaskExecutor")로 돌린다 — 발행 루프를 요청 스레드에서 돌리면 게시글이 늘수록 게이트웨이 타임아웃(30초)에 걸린다(로컬 실측 202/7.8ms). 실제 색인은 하지 않는다(OpenSearch 클라이언트 없음 — worker 담당)
+- src/main/kotlin/.../domain/search/exception/: search 도메인 예외·핸들러 — 범위 오류를 400으로(전역 폴백은 500이라 Swagger 문서와 어긋난다)
 - src/main/kotlin/.../infra/client/{ums,cms,pms,comment}/: 도메인 간 경계 클라이언트 — {대상도메인}ApiClient + Local 구현 (타 도메인 리포지토리 import는 이 층에서만, MSA 시 Rest 구현으로 교체)
 - src/main/kotlin/.../config/redis/RedisConfig.kt·CacheRedisProperties.kt + infra/cache/: Valkey 캐시 — cache.data.redis.* 커스텀 프로퍼티 + 수동 Lettuce 빈(자동구성 exclude, DataSource와 동일 패턴). Cache<V> 키 팩토리(prefix:v1:entity:id)·CacheService(runCatching 폴백, getAllAsMap 배치)·UserNicknameCache(cache-aside 공용, loader 주입)·TechNewsFirstPageCache(뉴스 첫 페이지 응답 통째, 키 news:tech:v1:first-page:{categoryId|all}:{size}·TTL 3분 — worker가 요약 시 키 전수 열거 UNLINK로 무효화)
 - src/main/kotlin/.../domain/ums/service/AuthService.kt: JWT 로그인/로그아웃/토큰 검증. validate-token은 master DB 조회
@@ -24,7 +26,7 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 
 ## 설정 관리
 
-- config/는 관심사별 하위 패키지로 나눈다 — database(DataSource·JPA·QueryDSL)·redis·kinesis·sqs·ses·security·web·observability·async. 루트에 평면으로 두지 않는다(설정이 늘면 무엇이 무엇의 짝인지 안 보인다)
+- config/는 관심사별 하위 패키지로 나눈다 — database(DataSource·JPA·QueryDSL)·redis·kinesis·sqs(SqsClient·MessagePublishProperties)·ses·security·web·observability·async(AsyncConfig). 루트에 평면으로 두지 않는다(설정이 늘면 무엇이 무엇의 짝인지 안 보인다)
 - application.yaml: 공통 설정 (OTLP endpoint placeholder)
 - application-local.yaml: 로컬 개발 (AWS Parameter Store)
 - application-prod.yaml: 프로덕션 (AWS Parameter Store, instance-profile)
@@ -62,6 +64,13 @@ Spring Boot MVC (Kotlin) API 서버. ECS Fargate에서 운영.
 - 응답 DTO의 section 필드는 "TECH" 고정 문자열 (web 계약 유지)
 - 패키지명에 `enum`(Java 예약어) 금지 — QueryDSL APT가 import 생성 못 함. enums 사용
 - (데이터 모델·엔드포인트·설계 근거는 docs/done.md, QueryDSL 사용 기준·경로 규칙은 docs/rules.md 참조)
+
+## 비동기 (@Async)
+
+- 스레드 풀은 config/async/AsyncConfig에 용도별로 정의하고 @Async("풀이름")으로 명시 호출한다 — 공유하면 오래 걸리는 작업이 스레드를 다 잡았을 때 다른 작업이 큐에서 대기한다
+- 기본 풀(applicationTaskExecutor)도 직접 정의한다. Boot 자동구성은 @ConditionalOnMissingBean(Executor)라 Executor 빈을 하나라도 만들면 통째로 백오프하고, 그러면 이름 없는 @Async·MVC 비동기 요청 처리·JPA 부트스트랩이 SimpleAsyncTaskExecutor(호출마다 새 스레드)로 조용히 폴백한다. Executor 빈이 둘 이상이면 AsyncConfigurer.getAsyncExecutor()로 기본을 지정해야 한다
+- 전용 풀은 @Bean(defaultCandidate = false)로 등록 — 타입 기반 자동 주입 후보에서 빼 기본 풀과 섞이지 않게 한다
+- @Async에 올리는 작업은 결과를 아무도 기다리지 않는 것만. 예외가 호출자에게 전달되지 않으므로 메서드 안에서 runCatching으로 직접 잡아 남긴다. 큐가 인메모리라 인스턴스가 죽으면 대기분이 사라진다 — 유실되면 곤란한 작업은 SQS로
 
 ## 테스트
 

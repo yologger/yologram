@@ -66,6 +66,7 @@ dependencies {
     implementation(platform("software.amazon.awssdk:bom:2.31.62"))
     implementation("software.amazon.awssdk:ses")
     implementation("software.amazon.awssdk:kinesis")
+    implementation("software.amazon.awssdk:sqs")
 
     // Dev
     developmentOnly("org.springframework.boot:spring-boot-devtools")

@@ -16,6 +16,12 @@ yologram:
       post-view:
         enabled: true
         stream: yologram-post-view-event-prod
+  # 검색 인덱싱 작업 큐 (aws/global/sqs — DLQ 3회, 가시성 300초)
+  messages:
+    publish:
+      post-index:
+        enabled: true
+        queue: yologram-search-indexing-prod
 
 database:
   main:

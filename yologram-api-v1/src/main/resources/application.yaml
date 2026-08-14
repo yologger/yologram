@@ -52,6 +52,13 @@ yologram:
       post-view:
         enabled: false
         stream:
+  # 메시지 발행(SQS) — events(스트림)와 수단으로 갈린 형제 축. worker의 messages.subscribe와 대칭.
+  # 기본 비활성 — 로컬에서 prod 큐에 인덱싱 작업을 넣어 실인덱스를 건드리는 사고 방지
+  messages:
+    publish:
+      post-index:
+        enabled: false
+        queue:
   ses:
     from-address: no-reply@yologram.link
   auth:
