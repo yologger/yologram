@@ -2,7 +2,7 @@ package link.yologram.api.v1.domain.pms.tech.publisher.event
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import link.yologram.api.v1.config.EventPublishProperties
+import link.yologram.api.v1.config.kinesis.EventPublishProperties
 import org.springframework.stereotype.Component
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisClient

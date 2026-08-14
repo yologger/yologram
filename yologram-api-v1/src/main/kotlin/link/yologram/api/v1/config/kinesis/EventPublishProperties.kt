@@ -1,4 +1,4 @@
-package link.yologram.api.v1.config
+package link.yologram.api.v1.config.kinesis
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

@@ -4,7 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.exceptions.TokenExpiredException
-import link.yologram.api.v1.config.JwtProperties
+import link.yologram.api.v1.config.security.JwtProperties
 import link.yologram.api.v1.domain.ums.exception.AuthTokenExpiredException
 import link.yologram.api.v1.domain.ums.exception.AuthTokenInvalidException
 import org.springframework.stereotype.Component

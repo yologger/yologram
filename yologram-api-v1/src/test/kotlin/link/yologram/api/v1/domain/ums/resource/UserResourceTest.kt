@@ -1,8 +1,8 @@
 package link.yologram.api.v1.domain.ums.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import link.yologram.api.v1.config.AdminJwtProperties
-import link.yologram.api.v1.config.JwtProperties
+import link.yologram.api.v1.config.security.AdminJwtProperties
+import link.yologram.api.v1.config.security.JwtProperties
 import link.yologram.api.v1.domain.ums.enum.UserType
 import link.yologram.api.v1.domain.ums.exception.UmsExceptionHandler
 import link.yologram.api.v1.domain.ums.exception.AuthWrongPasswordException

@@ -3,7 +3,7 @@ package link.yologram.api.v1.domain.pms.tech.publisher.event
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
-import link.yologram.api.v1.config.EventPublishProperties
+import link.yologram.api.v1.config.kinesis.EventPublishProperties
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue

@@ -1,4 +1,4 @@
-package link.yologram.api.v1.config
+package link.yologram.api.v1.config.database
 
 import com.querydsl.jpa.impl.JPAQueryFactory
 import jakarta.persistence.EntityManager

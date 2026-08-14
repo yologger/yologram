@@ -1,8 +1,8 @@
 package link.yologram.api.v1.domain.comment.tech.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import link.yologram.api.v1.config.AdminJwtProperties
-import link.yologram.api.v1.config.JwtProperties
+import link.yologram.api.v1.config.security.AdminJwtProperties
+import link.yologram.api.v1.config.security.JwtProperties
 import link.yologram.api.v1.domain.comment.tech.exception.InvalidTechPostCommentCursorException
 import link.yologram.api.v1.domain.comment.tech.exception.TargetTechPostNotFoundException
 import link.yologram.api.v1.domain.comment.tech.exception.TechPostCommentExceptionHandler

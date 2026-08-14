@@ -1,4 +1,4 @@
-package link.yologram.api.v1.config
+package link.yologram.api.v1.config.redis
 
 import io.lettuce.core.ClientOptions
 import io.lettuce.core.SocketOptions

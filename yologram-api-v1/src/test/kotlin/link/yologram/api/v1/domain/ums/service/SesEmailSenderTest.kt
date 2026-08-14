@@ -1,6 +1,6 @@
 package link.yologram.api.v1.domain.ums.service
 
-import link.yologram.api.v1.config.SesProperties
+import link.yologram.api.v1.config.ses.SesProperties
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

@@ -1,7 +1,7 @@
 package link.yologram.api.v1.domain.cms.tech.resource
 
-import link.yologram.api.v1.config.AdminJwtProperties
-import link.yologram.api.v1.config.JwtProperties
+import link.yologram.api.v1.config.security.AdminJwtProperties
+import link.yologram.api.v1.config.security.JwtProperties
 import link.yologram.api.v1.domain.cms.tech.model.TechCategoryResponse
 import link.yologram.api.v1.domain.cms.tech.service.TechCategoryService
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUserResolver

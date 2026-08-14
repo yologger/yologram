@@ -1,7 +1,7 @@
 package link.yologram.api.v1.domain.ums.util
 
-import link.yologram.api.v1.config.AdminJwtProperties
-import link.yologram.api.v1.config.JwtProperties
+import link.yologram.api.v1.config.security.AdminJwtProperties
+import link.yologram.api.v1.config.security.JwtProperties
 import link.yologram.api.v1.domain.ums.exception.AuthTokenExpiredException
 import link.yologram.api.v1.domain.ums.exception.AuthTokenInvalidException
 import org.junit.jupiter.api.Assertions.*

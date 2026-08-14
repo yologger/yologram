@@ -1,7 +1,7 @@
 package link.yologram.api.v1.domain.ums.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import link.yologram.api.v1.config.SesProperties
+import link.yologram.api.v1.config.ses.SesProperties
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import software.amazon.awssdk.services.ses.SesClient

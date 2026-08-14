@@ -1,8 +1,8 @@
 package link.yologram.api.v1.domain.news.tech.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import link.yologram.api.v1.config.AdminJwtProperties
-import link.yologram.api.v1.config.JwtProperties
+import link.yologram.api.v1.config.security.AdminJwtProperties
+import link.yologram.api.v1.config.security.JwtProperties
 import link.yologram.api.v1.domain.news.tech.exception.TechNewsExceptionHandler
 import link.yologram.api.v1.domain.news.tech.exception.TechNewsSourceDuplicateException
 import link.yologram.api.v1.domain.news.tech.exception.TechNewsSourceNotFoundException

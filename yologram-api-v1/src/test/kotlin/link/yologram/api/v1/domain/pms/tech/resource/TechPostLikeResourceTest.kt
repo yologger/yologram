@@ -1,7 +1,7 @@
 package link.yologram.api.v1.domain.pms.tech.resource
 
-import link.yologram.api.v1.config.AdminJwtProperties
-import link.yologram.api.v1.config.JwtProperties
+import link.yologram.api.v1.config.security.AdminJwtProperties
+import link.yologram.api.v1.config.security.JwtProperties
 import link.yologram.api.v1.domain.pms.tech.exception.TechPostExceptionHandler
 import link.yologram.api.v1.domain.pms.tech.exception.TechPostNotFoundException
 import link.yologram.api.v1.domain.pms.tech.service.TechPostLikeService

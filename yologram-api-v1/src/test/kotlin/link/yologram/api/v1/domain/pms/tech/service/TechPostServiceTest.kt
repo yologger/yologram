@@ -7,7 +7,7 @@ import link.yologram.api.v1.domain.pms.tech.exception.InvalidTechCategoryExcepti
 import link.yologram.api.v1.domain.pms.tech.exception.InvalidTechSectionException
 import link.yologram.api.v1.domain.pms.tech.exception.TechPostForbiddenException
 import link.yologram.api.v1.domain.pms.tech.exception.TechPostNotFoundException
-import link.yologram.api.v1.config.EventPublishProperties
+import link.yologram.api.v1.config.kinesis.EventPublishProperties
 import link.yologram.api.v1.domain.pms.tech.model.CreateTechPostRequest
 import link.yologram.api.v1.domain.pms.tech.publisher.event.PostViewEvent
 import link.yologram.api.v1.domain.pms.tech.model.TechPostCursor

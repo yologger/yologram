@@ -1,8 +1,8 @@
 package link.yologram.api.v1.domain.pms.tech.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import link.yologram.api.v1.config.AdminJwtProperties
-import link.yologram.api.v1.config.JwtProperties
+import link.yologram.api.v1.config.security.AdminJwtProperties
+import link.yologram.api.v1.config.security.JwtProperties
 import link.yologram.api.v1.domain.pms.tech.exception.InvalidTechCategoryException
 import link.yologram.api.v1.domain.pms.tech.exception.InvalidTechPostCursorException
 import link.yologram.api.v1.domain.pms.tech.exception.InvalidTechSectionException
