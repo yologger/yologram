@@ -55,6 +55,7 @@
   - CQRS: pms = 쓰기 원본(MySQL, 권한·개인화) / search = 읽기 최적화(OpenSearch). 동기화는 pms 쓰기 → 변경 이벤트(SQS/Kinesis) → indexer가 MySQL 읽어 문서화 → OpenSearch 인덱싱 (최종 일관성)
   - QueryDSL vs search 역할: QueryDSL은 관계형 복잡성(권한 한정 "내 것/정확"), search는 탐색 복잡성(풀텍스트·연관도·패싯, 공개 카탈로그 발견)
   - 도입 전략: 초기엔 pms cursor 목록으로 시작 → 필요 시 OpenSearch+indexer 도입. 별도 서비스(yologram-search-api, yologram-search-indexer)
+- [ ] (Observability) worker·api-v1 OTLP 메트릭 실제 발행 여부 확인 — 종료 시 NoSuchMethodError(Metric$Builder.getParentForChildren) 로그를 본 이력이 있다. 조사 결과 현재 opentelemetry-proto 1.5.0-alpha는 protobuf 4.x 스타일(GeneratedMessage$Builder)이고 클래스패스에 3.x가 없으며, protobuf 4.31.1에서도 해당 경로가 정상 동작함을 실측했다(mysql-connector-j의 protobuf exclude는 근거가 없어 되돌렸다). Grafana에서 jvm_memory_used_bytes 등이 최근까지 들어오는지 확인하고, 끊긴 시점이 있으면 그 시점 배포와 대조
 - [ ] (Infra/DB) RDS MySQL → Lightsail MySQL 전환 검토 (요금 절감)
 - [ ] (Cache) Redis(Valkey) 도입 — 대규모 트래픽 가정 하 캐시 예시 (포트폴리오: 가정→결정 근거를 done.md에 기록)
   - [x] 인프라: ElastiCache Valkey(valkey-prod, cache.t4g.micro — 서버리스도 검토했으나 인스턴스형 확정) apply·엔드포인트 SSM 등록(spring.data.redis.host) + 로컬 compose.yaml(valkey:8) (완료, done.md)

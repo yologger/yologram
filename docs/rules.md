@@ -92,6 +92,7 @@
 - Executor 빈이 둘 이상이면 Spring이 @Async 기본을 정하지 못한다 — AsyncConfigurer.getAsyncExecutor()로 지정할 것
 - 전용 풀은 @Bean(defaultCandidate = false)로 등록 — 타입 기반 자동 주입 후보에서 빼 기본 풀과 섞이지 않게 한다
 - @Async에 올리는 작업은 결과를 아무도 기다리지 않는 것만. 예외가 호출자에게 전달되지 않으므로 메서드 안에서 runCatching으로 직접 잡아 남긴다(기본 핸들러에 맡기면 어디까지 처리됐는지 알 수 없다). 큐가 인메모리라 인스턴스가 죽으면 대기분이 사라진다 — 유실되면 곤란한 작업은 SQS로
+- api-v2는 FastAPI BackgroundTasks가 대응한다 — 예외가 호출자에게 가지 않는 점이 같으므로 동기 메서드는 실패를 전파하고 백그라운드 진입점만 삼킨다
 - SQS 리스너 안에서는 쓰지 않는다 — 예외가 리스너 밖에서 발생해 수동 ack·가시성 제어가 무력화된다(레거시 BoardIndexingHandler의 결함). 리스너는 이미 별도 스레드 풀에서 돈다
 
 ### 구조 (config 패키지)
