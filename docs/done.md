@@ -286,3 +286,10 @@
   - api-v1: database(DataSource·JPA·QueryDSL)·observability·kinesis·sqs·redis·security·ses·web·async / worker: database·observability·redis·opensearch·scheduling
   - JpaConfig·QuerydslConfig는 DB 관심사라 database로, OTEL은 별도 관심사라 observability로. 동작 변경 없이 패키지 선언과 import만 바뀐다(git이 전부 rename으로 인식)
   - 자동 치환 시 함정: 주석·KDoc에 등장하는 클래스명("SesConfig와 동일 관례")을 코드 참조로 오인해 unused import가 붙는다. worker 작업에서는 KDoc·주석을 걷어낸 뒤 참조를 검사해 피했다
+- [x] (전 서비스) 타임존 KST 통일 — api-v1·api-v2에 기본 타임존 고정
+  - 증상: 같은 게시글의 createdAt이 api-v1 응답은 05:23:50, 검색 색인 문서는 14:23:50으로 9시간 어긋났다. 검색 인덱싱을 붙이면서 두 값을 나란히 보게 되어 드러났다
+  - 원인: worker만 Application.kt에서 TimeZone.setDefault(Asia/Seoul)를 했고 api-v1·v2는 컨테이너 기본(UTC)이었다. api가 UTC 벽시계로 저장한 값을 KST JVM인 worker가 읽어 +9가 됐다. hibernate.jdbc.time_zone·serverTimezone은 원래 양쪽 다 Asia/Seoul이라 이 설정이 아니라 JVM TZ가 갈랐다
+  - 같은 뿌리의 선례가 이미 있었다: 조회 이벤트의 occurredAt이 UTC 벽시계라 하루 경계가 KST 09:00이 되고, 이력 정리 임계를 UTC로 잡아야 했던 문제(위 항목). 그때는 우회했고 이번에 근본을 고쳤다
+  - 방향은 UTC 통일이 아니라 KST 통일을 택했다 — 번장 전 서비스(bun-pms-api·bun-myhome-api·bun-video-api·bun-proshop-worker 등)가 예외 없이 Application.kt에서 KST를 고정하는 방식이고, 국내 서비스라 UTC를 경유할 이유가 없다. 변환 지점이 없으면 변환 실수도 없다. UTC로 가면 이미 저장된 값의 의미가 바뀌어 마이그레이션 판단이 더 커진다
+  - api-v1은 App.kt에서 TimeZone.setDefault, api-v2는 Dockerfile ENV TZ=Asia/Seoul (Python은 코드가 아니라 환경변수로 잡는다. python:3.12-slim에 tzdata가 포함돼 있어 추가 설치가 필요 없음을 컨테이너로 실측 확인)
+  - 기존 데이터는 배포 후 +9시간 UPDATE로 보정(tech_post·tech_post_comment·user·admin_user·tech_category·tech_news_source). worker가 쓰는 tech_news·tech_post_view 계열은 이미 KST라 대상이 아니다. 순서가 중요하다 — SQL을 먼저 돌리면 배포 전까지 생성된 데이터가 다시 어긋난다

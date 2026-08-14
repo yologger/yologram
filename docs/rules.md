@@ -58,6 +58,13 @@
 - KCL 컨슈머를 얹는 태스크는 CPU 여유가 필요하다 — 0.25vCPU에서 Netty 이벤트 루프가 굶어 SDK 커넥션 획득 타임아웃으로 소비가 멈춘 선례(done.md 사고 ③). 배치·LLM 호출과 코어를 공유하면 0.5vCPU 이상
 - AWS SDK를 쓰는 서비스는 리전을 명시한다 — 클라이언트마다 .region() 또는 spring.cloud.aws.region.static. 자동 탐색 체인은 CI·ECS Fargate에서 채워지지 않아 기동이 실패한다
 
+### 타임존
+
+- 모든 서비스는 기본 타임존을 Asia/Seoul로 고정한다 — JVM은 진입점에서 TimeZone.setDefault, Python은 컨테이너 ENV TZ. 하나라도 빠지면 그 서비스만 UTC 벽시계로 시각을 만들어 같은 레코드가 서비스마다 다르게 보인다(api-v1 누락으로 createdAt이 9시간 어긋난 선례)
+- UTC 저장 후 표시 시점 변환이 아니라 KST 통일이다(번장 전 서비스 방식) — 국내 서비스라 UTC를 경유할 이유가 없고, 변환 지점이 없으면 변환 실수도 없다
+- hibernate.jdbc.time_zone·JDBC serverTimezone만 맞춰도 되는 문제가 아니다. LocalDateTime.now()와 Timestamp.toLocalDateTime()이 JVM 기본 TZ를 쓰기 때문에 JVM TZ 자체를 고정해야 한다
+- 새 서비스·새 컨테이너를 추가할 때 이 설정을 함께 넣을 것
+
 ### 검색 인덱싱 (SQS + OpenSearch)
 
 - 인덱싱 큐는 대상별로 나누지 않는다 — 큐 하나(yologram-search-indexing-{env}) + 페이로드 target 필드로 분기. tech-post·politics-post·뉴스가 늘어도 큐는 그대로다(소비 순서·처리 특성이 같고, 큐가 늘면 워커 리스너·IAM·DLQ가 배수로 는다). 큐를 나눌 근거는 처리량 격차로 인한 head-of-line 차단뿐

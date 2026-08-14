@@ -9,6 +9,9 @@ COPY --from=build /app/.venv /app/.venv
 COPY . .
 ENV PATH="/app/.venv/bin:$PATH"
 ENV APP_PROFILE=prod
+# 기본 타임존 고정 — 컨테이너 기본(UTC)에 좌우되지 않게 (api-v1·worker와 동일, 번장 전 서비스 방식).
+# Python은 JVM처럼 코드에서 고정하지 않고 TZ 환경변수로 잡는다
+ENV TZ=Asia/Seoul
 # 조회 이벤트 발행 대상 스트림 (aws/global/kinesis, PROVISIONED 1샤드 · ap-northeast-2).
 # 이 이미지는 prod ECS 전용이라 여기가 api-v1 application-prod.yaml에 대응하는 자리 —
 # 로컬 실행(uvicorn·scripts/run-prod.sh)은 이 변수가 없어 빈 값 = 발행 스킵
