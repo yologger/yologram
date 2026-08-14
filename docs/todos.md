@@ -50,7 +50,7 @@
   - [x] 검색 API api-v2 미러링 — 비활성 응답 503으로 양쪽 통일 (done.md)
   - [ ] ValidationExceptionHandler 로그 레벨 — 400(파라미터 누락·enum 변환 실패)을 ERROR로 남겨 실제 서버 오류를 가린다. WARN이 적절
   - [x] web-v1·v2 검색 결과 UI — 대상별 탭(커뮤니티·뉴스)·페이지 네비게이션·정렬 전환 (목 데이터, done.md)
-  - [ ] web-v1·v2 검색 결과 실데이터 연결 — searchResultMock.ts를 검색 API 쿼리로 교체
+  - [x] web-v1·v2 검색 결과 실데이터 연결 — 커뮤니티 탭 (done.md). 뉴스 탭은 색인 후 연결
   - [ ] 뉴스 인덱싱·검색 — tech-news-index 신설(게시글과 별도 인덱스), 검색 결과 뉴스 탭 연결
   - [ ] User 인덱싱 (후순위 — 게시글 검색이 끝난 뒤)
   - [ ] 프론트 이관: 공개 다건 탐색 → search (단건·쓰기·내 글은 pms 유지)

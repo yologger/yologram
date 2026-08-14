@@ -25,3 +25,11 @@
 .empty {
   padding: 48px 0;
 }
+
+.skeleton {
+  padding: 16px 0;
+}
+
+.alert {
+  margin-top: 16px;
+}

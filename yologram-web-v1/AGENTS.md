@@ -16,7 +16,7 @@ React 기반 하이브리드 웹앱. 투자/정치/기술 서비스를 반응형
 - src/components/common/SubTabLayout.tsx: 서브탭 공통 레이아웃
 - src/components/common/SearchBar.tsx: 섹션 검색바 — 데스크탑 인라인 / 모바일 돋보기→오버레이, Enter 시 /{section}/keywords/{키워드} 이동 (백엔드 미연동)
 - src/pages/search/KeywordSearchPage.tsx: 키워드 검색 결과 페이지 (섹션 공용, 라우트 3개) — 대상별 탭(커뮤니티·뉴스)
-- src/components/search/: 검색 결과 (web-v2 미러) — 각 탭이 자기 페이징·정렬을 갖고, 무한 스크롤이 아니라 페이지 네비게이션(antd Pagination). searchResultMock.ts는 UI 확인용이라 엔드포인트 연동 시 삭제
+- src/components/search/ + apis/search.ts + queries/usePostSearchQuery: 검색 결과 (web-v2 미러) — 각 탭이 자기 페이징·정렬을 갖고, 무한 스크롤이 아니라 페이지 네비게이션(useQuery + placeholderData). 카테고리 이름은 카테고리 API로 매핑, 오류는 서버 메시지를 그대로 노출. 뉴스 탭은 색인이 없어 ComingSoon
 - src/components/news/NewsCard.tsx: 뉴스 카드 — 뉴스 피드와 검색 결과가 공유 (TechNewsPage의 로컬 컴포넌트에서 추출)
 - src/components/common/FilterChips.tsx: 필터 칩 공통 컴포넌트
 - src/hooks/useIsMobile.ts: 모바일 판별 훅

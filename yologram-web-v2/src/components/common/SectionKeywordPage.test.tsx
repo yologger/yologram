@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test/utils'
 import SectionKeywordPage from './SectionKeywordPage'
 
@@ -47,5 +48,24 @@ describe('SectionKeywordPage', () => {
     renderWithProviders(<SectionKeywordPage basePath="/tech" />)
 
     expect(screen.getByText("'100%' 검색결과")).toBeInTheDocument()
+  })
+
+  it('커뮤니티·뉴스 탭을 렌더한다', () => {
+    mockUseParams.mockReturnValue({ keyword: encodeURIComponent('제미나이') })
+    renderWithProviders(<SectionKeywordPage basePath="/tech" />)
+
+    expect(screen.getByRole('tab', { name: '커뮤니티' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '뉴스' })).toBeInTheDocument()
+  })
+
+  it('뉴스 탭은 준비 중 안내를 보여준다', async () => {
+    // 뉴스는 아직 색인이 없다 (todos — tech-news-index 신설이 선행)
+    mockUseParams.mockReturnValue({ keyword: encodeURIComponent('제미나이') })
+    const user = userEvent.setup()
+    renderWithProviders(<SectionKeywordPage basePath="/tech" />)
+
+    await user.click(screen.getByRole('tab', { name: '뉴스' }))
+
+    expect(await screen.findByText('페이지 준비 중입니다')).toBeInTheDocument()
   })
 })

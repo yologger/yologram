@@ -1,14 +1,20 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Empty, Pagination } from 'antd'
+import { Alert, Empty, Pagination, Skeleton } from 'antd'
 import PostCard from '../../pages/tech/community/PostCard'
-import SearchResultSort, { type SearchSort } from './SearchResultSort'
-import { SEARCH_PAGE_SIZE, MOCK_POST_TOTAL, mockPosts } from './searchResultMock'
+import usePostSearchQuery, { SEARCH_PAGE_SIZE } from '../../queries/usePostSearchQuery'
+import usePostCategoriesQuery from '../../queries/usePostCategoriesQuery'
+import { getErrorMessage } from '../../lib/error'
+import SearchResultSort from './SearchResultSort'
+import type { SearchSort } from '../../apis/search'
 import styles from './SearchResults.module.css'
 
 interface Props {
   keyword: string
+  /** 섹션 기본 경로 (예: "/tech") — 상세 이동에 쓴다 */
   basePath: string
+  /** 검색 대상 섹션 (예: "tech") */
+  section: string
 }
 
 /**
@@ -16,17 +22,27 @@ interface Props {
  *
  * 무한 스크롤이 아니라 페이지 번호를 쓴다: 검색은 총 건수가 정보이고(커서로는 만들 수 없다),
  * 결과에서 상세로 들어갔다 돌아올 때 위치가 유지돼야 한다. 피드의 무한 스크롤과 의도적으로 다르다.
- *
- * TODO 검색 엔드포인트 연동 — 지금은 목 데이터다.
- * GET /api/v1/search/tech/posts?q&page&size&sort → data·totalCount·totalPages
  */
-export default function PostSearchResults({ keyword, basePath }: Props) {
+export default function PostSearchResults({ keyword, basePath, section }: Props) {
   const navigate = useNavigate()
   const [page, setPage] = useState(0)
   const [sort, setSort] = useState<SearchSort>('RELEVANCE')
 
-  const posts = mockPosts(page)
-  const total = MOCK_POST_TOTAL
+  const { data, isLoading, isError, error } = usePostSearchQuery(section, keyword, page, sort)
+  const { data: categories = [] } = usePostCategoriesQuery(section)
+  const nameById = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories])
+
+  if (isError) {
+    // 검색 설정 없음(503)·조회 한계 초과(400) 등 — 서버 메시지를 그대로 노출한다
+    return <Alert className={styles.alert} type="error" showIcon message={getErrorMessage(error)} />
+  }
+
+  if (isLoading) {
+    return <Skeleton className={styles.skeleton} active paragraph={{ rows: 6 }} />
+  }
+
+  const posts = data?.data ?? []
+  const total = data?.totalCount ?? 0
 
   if (total === 0) {
     return (
@@ -55,6 +71,9 @@ export default function PostSearchResults({ keyword, basePath }: Props) {
           <PostCard
             key={post.id}
             post={post}
+            categoryNames={post.categoryIds
+              .map((id) => nameById.get(id))
+              .filter((n): n is string => !!n)}
             onClick={() => navigate(`${basePath}/community/${post.id}`)}
           />
         ))}
