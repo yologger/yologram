@@ -58,6 +58,40 @@
 - KCL 컨슈머를 얹는 태스크는 CPU 여유가 필요하다 — 0.25vCPU에서 Netty 이벤트 루프가 굶어 SDK 커넥션 획득 타임아웃으로 소비가 멈춘 선례(done.md 사고 ③). 배치·LLM 호출과 코어를 공유하면 0.5vCPU 이상
 - AWS SDK를 쓰는 서비스는 리전을 명시한다 — 클라이언트마다 .region() 또는 spring.cloud.aws.region.static. 자동 탐색 체인은 CI·ECS Fargate에서 채워지지 않아 기동이 실패한다
 
+### 검색 인덱싱 (SQS + OpenSearch)
+
+- 인덱싱 큐는 대상별로 나누지 않는다 — 큐 하나(yologram-search-indexing-{env}) + 페이로드 target 필드로 분기. tech-post·politics-post·뉴스가 늘어도 큐는 그대로다(소비 순서·처리 특성이 같고, 큐가 늘면 워커 리스너·IAM·DLQ가 배수로 는다). 큐를 나눌 근거는 처리량 격차로 인한 head-of-line 차단뿐
+- 단건 인덱싱도 범위 메시지로 보낸다(from == to) — 경로가 하나면 소비·재시도·테스트가 한 벌로 끝난다. 레거시는 단건만 동기 처리(200)했지만 우리는 전부 202 비동기
+- 범위는 20건 청크로 쪼개 발행한다 — ① 한 메시지 처리가 가시성 타임아웃(300초)을 넘기면 재노출돼 중복 처리 ② 실패 재시도 단위가 작아짐 ③ 워커를 늘리면 메시지 단위로 병렬화. 청크 크기는 레거시 BULK_INDEXING_REQUEST_BATCH_SIZE 미러
+- 설정 경로는 발행·구독 대칭 — 발행 yologram.messages.publish.{작업}.{enabled,queue} / 구독 yologram.messages.subscribe.{작업}.{enabled,queue}. events.*(Kinesis)와 같은 규칙이고 기본값 false, prod만 true
+- 인덱싱 발행은 실패를 삼키지 않는다 — 조회 이벤트(사용자 응답을 막지 않아야 함)와 반대로 어드민이 명시 요청한 작업이라 실패를 알려야 한다
+- SQS 소비는 수동 ack(MANUAL) — 색인이 끝난 뒤에만 삭제한다. 먼저 지우면 실패한 범위가 영영 색인되지 않는다. 실패 시 ack하지 않아 가시성 타임아웃 후 재전달되고 3회 실패면 DLQ로 간다
+- 다시 시도해도 결과가 같은 메시지(깨진 JSON·미지원 target·유효하지 않은 범위)는 ack해서 버린다 — DLQ 왕복은 낭비다. 반대로 일시적 실패(OpenSearch 다운·bulk 거부)는 반드시 ack하지 않는다
+- 범위 필드(from·to)는 원시 타입이라 필드가 빠져도 파싱이 통과하고 0이 들어온다 — 소비 쪽에서 범위를 검증할 것(검증 없으면 잘못된 메시지가 index(0,0)으로 조용히 성공한다)
+- 메시지 계약 클래스는 미지의 필드를 무시한다(@JsonIgnoreProperties) — 발행 쪽을 먼저 배포해도 소비가 깨지지 않게. api-v1·worker 양쪽에 같은 클래스를 두는 문자열 계약이라 필드명 변경은 양쪽 동시 수정
+- 문서 id는 원본 id를 그대로 쓴다 — at-least-once 재전달·중복 발행이 덮어쓰기가 되어 무해해진다(멱등)
+- 인덱스는 버전 인덱스 + alias로 운용한다: tech-post-index-v1(실제) / tech-post-index(alias). 애플리케이션은 alias만 참조하고, 매핑을 바꿔야 하면 v2를 만들어 재색인한 뒤 alias를 옮긴다(무중단). 인덱스·alias는 워커 기동 시 upsert — 없는 상태로 색인하면 동적 매핑이 걸려 title/content가 nori 없이 잡힌다
+- 한국어 분석은 nori(yologram_korean, decompound_mode=mixed) — 공식 OpenSearch 이미지에 미포함이라 컨테이너 기동 시 플러그인을 설치한다. 단일 노드라 number_of_replicas=0(기본 1이면 인덱스가 영구 yellow)
+- 인덱싱 API는 어드민 토큰을 요구한다 — 공개로 열면 누구나 풀 인덱싱을 유발해 OpenSearch·DB에 부하를 준다
+- 인덱싱 경로는 대상 뒤에 조작 세그먼트를 붙인다(/search/admin/tech/posts/indexing) — /posts에 PUT을 걸면 게시글 수정으로 읽히고 검색 API(/search/tech/posts)와 성격이 뒤섞인다. 인덱스 관리(/posts/indices)·재색인 전환(/posts/migration)이 형제로 붙을 자리를 남겨둔다
+- 발행 루프는 요청 스레드에서 돌리지 않는다 — 전체 인덱싱은 @Async로 넘기고 즉시 202. 청크가 수천 건이면 SendMessage 왕복만으로 게이트웨이 타임아웃(30초)을 넘는다. 진행 상황은 응답이 아니라 SQS 큐 깊이로 확인한다
+- OpenSearch 접속은 opensearch.main.{uri,username,password}(SSM, SecureString) + enabled(yaml). 스위치는 환경별 고정값이라 파라미터로 빼지 않고, 파라미터 이름은 서비스가 달라도 동일하게 둔다(같은 클러스터를 가리키는 값이 서비스마다 다른 키를 갖지 않게)
+- 색인 대상 데이터는 infra/client/{원본도메인}에서 읽는다(worker infra/client/pms) — 검색 도메인이 원본 테이블을 직접 매핑하지 않는다
+
+### 비동기 (@Async)
+
+- 스레드 풀은 config/async/AsyncConfig에 용도별로 정의하고 @Async("풀이름")으로 명시 호출한다 — 하나를 공유하면 오래 걸리는 작업이 스레드를 다 잡았을 때 다른 작업이 큐에서 대기한다
+- 기본 풀(applicationTaskExecutor)도 직접 정의한다. Boot 자동구성은 @ConditionalOnMissingBean(Executor)라 Executor 빈을 하나라도 만들면 통째로 백오프하고, 그러면 이름 없는 @Async·Spring MVC 비동기 요청 처리·JPA 부트스트랩이 SimpleAsyncTaskExecutor(호출마다 새 스레드)로 조용히 폴백한다
+- Executor 빈이 둘 이상이면 Spring이 @Async 기본을 정하지 못한다 — AsyncConfigurer.getAsyncExecutor()로 지정할 것
+- 전용 풀은 @Bean(defaultCandidate = false)로 등록 — 타입 기반 자동 주입 후보에서 빼 기본 풀과 섞이지 않게 한다
+- @Async에 올리는 작업은 결과를 아무도 기다리지 않는 것만. 예외가 호출자에게 전달되지 않으므로 메서드 안에서 runCatching으로 직접 잡아 남긴다(기본 핸들러에 맡기면 어디까지 처리됐는지 알 수 없다). 큐가 인메모리라 인스턴스가 죽으면 대기분이 사라진다 — 유실되면 곤란한 작업은 SQS로
+- SQS 리스너 안에서는 쓰지 않는다 — 예외가 리스너 밖에서 발생해 수동 ack·가시성 제어가 무력화된다(레거시 BoardIndexingHandler의 결함). 리스너는 이미 별도 스레드 풀에서 돈다
+
+### 구조 (config 패키지)
+
+- config/는 관심사별 하위 패키지로 나눈다 — database·redis·kinesis·sqs·ses·security·web·observability·async·opensearch·scheduling. 설정 클래스와 그 프로퍼티 클래스는 같은 패키지에 두어 각 디렉토리가 자기 완결적이게 한다(루트에 평면으로 쌓이면 무엇이 무엇의 짝인지 보이지 않는다)
+- 패키지 이동을 스크립트로 할 때 주석·KDoc의 클래스명을 코드 참조로 오인하지 말 것 — unused import가 붙는다(컴파일은 통과해서 눈에 띄지 않는다)
+
 ### 캐시 (Valkey)
 
 - 키 스킴 {도메인 prefix}:v1:{엔티티}:{식별자} — 정의는 각 API infra/cache의 Cache 팩토리(v1 Cache.kt / v2 cache.py). v1·v2가 같은 키·JSON(camelCase, ensure_ascii=False)을 공유하므로 한쪽 변경 시 반드시 양쪽 동시 수정

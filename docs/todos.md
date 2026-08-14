@@ -37,10 +37,16 @@
   - 프로퍼티 경로 개편(yologram.discord.webhooks.{채널} → yologram.webhooks.discord.{채널}-news): 신규 이름에 값 복사 → tf state rm/import로 관리 이관 → 배포·알림 확인 → 구 이름 삭제. 삭제 전 두 세트 값 해시 비교로 동일성 확인
 - [ ] (Search) OpenSearch 도입 — 인프라는 셀프호스팅으로 구축 완료(2026-08-13), 인덱스·인덱서·검색 API가 잔여
   - [x] 인프라: Lightsail small_3_0(2GB) 단일 노드 + Dashboards + Caddy(Let's Encrypt) — opensearch.yologram.link / opensearch-dashboard.yologram.link, 자동 스냅샷 일 1회(7일 롤링). 관리형 t3.small.search($40.88/월) 대비 $10로 약 $30 절감
-  - [ ] 인프라 잔여: 인덱스 템플릿 number_of_replicas=0(단일 노드라 기본 1이면 yellow), 앱 전용 유저 생성(admin 분리 — api-v1·v2가 admin 자격증명을 쓰지 않게), tf의 compose 비밀번호 특수문자 처리(env_file 분리 — `$`가 compose 보간에 먹힌다)
-  - [ ] OpenSearch 인덱스 설계 (게시글 문서: section, 카테고리, 작성자, 본문, 카운트)
-  - [ ] 검색 인덱서(yologram-search-indexer): pms 변경 이벤트 → OpenSearch 동기화
-  - [ ] 검색 API(yologram-search-api): 키워드/카테고리/섹션 검색·필터·정렬·집계
+  - [x] 인프라 잔여: tf의 compose 비밀번호 특수문자 처리(env_file 분리 — `$`가 compose 보간에 먹힌다), 게시글 인덱스 replicas 0 지정
+  - [ ] 인프라 잔여: security-auditlog-* 인덱스가 replica 1을 요구해 클러스터가 yellow — 감사 로그를 끄거나 인덱스 템플릿으로 0 지정
+  - [ ] 앱 전용 OpenSearch 유저 생성(admin 분리 — worker가 admin 자격증명을 쓰지 않게)
+  - [x] 게시글 인덱스 설계 — tech-post-index-v1 + alias, nori(yologram_korean) 분석기, metrics는 object(레거시 nested 개선), replicas 0 (done.md)
+  - [x] 게시글 인덱싱 — api-v1 어드민 API(전체·범위·단건 PUT, 20건 청크 SQS 발행) + worker 소비(수동 ack, bulk 색인, 문서 id=게시글 id 멱등) (done.md)
+  - [x] api-v1 발행 prod 배포·로컬 실측 — 단건/범위 청크/400/전체 202 7.8ms, 어드민 외 401 (done.md)
+  - [ ] worker 소비 prod 검증 — worker 배포 → 큐에 쌓인 작업 소비 → 인덱스·alias 생성, 문서 수, DLQ 확인 (SSM 자격증명은 입력 완료, admin 계정으로 인증 확인)
+  - [ ] api-v2 인덱싱 미러링 (발행만 — 소비는 worker 단일)
+  - [ ] User 인덱싱 (게시글 인덱싱 이후)
+  - [ ] 검색 API(api-v1·v2): 키워드/카테고리/섹션 검색·필터·정렬·집계
   - [ ] 프론트 이관: 공개 다건 탐색 → search (단건·쓰기·내 글은 pms 유지)
   - [ ] 키워드 검색 실데이터 연동 — web-v1/v2 검색바·/{section}/keywords/{키워드} 페이지(placeholder 구현 완료, done.md)에 결과 목록 연결. 1차 DB LIKE(pms/news q 파라미터) 또는 OpenSearch 도입과 함께 결정
   - pms vs search 호출 기준: 단건 정확 조회·쓰기·"내 것"(개인화+권한) = pms / 공개 다건 탐색(키워드·카테고리·섹션 목록·필터·정렬·집계) = search
@@ -59,7 +65,7 @@
   - 주기 작업(RSS 수집 등)은 @Scheduled — 단일 인스턴스 전제
   - [ ] worker 다중 인스턴스 확장 시 ShedLock 도입 — @Scheduled 중복 실행 방지(전 인스턴스가 각자 실행 → lock 획득한 한 대만 실행). lock 저장소는 redis/mysql 중 도입 시점에 결정. 현재는 link unique로 멱등이라 데이터는 안 깨지지만 중복 fetch 낭비 + 동시 INSERT 레이스(배치 실패 후 다음 주기 회복) 있음
   - 배포는 기존과 동일 FARGATE_SPOT 0.25vCPU/512MB(월 ~$3, 서울 온디맨드 vCPU $0.04656/h·GB $0.00511/h 기준 ~70% 할인). Spot 중단 시 @Scheduled는 놓친 사이클 소급 실행 없음 — RSS처럼 멱등·다음 주기가 커버하는 작업은 무해. 시각 민감/누적형/중단 불가 배치가 생기면 그 배치만 EventBridge Scheduler → SQS로 이관(스케줄 발화를 인프라가 보장, 워커 다운 중에도 메시지 보존) 또는 온디맨드 capacity 혼합
-  - SQS는 비동기 배치 용도(API가 큐에 넣고 worker가 풀링 — 예: OpenSearch full index, 회원탈퇴 청크 삭제, 댓글 정리 이관). @SqsListener + EventHandler(canHandle/handle) 라우팅은 해당 기능 진행 시
+  - SQS는 비동기 배치 용도(API가 큐에 넣고 worker가 풀링) — 검색 인덱싱으로 첫 적용(@SqsListener 수동 ack). 남은 후보: 회원탈퇴 청크 삭제, 게시글 삭제 시 댓글 정리 이관
   - 실시간 스트림이 필요해지면 Kinesis/Kafka 재논의 (현재는 SQS로 충분)
   - 기존 Client 인터페이스(CommentApiClient 등) 구현을 이벤트 발행으로 교체하는 지점
 - [ ] (Admin) 어드민 페이지 (yologram-admin-web)

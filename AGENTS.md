@@ -19,7 +19,7 @@
 - API Gateway: api.yologram.link → /api/v1/{proxy+}는 api-v1, /api/v2/{proxy+}는 api-v2, /{proxy+}는 web-v2
 - web-v1: S3 + CloudFront (web.v1.yologram.link)
 - admin-web: S3 + CloudFront (admin.yologram.link)
-- 검색: OpenSearch (추후 도입 예정)
+- 검색: OpenSearch 셀프호스팅 (Lightsail, opensearch.yologram.link) — 게시글 인덱싱까지 구현(api-v1이 SQS 발행, worker가 색인), 검색 API는 예정
 
 ## CI/CD
 

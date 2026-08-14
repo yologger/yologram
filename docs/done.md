@@ -256,3 +256,33 @@
   - 응답·화면 노출: metrics에 viewCount 필드 추가(무브레이킹 — 좋아요 때 정한 규약대로 평면 필드 신설 없음). api-v1·v2가 tech_post_view_count를 세 번째 조인으로 붙이고(leftJoin/outerjoin + coalesce(0), 1:1이라 row 뻥튀기 없음) web-v1·v2 카드·상세에 EyeOutlined로 표시. API 쪽 TechPostViewCount는 읽기 전용 엔티티 — 증감 리포지토리를 두지 않는다(동기 갱신 경로가 생기면 이벤트 파이프라인과 이중 소스가 되므로)
   - 패키지: 발행 api-v1·v2 domain/pms/tech/publisher/event, 구독 worker domain/pms/tech/subscriber/event — 외부 소스를 도메인 하위에서 다루는 결정(뉴스 수집이 domain/news/tech/client에 있는 것과 같은 결)이고 event=스트림(Kinesis)·message=SQS로 수단을 가른다. 이벤트 계약 클래스도 같은 자리에 두어 발행·구독 트리가 대칭
   - 설정 경로도 대칭: 발행 yologram.events.publish.post-view.{enabled,stream} / 구독 yologram.events.subscribe.post-view.enabled. 둘 다 기본 비활성이라 로컬·테스트가 prod 스트림·체크포인트를 건드리지 않는다. api-v2는 yaml이 없어 평면 대문자 매핑(POST_VIEW_PUBLISH_ENABLED/POST_VIEW_PUBLISH_STREAM, prod는 Dockerfile ENV)
+- [x] (Search) OpenSearch 셀프호스팅 인프라 — Lightsail 단일 노드 + Dashboards + Caddy
+  - AWS 관리형(t3.small.search $40.88/월, RI 불가)이 부담이라 Lightsail small_3_0(2GB, $10/월)에 Docker Compose로 OpenSearch + Dashboards + Caddy를 올렸다. opensearch.yologram.link / opensearch-dashboard.yologram.link, Caddy가 Let's Encrypt 인증서를 자동 발급·갱신
+  - ECS를 택하지 않은 이유: OpenSearch가 요구하는 vm.max_map_count=262144를 Fargate에서 설정할 수 없다(systemControls 허용 목록이 kernel 일부·fs.mqueue·net.*뿐). 데이터 영속도 문제 — managed EBS는 태스크 수명주기에 묶여(deleteOnTermination 기본 true) 재기동 시 같은 볼륨이 붙지 않는다. Lightsail은 인스턴스 디스크에 바인드 마운트라 재시작·컨테이너 교체에도 데이터가 남고, 자동 스냅샷(일 1회·7일 롤링 고정)으로 인스턴스 소실까지 커버
+  - nori 형태소 분석기는 공식 이미지에 없어 컨테이너 기동 시 설치한다. Dockerfile 빌드를 포기한 이유: compose v5.4.0의 build가 buildx 0.17+를 요구하는데 플러그인만 설치된 환경에서 실패 → compose command로 플러그인 설치 후 기동. 실측 결과 "제미나이 검색 기능을 구현한다" → 제미나 | 이 | 검색 | 기능 | 을 | 구현 | 하 | ᆫ다
+  - 함정 ①compose 환경변수 보간: 비밀번호의 `$`가 변수로 해석돼 값이 잘렸다(A$B-C → A-C). `#`는 YAML 주석이라 또 다른 함정 → env_file로 분리해 해소 ②admin 계정은 security plugin에서 reserved: true라 REST로 비밀번호를 바꿀 수 없다(FORBIDDEN: Resource 'admin' is reserved) — 바꾸려면 재프로비저닝 ③Lightsail 정적 IP는 인스턴스에 붙어 있으면 무료, 떼면 과금
+- [x] (Search) 게시글 검색 인덱싱 — api-v1 어드민 API(SQS 발행) + worker 소비(OpenSearch bulk 색인)
+  - 구조: 어드민이 PUT /api/v1/search/admin/tech/posts/indexing{,/{id},/{from}/{to}} 호출 → api-v1이 범위를 20건 청크로 쪼개 SQS에 발행하고 즉시 202 → worker가 소비해 MySQL에서 게시글을 읽고 OpenSearch에 bulk 색인. 레거시(yologram-legacy BoardIndexingService)는 워커가 없어 발행·소비를 한 애플리케이션에서 했지만 여기선 api가 발행까지만 하고 OpenSearch 클라이언트를 갖지 않는다
+  - 큐는 하나(yologram-search-indexing-prod) + 페이로드 target 필드로 분기 — politics-post·뉴스가 늘어도 큐는 그대로다. 큐를 나누면 워커 리스너·IAM·DLQ가 배수로 늘고, 처리 특성이 같아 나눌 이유가 없다(head-of-line 차단이 생기면 그때 분리)
+  - 단건도 from == to 범위 메시지로 보낸다 — 소비·재시도·테스트가 한 벌로 끝난다. 레거시는 단건만 동기 처리(200)했지만 전부 202 비동기로 통일
+  - 20건 청크로 쪼개는 이유: ①한 메시지 처리가 가시성 타임아웃(300초)을 넘으면 재노출돼 중복 처리 ②실패 재시도 단위 축소 ③워커 증설 시 메시지 단위 병렬화. 풀 인덱싱은 max(id)까지 훑고 삭제된 id 구간은 조회 0건으로 지나간다
+  - 멱등: 문서 id를 게시글 id로 고정 — SQS at-least-once 재전달과 중복 발행이 전부 덮어쓰기가 되어 무해하다. 조회수 파이프라인이 view_key UNIQUE로 흡수한 것과 같은 결
+  - 수동 ack: 색인 성공 후에만 삭제한다. 먼저 지우면 실패한 범위가 영영 색인되지 않는다. 실패 시 ack하지 않아 가시성 타임아웃 후 재전달되고 3회 실패면 DLQ(14일 보관)로 간다. 반대로 재시도해도 결과가 같은 메시지(깨진 JSON·미지원 target·유효하지 않은 범위)는 ack해서 버린다 — DLQ 왕복이 낭비라서
+  - 경로에 indexing 조작 세그먼트: /posts에 PUT을 걸면 게시글 수정으로 읽히고, 나중에 검색 API(/search/tech/posts)와 성격이 뒤섞인다. indexing을 두면 인덱스 관리(/posts/indices)·재색인 전환(/posts/migration)이 형제로 붙을 자리가 남는다
+  - 소비 쪽은 @Async를 쓰지 않는다 — 레거시 BoardIndexingHandler는 @Async + MANUAL ack 조합이라 예외가 리스너 밖에서 발생해 changeMessageVisibility·ack 제어가 무력화됐다. SQS 리스너는 이미 별도 스레드 풀에서 돌므로 다시 비동기로 만들 이유가 없다
+  - 반대로 발행 쪽(api-v1)의 전체 인덱싱은 @Async("sqsTaskExecutor")로 돌린다 — 발행 루프를 요청 스레드에서 돌리면 게시글 10만 건 기준 SendMessage 5,000회 동안 응답을 못 줘 게이트웨이 타임아웃(30초)에 걸린다. @Async는 예외를 호출자에게 전달하지 못하므로 메서드 안에서 runCatching으로 잡아 남기고, 결과는 SQS 큐 깊이로 확인한다(번장 bun-search-indexer도 Hazelcast 큐에 넣고 즉시 응답하는 같은 구조 — 다만 그쪽은 워커 스레드를 직접 띄우고 우리는 워커 프로세스가 그 역할을 한다)
+  - AsyncConfig는 기본 풀(applicationTaskExecutor)까지 직접 정의했다. Boot 자동구성이 @ConditionalOnMissingBean(Executor)라서 Executor 빈을 하나라도 만들면 통째로 백오프하고, 그러면 이름 없는 @Async·Spring MVC 비동기 요청 처리·JPA 부트스트랩이 SimpleAsyncTaskExecutor(호출마다 새 스레드)로 조용히 폴백한다. 실제로 devtools의 CONDITION EVALUATION DELTA에 TaskExecutorConfiguration 백오프가 찍혀 발견했다. 전용 풀은 defaultCandidate = false로 자동 주입 후보에서 빼고, Executor 빈이 둘이 되면 기본을 못 정하므로 AsyncConfigurer.getAsyncExecutor()로 명시한다
+  - 발행 실패는 삼키지 않는다 — 조회 이벤트(사용자 응답을 막지 않아야 함)와 반대로 어드민이 명시 요청한 작업이라 실패를 알려야 한다. 이 대칭이 "발행은 항상 실패를 삼킨다"가 아니라 "호출자가 결과를 기다리는가"가 기준임을 보여준다
+  - 인덱스는 버전 인덱스 + alias(tech-post-index-v1 실제 / tech-post-index alias) — 매핑 변경 시 v2 재색인 후 alias 이동으로 무중단. 워커 기동 시 upsert하되 실패해도 기동은 막지 않는다(뉴스 파이프라인은 계속 돌아야 하고, 인덱스가 없으면 색인 시점에 오류가 나므로 조용히 잘못 색인될 위험은 없다). 단일 노드라 number_of_replicas=0, 문서의 metrics는 레거시의 nested를 object로 바꿨다(카운트는 배열이 아니라 nested의 색인 비용이 불필요)
+  - 함정: 범위 필드(from·to)가 원시 타입이라 필드가 빠져도 파싱이 통과하고 0이 들어온다 — 소비 쪽 범위 검증이 없으면 잘못된 메시지가 index(0, 0)으로 조용히 성공한다. 테스트를 쓰다 발견해 검증을 추가
+  - 예외 처리: 범위 오류를 IllegalArgumentException(require)로 던지면 전역 폴백에서 500이 되어 Swagger에 적은 400과 어긋난다 → search 도메인 예외(InvalidIndexRangeException)와 핸들러를 신설
+  - 색인 대상 데이터는 worker infra/client/pms에서 네이티브 쿼리로 읽는다(tech_post + 댓글·좋아요·조회 카운트 조인, 카테고리는 1:N이라 별도 조회) — 검색 도메인이 원본 테이블을 직접 매핑하지 않는다는 경계 규칙
+  - IAM은 방향별 최소 권한: api-v1은 SendMessage만, worker는 Receive/Delete/ChangeVisibility만
+  - OpenSearch 접속은 opensearch.main.{uri,username,password} 3개를 SSM에 두고(전부 SecureString) 스위치(enabled)는 yaml에 둔다 — 환경별 고정값이라 파라미터로 뺄 이유가 없다. 이름은 worker·api-v1·v2가 동일(같은 클러스터를 가리키는 값이 서비스마다 다른 키를 갖지 않게)하고, api-v1·v2는 검색 API 구현 전이라 자리만 확보했다. uri는 tf가 실제 값을 관리하고 자격증명만 PLACEHOLDER + ignore_changes
+  - api-v1 로컬 실측(prod 프로파일): 단건 1건·범위 1~45가 20건 청크로 3건(1-20/21-40/41-45) 발행, 잘못된 범위 400 INVALID_INDEX_RANGE, 전체 인덱싱은 max(id) 1200까지 60여 건을 뿌리면서도 응답 202/7.8ms. 일반 유저 토큰은 물론 audience만 yologram.admin으로 위조한 토큰도 401 — 유저용·어드민용 JWT secret이 SSM에서부터 분리돼 있어 서명이 맞지 않는다
+  - 테스트: api-v1 신규 32(서비스 청크 분할·경계·발행자 스킵/캐시/실패 전파·리소스 202/400/401), worker 신규 11(정상·버리는 메시지·재전달) 전체 통과
+- [x] (구조) config를 관심사별 하위 패키지로 분리 — api-v1·worker
+  - config 루트에 설정 클래스가 평면으로 쌓여(api-v1 15개) 무엇이 무엇의 짝인지 보이지 않던 것을 정리. 설정 클래스와 그 프로퍼티 클래스를 같은 패키지에 두어 각 디렉토리가 자기 완결적이 되게 했다
+  - api-v1: database(DataSource·JPA·QueryDSL)·observability·kinesis·sqs·redis·security·ses·web·async / worker: database·observability·redis·opensearch·scheduling
+  - JpaConfig·QuerydslConfig는 DB 관심사라 database로, OTEL은 별도 관심사라 observability로. 동작 변경 없이 패키지 선언과 import만 바뀐다(git이 전부 rename으로 인식)
+  - 자동 치환 시 함정: 주석·KDoc에 등장하는 클래스명("SesConfig와 동일 관례")을 코드 참조로 오인해 unused import가 붙는다. worker 작업에서는 KDoc·주석을 걷어낸 뒤 참조를 검사해 피했다

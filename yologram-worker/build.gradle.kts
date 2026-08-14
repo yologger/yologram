@@ -59,6 +59,12 @@ dependencies {
     // Spring Cloud AWS
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.1.0"))
     implementation("io.awspring.cloud:spring-cloud-aws-starter-parameter-store")
+    // SQS 소비 — @SqsListener(수동 ack·가시성 조정). 레거시 BoardIndexingHandler와 같은 스택
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
+    // OpenSearch 공식 Java 클라이언트. 레거시가 쓰던 RestHighLevelClient는 지원 종료 계열이라 채택하지 않는다
+    implementation("org.opensearch.client:opensearch-java:2.25.0")
+    // opensearch-java의 transport 구현 — 클라이언트가 optional 의존으로 두어 직접 선언해야 한다
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.1")
 
     // Kinesis
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies:2025.0.0"))

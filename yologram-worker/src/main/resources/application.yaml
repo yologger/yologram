@@ -19,6 +19,13 @@ spring:
       region:
         static: ap-northeast-2
 
+opensearch:
+  main:
+    enabled: false
+    uri:
+    username:
+    password:
+
 cache:
   data:
     redis:
@@ -70,6 +77,13 @@ yologram:
     subscribe:
       post-view:
         enabled: false
+  messages:
+    subscribe:
+      # 검색 인덱싱 작업 소비 (SQS) — opensearch.enabled와 함께 켜고 끈다.
+      # 소비만 켜면 색인 서비스 빈이 없어 기동에 실패한다
+      post-index:
+        enabled: false
+        queue:
   webhooks:
     discord:
       tech-news:

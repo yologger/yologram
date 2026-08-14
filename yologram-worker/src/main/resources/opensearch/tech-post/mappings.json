@@ -1,0 +1,26 @@
+{
+  "properties": {
+    "id": { "type": "long" },
+    "uid": { "type": "long" },
+    "title": {
+      "type": "text",
+      "analyzer": "yologram_korean",
+      "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+    },
+    "content": {
+      "type": "text",
+      "analyzer": "yologram_korean"
+    },
+    "categoryIds": { "type": "long" },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "commentCount": { "type": "long" },
+        "likeCount": { "type": "long" },
+        "viewCount": { "type": "long" }
+      }
+    },
+    "createdAt": { "type": "date", "format": "date_optional_time" },
+    "modifiedAt": { "type": "date", "format": "date_optional_time" }
+  }
+}

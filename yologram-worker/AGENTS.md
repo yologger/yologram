@@ -2,8 +2,8 @@
 
 ## 프로젝트 개요
 
-Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 배치 소비는 예정. 번개장터 bun-ums-worker 패턴을 미러링한 구조.
-현재 테크 뉴스 파이프라인(RSS 수집 → LLM 요약 → Discord 알림) 운영 중.
+Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled)·Kinesis 스트림 소비·SQS 배치 소비를 담당. 번개장터 bun-ums-worker 패턴을 미러링한 구조.
+현재 테크 뉴스 파이프라인(RSS 수집 → LLM 요약 → Discord 알림)·게시글 조회수 파이프라인·검색 인덱싱이 올라와 있다.
 
 > 기술 스택은 README.md, 구현 기능·설계 근거는 루트 docs/done.md, 구현 시 따라야 할 제약·참고는 docs/rules.md 참조.
 
@@ -11,21 +11,26 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 
 
 - src/main/kotlin/link/yologram/worker/Application.kt: 엔트리 — JVM 초기화(TimeZone Asia/Seoul, DNS TTL) 후 기동
 - config/database/CoreDatabaseConfig.kt: master/slave DataSource 라우팅 (api-v1 미러, database.main.* 프로퍼티)
-- config/JpaConfig.kt: @EnableJpaAuditing
-- config/OpenTelemetryLoggingConfig.kt: OTEL logback 초기화
+- config/는 관심사별 하위 패키지 — database(DataSource·JPA)·redis·opensearch·observability·scheduling (api-v1과 같은 규칙, docs/rules.md 「구조」)
+- config/database/JpaConfig.kt: @EnableJpaAuditing
+- config/observability/OpenTelemetryLoggingConfig.kt: OTEL logback 초기화
 - global/client/WebClientFactory.kt·HttpClientConfig.kt: 공용 WebClient (타임아웃·리다이렉트, 수집용 outboundWebClient 빈)
 - global/llm/: LlmClient(Gemini→Groq fallback)·LlmConfig(Spring AI OpenAI 호환, read timeout 60초)·LlmProperties(yologram.llm.*)
 - global/discord/: DiscordNotifier(채널별 웹훅 send/sendEmbed)·DiscordConfig·DiscordProperties(yologram.webhooks.discord.{채널}.url/enabled)
 - domain/news/tech/: 테크 뉴스 도메인 — client(RssFeedClient·NewsContentCrawler — 외부 HTTP), service(Collect·Summarize·CategoryParser), scheduler(수집 10분·요약 5분 — yologram.batches.tech-news-{collect,summarize}.schedule). LLM 분류 어휘는 CmsApiClient로 배치마다 로드 — 어드민 카테고리 변경 자동 반영, 매핑은 categoryId
 - domain/pms/tech/: 게시글 조회수 도메인 — subscriber/event(PostViewEvent 계약 + Subscriber/SubscriberConfig — Kinesis 배치 소비, 포이즌 레코드 스킵·커밋 후 수동 체크포인트), service(PostViewKeyFactory — view_key `{postId}:{viewer}:{viewDate}` 멱등 정책의 유일한 지점 / TechPostViewIngestService — 배치 distinct→기존 키 제외→INSERT IGNORE→postId당 카운트 upsert 1회 / TechPostViewPurgeService — 30일 초과 청크 삭제, 임계는 UTC), scheduler(post-view-purge 04:30). 구독 on/off는 yologram.events.subscribe.post-view.enabled(prod만 true — 로컬이 prod 체크포인트를 오염시키지 않게)
+- config/opensearch/OpenSearchConfig.kt·OpenSearchProperties.kt: OpenSearch 클라이언트 수동 빈(opensearch.main.* — enabled/uri/username/password, database.main.*과 같은 결). 셀프호스팅이라 IAM이 아니라 security plugin basic auth. enabled=false면 클라이언트·색인 서비스 빈을 만들지 않는다(RedisConfig와 같은 패턴)
+- domain/search/tech/: 게시글 검색 인덱싱 — subscriber/message(TechPostIndexMessage 계약 + Subscriber — SQS 수동 ack, 색인 성공 후에만 삭제), service/TechPostIndexService(범위 조회 → bulk 색인, 문서 id=게시글 id로 멱등. @PostConstruct로 인덱스·alias upsert), document/TechPostDocument. 인덱스는 tech-post-index-v1 + tech-post-index alias(매핑 변경 시 v2 재색인 후 alias 이동으로 무중단)
+- src/main/resources/opensearch/tech-post/{settings,mappings}.json: 인덱스 정의 — nori 형태소 분석기(yologram_korean), 단일 노드라 number_of_replicas=0
+- infra/client/pms/: 게시글 읽기 모델 — PmsApiClient + LocalPmsApiClient(네이티브 쿼리로 tech_post + 댓글·좋아요·조회 카운트 조인, 카테고리는 1:N이라 별도 조회) + TechPostForIndex. 색인 대상 데이터는 이 층에서만 읽는다
 - infra/client/cms/: 도메인 간 경계 클라이언트 — CmsApiClient + LocalCmsApiClient + TechCategory 읽기 모델(tech_category 매핑은 이 층에만, api-v1 infra/client 규칙과 일관)
-- config/RedisConfig.kt·CacheRedisProperties.kt + infra/cache/TechNewsFirstPageCacheInvalidator.kt: Valkey 연결(api-v1 미러 — cache.data.redis.*, lazy·1s 타임아웃·REJECT_COMMANDS, Redis 없어도 기동 정상) + 뉴스 첫 페이지 캐시 무효화(clear — (all+활성 카테고리)×size 1~50 키 전수 열거 UNLINK 1왕복, 요약 배치 SUMMARIZED ≥1이면 배치당 1회·커밋 이후 호출. 실패 삼킴 — API 캐시 TTL 3분이 보험. 키 스킴은 api-v1 Cache.kt와 문자열 계약)
+- config/redis/RedisConfig.kt·CacheRedisProperties.kt + infra/cache/TechNewsFirstPageCacheInvalidator.kt: Valkey 연결(api-v1 미러 — cache.data.redis.*, lazy·1s 타임아웃·REJECT_COMMANDS, Redis 없어도 기동 정상) + 뉴스 첫 페이지 캐시 무효화(clear — (all+활성 카테고리)×size 1~50 키 전수 열거 UNLINK 1왕복, 요약 배치 SUMMARIZED ≥1이면 배치당 1회·커밋 이후 호출. 실패 삼킴 — API 캐시 TTL 3분이 보험. 키 스킴은 api-v1 Cache.kt와 문자열 계약)
 - src/main/resources/application.yaml: 공통 설정 (database.main, 배치 스케줄 yologram.batches.{배치명}.schedule, 이벤트 구독 yologram.events.subscribe.{이벤트}.enabled, LLM 모델, Discord 채널)
 - src/main/resources/logback-spring.xml: 로깅 (콘솔 + prod OTEL appender)
 
 ## 도메인 구조
 
-- domain/{도메인}/{섹션} — news/tech·pms/tech(운영 중), invest·politics는 {도메인}/{섹션} 세트 추가, search/ums(예정)
+- domain/{도메인}/{섹션} — news/tech·pms/tech·search/tech(운영 중), invest·politics는 {도메인}/{섹션} 세트 추가, ums(예정)
 - 클래스명은 섹션 접두사 유지(TechNews...) — 추후 InvestNews/PoliticsNews와 JPA 엔티티 단순명 충돌 방지
 - 테이블: tech_news_source + tech_news + tech_news_category_mapping(categoryId) — 뉴스 파이프라인 소유(domain에서 repository 직접). tech_category(cms 소유 공용 마스터)는 infra/client/cms 경유 조회 전용. 전 테이블 FK 미사용(같은 도메인 포함), status(COLLECTED/SUMMARIZED/FAILED)+retry_count가 작업 큐
 - tech_post_view(조회 이력, UNIQUE view_key) + tech_post_view_count(1:1 카운트) — api-v1이 소유한 tech_post 계열의 위성 테이블이지만 쓰기는 worker 전담(조회수 파이프라인). 이력이 진실, 카운트는 비정규화
@@ -36,14 +41,15 @@ Spring Boot (Kotlin) 비동기 워커. 주기 작업(@Scheduled) 담당 — SQS 
 - @Scheduled는 놓친 회차를 소급하지 않음 — 다음 회차가 커버하는 작업(RSS 등)만. 시각 민감/누적형 배치는 EventBridge Scheduler → SQS로
 - 주기 작업은 단일 인스턴스 전제 — 인스턴스 확장 시 ShedLock 도입 (todos)
 - HTTP 호출은 WebClient 통일(WebClientFactory — 예외: Spring AI는 자체 RestClient에 타임아웃 주입). LLM 모델 선정은 실측 기준(/v1/models 조회, 429 quotaValue) — docs/rules.md 참조
-- SQS 컨슈머는 EventHandler(canHandle/handle) 라우팅 패턴으로 (해당 기능 진행 시)
-- 구독 코드는 domain/{도메인}/{섹션}/subscriber/{수단} — event=스트림(Kinesis)·message=SQS. Kinesis 소비 규칙(체크포인트 시점·포이즌 레코드·KCL 모드·자원 요건)은 docs/rules.md 「이벤트 스트리밍」 참조
+- 구독 코드는 domain/{도메인}/{섹션}/subscriber/{수단} — event=스트림(Kinesis)·message=SQS. Kinesis 소비 규칙(체크포인트 시점·포이즌 레코드·KCL 모드·자원 요건)은 docs/rules.md 「이벤트 스트리밍」, SQS 소비 규칙(수동 ack·버릴 메시지 판정)은 「검색 인덱싱」 참조
+- SQS 리스너는 수동 ack(acknowledgementMode=MANUAL) — 처리 성공 후에만 ack한다. @Async로 넘기지 않는다(리스너 밖에서 예외가 나 ack·가시성 제어가 무력화된다. 리스너는 이미 별도 스레드 풀에서 돈다)
 - AWS SDK 리전은 spring.cloud.aws.region.static으로 고정 — 자동 탐색 체인이 CI·Fargate에서 비어 기동이 실패한다
 
 ## 설정 관리
 
 - application-local.yaml: 로컬 (포트 5003, OTLP 비활성, worker_local SSM만 import — prod 파라미터 유입 금지)
-- application-prod.yaml: 프로덕션 (Parameter Store /yologram/service/yologram-worker_prod/ — OTLP 6·DB 6·LLM 키 2·Discord 웹훅 3·cache 1)
+- application-prod.yaml: 프로덕션 (Parameter Store /yologram/service/yologram-worker_prod/ — OTLP 6·DB 6·LLM 키 2·Discord 웹훅 3·cache 1·opensearch 3)
+- OpenSearch는 접속 3개만 SSM(opensearch.main.{uri,username,password}, 전부 SecureString) — 스위치(enabled)는 환경별 고정값이라 yaml에 둔다. uri는 tf가 실제 값을 관리하고 자격증명만 PLACEHOLDER + ignore_changes로 두고 콘솔에서 채운다
 - Discord 채널 on/off는 yaml(yologram.webhooks.discord.{채널}.enabled), URL은 SSM
 
 ## 테스트

@@ -4,7 +4,8 @@
 
 - 테크 뉴스 파이프라인(운영 중): RSS 수집(10분) → LLM 요약(5분, 배치 10건) → Discord 채널별 embed 알림
 - 게시글 조회수 파이프라인(운영 중): Kinesis 조회 이벤트 배치 소비 → 이력(tech_post_view, view_key 멱등) + 카운트(tech_post_view_count) 적재, 이력 30일 정리 배치(04:30)
-- SQS 컨슈머: API가 큐에 넣은 배치 작업 풀링 — OpenSearch full index, 회원탈퇴 연관 데이터 청크 삭제, 게시글 삭제 시 댓글 정리 이관 (예정)
+- 검색 인덱싱(구현): api가 SQS에 넣은 범위 작업 소비 → MySQL에서 게시글을 읽어 OpenSearch bulk 색인 (문서 id=게시글 id로 멱등, 수동 ack)
+- SQS 컨슈머 확장 예정: 회원탈퇴 연관 데이터 청크 삭제, 게시글 삭제 시 댓글 정리 이관
 
 ## 기술 스택
 
@@ -17,6 +18,8 @@
 - Spring Cloud AWS Parameter Store (설정 주입)
 - Spring Data Redis + Lettuce (api-v1 미러) — 뉴스 첫 페이지 캐시 무효화 발행 (요약 배치 시 키 전수 열거 UNLINK)
 - Spring Cloud Stream Kinesis binder 4.0.4 + KCL 2.5.8 (게시글 조회 이벤트 배치 소비 — KCL 모드, EFO·CloudWatch 메트릭 끔, 리스 테이블은 KCL 자동 생성)
+- Spring Cloud AWS SQS (검색 인덱싱 작업 소비 — 수동 ack, DLQ 3회)
+- OpenSearch Java Client 2.25.0 + httpclient5 (셀프호스팅 OpenSearch basic auth, nori 형태소 분석)
 - kotlin-logging (로깅)
 - OpenTelemetry (logs/metrics/traces → Grafana Cloud OTLP direct push)
 - Gradle (Kotlin DSL), Testcontainers(MySQL)
