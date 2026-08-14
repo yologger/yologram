@@ -1,26 +1,59 @@
 {
   "properties": {
-    "id": { "type": "long" },
-    "uid": { "type": "long" },
+    "id": {
+      "type": "long"
+    },
+    "uid": {
+      "type": "long"
+    },
     "title": {
       "type": "text",
       "analyzer": "yologram_korean",
-      "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "standard": {
+          "type": "text",
+          "analyzer": "standard"
+        }
+      }
     },
     "content": {
       "type": "text",
-      "analyzer": "yologram_korean"
+      "analyzer": "yologram_korean",
+      "fields": {
+        "standard": {
+          "type": "text",
+          "analyzer": "standard"
+        }
+      }
     },
-    "categoryIds": { "type": "long" },
+    "categoryIds": {
+      "type": "long"
+    },
     "metrics": {
       "type": "object",
       "properties": {
-        "commentCount": { "type": "long" },
-        "likeCount": { "type": "long" },
-        "viewCount": { "type": "long" }
+        "commentCount": {
+          "type": "long"
+        },
+        "likeCount": {
+          "type": "long"
+        },
+        "viewCount": {
+          "type": "long"
+        }
       }
     },
-    "createdAt": { "type": "date", "format": "date_optional_time" },
-    "modifiedAt": { "type": "date", "format": "date_optional_time" }
+    "createdAt": {
+      "type": "date",
+      "format": "date_optional_time"
+    },
+    "modifiedAt": {
+      "type": "date",
+      "format": "date_optional_time"
+    }
   }
 }

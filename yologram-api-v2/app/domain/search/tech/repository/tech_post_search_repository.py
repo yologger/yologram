@@ -9,7 +9,9 @@ from app.domain.search.tech.model import TechPostSearchSort
 INDEX_ALIAS = "tech-post-index"
 
 _FIELD_TITLE_BOOSTED = "title^2"
+_FIELD_TITLE_STANDARD = "title.standard^2"
 _FIELD_CONTENT = "content"
+_FIELD_CONTENT_STANDARD = "content.standard"
 _FIELD_CREATED_AT = "createdAt"
 
 
@@ -34,11 +36,21 @@ class TechPostSearchRepository:
             "from": from_,
             "size": size,
             # 제목 가중치 2배 — 제목이 맞는 글이 본문만 맞는 글보다 위로 온다.
-            # nori 분석기가 적용된 필드라 형태소 단위로 매칭된다
+            # nori 필드는 형태소 단위로, standard 필드는 단어를 통째로 매칭한다.
+            # 둘 다 보는 이유: nori는 사전에 없는 외래어를 문맥마다 다르게 쪼개서
+            # ("마이그레이션" → 그레|이 / 마|이|그레이|션) 혼자서는 못 잡는다
             "query": {
                 "multi_match": {
                     "query": keyword,
-                    "fields": [_FIELD_TITLE_BOOSTED, _FIELD_CONTENT],
+                    "fields": [
+                        _FIELD_TITLE_BOOSTED,
+                        _FIELD_TITLE_STANDARD,
+                        _FIELD_CONTENT,
+                        _FIELD_CONTENT_STANDARD,
+                    ],
+                    # AND — 토큰 하나만 맞아도 걸리는 기본값(OR)이면 nori가 쪼갠 한 글자 토큰("이")에
+                    # 무관한 글이 대량으로 매칭된다(실측: "마이그레이션" 56건 → 2건)
+                    "operator": "and",
                 }
             },
             "sort": self._sort_clause(sort),

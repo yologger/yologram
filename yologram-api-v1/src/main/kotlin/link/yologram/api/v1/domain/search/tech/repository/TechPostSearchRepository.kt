@@ -4,6 +4,7 @@ import link.yologram.api.v1.domain.search.tech.document.TechPostDocument
 import link.yologram.api.v1.domain.search.tech.model.TechPostSearchSort
 import org.opensearch.client.opensearch.OpenSearchClient
 import org.opensearch.client.opensearch._types.SortOrder
+import org.opensearch.client.opensearch._types.query_dsl.Operator
 import org.opensearch.client.opensearch.core.SearchRequest
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Repository
@@ -33,10 +34,16 @@ class TechPostSearchRepository(
             .from(from)
             .size(size)
             // 제목 가중치 2배 — 제목이 맞는 글이 본문만 맞는 글보다 위로 온다.
-            // nori 분석기가 적용된 필드라 형태소 단위로 매칭된다("검색 기능을" → 검색·기능)
+            // nori 필드는 형태소 단위로 매칭하고("검색 기능을" → 검색·기능),
+            // standard 필드는 단어를 통째로 매칭한다. 둘 다 보는 이유: nori는 사전에 없는 외래어를
+            // 문맥마다 다르게 쪼개서("마이그레이션" → 그레|이 / 마|이|그레이|션) 혼자서는 못 잡는다
             .query { q ->
                 q.multiMatch { m ->
-                    m.query(keyword).fields(FIELD_TITLE_BOOSTED, FIELD_CONTENT)
+                    m.query(keyword)
+                        .fields(FIELD_TITLE_BOOSTED, FIELD_TITLE_STANDARD, FIELD_CONTENT, FIELD_CONTENT_STANDARD)
+                        // AND — 토큰 하나만 맞아도 걸리는 기본값(OR)이면 nori가 쪼갠 한 글자 토큰("이")에
+                        // 무관한 글이 대량으로 매칭된다(실측: "마이그레이션" 56건 → 2건)
+                        .operator(Operator.And)
                 }
             }
             .apply {
@@ -69,7 +76,9 @@ class TechPostSearchRepository(
         const val INDEX_ALIAS = "tech-post-index"
 
         private const val FIELD_TITLE_BOOSTED = "title^2"
+        private const val FIELD_TITLE_STANDARD = "title.standard^2"
         private const val FIELD_CONTENT = "content"
+        private const val FIELD_CONTENT_STANDARD = "content.standard"
         private const val FIELD_CREATED_AT = "createdAt"
     }
 }

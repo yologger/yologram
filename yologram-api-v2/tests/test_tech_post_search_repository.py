@@ -33,8 +33,15 @@ class TestQuery:
         _, kwargs = _search()
 
         fields = kwargs["body"]["query"]["multi_match"]["fields"]
-        assert fields == ["title^2", "content"]
+        # nori(형태소) + standard(단어 통째) 둘 다 본다 — nori 혼자서는 사전에 없는 외래어를 못 잡는다
+        assert fields == ["title^2", "title.standard^2", "content", "content.standard"]
         assert kwargs["body"]["query"]["multi_match"]["query"] == "제미나이"
+
+    def test_operator는_AND다(self):
+        # 기본값(OR)이면 nori가 쪼갠 한 글자 토큰에 무관한 글이 대량 매칭된다
+        _, kwargs = _search()
+
+        assert kwargs["body"]["query"]["multi_match"]["operator"] == "and"
 
     def test_from과_size를_그대로_전달한다(self):
         _, kwargs = _search()

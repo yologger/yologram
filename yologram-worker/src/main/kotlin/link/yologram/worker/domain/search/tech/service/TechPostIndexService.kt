@@ -117,7 +117,7 @@ class TechPostIndexService(
 
     companion object {
         const val INDEX_ALIAS = "tech-post-index"
-        const val INDEX_VERSION = "v1"
+        const val INDEX_VERSION = "v2"   // v1 → v2: title·content에 standard 서브필드 추가(외래어 검색)
         const val INDEX_NAME = "$INDEX_ALIAS-$INDEX_VERSION"
 
         /** bulk 한 요청에 담을 문서 수 (레거시 BULK_INDEXING_BATCH_SIZE=5보다 크게 — 5는 실서비스엔 과도하게 작다) */
