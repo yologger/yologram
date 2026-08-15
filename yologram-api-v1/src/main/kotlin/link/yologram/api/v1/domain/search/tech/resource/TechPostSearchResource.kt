@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import link.yologram.api.v1.domain.pms.tech.model.TechPostSummaryResponse
-import link.yologram.api.v1.domain.search.tech.model.TechPostSearchSort
+import link.yologram.api.v1.domain.search.tech.model.TechSearchSort
 import link.yologram.api.v1.domain.search.tech.service.TechPostSearchService
 import link.yologram.api.v1.domain.ums.resolver.OptionalAuthenticatedUser
 import link.yologram.api.v1.domain.ums.resolver.AuthData
@@ -52,7 +52,7 @@ class TechPostSearchResource(
         @RequestParam(defaultValue = "10") size: Int,
 
         @Parameter(description = "정렬 기준")
-        @RequestParam(defaultValue = "RELEVANCE") sort: TechPostSearchSort,
+        @RequestParam(defaultValue = "RELEVANCE") sort: TechSearchSort,
 
         @OptionalAuthenticatedUser authData: AuthData?,
     ): ApiEnvelopPage<TechPostSummaryResponse> {

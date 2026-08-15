@@ -7,7 +7,7 @@ import link.yologram.api.v1.domain.search.exception.BlankSearchKeywordException
 import link.yologram.api.v1.domain.search.exception.SearchPageTooDeepException
 import link.yologram.api.v1.domain.search.exception.SearchUnavailableException
 import link.yologram.api.v1.domain.search.tech.document.TechPostDocument
-import link.yologram.api.v1.domain.search.tech.model.TechPostSearchSort
+import link.yologram.api.v1.domain.search.tech.model.TechSearchSort
 import link.yologram.api.v1.domain.search.tech.repository.TechPostSearchRepository
 import link.yologram.api.v1.infra.client.ums.UmsApiClient
 import org.junit.jupiter.api.Nested
@@ -64,7 +64,7 @@ class TechPostSearchServiceTest {
             )
 
             assertFailsWith<SearchUnavailableException> {
-                disabled.search("제미나이", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+                disabled.search("제미나이", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
             }
 
             verify(searchRepository, never()).search(any(), any(), any(), any())
@@ -77,7 +77,7 @@ class TechPostSearchServiceTest {
         @Test
         fun `검색어가 비면 400 예외를 던지고 질의하지 않는다`() {
             assertFailsWith<BlankSearchKeywordException> {
-                service.search("", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+                service.search("", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
             }
 
             verify(searchRepository, never()).search(any(), any(), any(), any())
@@ -86,7 +86,7 @@ class TechPostSearchServiceTest {
         @Test
         fun `공백만 있는 검색어도 비어있는 것으로 본다`() {
             assertFailsWith<BlankSearchKeywordException> {
-                service.search("   ", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+                service.search("   ", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
             }
         }
 
@@ -94,7 +94,7 @@ class TechPostSearchServiceTest {
         fun `검색어의 앞뒤 공백은 잘라서 질의한다`() {
             givenResult(emptyList(), 0)
 
-            service.search("  제미나이  ", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            service.search("  제미나이  ", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
 
             verify(searchRepository).search(eq("제미나이"), any(), any(), any())
         }
@@ -103,7 +103,7 @@ class TechPostSearchServiceTest {
         fun `max_result_window를 넘는 페이지는 400 예외를 던진다`() {
             // 막지 않으면 OpenSearch가 예외를 내 500이 된다
             assertFailsWith<SearchPageTooDeepException> {
-                service.search("제미나이", page = 1000, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+                service.search("제미나이", page = 1000, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
             }
 
             verify(searchRepository, never()).search(any(), any(), any(), any())
@@ -113,7 +113,7 @@ class TechPostSearchServiceTest {
         fun `한계 직전 페이지는 통과한다`() {
             givenResult(emptyList(), 10_000)
 
-            service.search("제미나이", page = 999, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            service.search("제미나이", page = 999, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
 
             verify(searchRepository).search(any(), eq(9990), eq(10), any())
         }
@@ -122,10 +122,10 @@ class TechPostSearchServiceTest {
         fun `size는 1에서 50으로 보정한다`() {
             givenResult(emptyList(), 0)
 
-            service.search("제미나이", page = 0, size = 999, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            service.search("제미나이", page = 0, size = 999, sort = TechSearchSort.RELEVANCE, viewerUid = null)
             verify(searchRepository).search(any(), any(), eq(TechPostSearchService.MAX_PAGE_SIZE), any())
 
-            service.search("제미나이", page = 0, size = 0, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            service.search("제미나이", page = 0, size = 0, sort = TechSearchSort.RELEVANCE, viewerUid = null)
             verify(searchRepository).search(any(), any(), eq(1), any())
         }
 
@@ -133,7 +133,7 @@ class TechPostSearchServiceTest {
         fun `음수 페이지는 0으로 보정한다`() {
             givenResult(emptyList(), 0)
 
-            service.search("제미나이", page = -5, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            service.search("제미나이", page = -5, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
 
             verify(searchRepository).search(any(), eq(0), any(), any())
         }
@@ -146,7 +146,7 @@ class TechPostSearchServiceTest {
         fun `총건수와 페이지 크기로 전체 페이지 수를 올림 계산한다`() {
             givenResult(listOf(document(1)), 45)
 
-            val result = service.search("제미나이", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            val result = service.search("제미나이", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
 
             assertEquals(45, result.totalCount)
             assertEquals(5, result.totalPages)
@@ -158,11 +158,11 @@ class TechPostSearchServiceTest {
         fun `첫 페이지는 first true, 마지막 페이지는 last true`() {
             givenResult(listOf(document(1)), 45)
 
-            val first = service.search("제미나이", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            val first = service.search("제미나이", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
             assertTrue(first.first!!)
             assertFalse(first.last!!)
 
-            val last = service.search("제미나이", page = 4, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            val last = service.search("제미나이", page = 4, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
             assertFalse(last.first!!)
             assertTrue(last.last!!)
         }
@@ -171,7 +171,7 @@ class TechPostSearchServiceTest {
         fun `결과가 없으면 총 0건이고 첫 페이지가 마지막이다`() {
             givenResult(emptyList(), 0)
 
-            val result = service.search("없는키워드", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            val result = service.search("없는키워드", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
 
             assertEquals(0, result.totalCount)
             assertEquals(0, result.totalPages)
@@ -184,7 +184,7 @@ class TechPostSearchServiceTest {
         fun `페이지 번호가 from으로 변환된다`() {
             givenResult(emptyList(), 100)
 
-            service.search("제미나이", page = 3, size = 20, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            service.search("제미나이", page = 3, size = 20, sort = TechSearchSort.RELEVANCE, viewerUid = null)
 
             verify(searchRepository).search(any(), eq(60), eq(20), any())
         }
@@ -198,7 +198,7 @@ class TechPostSearchServiceTest {
             givenResult(listOf(document(1200)), 1)
             whenever(umsApiClient.findNicknames(any())).thenReturn(mapOf(12L to "tester0"))
 
-            val result = service.search("제미나이", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            val result = service.search("제미나이", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
 
             val item = result.data.single()
             assertEquals(1200, item.id)
@@ -219,7 +219,7 @@ class TechPostSearchServiceTest {
             givenResult(listOf(document(1, uid = 12), document(2, uid = 13), document(3, uid = 12)), 3)
             whenever(umsApiClient.findNicknames(any())).thenReturn(mapOf(12L to "a", 13L to "b"))
 
-            service.search("제미나이", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            service.search("제미나이", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
 
             verify(umsApiClient).findNicknames(eq(listOf(12L, 13L, 12L)))
         }
@@ -229,7 +229,7 @@ class TechPostSearchServiceTest {
             givenResult(listOf(document(1)), 1)
             whenever(umsApiClient.findNicknames(any())).thenReturn(emptyMap())
 
-            val result = service.search("제미나이", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            val result = service.search("제미나이", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
 
             assertEquals(null, result.data.single().author.nickname)
         }
@@ -243,7 +243,7 @@ class TechPostSearchServiceTest {
             givenResult(listOf(document(1)), 1)
             whenever(umsApiClient.findNicknames(any())).thenReturn(emptyMap())
 
-            val result = service.search("제미나이", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = null)
+            val result = service.search("제미나이", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = null)
 
             assertFalse(result.data.single().metrics.likedByMe)
             verify(likeRepository, never()).findByUidAndPostIdIn(any(), any())
@@ -256,7 +256,7 @@ class TechPostSearchServiceTest {
             whenever(likeRepository.findByUidAndPostIdIn(eq(12L), any()))
                 .thenReturn(listOf(TechPostLike(postId = 1, uid = 12)))
 
-            val result = service.search("제미나이", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = 12)
+            val result = service.search("제미나이", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = 12)
 
             assertTrue(result.data.first { it.id == 1L }.metrics.likedByMe)
             assertFalse(result.data.first { it.id == 2L }.metrics.likedByMe)
@@ -266,7 +266,7 @@ class TechPostSearchServiceTest {
         fun `결과가 비면 이력을 조회하지 않는다`() {
             givenResult(emptyList(), 0)
 
-            service.search("제미나이", page = 0, size = 10, sort = TechPostSearchSort.RELEVANCE, viewerUid = 12)
+            service.search("제미나이", page = 0, size = 10, sort = TechSearchSort.RELEVANCE, viewerUid = 12)
 
             verify(likeRepository, never()).findByUidAndPostIdIn(any(), any())
         }
@@ -279,9 +279,9 @@ class TechPostSearchServiceTest {
         fun `정렬 기준을 그대로 리포지토리에 전달한다`() {
             givenResult(emptyList(), 0)
 
-            service.search("제미나이", page = 0, size = 10, sort = TechPostSearchSort.LATEST, viewerUid = null)
+            service.search("제미나이", page = 0, size = 10, sort = TechSearchSort.LATEST, viewerUid = null)
 
-            verify(searchRepository).search(any(), any(), any(), eq(TechPostSearchSort.LATEST))
+            verify(searchRepository).search(any(), any(), any(), eq(TechSearchSort.LATEST))
         }
     }
 }

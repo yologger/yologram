@@ -9,7 +9,7 @@ import link.yologram.api.v1.domain.search.exception.BlankSearchKeywordException
 import link.yologram.api.v1.domain.search.exception.SearchPageTooDeepException
 import link.yologram.api.v1.domain.search.exception.SearchUnavailableException
 import link.yologram.api.v1.domain.search.tech.document.TechPostDocument
-import link.yologram.api.v1.domain.search.tech.model.TechPostSearchSort
+import link.yologram.api.v1.domain.search.tech.model.TechSearchSort
 import link.yologram.api.v1.domain.search.tech.repository.TechPostSearchRepository
 import link.yologram.api.v1.global.model.ApiEnvelopPage
 import link.yologram.api.v1.infra.client.ums.UmsApiClient
@@ -39,7 +39,7 @@ class TechPostSearchService(
         keyword: String,
         page: Int,
         size: Int,
-        sort: TechPostSearchSort,
+        sort: TechSearchSort,
         viewerUid: Long?,
     ): ApiEnvelopPage<TechPostSummaryResponse> {
         // 설정이 없는 환경(로컬·테스트 기본)에서는 엔진에 붙지 않고 503으로 끊는다 (api-v2와 동일)

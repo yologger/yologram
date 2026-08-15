@@ -2,16 +2,13 @@ package link.yologram.api.v1.domain.search.tech.resource
 
 import link.yologram.api.v1.config.security.AdminJwtProperties
 import link.yologram.api.v1.config.security.JwtProperties
-import link.yologram.api.v1.domain.pms.tech.model.TechPostDetailResponse
-import link.yologram.api.v1.domain.pms.tech.model.TechPostMetrics
-import link.yologram.api.v1.domain.pms.tech.model.TechPostSummaryResponse
+import link.yologram.api.v1.domain.news.tech.model.TechNewsResponse
 import link.yologram.api.v1.domain.search.exception.BlankSearchKeywordException
 import link.yologram.api.v1.domain.search.exception.SearchExceptionHandler
 import link.yologram.api.v1.domain.search.exception.SearchPageTooDeepException
 import link.yologram.api.v1.domain.search.exception.SearchUnavailableException
 import link.yologram.api.v1.domain.search.tech.model.TechSearchSort
-import link.yologram.api.v1.domain.search.tech.service.TechPostSearchService
-import link.yologram.api.v1.domain.ums.exception.AuthTokenInvalidException
+import link.yologram.api.v1.domain.search.tech.service.TechNewsSearchService
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedAdminUserResolver
 import link.yologram.api.v1.domain.ums.resolver.AuthenticatedUserResolver
 import link.yologram.api.v1.domain.ums.resolver.OptionalAuthenticatedUserResolver
@@ -24,7 +21,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -35,7 +31,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import java.time.LocalDateTime
 
-@WebMvcTest(TechPostSearchResource::class)
+@WebMvcTest(TechNewsSearchResource::class)
 @Import(
     SearchExceptionHandler::class,
     ValidationExceptionHandler::class,
@@ -44,13 +40,13 @@ import java.time.LocalDateTime
     AuthenticatedAdminUserResolver::class,
     OptionalAuthenticatedUserResolver::class,
 )
-class TechPostSearchResourceTest {
+class TechNewsSearchResourceTest {
 
     @Autowired
     lateinit var mockMvc: MockMvc
 
     @MockitoBean
-    lateinit var techPostSearchService: TechPostSearchService
+    lateinit var techNewsSearchService: TechNewsSearchService
 
     @MockitoBean
     lateinit var jwtUtil: JwtUtil
@@ -64,9 +60,9 @@ class TechPostSearchResourceTest {
     @MockitoBean
     lateinit var adminJwtProperties: AdminJwtProperties
 
-    private val baseUrl = "/api/v1/search/tech/posts"
+    private val baseUrl = "/api/v1/search/tech/news"
 
-    private fun page(vararg items: TechPostSummaryResponse) = ApiEnvelopPage(
+    private fun page(vararg items: TechNewsResponse) = ApiEnvelopPage(
         data = items.toList(),
         page = 0,
         size = 10,
@@ -76,14 +72,14 @@ class TechPostSearchResourceTest {
         last = true,
     )
 
-    private fun summary(id: Long = 1200) = TechPostSummaryResponse(
+    private fun news(id: Long = 900) = TechNewsResponse(
         id = id,
-        author = TechPostDetailResponse.Author(uid = 12, nickname = "tester0"),
         title = "제목",
-        content = "본문",
-        categoryIds = listOf(1),
-        metrics = TechPostMetrics(commentCount = 2, likeCount = 3, viewCount = 4, likedByMe = false),
-        createdAt = LocalDateTime.of(2026, 7, 18, 14, 23, 50),
+        summary = "요약",
+        link = "https://news.test/$id",
+        sourceName = "GeekNews",
+        categories = listOf("인프라"),
+        publishedAt = LocalDateTime.of(2026, 7, 18, 14, 23, 50),
     )
 
     @Nested
@@ -91,14 +87,13 @@ class TechPostSearchResourceTest {
 
         @Test
         fun `200과 페이지 응답을 반환한다`() {
-            whenever(techPostSearchService.search(any(), any(), any(), any(), isNull()))
-                .thenReturn(page(summary()))
+            whenever(techNewsSearchService.search(any(), any(), any(), any())).thenReturn(page(news()))
 
-            mockMvc.get(baseUrl) { param("q", "제미나이") }.andExpect {
+            mockMvc.get(baseUrl) { param("q", "마이그레이션") }.andExpect {
                 status { isOk() }
-                jsonPath("$.data[0].id") { value(1200) }
-                jsonPath("$.data[0].author.nickname") { value("tester0") }
-                jsonPath("$.data[0].metrics.viewCount") { value(4) }
+                jsonPath("$.data[0].id") { value(900) }
+                jsonPath("$.data[0].sourceName") { value("GeekNews") }
+                jsonPath("$.data[0].categories[0]") { value("인프라") }
                 jsonPath("$.totalCount") { value(1) }
                 jsonPath("$.totalPages") { value(1) }
                 jsonPath("$.first") { value(true) }
@@ -107,36 +102,34 @@ class TechPostSearchResourceTest {
 
         @Test
         fun `page·size·sort 기본값은 0·10·RELEVANCE다`() {
-            whenever(techPostSearchService.search(any(), any(), any(), any(), isNull())).thenReturn(page())
+            whenever(techNewsSearchService.search(any(), any(), any(), any())).thenReturn(page())
 
-            mockMvc.get(baseUrl) { param("q", "제미나이") }.andExpect { status { isOk() } }
+            mockMvc.get(baseUrl) { param("q", "마이그레이션") }.andExpect { status { isOk() } }
 
-            verify(techPostSearchService).search(
-                keyword = eq("제미나이"),
+            verify(techNewsSearchService).search(
+                keyword = eq("마이그레이션"),
                 page = eq(0),
                 size = eq(10),
                 sort = eq(TechSearchSort.RELEVANCE),
-                viewerUid = isNull(),
             )
         }
 
         @Test
         fun `전달한 페이징·정렬을 그대로 넘긴다`() {
-            whenever(techPostSearchService.search(any(), any(), any(), any(), isNull())).thenReturn(page())
+            whenever(techNewsSearchService.search(any(), any(), any(), any())).thenReturn(page())
 
             mockMvc.get(baseUrl) {
-                param("q", "제미나이")
+                param("q", "마이그레이션")
                 param("page", "2")
                 param("size", "20")
                 param("sort", "LATEST")
             }.andExpect { status { isOk() } }
 
-            verify(techPostSearchService).search(
-                keyword = eq("제미나이"),
+            verify(techNewsSearchService).search(
+                keyword = eq("마이그레이션"),
                 page = eq(2),
                 size = eq(20),
                 sort = eq(TechSearchSort.LATEST),
-                viewerUid = isNull(),
             )
         }
 
@@ -148,46 +141,17 @@ class TechPostSearchResourceTest {
         @Test
         fun `없는 정렬 값이면 400이다`() {
             mockMvc.get(baseUrl) {
-                param("q", "제미나이")
+                param("q", "마이그레이션")
                 param("sort", "POPULAR")
             }.andExpect { status { isBadRequest() } }
         }
-    }
-
-    @Nested
-    inner class 선택_인증 {
 
         @Test
-        fun `토큰이 있으면 viewerUid를 넘긴다 (likedByMe 계산용)`() {
-            whenever(jwtUtil.validateAndGetUid("valid-token")).thenReturn(12L)
-            whenever(techPostSearchService.search(any(), any(), any(), any(), eq(12L))).thenReturn(page())
+        fun `인증 없이도 200이다`() {
+            // 게시글 검색과 달리 개인화 값이 없어 토큰을 보지 않는다
+            whenever(techNewsSearchService.search(any(), any(), any(), any())).thenReturn(page(news()))
 
-            mockMvc.get(baseUrl) {
-                param("q", "제미나이")
-                header("Authorization", "Bearer valid-token")
-            }.andExpect { status { isOk() } }
-
-            verify(techPostSearchService).search(any(), any(), any(), any(), eq(12L))
-        }
-
-        @Test
-        fun `토큰이 없으면 비로그인으로 처리한다`() {
-            whenever(techPostSearchService.search(any(), any(), any(), any(), isNull())).thenReturn(page())
-
-            mockMvc.get(baseUrl) { param("q", "제미나이") }.andExpect { status { isOk() } }
-
-            verify(techPostSearchService).search(any(), any(), any(), any(), isNull())
-        }
-
-        @Test
-        fun `토큰이 유효하지 않으면 401이다`() {
-            // 선택 인증이지만 헤더가 있으면 검증한다 — 무효 토큰을 비로그인으로 흘리지 않는다
-            whenever(jwtUtil.validateAndGetUid("bad-token")).thenThrow(AuthTokenInvalidException())
-
-            mockMvc.get(baseUrl) {
-                param("q", "제미나이")
-                header("Authorization", "Bearer bad-token")
-            }.andExpect { status { isUnauthorized() } }
+            mockMvc.get(baseUrl) { param("q", "마이그레이션") }.andExpect { status { isOk() } }
         }
     }
 
@@ -196,7 +160,7 @@ class TechPostSearchResourceTest {
 
         @Test
         fun `검색어가 비면 400 BLANK_SEARCH_KEYWORD`() {
-            whenever(techPostSearchService.search(any(), any(), any(), any(), isNull()))
+            whenever(techNewsSearchService.search(any(), any(), any(), any()))
                 .thenThrow(BlankSearchKeywordException())
 
             mockMvc.get(baseUrl) { param("q", "  ") }.andExpect {
@@ -207,10 +171,10 @@ class TechPostSearchResourceTest {
 
         @Test
         fun `검색 설정이 없으면 503 SEARCH_UNAVAILABLE`() {
-            whenever(techPostSearchService.search(any(), any(), any(), any(), isNull()))
+            whenever(techNewsSearchService.search(any(), any(), any(), any()))
                 .thenThrow(SearchUnavailableException())
 
-            mockMvc.get(baseUrl) { param("q", "제미나이") }.andExpect {
+            mockMvc.get(baseUrl) { param("q", "마이그레이션") }.andExpect {
                 status { isServiceUnavailable() }
                 jsonPath("$.errorCode") { value("SEARCH_UNAVAILABLE") }
             }
@@ -218,11 +182,11 @@ class TechPostSearchResourceTest {
 
         @Test
         fun `조회 한계를 넘으면 400 SEARCH_PAGE_TOO_DEEP`() {
-            whenever(techPostSearchService.search(any(), any(), any(), any(), isNull()))
+            whenever(techNewsSearchService.search(any(), any(), any(), any()))
                 .thenThrow(SearchPageTooDeepException())
 
             mockMvc.get(baseUrl) {
-                param("q", "제미나이")
+                param("q", "마이그레이션")
                 param("page", "5000")
             }.andExpect {
                 status { isBadRequest() }
