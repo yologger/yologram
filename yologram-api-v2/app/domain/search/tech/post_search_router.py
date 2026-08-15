@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.config.database import get_db
 from app.core.response import ApiEnvelopPage
 from app.domain.pms.tech.schema import PostSummaryResponse
-from app.domain.search.tech.model import TechPostSearchSort
-from app.domain.search.tech.search_service import TechPostSearchService
+from app.domain.search.tech.model import TechSearchSort
+from app.domain.search.tech.post_search_service import TechPostSearchService
 from app.domain.ums.auth_dependency import get_optional_authenticated_user
 from app.domain.ums.auth_schema import AuthData
 
@@ -33,7 +33,7 @@ def search_posts(
     q: str = Query(description="검색어", example="제미나이"),
     page: int = Query(default=0, description="페이지 번호 (0부터)"),
     size: int = Query(default=10, description="페이지 크기 (최대 50)"),
-    sort: TechPostSearchSort = Query(default=TechPostSearchSort.RELEVANCE, description="정렬 기준"),
+    sort: TechSearchSort = Query(default=TechSearchSort.RELEVANCE, description="정렬 기준"),
     auth_data: AuthData | None = Depends(get_optional_authenticated_user),
     db: Session = Depends(get_db),
 ):

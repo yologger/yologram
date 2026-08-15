@@ -5,12 +5,12 @@ import pytest
 
 from app.core.exception import BlankSearchKeywordException, SearchPageTooDeepException
 from app.domain.search.tech.document import TechPostDocument, TechPostDocumentMetrics
-from app.domain.search.tech.model import TechPostSearchSort
+from app.domain.search.tech.model import TechSearchSort
 from app.domain.search.tech.repository.tech_post_search_repository import TechPostSearchResult
-from app.domain.search.tech.search_service import TechPostSearchService, MAX_PAGE_SIZE
+from app.domain.search.tech.post_search_service import TechPostSearchService, MAX_PAGE_SIZE
 
-PATCH_REPO = "app.domain.search.tech.search_service.TechPostRepository"
-PATCH_SETTINGS = "app.domain.search.tech.search_service.get_settings"
+PATCH_REPO = "app.domain.search.tech.post_search_service.TechPostRepository"
+PATCH_SETTINGS = "app.domain.search.tech.post_search_service.get_settings"
 
 
 # _service()가 시작한 patcher를 테스트 종료 시 정리한다
@@ -69,7 +69,7 @@ class TestValidation:
         service, search_repo, _, _ = _service()
 
         with pytest.raises(BlankSearchKeywordException):
-            service.search("", page=0, size=10, sort=TechPostSearchSort.RELEVANCE)
+            service.search("", page=0, size=10, sort=TechSearchSort.RELEVANCE)
 
         search_repo.search.assert_not_called()
 
@@ -77,12 +77,12 @@ class TestValidation:
         service, _, _, _ = _service()
 
         with pytest.raises(BlankSearchKeywordException):
-            service.search("   ", page=0, size=10, sort=TechPostSearchSort.RELEVANCE)
+            service.search("   ", page=0, size=10, sort=TechSearchSort.RELEVANCE)
 
     def test_검색어의_앞뒤_공백은_잘라서_질의한다(self):
         service, search_repo, _, _ = _service()
 
-        service.search("  제미나이  ", page=0, size=10, sort=TechPostSearchSort.RELEVANCE)
+        service.search("  제미나이  ", page=0, size=10, sort=TechSearchSort.RELEVANCE)
 
         assert search_repo.search.call_args.args[0] == "제미나이"
 
@@ -91,30 +91,30 @@ class TestValidation:
         service, search_repo, _, _ = _service()
 
         with pytest.raises(SearchPageTooDeepException):
-            service.search("제미나이", page=1000, size=10, sort=TechPostSearchSort.RELEVANCE)
+            service.search("제미나이", page=1000, size=10, sort=TechSearchSort.RELEVANCE)
 
         search_repo.search.assert_not_called()
 
     def test_한계_직전_페이지는_통과한다(self):
         service, search_repo, _, _ = _service(total=10_000)
 
-        service.search("제미나이", page=999, size=10, sort=TechPostSearchSort.RELEVANCE)
+        service.search("제미나이", page=999, size=10, sort=TechSearchSort.RELEVANCE)
 
         assert search_repo.search.call_args.kwargs["from_"] == 9990
 
     def test_size는_1에서_50으로_보정한다(self):
         service, search_repo, _, _ = _service()
 
-        service.search("제미나이", page=0, size=999, sort=TechPostSearchSort.RELEVANCE)
+        service.search("제미나이", page=0, size=999, sort=TechSearchSort.RELEVANCE)
         assert search_repo.search.call_args.kwargs["size"] == MAX_PAGE_SIZE
 
-        service.search("제미나이", page=0, size=0, sort=TechPostSearchSort.RELEVANCE)
+        service.search("제미나이", page=0, size=0, sort=TechSearchSort.RELEVANCE)
         assert search_repo.search.call_args.kwargs["size"] == 1
 
     def test_음수_페이지는_0으로_보정한다(self):
         service, search_repo, _, _ = _service()
 
-        result = service.search("제미나이", page=-5, size=10, sort=TechPostSearchSort.RELEVANCE)
+        result = service.search("제미나이", page=-5, size=10, sort=TechSearchSort.RELEVANCE)
 
         assert search_repo.search.call_args.kwargs["from_"] == 0
         assert result.page == 0
@@ -125,7 +125,7 @@ class TestPaging:
     def test_총건수와_페이지_크기로_전체_페이지_수를_올림_계산한다(self):
         service, _, _, _ = _service(documents=[_document(1)], total=45)
 
-        result = service.search("제미나이", page=0, size=10, sort=TechPostSearchSort.RELEVANCE)
+        result = service.search("제미나이", page=0, size=10, sort=TechSearchSort.RELEVANCE)
 
         assert result.total_count == 45
         assert result.total_pages == 5
@@ -135,16 +135,16 @@ class TestPaging:
     def test_첫_페이지는_first_마지막_페이지는_last(self):
         service, _, _, _ = _service(documents=[_document(1)], total=45)
 
-        first = service.search("제미나이", page=0, size=10, sort=TechPostSearchSort.RELEVANCE)
+        first = service.search("제미나이", page=0, size=10, sort=TechSearchSort.RELEVANCE)
         assert first.first and not first.last
 
-        last = service.search("제미나이", page=4, size=10, sort=TechPostSearchSort.RELEVANCE)
+        last = service.search("제미나이", page=4, size=10, sort=TechSearchSort.RELEVANCE)
         assert not last.first and last.last
 
     def test_결과가_없으면_총_0건이고_첫_페이지가_마지막이다(self):
         service, _, _, _ = _service(documents=[], total=0)
 
-        result = service.search("없는키워드", page=0, size=10, sort=TechPostSearchSort.RELEVANCE)
+        result = service.search("없는키워드", page=0, size=10, sort=TechSearchSort.RELEVANCE)
 
         assert result.total_count == 0
         assert result.total_pages == 0
@@ -154,7 +154,7 @@ class TestPaging:
     def test_페이지_번호가_from으로_변환된다(self):
         service, search_repo, _, _ = _service(total=100)
 
-        service.search("제미나이", page=3, size=20, sort=TechPostSearchSort.RELEVANCE)
+        service.search("제미나이", page=3, size=20, sort=TechSearchSort.RELEVANCE)
 
         assert search_repo.search.call_args.kwargs["from_"] == 60
         assert search_repo.search.call_args.kwargs["size"] == 20
@@ -167,7 +167,7 @@ class TestResponseAssembly:
             documents=[_document(1200)], total=1, nicknames={12: "tester0"}
         )
 
-        result = service.search("제미나이", page=0, size=10, sort=TechPostSearchSort.RELEVANCE)
+        result = service.search("제미나이", page=0, size=10, sort=TechSearchSort.RELEVANCE)
 
         item = result.data[0]
         assert item.id == 1200
@@ -186,14 +186,14 @@ class TestResponseAssembly:
         docs = [_document(1, uid=12), _document(2, uid=13), _document(3, uid=12)]
         service, _, ums, _ = _service(documents=docs, total=3, nicknames={12: "a", 13: "b"})
 
-        service.search("제미나이", page=0, size=10, sort=TechPostSearchSort.RELEVANCE)
+        service.search("제미나이", page=0, size=10, sort=TechSearchSort.RELEVANCE)
 
         ums.find_nicknames.assert_called_once_with([12, 13, 12])
 
     def test_닉네임이_없으면_None으로_둔다(self):
         service, _, _, _ = _service(documents=[_document(1)], total=1, nicknames={})
 
-        result = service.search("제미나이", page=0, size=10, sort=TechPostSearchSort.RELEVANCE)
+        result = service.search("제미나이", page=0, size=10, sort=TechSearchSort.RELEVANCE)
 
         assert result.data[0].author.nickname is None
 
@@ -203,7 +203,7 @@ class TestPersonalization:
     def test_비로그인은_likedByMe가_False이고_이력을_조회하지_않는다(self):
         service, _, _, post_repo = _service(documents=[_document(1)], total=1)
 
-        result = service.search("제미나이", page=0, size=10, sort=TechPostSearchSort.RELEVANCE, viewer_uid=None)
+        result = service.search("제미나이", page=0, size=10, sort=TechSearchSort.RELEVANCE, viewer_uid=None)
 
         assert result.data[0].metrics.liked_by_me is False
         post_repo.find_liked_post_ids.assert_not_called()
@@ -213,7 +213,7 @@ class TestPersonalization:
             documents=[_document(1), _document(2)], total=2, liked_ids={1}
         )
 
-        result = service.search("제미나이", page=0, size=10, sort=TechPostSearchSort.RELEVANCE, viewer_uid=12)
+        result = service.search("제미나이", page=0, size=10, sort=TechSearchSort.RELEVANCE, viewer_uid=12)
 
         by_id = {item.id: item for item in result.data}
         assert by_id[1].metrics.liked_by_me is True
@@ -222,7 +222,7 @@ class TestPersonalization:
     def test_결과가_비면_이력을_조회하지_않는다(self):
         service, _, _, post_repo = _service(documents=[], total=0)
 
-        service.search("제미나이", page=0, size=10, sort=TechPostSearchSort.RELEVANCE, viewer_uid=12)
+        service.search("제미나이", page=0, size=10, sort=TechSearchSort.RELEVANCE, viewer_uid=12)
 
         post_repo.find_liked_post_ids.assert_not_called()
 
@@ -232,6 +232,6 @@ class TestSort:
     def test_정렬_기준을_그대로_리포지토리에_전달한다(self):
         service, search_repo, _, _ = _service()
 
-        service.search("제미나이", page=0, size=10, sort=TechPostSearchSort.LATEST)
+        service.search("제미나이", page=0, size=10, sort=TechSearchSort.LATEST)
 
-        assert search_repo.search.call_args.kwargs["sort"] is TechPostSearchSort.LATEST
+        assert search_repo.search.call_args.kwargs["sort"] is TechSearchSort.LATEST

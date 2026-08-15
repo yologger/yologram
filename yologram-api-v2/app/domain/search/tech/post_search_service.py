@@ -12,7 +12,7 @@ from app.core.response import ApiEnvelopPage
 from app.domain.pms.tech.repository import TechPostRepository
 from app.domain.pms.tech.schema import PostAuthor, PostMetrics, PostSummaryResponse
 from app.domain.search.tech.document import TechPostDocument
-from app.domain.search.tech.model import TechPostSearchSort
+from app.domain.search.tech.model import TechSearchSort
 from app.domain.search.tech.repository.tech_post_search_repository import TechPostSearchRepository
 from app.infra.client.ums.ums_api_client import LocalUmsApiClient, UmsApiClient
 
@@ -54,7 +54,7 @@ class TechPostSearchService:
         keyword: str,
         page: int,
         size: int,
-        sort: TechPostSearchSort,
+        sort: TechSearchSort,
         viewer_uid: int | None = None,
     ) -> ApiEnvelopPage[PostSummaryResponse]:
         # 설정이 없는 환경(로컬·테스트 기본)에서는 엔진에 붙지 않고 503으로 끊는다

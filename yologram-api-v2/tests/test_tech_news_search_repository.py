@@ -1,12 +1,12 @@
 from unittest.mock import MagicMock, patch
 
 from app.domain.search.tech.model import TechSearchSort
-from app.domain.search.tech.repository.tech_post_search_repository import (
+from app.domain.search.tech.repository.tech_news_search_repository import (
     INDEX_ALIAS,
-    TechPostSearchRepository,
+    TechNewsSearchRepository,
 )
 
-PATCH_CLIENT = "app.domain.search.tech.repository.tech_post_search_repository.get_opensearch_client"
+PATCH_CLIENT = "app.domain.search.tech.repository.tech_news_search_repository.get_opensearch_client"
 
 
 def _search(sort: TechSearchSort = TechSearchSort.RELEVANCE, hits: dict | None = None):
@@ -16,7 +16,7 @@ def _search(sort: TechSearchSort = TechSearchSort.RELEVANCE, hits: dict | None =
         client.search.return_value = hits or {"hits": {"hits": [], "total": {"value": 0}}}
         mock_get_client.return_value = client
 
-        result = TechPostSearchRepository().search("제미나이", from_=0, size=10, sort=sort)
+        result = TechNewsSearchRepository().search("마이그레이션", from_=0, size=10, sort=sort)
         return result, client.search.call_args.kwargs
 
 
@@ -27,18 +27,18 @@ class TestQuery:
         _, kwargs = _search()
 
         assert kwargs["index"] == INDEX_ALIAS
-        assert INDEX_ALIAS == "tech-post-index"
+        assert INDEX_ALIAS == "tech-news-index"
 
-    def test_제목에_가중치를_주고_본문과_함께_검색한다(self):
+    def test_제목에_가중치를_주고_요약과_함께_검색한다(self):
         _, kwargs = _search()
 
         fields = kwargs["body"]["query"]["multi_match"]["fields"]
-        # nori(형태소) + standard(단어 통째) 둘 다 본다 — nori 혼자서는 사전에 없는 외래어를 못 잡는다
-        assert fields == ["title^2", "title.standard^2", "content", "content.standard"]
-        assert kwargs["body"]["query"]["multi_match"]["query"] == "제미나이"
+        # 본문 대신 summary — 색인에 원문 본문이 없고 사용자가 읽는 텍스트가 LLM 요약이다
+        assert fields == ["title^2", "title.standard^2", "summary", "summary.standard"]
+        assert kwargs["body"]["query"]["multi_match"]["query"] == "마이그레이션"
 
     def test_operator는_AND다(self):
-        # 기본값(OR)이면 nori가 쪼갠 한 글자 토큰에 무관한 글이 대량 매칭된다
+        # 기본값(OR)이면 nori가 쪼갠 한 글자 토큰에 무관한 문서가 대량 매칭된다
         _, kwargs = _search()
 
         assert kwargs["body"]["query"]["multi_match"]["operator"] == "and"
@@ -63,14 +63,15 @@ class TestSort:
 
         assert kwargs["body"]["sort"] == [
             {"_score": {"order": "desc"}},
-            {"createdAt": {"order": "desc"}},
+            {"publishedAt": {"order": "desc"}},
         ]
 
-    def test_최신순은_시각_먼저_동시각이면_점수순(self):
+    def test_최신순은_발행_시각_먼저_동시각이면_점수순(self):
+        # 뉴스의 "최신"은 수집 시각이 아니라 발행 시각이다 — 목록 API 정렬과 같은 기준
         _, kwargs = _search(TechSearchSort.LATEST)
 
         assert kwargs["body"]["sort"] == [
-            {"createdAt": {"order": "desc"}},
+            {"publishedAt": {"order": "desc"}},
             {"_score": {"order": "desc"}},
         ]
 
@@ -86,17 +87,18 @@ class TestResultMapping:
     def test_응답의_source를_문서로_변환한다(self):
         hits = {
             "hits": {
-                "total": {"value": 44},
+                "total": {"value": 28},
                 "hits": [
                     {
                         "_source": {
-                            "id": 1200,
-                            "uid": 12,
-                            "title": "쿠쿠쿠",
-                            "content": "쿠쿠쿠",
-                            "categoryIds": [2],
-                            "metrics": {"commentCount": 2, "likeCount": 1, "viewCount": 3},
-                            "createdAt": "2026-07-18T14:23:50",
+                            "id": 900,
+                            "title": "Amazon Nova Multimodal Embeddings",
+                            "summary": "**한 줄 요약** AWS GovCloud 지원",
+                            "link": "https://aws.amazon.com/whats-new/",
+                            "sourceName": "AWS What's New",
+                            "categoryIds": [2, 3, 5],
+                            "publishedAt": "2026-08-12T23:34:00",
+                            "createdAt": "2026-08-14T11:10:00",
                         }
                     }
                 ],
@@ -104,13 +106,13 @@ class TestResultMapping:
         }
         result, _ = _search(hits=hits)
 
-        assert result.total_count == 44
+        assert result.total_count == 28
         doc = result.documents[0]
         # worker가 색인한 camelCase JSON을 snake_case 모델로 매핑한다
-        assert doc.id == 1200
-        assert doc.category_ids == [2]
-        assert doc.metrics.comment_count == 2
-        assert doc.metrics.view_count == 3
+        assert doc.id == 900
+        assert doc.source_name == "AWS What's New"
+        assert doc.category_ids == [2, 3, 5]
+        assert doc.published_at.isoformat() == "2026-08-12T23:34:00"
 
     def test_결과가_없으면_빈_목록과_0건(self):
         result, _ = _search()
