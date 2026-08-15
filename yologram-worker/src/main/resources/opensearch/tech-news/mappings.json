@@ -1,0 +1,48 @@
+{
+  "properties": {
+    "id": {
+      "type": "long"
+    },
+    "title": {
+      "type": "text",
+      "analyzer": "yologram_korean",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "standard": {
+          "type": "text",
+          "analyzer": "standard"
+        }
+      }
+    },
+    "summary": {
+      "type": "text",
+      "analyzer": "yologram_korean",
+      "fields": {
+        "standard": {
+          "type": "text",
+          "analyzer": "standard"
+        }
+      }
+    },
+    "link": {
+      "type": "keyword"
+    },
+    "sourceName": {
+      "type": "keyword"
+    },
+    "categoryIds": {
+      "type": "long"
+    },
+    "publishedAt": {
+      "type": "date",
+      "format": "date_optional_time"
+    },
+    "createdAt": {
+      "type": "date",
+      "format": "date_optional_time"
+    }
+  }
+}

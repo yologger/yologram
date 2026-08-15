@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
  * 인덱싱은 어드민이 명시적으로 요청한 작업이라 실패를 알려야 한다 — 예외를 전파한다.
  */
 @Component
-class TechPostIndexMessagePublisher(
+class TechIndexingMessagePublisher(
     private val sqsClient: SqsClient,
     private val objectMapper: ObjectMapper,
     private val properties: MessagePublishProperties,
@@ -32,7 +32,7 @@ class TechPostIndexMessagePublisher(
     /** 발행 가능 여부 — 호출부가 미리 확인해 불필요한 범위 계산을 건너뛸 수 있다 */
     fun isEnabled(): Boolean = properties.postIndex.enabled && !properties.postIndex.queue.isNullOrBlank()
 
-    fun publish(message: TechPostIndexMessage) {
+    fun publish(message: TechIndexingMessage) {
         if (!properties.postIndex.enabled) {
             logger.info { "post index publish disabled — skipped: from=${message.from} to=${message.to}" }
             return

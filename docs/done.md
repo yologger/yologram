@@ -347,3 +347,14 @@
   - worker의 자동 인덱스 생성은 실패했다: v2를 만들 때 alias에 isWriteIndex(true)를 붙이는데 v1이 이미 그 alias의 write index라 충돌하고, @PostConstruct의 runCatching이 예외를 삼켜 조용히 넘어간다. 이번엔 수동 전환으로 넘겼고 다음 매핑 변경 때 같은 일이 반복된다(todos)
   - AND의 대가: "검색 기능을"이 0건이 됐다(검색·기능 둘 다 있는 문서가 없다). 정확도를 얻는 대신 여러 단어 검색이 엄격해진다. "게시글" 44건 → 0건도 회귀가 아니라 오탐 제거였다 — 검색어는 `게시|글`인데 본문에는 `글`만 있었다("…에 대한 글입니다")
   - 전환 후 검증: 마이그레이션 4건, 정렬 v1/v2 동일, 페이징 4건/2페이지, 조사 검색("인덱스를") 4건, 400 4종 통과
+- [x] (Search) 뉴스 검색 인덱싱 — worker (요약 직후 색인 + SQS target 분기)
+  - 색인 경로가 둘이다: 요약 배치가 끝나면 그 배치에서 SUMMARIZED가 된 id들을 직접 색인하고, 어드민이 요청한 범위는 SQS로 받는다. 문서 id를 뉴스 id로 고정해 두 경로가 겹쳐도 덮어쓰기가 된다
+  - 요약 직후 색인을 SQS로 우회하지 않은 이유: worker가 이미 OpenSearch 클라이언트를 갖고 있어 자기 자신에게 메시지를 보낼 필요가 없다. 재시도 보장은 잃지만 요약은 status로 남고 어드민 인덱싱이 보험이다
+  - 건별이 아니라 배치 끝에 1회 색인한다 — bulk 왕복이 건수만큼 늘지 않고, 건별 트랜잭션이 모두 커밋된 뒤라 DB와 어긋나지 않는다(요약 배치의 캐시 무효화와 같은 원칙)
+  - 큐는 게시글과 공유하고 메시지 target으로 가른다(TECH_POST·TECH_NEWS) — 큐를 나누면 리스너·IAM·DLQ가 대상 수만큼 배수로 는다. 나눌 근거는 한쪽이 다른 쪽을 막는 head-of-line 차단뿐
+  - 색인 대상은 SUMMARIZED만. COLLECTED는 summary가 없어 검색에 걸려도 보여줄 내용이 없고 FAILED는 요약을 포기한 건이다
+  - title·summary에 standard 서브필드를 처음부터 넣었다 — 게시글이 외래어 때문에 v2로 올라간 이유를 반복하지 않는다
+  - 뉴스는 worker 소유 도메인이라 리포지토리를 직접 쓴다(게시글은 pms가 api 소유라 infra/client 경유였다)
+  - 색인 서비스는 조건부 빈이라 검색이 꺼진 환경에는 없다 — 요약 배치는 ObjectProvider로 부재를 확인하고 건너뛴다(직접 주입하면 검색을 끈 환경에서 배치까지 기동 실패한다)
+  - 클래스명 정리: 큐를 공유하게 되면서 TechPostIndexMessage·TechPostIndexSubscriber가 뉴스도 다루는데 이름은 게시글만 가리켰다 → TechIndexingMessage·TechIndexingMessageSubscriber(worker)·TechIndexingMessagePublisher(api)로 세 프로젝트 함께 변경
+  - 테스트: worker 신규 7개(배치 끝 1회 색인·전환 없으면 미호출·색인 실패해도 배치 성공·검색 꺼진 환경 건너뛰기·TECH_NEWS 분기·재전달·target 계약). 세 프로젝트 전체 통과

@@ -2,8 +2,8 @@ package link.yologram.api.v1.domain.search.tech.service
 
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostRepository
 import link.yologram.api.v1.domain.search.exception.InvalidIndexRangeException
-import link.yologram.api.v1.domain.search.tech.publisher.message.TechPostIndexMessage
-import link.yologram.api.v1.domain.search.tech.publisher.message.TechPostIndexMessagePublisher
+import link.yologram.api.v1.domain.search.tech.publisher.message.TechIndexingMessage
+import link.yologram.api.v1.domain.search.tech.publisher.message.TechIndexingMessagePublisher
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argumentCaptor
@@ -17,12 +17,12 @@ import kotlin.test.assertFailsWith
 class AdminTechPostIndexingServiceTest {
 
     private val postRepository = mock<TechPostRepository>()
-    private val publisher = mock<TechPostIndexMessagePublisher>()
+    private val publisher = mock<TechIndexingMessagePublisher>()
 
     private val service = AdminTechPostIndexingService(postRepository, publisher)
 
-    private fun publishedMessages(): List<TechPostIndexMessage> {
-        val captor = argumentCaptor<TechPostIndexMessage>()
+    private fun publishedMessages(): List<TechIndexingMessage> {
+        val captor = argumentCaptor<TechIndexingMessage>()
         verify(publisher, org.mockito.kotlin.atLeastOnce()).publish(captor.capture())
         return captor.allValues
     }
@@ -38,7 +38,7 @@ class AdminTechPostIndexingServiceTest {
             assertEquals(1, messages.size)
             assertEquals(42L, messages[0].from)
             assertEquals(42L, messages[0].to)
-            assertEquals(TechPostIndexMessage.TARGET_TECH_POST, messages[0].target)
+            assertEquals(TechIndexingMessage.TARGET_TECH_POST, messages[0].target)
         }
     }
 

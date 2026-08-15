@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import io.awspring.cloud.sqs.annotation.SqsListener
 import io.awspring.cloud.sqs.listener.acknowledgement.Acknowledgement
 import io.github.oshai.kotlinlogging.KotlinLogging
+import link.yologram.worker.domain.search.tech.service.TechNewsIndexService
 import link.yologram.worker.domain.search.tech.service.TechPostIndexService
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
@@ -23,9 +24,10 @@ import software.amazon.awssdk.services.sqs.model.Message
  */
 @Component
 @ConditionalOnProperty(prefix = "yologram.messages.subscribe.post-index", name = ["enabled"], havingValue = "true")
-class TechPostIndexSubscriber(
+class TechIndexingMessageSubscriber(
     private val objectMapper: ObjectMapper,
-    private val indexService: TechPostIndexService,
+    private val postIndexService: TechPostIndexService,
+    private val newsIndexService: TechNewsIndexService,
 ) {
 
     private val logger = KotlinLogging.logger {}
@@ -40,7 +42,7 @@ class TechPostIndexSubscriber(
     fun handle(message: Message, acknowledgement: Acknowledgement) {
         val body = message.body()
 
-        val request = runCatching { objectMapper.readValue(body, TechPostIndexMessage::class.java) }
+        val request = runCatching { objectMapper.readValue(body, TechIndexingMessage::class.java) }
             .getOrElse {
                 // 파싱 불가는 재시도해도 같은 결과다 — ack해서 DLQ 왕복 없이 흘려보내고 로그로 남긴다.
                 // (재시도 대상은 일시적 실패이지 형식이 깨진 메시지가 아니다)
@@ -49,10 +51,15 @@ class TechPostIndexSubscriber(
                 return
             }
 
-        if (request.target != TechPostIndexMessage.TARGET_TECH_POST) {
-            logger.warn { "unsupported target — dropped: target=${request.target}" }
-            acknowledgement.acknowledge()
-            return
+        // 큐는 하나이고 대상은 target으로 가른다 — 대상이 늘어도 큐·리스너·DLQ가 늘지 않는다
+        val indexRange: (Long, Long) -> Int = when (request.target) {
+            TechIndexingMessage.TARGET_TECH_POST -> postIndexService::index
+            TechIndexingMessage.TARGET_TECH_NEWS -> newsIndexService::index
+            else -> {
+                logger.warn { "unsupported target — dropped: target=${request.target}" }
+                acknowledgement.acknowledge()
+                return
+            }
         }
 
         // from·to는 원시 타입이라 필드가 빠져도 파싱은 통과하고 0이 들어온다.
@@ -63,7 +70,7 @@ class TechPostIndexSubscriber(
             return
         }
 
-        indexService.index(from = request.from, to = request.to)
+        indexRange(request.from, request.to)
 
         // 색인이 끝난 뒤에만 삭제 — 먼저 지우면 실패 시 그 범위가 영영 색인되지 않는다.
         // 중복 전달은 문서 id가 게시글 id로 고정되어 덮어쓰기가 되므로 무해하다

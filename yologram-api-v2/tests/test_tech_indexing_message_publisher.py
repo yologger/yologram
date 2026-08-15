@@ -4,18 +4,18 @@ from unittest.mock import MagicMock, patch
 import pytest
 from botocore.exceptions import ClientError
 
-from app.domain.search.tech.publisher.message.tech_post_index_message import (
+from app.domain.search.tech.publisher.message.tech_indexing_message import (
     TARGET_TECH_POST,
-    TechPostIndexMessage,
+    TechIndexingMessage,
 )
-from app.domain.search.tech.publisher.message.tech_post_index_message_publisher import (
-    SqsTechPostIndexMessagePublisher,
+from app.domain.search.tech.publisher.message.tech_indexing_message_publisher import (
+    SqsTechIndexingMessagePublisher,
 )
 
 QUEUE_NAME = "yologram-search-indexing-test"
 QUEUE_URL = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/yologram-search-indexing-test"
 
-PATCH_TARGET = "app.domain.search.tech.publisher.message.tech_post_index_message_publisher.get_sqs_client"
+PATCH_TARGET = "app.domain.search.tech.publisher.message.tech_indexing_message_publisher.get_sqs_client"
 
 
 def _mock_client() -> MagicMock:
@@ -35,8 +35,8 @@ class TestPublish:
             client = _mock_client()
             mock_get_client.return_value = client
 
-            SqsTechPostIndexMessagePublisher(queue_name=QUEUE_NAME, enabled=True).publish(
-                TechPostIndexMessage(from_id=1, to_id=20)
+            SqsTechIndexingMessagePublisher(queue_name=QUEUE_NAME, enabled=True).publish(
+                TechIndexingMessage(from_id=1, to_id=20)
             )
 
             assert client.send_message.call_args.kwargs["QueueUrl"] == QUEUE_URL
@@ -46,8 +46,8 @@ class TestPublish:
             client = _mock_client()
             mock_get_client.return_value = client
 
-            SqsTechPostIndexMessagePublisher(queue_name=QUEUE_NAME, enabled=True).publish(
-                TechPostIndexMessage(from_id=1, to_id=20)
+            SqsTechIndexingMessagePublisher(queue_name=QUEUE_NAME, enabled=True).publish(
+                TechIndexingMessage(from_id=1, to_id=20)
             )
 
             # worker가 이 세 필드로 역직렬화한다 — 이름이 바뀌면 소비가 깨진다
@@ -57,10 +57,10 @@ class TestPublish:
         with patch(PATCH_TARGET) as mock_get_client:
             client = _mock_client()
             mock_get_client.return_value = client
-            publisher = SqsTechPostIndexMessagePublisher(queue_name=QUEUE_NAME, enabled=True)
+            publisher = SqsTechIndexingMessagePublisher(queue_name=QUEUE_NAME, enabled=True)
 
-            publisher.publish(TechPostIndexMessage(from_id=1, to_id=20))
-            publisher.publish(TechPostIndexMessage(from_id=21, to_id=40))
+            publisher.publish(TechIndexingMessage(from_id=1, to_id=20))
+            publisher.publish(TechIndexingMessage(from_id=21, to_id=40))
 
             assert client.get_queue_url.call_count == 1
             assert client.send_message.call_count == 2
@@ -70,8 +70,8 @@ class TestPublish:
             client = _mock_client()
             mock_get_client.return_value = client
 
-            SqsTechPostIndexMessagePublisher(queue_name=QUEUE_NAME, enabled=True).publish(
-                TechPostIndexMessage(from_id=1, to_id=1)
+            SqsTechIndexingMessagePublisher(queue_name=QUEUE_NAME, enabled=True).publish(
+                TechIndexingMessage(from_id=1, to_id=1)
             )
 
             # 구분자 공백 없음 — api-v1(Jackson) 출력과 바이트 수준 동일
@@ -82,8 +82,8 @@ class TestSkip:
 
     def test_비활성이면_SQS를_호출하지_않는다(self):
         with patch(PATCH_TARGET) as mock_get_client:
-            SqsTechPostIndexMessagePublisher(queue_name=QUEUE_NAME, enabled=False).publish(
-                TechPostIndexMessage(from_id=1, to_id=20)
+            SqsTechIndexingMessagePublisher(queue_name=QUEUE_NAME, enabled=False).publish(
+                TechIndexingMessage(from_id=1, to_id=20)
             )
 
             # 클라이언트를 아예 만들지 않는다 (자격증명 없는 환경 보호)
@@ -91,16 +91,16 @@ class TestSkip:
 
     def test_활성인데_큐_이름이_없으면_보내지_않는다(self):
         with patch(PATCH_TARGET) as mock_get_client:
-            SqsTechPostIndexMessagePublisher(queue_name=None, enabled=True).publish(
-                TechPostIndexMessage(from_id=1, to_id=20)
+            SqsTechIndexingMessagePublisher(queue_name=None, enabled=True).publish(
+                TechIndexingMessage(from_id=1, to_id=20)
             )
 
             mock_get_client.assert_not_called()
 
     def test_큐_이름이_공백이면_보내지_않는다(self):
         with patch(PATCH_TARGET) as mock_get_client:
-            SqsTechPostIndexMessagePublisher(queue_name="   ", enabled=True).publish(
-                TechPostIndexMessage(from_id=1, to_id=20)
+            SqsTechIndexingMessagePublisher(queue_name="   ", enabled=True).publish(
+                TechIndexingMessage(from_id=1, to_id=20)
             )
 
             mock_get_client.assert_not_called()
@@ -109,13 +109,13 @@ class TestSkip:
 class TestIsEnabled:
 
     def test_활성이고_큐가_있으면_True(self):
-        assert SqsTechPostIndexMessagePublisher(queue_name=QUEUE_NAME, enabled=True).is_enabled()
+        assert SqsTechIndexingMessagePublisher(queue_name=QUEUE_NAME, enabled=True).is_enabled()
 
     def test_비활성이면_False(self):
-        assert not SqsTechPostIndexMessagePublisher(queue_name=QUEUE_NAME, enabled=False).is_enabled()
+        assert not SqsTechIndexingMessagePublisher(queue_name=QUEUE_NAME, enabled=False).is_enabled()
 
     def test_큐가_없으면_False(self):
-        assert not SqsTechPostIndexMessagePublisher(queue_name=None, enabled=True).is_enabled()
+        assert not SqsTechIndexingMessagePublisher(queue_name=None, enabled=True).is_enabled()
 
 
 class TestFailure:
@@ -130,8 +130,8 @@ class TestFailure:
             mock_get_client.return_value = client
 
             with pytest.raises(ClientError):
-                SqsTechPostIndexMessagePublisher(queue_name=QUEUE_NAME, enabled=True).publish(
-                    TechPostIndexMessage(from_id=1, to_id=20)
+                SqsTechIndexingMessagePublisher(queue_name=QUEUE_NAME, enabled=True).publish(
+                    TechIndexingMessage(from_id=1, to_id=20)
                 )
 
     def test_큐_URL_조회_실패도_전파한다(self):
@@ -143,8 +143,8 @@ class TestFailure:
             mock_get_client.return_value = client
 
             with pytest.raises(ClientError):
-                SqsTechPostIndexMessagePublisher(queue_name=QUEUE_NAME, enabled=True).publish(
-                    TechPostIndexMessage(from_id=1, to_id=20)
+                SqsTechIndexingMessagePublisher(queue_name=QUEUE_NAME, enabled=True).publish(
+                    TechIndexingMessage(from_id=1, to_id=20)
                 )
 
             client.send_message.assert_not_called()

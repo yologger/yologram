@@ -7,12 +7,13 @@ import link.yologram.worker.domain.news.tech.enums.TechNewsStatus
 import link.yologram.worker.domain.news.tech.entity.TechNewsCategoryMapping
 import link.yologram.worker.domain.news.tech.repository.TechNewsCategoryMappingRepository
 import link.yologram.worker.domain.news.tech.repository.TechNewsRepository
+import link.yologram.worker.domain.search.tech.service.TechNewsIndexService
+import org.springframework.beans.factory.ObjectProvider
 import link.yologram.worker.global.discord.DiscordNotifier
 import link.yologram.worker.infra.cache.TechNewsFirstPageCacheInvalidator
 import link.yologram.worker.infra.client.cms.CmsApiClient
 import link.yologram.worker.infra.client.cms.TechCategory
 import link.yologram.worker.global.llm.LlmClient
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -30,6 +31,7 @@ class TechNewsSummarizeService(
     private val discordNotifier: ObjectProvider<DiscordNotifier>,
     private val transactionOperations: TransactionOperations,
     private val cacheInvalidator: TechNewsFirstPageCacheInvalidator,
+    private val newsIndexServiceProvider: ObjectProvider<TechNewsIndexService>,
 ) {
 
     /**
@@ -55,6 +57,9 @@ class TechNewsSummarizeService(
 
         var summarized = 0
         var failed = 0
+        // 색인은 배치 끝에 한 번만 한다 — 건별로 하면 bulk 왕복이 건수만큼 늘고,
+        // 커밋 시점이 뒤섞여 아직 커밋되지 않은 건을 읽을 수 있다
+        val summarizedIds = mutableListOf<Long>()
 
         for (news in targets) {
             runCatching {
@@ -72,6 +77,7 @@ class TechNewsSummarizeService(
                     replaceCategories(news.id, parsed.categoryIds)
                 }
                 summarized++
+                summarizedIds += news.id
                 logger.info {
                     "테크 뉴스 요약 완료: id=${news.id} provider=${completion.provider} " +
                         "categoryIds=${parsed.categoryIds}"
@@ -98,8 +104,19 @@ class TechNewsSummarizeService(
         // 실패는 Invalidator가 삼킴 — FAILED만 나온 배치·전환 0건 배치는 호출하지 않음
         if (summarized > 0) cacheInvalidator.clear(vocabulary.map { it.id })
 
+        // 검색 색인 — 캐시 무효화와 같은 원칙(배치당 1회, 건별 트랜잭션 커밋 이후, 실패는 삼킨다).
+        // 색인 실패가 요약 배치를 실패로 만들지 않는다: 요약은 status로 남고 어드민 인덱싱이 보험이다
+        indexSummarized(summarizedIds)
+
         logger.info { "테크 뉴스 요약 배치 완료: targets=${targets.size} summarized=$summarized failed=$failed" }
         return SummarizeResult(targetCount = targets.size, summarizedCount = summarized, failedCount = failed)
+    }
+
+    private fun indexSummarized(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        val indexService = newsIndexServiceProvider.ifAvailable ?: return
+        runCatching { indexService.index(ids) }
+            .onFailure { logger.error(it) { "테크 뉴스 색인 실패: ids=${ids.size}건 — 어드민 인덱싱으로 복구 가능" } }
     }
 
     /** 재요약 대비 기존 매핑 교체 (벌크 delete 후 insert — 멱등) */

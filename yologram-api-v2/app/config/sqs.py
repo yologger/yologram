@@ -17,7 +17,7 @@ def get_sqs_client() -> Any:
     한 번의 일시적 지연으로 실패시키는 것보다 잠깐 기다리는 편이 낫다.
     전체 인덱싱은 청크마다 SendMessage를 반복하므로 재시도를 2회까지 허용한다.
 
-    호출부(SqsTechPostIndexMessagePublisher)는 큐 이름이 설정된 경우에만 이 함수를 부른다 —
+    호출부(SqsTechIndexingMessagePublisher)는 큐 이름이 설정된 경우에만 이 함수를 부른다 —
     자격증명 없는 환경(테스트·CI)에서 클라이언트가 만들어지지 않아 부팅·임포트에 영향이 없다.
     """
     return boto3.client(

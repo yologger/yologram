@@ -5,9 +5,9 @@ TARGET_TECH_POST = "TECH_POST"
 
 
 @dataclass(frozen=True)
-class TechPostIndexMessage:
+class TechIndexingMessage:
     """
-    게시글 인덱싱 작업 메시지 (api-v1 TechPostIndexMessage·worker 구독 계약과 문자열로 미러).
+    게시글 인덱싱 작업 메시지 (api-v1 TechIndexingMessage·worker 구독 계약과 문자열로 미러).
 
     단건도 from == to로 보내 범위 인덱싱과 같은 경로를 탄다.
     필드명(target·from·to)이 세 프로젝트의 계약이라 한쪽만 바꾸면 소비가 깨진다.

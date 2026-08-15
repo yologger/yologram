@@ -3,8 +3,8 @@ package link.yologram.api.v1.domain.search.tech.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import link.yologram.api.v1.domain.pms.tech.repository.TechPostRepository
 import link.yologram.api.v1.domain.search.exception.InvalidIndexRangeException
-import link.yologram.api.v1.domain.search.tech.publisher.message.TechPostIndexMessage
-import link.yologram.api.v1.domain.search.tech.publisher.message.TechPostIndexMessagePublisher
+import link.yologram.api.v1.domain.search.tech.publisher.message.TechIndexingMessage
+import link.yologram.api.v1.domain.search.tech.publisher.message.TechIndexingMessagePublisher
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 
@@ -25,14 +25,14 @@ import org.springframework.stereotype.Service
 @Service
 class AdminTechPostIndexingService(
     private val postRepository: TechPostRepository,
-    private val publisher: TechPostIndexMessagePublisher,
+    private val publisher: TechIndexingMessagePublisher,
 ) {
 
     private val logger = KotlinLogging.logger {}
 
     /** 단건 — from == to로 보내 범위 인덱싱과 같은 경로를 탄다 */
     fun index(id: Long) {
-        publisher.publish(TechPostIndexMessage(from = id, to = id))
+        publisher.publish(TechIndexingMessage(from = id, to = id))
     }
 
     /** 범위 — CHUNK_SIZE 단위로 쪼개 발행. 반환값은 발행한 메시지 수 */
@@ -44,7 +44,7 @@ class AdminTechPostIndexingService(
         var published = 0
         while (current <= to) {
             val chunkTo = minOf(current + CHUNK_SIZE - 1, to)
-            publisher.publish(TechPostIndexMessage(from = current, to = chunkTo))
+            publisher.publish(TechIndexingMessage(from = current, to = chunkTo))
             published++
             current = chunkTo + 1
         }

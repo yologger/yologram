@@ -11,7 +11,7 @@ package link.yologram.api.v1.domain.search.tech.publisher.message
  *
  * target으로 대상을 구분한다 — TECH_NEWS·INVEST_POST가 늘어도 큐를 새로 만들지 않는다.
  */
-data class TechPostIndexMessage(
+data class TechIndexingMessage(
     val target: String = TARGET_TECH_POST,
     val from: Long,
     val to: Long,

@@ -3,6 +3,7 @@ package link.yologram.worker.domain.search.tech.subscriber.message
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.awspring.cloud.sqs.listener.acknowledgement.Acknowledgement
+import link.yologram.worker.domain.search.tech.service.TechNewsIndexService
 import link.yologram.worker.domain.search.tech.service.TechPostIndexService
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -16,14 +17,15 @@ import software.amazon.awssdk.services.sqs.model.Message
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-class TechPostIndexSubscriberTest {
+class TechIndexingMessageSubscriberTest {
 
     private val objectMapper: ObjectMapper = ObjectMapper().registerKotlinModule()
 
     private val indexService = mock<TechPostIndexService>()
+    private val newsIndexService = mock<TechNewsIndexService>()
     private val acknowledgement = mock<Acknowledgement>()
 
-    private val subscriber = TechPostIndexSubscriber(objectMapper, indexService)
+    private val subscriber = TechIndexingMessageSubscriber(objectMapper, indexService, newsIndexService)
 
     private fun message(body: String): Message = Message.builder().body(body).build()
 
@@ -38,6 +40,7 @@ class TechPostIndexSubscriberTest {
             subscriber.handle(message(json(from = 1, to = 20)), acknowledgement)
 
             verify(indexService).index(from = 1, to = 20)
+            verify(newsIndexService, never()).index(any(), any())
             verify(acknowledgement).acknowledge()
         }
 
@@ -58,6 +61,36 @@ class TechPostIndexSubscriberTest {
 
             verify(indexService).index(from = 1, to = 5)
             verify(acknowledgement).acknowledge()
+        }
+    }
+
+    @Nested
+    inner class 대상_분기 {
+
+        @Test
+        fun `TECH_NEWS는 뉴스 색인 서비스로 간다`() {
+            // 큐는 하나이고 target으로 가른다 — 대상이 늘어도 큐·리스너·DLQ가 늘지 않는다
+            subscriber.handle(message(json(target = "TECH_NEWS", from = 1, to = 20)), acknowledgement)
+
+            verify(newsIndexService).index(from = 1, to = 20)
+            verify(indexService, never()).index(any(), any())
+            verify(acknowledgement).acknowledge()
+        }
+
+        @Test
+        fun `뉴스 색인이 실패하면 ack하지 않아 재전달된다`() {
+            whenever(newsIndexService.index(any(), any())).thenThrow(RuntimeException("opensearch down"))
+
+            assertFailsWith<RuntimeException> {
+                subscriber.handle(message(json(target = "TECH_NEWS")), acknowledgement)
+            }
+
+            verify(acknowledgement, never()).acknowledge()
+        }
+
+        @Test
+        fun `target 상수는 발행자와 같은 문자열이다`() {
+            assertEquals("TECH_NEWS", TechIndexingMessage.TARGET_TECH_NEWS)
         }
     }
 
@@ -140,8 +173,8 @@ class TechPostIndexSubscriberTest {
 
         @Test
         fun `target 상수는 발행자와 같은 문자열이다`() {
-            // api-v1 TechPostIndexMessage.TARGET_TECH_POST와 문자열로만 맞물린다 (모듈 공유 없음)
-            assertEquals("TECH_POST", TechPostIndexMessage.TARGET_TECH_POST)
+            // api-v1 TechIndexingMessage.TARGET_TECH_POST와 문자열로만 맞물린다 (모듈 공유 없음)
+            assertEquals("TECH_POST", TechIndexingMessage.TARGET_TECH_POST)
         }
     }
 }

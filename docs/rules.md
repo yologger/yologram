@@ -67,7 +67,7 @@
 
 ### 검색 인덱싱 (SQS + OpenSearch)
 
-- 인덱싱 큐는 대상별로 나누지 않는다 — 큐 하나(yologram-search-indexing-{env}) + 페이로드 target 필드로 분기. tech-post·politics-post·뉴스가 늘어도 큐는 그대로다(소비 순서·처리 특성이 같고, 큐가 늘면 워커 리스너·IAM·DLQ가 배수로 는다). 큐를 나눌 근거는 처리량 격차로 인한 head-of-line 차단뿐
+- 인덱싱 큐는 대상별로 나누지 않는다 — 큐 하나(yologram-search-indexing-{env}) + 페이로드 target 필드로 분기(TECH_POST·TECH_NEWS). tech-post·politics-post·뉴스가 늘어도 큐는 그대로다(소비 순서·처리 특성이 같고, 큐가 늘면 워커 리스너·IAM·DLQ가 배수로 는다). 큐를 나눌 근거는 처리량 격차로 인한 head-of-line 차단뿐
 - 단건 인덱싱도 범위 메시지로 보낸다(from == to) — 경로가 하나면 소비·재시도·테스트가 한 벌로 끝난다. 레거시는 단건만 동기 처리(200)했지만 우리는 전부 202 비동기
 - 범위는 20건 청크로 쪼개 발행한다 — ① 한 메시지 처리가 가시성 타임아웃(300초)을 넘기면 재노출돼 중복 처리 ② 실패 재시도 단위가 작아짐 ③ 워커를 늘리면 메시지 단위로 병렬화. 청크 크기는 레거시 BULK_INDEXING_REQUEST_BATCH_SIZE 미러
 - 설정 경로는 발행·구독 대칭 — 발행 yologram.messages.publish.{작업}.{enabled,queue} / 구독 yologram.messages.subscribe.{작업}.{enabled,queue}. events.*(Kinesis)와 같은 규칙이고 기본값 false, prod만 true
@@ -96,6 +96,9 @@
 - multi_match는 operator를 AND로 둔다 — 기본값(OR)이면 nori가 만든 한 글자 토큰("이") 하나에 무관한 글이 대량 매칭된다(실측: "마이그레이션" 56건 → 2건). 조사 포함 검색("검색 기능을")은 AND에서도 그대로 동작한다
 - 검색 비활성(opensearch.main.enabled=false) 환경에서는 503 SEARCH_UNAVAILABLE로 응답한다 — 조건부 빈·조건부 라우터로 경로를 없애면 404가 되어 "없는 경로"로 오해된다. api-v1은 @Lazy 빈 + ObjectProvider로 늦게 만들고 서비스가 판정, api-v2는 클라이언트가 lru_cache로 lazy라 라우터를 항상 등록한다
 - 애플리케이션은 alias만 참조한다(tech-post-index) — 실제 인덱스명(-v1)을 쓰면 v2 재색인 후 alias 이동으로 무중단 전환하는 전략이 깨진다
+
+- 실시간 색인은 배치 끝에 한 번만 한다 — 뉴스 요약처럼 건별 트랜잭션이 도는 배치에서는 건별로 색인하면 bulk 왕복이 건수만큼 늘고 아직 커밋되지 않은 건을 읽을 수 있다. 색인 실패는 삼키고 로그만 남긴다(원본은 DB에 있고 어드민 인덱싱이 보험)
+- 색인 서비스는 조건부 빈이라 검색이 꺼진 환경에는 없다 — 배치가 주입받을 때는 ObjectProvider로 부재를 확인할 것(직접 주입하면 검색을 끈 환경에서 배치까지 기동하지 못한다)
 
 ### 비동기 (@Async)
 

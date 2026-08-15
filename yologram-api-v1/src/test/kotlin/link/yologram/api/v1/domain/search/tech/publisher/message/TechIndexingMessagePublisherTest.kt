@@ -23,7 +23,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class TechPostIndexMessagePublisherTest {
+class TechIndexingMessagePublisherTest {
 
     private val sqsClient = mock<SqsClient>()
     private val objectMapper: ObjectMapper = ObjectMapper().registerKotlinModule()
@@ -33,11 +33,11 @@ class TechPostIndexMessagePublisherTest {
     private fun publisher(
         enabled: Boolean = true,
         queue: String? = "yologram-search-indexing-prod",
-    ): TechPostIndexMessagePublisher {
+    ): TechIndexingMessagePublisher {
         val properties = MessagePublishProperties(
             postIndex = MessagePublishProperties.Publish(enabled = enabled, queue = queue),
         )
-        return TechPostIndexMessagePublisher(sqsClient, objectMapper, properties)
+        return TechIndexingMessagePublisher(sqsClient, objectMapper, properties)
     }
 
     private fun givenQueueUrl() {
@@ -58,7 +58,7 @@ class TechPostIndexMessagePublisherTest {
         fun `조회한 큐 URL로 메시지를 보낸다`() {
             givenQueueUrl()
 
-            publisher().publish(TechPostIndexMessage(from = 1, to = 20))
+            publisher().publish(TechIndexingMessage(from = 1, to = 20))
 
             val captor = argumentCaptor<SendMessageRequest>()
             verify(sqsClient).sendMessage(captor.capture())
@@ -69,7 +69,7 @@ class TechPostIndexMessagePublisherTest {
         fun `본문은 target과 범위를 담은 JSON이다`() {
             givenQueueUrl()
 
-            publisher().publish(TechPostIndexMessage(from = 1, to = 20))
+            publisher().publish(TechIndexingMessage(from = 1, to = 20))
 
             // 워커가 이 세 필드로 역직렬화한다 — 이름이 바뀌면 소비가 깨진다
             val body: Map<String, Any> = objectMapper.readValue(sentBody())
@@ -83,8 +83,8 @@ class TechPostIndexMessagePublisherTest {
             givenQueueUrl()
             val publisher = publisher()
 
-            publisher.publish(TechPostIndexMessage(from = 1, to = 20))
-            publisher.publish(TechPostIndexMessage(from = 21, to = 40))
+            publisher.publish(TechIndexingMessage(from = 1, to = 20))
+            publisher.publish(TechIndexingMessage(from = 21, to = 40))
 
             verify(sqsClient, times(1)).getQueueUrl(any<GetQueueUrlRequest>())
             verify(sqsClient, times(2)).sendMessage(any<SendMessageRequest>())
@@ -96,7 +96,7 @@ class TechPostIndexMessagePublisherTest {
 
         @Test
         fun `비활성이면 SQS를 호출하지 않는다`() {
-            publisher(enabled = false).publish(TechPostIndexMessage(from = 1, to = 20))
+            publisher(enabled = false).publish(TechIndexingMessage(from = 1, to = 20))
 
             verify(sqsClient, never()).getQueueUrl(any<GetQueueUrlRequest>())
             verify(sqsClient, never()).sendMessage(any<SendMessageRequest>())
@@ -105,14 +105,14 @@ class TechPostIndexMessagePublisherTest {
         @Test
         fun `활성인데 큐 이름이 없으면 보내지 않는다`() {
             // 설정 실수 — 예외 없이 스킵하되 경고를 남긴다
-            publisher(queue = null).publish(TechPostIndexMessage(from = 1, to = 20))
+            publisher(queue = null).publish(TechIndexingMessage(from = 1, to = 20))
 
             verify(sqsClient, never()).sendMessage(any<SendMessageRequest>())
         }
 
         @Test
         fun `큐 이름이 공백이면 보내지 않는다`() {
-            publisher(queue = "   ").publish(TechPostIndexMessage(from = 1, to = 20))
+            publisher(queue = "   ").publish(TechIndexingMessage(from = 1, to = 20))
 
             verify(sqsClient, never()).sendMessage(any<SendMessageRequest>())
         }
@@ -148,7 +148,7 @@ class TechPostIndexMessagePublisherTest {
                 .thenThrow(SqsException.builder().message("queue does not exist").build())
 
             assertFailsWith<SqsException> {
-                publisher().publish(TechPostIndexMessage(from = 1, to = 20))
+                publisher().publish(TechIndexingMessage(from = 1, to = 20))
             }
         }
 
@@ -158,7 +158,7 @@ class TechPostIndexMessagePublisherTest {
                 .thenThrow(SqsException.builder().message("non-existent queue").build())
 
             assertFailsWith<SqsException> {
-                publisher().publish(TechPostIndexMessage(from = 1, to = 20))
+                publisher().publish(TechIndexingMessage(from = 1, to = 20))
             }
 
             verify(sqsClient, never()).sendMessage(any<SendMessageRequest>())

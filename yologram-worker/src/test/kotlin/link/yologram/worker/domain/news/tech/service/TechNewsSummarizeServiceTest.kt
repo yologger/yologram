@@ -6,12 +6,15 @@ import link.yologram.worker.domain.news.tech.enums.TechNewsStatus
 import link.yologram.worker.domain.news.tech.entity.TechNewsCategoryMapping
 import link.yologram.worker.domain.news.tech.repository.TechNewsCategoryMappingRepository
 import link.yologram.worker.domain.news.tech.repository.TechNewsRepository
+import link.yologram.worker.domain.search.tech.service.TechNewsIndexService
+import org.springframework.beans.factory.ObjectProvider
 import link.yologram.worker.global.discord.DiscordNotifier
 import link.yologram.worker.infra.cache.TechNewsFirstPageCacheInvalidator
 import link.yologram.worker.infra.client.cms.CmsApiClient
 import link.yologram.worker.infra.client.cms.TechCategory
 import link.yologram.worker.global.llm.LlmClient
 import link.yologram.worker.global.llm.LlmCompletion
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -21,7 +24,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.transaction.support.TransactionOperations
 import java.time.LocalDateTime
 import kotlin.test.assertEquals
@@ -52,6 +54,13 @@ class TechNewsSummarizeServiceTest {
 
     private val cacheInvalidator: TechNewsFirstPageCacheInvalidator = mock()
 
+    private val newsIndexService: TechNewsIndexService = mock()
+
+    /** 검색이 꺼진 환경에서는 빈이 없다 — 기본은 있는 상태로 두고 없는 경우를 따로 검증한다 */
+    private val newsIndexServiceProvider: ObjectProvider<TechNewsIndexService> = mock {
+        on { ifAvailable } doReturn newsIndexService
+    }
+
     init {
         @Suppress("UNCHECKED_CAST")
         org.mockito.kotlin.doAnswer { (it.arguments[0] as java.util.function.Consumer<DiscordNotifier>).accept(notifier) }
@@ -67,6 +76,7 @@ class TechNewsSummarizeServiceTest {
         notifierProvider,
         transactionOperations,
         cacheInvalidator,
+        newsIndexServiceProvider,
     )
 
     private fun news(id: Long = 1, link: String = "https://a/$id", retryCount: Int = 0) = TechNews(
@@ -350,6 +360,7 @@ class TechNewsSummarizeServiceTest {
             notifierProvider,
             transactionOperations,
             TechNewsFirstPageCacheInvalidator(stringRedisTemplate),
+            newsIndexServiceProvider,
         )
         val target = news()
         stubTargets(target)
@@ -372,5 +383,77 @@ class TechNewsSummarizeServiceTest {
 
         assertEquals(0, result.targetCount)
         verify(techNewsRepository, never()).findByStatusAndRetryCountLessThan(any(), any(), any())
+    }
+
+    @Nested
+    inner class 검색_색인 {
+
+        @Test
+        fun `요약된 건들을 배치 끝에 한 번만 색인한다`() {
+            // 건별로 색인하면 bulk 왕복이 건수만큼 늘고, 커밋 시점이 뒤섞여
+            // 아직 커밋되지 않은 건을 읽을 수 있다 (캐시 무효화와 같은 원칙)
+            val targets = listOf(news(1), news(2))
+            stubTargets(*targets.toTypedArray())
+            targets.forEach { whenever(newsContentCrawler.fetch(it.link)).thenReturn("본문") }
+            whenever(llmClient.complete(any())).thenReturn(LlmCompletion("gemini", "요약"))
+
+            service.summarize()
+
+            verify(newsIndexService, org.mockito.kotlin.times(1)).index(listOf(1L, 2L))
+        }
+
+        @Test
+        fun `요약 전환이 없으면 색인하지 않는다`() {
+            val target = news()
+            stubTargets(target)
+            whenever(newsContentCrawler.fetch(target.link)).thenThrow(RuntimeException("크롤링 실패"))
+
+            service.summarize()
+
+            verify(newsIndexService, never()).index(any<List<Long>>())
+        }
+
+        @Test
+        fun `색인이 실패해도 요약 배치는 성공으로 끝난다`() {
+            // 요약은 status로 남고 어드민 인덱싱이 보험이다 — 색인 실패가 배치를 실패로 만들면 안 된다
+            val target = news()
+            stubTargets(target)
+            whenever(newsContentCrawler.fetch(target.link)).thenReturn("본문")
+            whenever(llmClient.complete(any())).thenReturn(LlmCompletion("gemini", "요약"))
+            whenever(newsIndexService.index(any<List<Long>>())).thenThrow(RuntimeException("opensearch down"))
+
+            val result = service.summarize()
+
+            assertEquals(1, result.summarizedCount)
+            assertEquals(0, result.failedCount)
+        }
+
+        @Test
+        fun `검색이 꺼진 환경이면 색인을 건너뛴다`() {
+            // opensearch.main.enabled=false면 색인 서비스 빈이 없다 (조건부 빈)
+            val emptyProvider: ObjectProvider<TechNewsIndexService> = mock {
+                on { ifAvailable } doReturn null
+            }
+            val serviceWithoutIndex = TechNewsSummarizeService(
+                techNewsRepository,
+                techNewsCategoryMappingRepository,
+                cmsApiClient,
+                newsContentCrawler,
+                llmClient,
+                notifierProvider,
+                transactionOperations,
+                cacheInvalidator,
+                emptyProvider,
+            )
+            val target = news()
+            stubTargets(target)
+            whenever(newsContentCrawler.fetch(target.link)).thenReturn("본문")
+            whenever(llmClient.complete(any())).thenReturn(LlmCompletion("gemini", "요약"))
+
+            val result = serviceWithoutIndex.summarize()
+
+            assertEquals(1, result.summarizedCount)
+            verify(newsIndexService, never()).index(any<List<Long>>())
+        }
     }
 }

@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session
 
 from app.core.exception import InvalidIndexRangeException
 from app.domain.pms.tech.repository import TechPostRepository
-from app.domain.search.tech.publisher.message.tech_post_index_message import TechPostIndexMessage
-from app.domain.search.tech.publisher.message.tech_post_index_message_publisher import (
-    SqsTechPostIndexMessagePublisher,
-    TechPostIndexMessagePublisher,
+from app.domain.search.tech.publisher.message.tech_indexing_message import TechIndexingMessage
+from app.domain.search.tech.publisher.message.tech_indexing_message_publisher import (
+    SqsTechIndexingMessagePublisher,
+    TechIndexingMessagePublisher,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,13 +31,13 @@ class AdminTechPostIndexingService:
     인덱싱은 pms 데이터를 검색용으로 복제하는 작업이라 경계를 넘는 것이 본질이다.
     """
 
-    def __init__(self, db: Session, publisher: TechPostIndexMessagePublisher | None = None):
+    def __init__(self, db: Session, publisher: TechIndexingMessagePublisher | None = None):
         self.post_repository = TechPostRepository(db)
-        self.publisher = publisher or SqsTechPostIndexMessagePublisher()
+        self.publisher = publisher or SqsTechIndexingMessagePublisher()
 
     def index(self, id: int) -> None:
         """단건 — from == to로 보내 범위 인덱싱과 같은 경로를 탄다"""
-        self.publisher.publish(TechPostIndexMessage(from_id=id, to_id=id))
+        self.publisher.publish(TechIndexingMessage(from_id=id, to_id=id))
 
     def index_range(self, from_id: int, to_id: int) -> int:
         """범위 — CHUNK_SIZE 단위로 쪼개 발행. 반환값은 발행한 메시지 수"""
@@ -49,7 +49,7 @@ class AdminTechPostIndexingService:
         published = 0
         while current <= to_id:
             chunk_to = min(current + CHUNK_SIZE - 1, to_id)
-            self.publisher.publish(TechPostIndexMessage(from_id=current, to_id=chunk_to))
+            self.publisher.publish(TechIndexingMessage(from_id=current, to_id=chunk_to))
             published += 1
             current = chunk_to + 1
 

@@ -51,7 +51,9 @@
   - [ ] ValidationExceptionHandler 로그 레벨 — 400(파라미터 누락·enum 변환 실패)을 ERROR로 남겨 실제 서버 오류를 가린다. WARN이 적절
   - [x] web-v1·v2 검색 결과 UI — 대상별 탭(커뮤니티·뉴스)·페이지 네비게이션·정렬 전환 (목 데이터, done.md)
   - [x] web-v1·v2 검색 결과 실데이터 연결 — 커뮤니티 탭 (done.md). 뉴스 탭은 색인 후 연결
-  - [ ] 뉴스 인덱싱·검색 — tech-news-index 신설(게시글과 별도 인덱스), 검색 결과 뉴스 탭 연결
+  - [x] 뉴스 인덱싱 (worker) — 요약 직후 색인 + SQS target 분기 (done.md)
+  - [ ] 뉴스 인덱싱 발행 — api-v1·v2 어드민 API에 TECH_NEWS 추가(전체·범위·단건)
+  - [ ] 뉴스 검색 API·web 연결 — tech-news-index 검색 엔드포인트 + 검색 결과 뉴스 탭(현재 ComingSoon)
   - [ ] worker 인덱스 자동 생성 alias 충돌 — v2를 만들 때 alias에 isWriteIndex(true)를 붙이는데 기존 버전이 이미 write index라 충돌하고, runCatching이 예외를 삼켜 조용히 실패한다(v1→v2 전환에서 수동으로 넘겼다). 새 버전은 alias 없이 만들고 이동은 운영 절차(_reindex → alias 원자적 이동)로 분리할 것
   - [ ] 검색 정확도 — operator AND라 여러 단어 검색이 엄격하다("검색 기능을" 0건). 문서가 늘면 minimum_should_match나 bool should(nori AND + standard) 조합 재검토
   - [ ] User 인덱싱 (후순위 — 게시글 검색이 끝난 뒤)

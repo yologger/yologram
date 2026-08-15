@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.core.exception import InvalidIndexRangeException
-from app.domain.search.tech.publisher.message.tech_post_index_message import TARGET_TECH_POST
+from app.domain.search.tech.publisher.message.tech_indexing_message import TARGET_TECH_POST
 from app.domain.search.tech.service import AdminTechPostIndexingService
 
 PATCH_REPO = "app.domain.search.tech.service.TechPostRepository"
