@@ -1,11 +1,11 @@
 import { App, Button, Card, Form, InputNumber, Typography } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
-import useIndexAllPostsMutation from '../../queries/useIndexAllPostsMutation'
-import useIndexPostMutation from '../../queries/useIndexPostMutation'
-import useIndexPostRangeMutation from '../../queries/useIndexPostRangeMutation'
-import type { IndexingSection } from '../../apis/postIndexing'
+import useIndexAllMutation from '../../queries/useIndexAllMutation'
+import useIndexOneMutation from '../../queries/useIndexOneMutation'
+import useIndexRangeMutation from '../../queries/useIndexRangeMutation'
+import type { IndexingSection, IndexingTarget } from '../../apis/indexing'
 import { getErrorMessage } from '../../lib/error'
-import styles from './PostIndexingPage.module.css'
+import styles from './IndexingPage.module.css'
 
 interface RangeFormValues {
   from: number
@@ -20,26 +20,30 @@ interface Props {
   section: IndexingSection
   /** 화면 타이틀에 쓰는 섹션 한글명 */
   sectionLabel: string
+  target: IndexingTarget
+  /** 화면 타이틀·안내 문구에 쓰는 대상 한글명 (게시글·뉴스) */
+  targetLabel: string
 }
 
 /**
- * 게시글 검색 인덱싱 — 검색 인덱스를 다시 만드는 운영 조작.
+ * 검색 인덱싱 — 검색 인덱스를 다시 만드는 운영 조작.
  *
  * 세 요청 모두 SQS에 작업을 넣고 즉시 202로 끝난다(실제 색인은 worker가 비동기 수행).
  * 그래서 화면은 "발행됨"까지만 알리고 진행률은 보여주지 않는다 —
  * 큐 깊이를 노출하는 엔드포인트가 아직 없다. 필요해지면 상태 조회 API를 추가한다.
  *
- * 섹션을 prop으로 받아 tech·invest·politics가 같은 화면을 공유한다
- * (경로만 다르고 조작이 동일하다). 현재 백엔드는 tech만 구현돼 나머지는 라우트에서 ComingSoon으로 막는다.
+ * 섹션(tech·invest·politics)과 대상(게시글·뉴스)을 prop으로 받아 한 화면을 공유한다 —
+ * 경로만 다르고 조작이 동일하고, 백엔드도 같은 큐에 target으로 구분해 발행한다.
+ * 현재 백엔드는 tech만 구현돼 나머지는 라우트에서 ComingSoon으로 막는다.
  */
-export default function PostIndexingPage({ section, sectionLabel }: Props) {
+export default function IndexingPage({ section, sectionLabel, target, targetLabel }: Props) {
   const { message, modal } = App.useApp()
   const [rangeForm] = Form.useForm<RangeFormValues>()
   const [singleForm] = Form.useForm<SingleFormValues>()
 
-  const allMutation = useIndexAllPostsMutation(section)
-  const rangeMutation = useIndexPostRangeMutation(section)
-  const singleMutation = useIndexPostMutation(section)
+  const allMutation = useIndexAllMutation(section, target)
+  const rangeMutation = useIndexRangeMutation(section, target)
+  const singleMutation = useIndexOneMutation(section, target)
 
   const notifyPublished = (detail: string) => {
     message.success(`인덱싱 작업을 발행했습니다 (${detail}). 색인은 잠시 후 반영됩니다.`)
@@ -49,7 +53,7 @@ export default function PostIndexingPage({ section, sectionLabel }: Props) {
   const confirmIndexAll = () => {
     modal.confirm({
       title: '전체 인덱싱을 실행할까요?',
-      content: `${sectionLabel} 게시글을 모두 다시 색인합니다. 게시글 수에 비례해 시간이 걸립니다.`,
+      content: `${sectionLabel} ${targetLabel}을 모두 다시 색인합니다. 건수에 비례해 시간이 걸립니다.`,
       okText: '실행',
       cancelText: '취소',
       onOk: () =>
@@ -81,7 +85,7 @@ export default function PostIndexingPage({ section, sectionLabel }: Props) {
     <div>
       <div className={styles.header}>
         <Typography.Title level={4} className={styles.title}>
-          {sectionLabel} 게시글 인덱싱
+          {sectionLabel} {targetLabel} 인덱싱
         </Typography.Title>
         <div className={styles.description}>
           검색 인덱스를 다시 만듭니다. 요청은 큐에 적재되고 색인은 백그라운드에서 수행됩니다.
@@ -123,8 +127,8 @@ export default function PostIndexingPage({ section, sectionLabel }: Props) {
 
         <Card title="단건 인덱싱" size="small">
           <Form form={singleForm} onFinish={submitSingle} className={styles.inline}>
-            <Form.Item name="id" rules={[{ required: true, message: '게시글 id를 입력하세요.' }]}>
-              <InputNumber min={1} placeholder="게시글 id" />
+            <Form.Item name="id" rules={[{ required: true, message: `${targetLabel} id를 입력하세요.` }]}>
+              <InputNumber min={1} placeholder={`${targetLabel} id`} />
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit" loading={singleMutation.isPending}>

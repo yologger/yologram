@@ -65,6 +65,10 @@ describe('Router (인증)', () => {
     ['/news/tech', '기술 뉴스 관리'],
     ['/news/invest', '투자 뉴스 관리'],
     ['/news/politics', '정치 뉴스 관리'],
+    ['/search/invest/posts/indexing', '투자 게시글 인덱싱'],
+    ['/search/politics/posts/indexing', '정치 게시글 인덱싱'],
+    ['/search/invest/news/indexing', '투자 뉴스 인덱싱'],
+    ['/search/politics/news/indexing', '정치 뉴스 인덱싱'],
   ])('%s 진입 시 "%s" 준비 중 화면을 렌더한다', (path, title) => {
     renderRouterAuthenticated(path)
     expect(screen.getByRole('heading', { level: 3, name: title })).toBeInTheDocument()
@@ -93,6 +97,20 @@ describe('Router (인증)', () => {
     renderRouterAuthenticated('/news')
     expect(screen.getByRole('heading', { level: 3, name: '기술 뉴스 관리' })).toBeInTheDocument()
     expect(screen.getByText('페이지 준비 중입니다')).toBeInTheDocument()
+  })
+
+  // 게시글·뉴스가 같은 IndexingPage를 공유한다 — 경로별로 대상 라벨이 맞게 붙는지 확인
+  it.each([
+    ['/search/tech/posts/indexing', '기술 게시글 인덱싱'],
+    ['/search/tech/news/indexing', '기술 뉴스 인덱싱'],
+  ])('%s 진입 시 "%s" 화면을 렌더한다', (path, title) => {
+    renderRouterAuthenticated(path)
+    expect(screen.getByRole('heading', { level: 4, name: title })).toBeInTheDocument()
+  })
+
+  it('/search 진입 시 게시글 인덱싱으로 리다이렉트한다', () => {
+    renderRouterAuthenticated('/search')
+    expect(screen.getByRole('heading', { level: 4, name: '기술 게시글 인덱싱' })).toBeInTheDocument()
   })
 
   it('알 수 없는 경로는 /notices로 리다이렉트한다', () => {

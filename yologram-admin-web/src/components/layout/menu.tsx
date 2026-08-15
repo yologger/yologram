@@ -66,6 +66,15 @@ export const MENU_SECTIONS: MenuSection[] = [
           { key: '/search/invest/posts/indexing', label: '투자' },
         ],
       },
+      {
+        key: 'news-indexing',
+        label: '뉴스 인덱싱',
+        children: [
+          { key: '/search/tech/news/indexing', label: '기술' },
+          { key: '/search/politics/news/indexing', label: '정치' },
+          { key: '/search/invest/news/indexing', label: '투자' },
+        ],
+      },
     ],
   },
   {
