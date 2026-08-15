@@ -2,6 +2,9 @@
 
 모노레포 기반 프로젝트
 
+- [https://web.v1.yologram.link/](https://web.v1.yologram.link/): React.js + Spring Boot MVC
+- [https://web.v2.yologram.link/](https://web.v2.yologram.link/): Next.js + FastAPI
+
 ## 프로젝트 & 기술 스택
 
 - `yologram-api-v1`: Spring Boot MVC + Kotlin ([기술 스택](yologram-api-v1/README.md))
