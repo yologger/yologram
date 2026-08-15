@@ -4,9 +4,9 @@ import pytest
 
 from app.core.exception import InvalidIndexRangeException
 from app.domain.search.tech.publisher.message.tech_indexing_message import TARGET_TECH_POST
-from app.domain.search.tech.service import AdminTechPostIndexingService
+from app.domain.search.tech.post_indexing_service import AdminTechPostIndexingService
 
-PATCH_REPO = "app.domain.search.tech.service.TechPostRepository"
+PATCH_REPO = "app.domain.search.tech.post_indexing_service.TechPostRepository"
 
 
 def _service(publisher: MagicMock, max_id: int | None = None):

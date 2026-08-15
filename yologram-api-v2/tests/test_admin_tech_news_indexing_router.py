@@ -16,8 +16,8 @@ from app.main import app
 # lru_cache 초기화
 get_settings.cache_clear()
 
-BASE_URL = "/api/v2/search/admin/tech/posts/indexing"
-PATCH_SERVICE = "app.domain.search.tech.post_indexing_router.AdminTechPostIndexingService"
+BASE_URL = "/api/v2/search/admin/tech/news/indexing"
+PATCH_SERVICE = "app.domain.search.tech.news_indexing_router.AdminTechNewsIndexingService"
 
 
 class SetupMixin:

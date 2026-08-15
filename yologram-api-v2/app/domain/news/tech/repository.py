@@ -1,4 +1,4 @@
-from sqlalchemy import exists
+from sqlalchemy import exists, func
 from sqlalchemy.orm import Session
 
 from app.domain.news.tech.cursor import TechNewsCursor
@@ -9,6 +9,12 @@ class TechNewsRepository:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def find_max_id(self) -> int | None:
+        """전체 인덱싱 범위 상한 — 뉴스가 없으면 None.
+        count가 아니라 max(id)인 이유: 쪼갤 대상이 개수가 아니라 id 범위이고,
+        삭제로 id에 구멍이 있으면 count 기준으로는 뒷부분이 잡히지 않는다 (api-v1 동일)."""
+        return self.db.query(func.max(TechNews.id)).scalar()
 
     def find_summarized_news(
         self, category_id: int | None, cursor: TechNewsCursor | None, limit: int
