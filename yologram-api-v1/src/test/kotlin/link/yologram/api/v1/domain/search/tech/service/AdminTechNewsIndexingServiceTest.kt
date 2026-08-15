@@ -1,6 +1,6 @@
 package link.yologram.api.v1.domain.search.tech.service
 
-import link.yologram.api.v1.domain.pms.tech.repository.TechPostRepository
+import link.yologram.api.v1.domain.news.tech.repository.TechNewsRepository
 import link.yologram.api.v1.domain.search.exception.InvalidIndexRangeException
 import link.yologram.api.v1.domain.search.tech.publisher.message.TechIndexingMessage
 import link.yologram.api.v1.domain.search.tech.publisher.message.TechIndexingMessagePublisher
@@ -14,13 +14,13 @@ import org.mockito.kotlin.whenever
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-class AdminTechPostIndexingServiceTest {
+class AdminTechNewsIndexingServiceTest {
 
-    private val postRepository = mock<TechPostRepository>()
+    private val newsRepository = mock<TechNewsRepository>()
     private val publisher = mock<TechIndexingMessagePublisher>()
 
     // 쪼개기 로직은 AdminTechIndexingPublisher에 있다 — 목이 아니라 실물을 끼워 발행 결과를 그대로 검증한다
-    private val service = AdminTechPostIndexingService(postRepository, AdminTechIndexingPublisher(publisher))
+    private val service = AdminTechNewsIndexingService(newsRepository, AdminTechIndexingPublisher(publisher))
 
     private fun publishedMessages(): List<TechIndexingMessage> {
         val captor = argumentCaptor<TechIndexingMessage>()
@@ -39,7 +39,7 @@ class AdminTechPostIndexingServiceTest {
             assertEquals(1, messages.size)
             assertEquals(42L, messages[0].from)
             assertEquals(42L, messages[0].to)
-            assertEquals(TechIndexingMessage.TARGET_TECH_POST, messages[0].target)
+            assertEquals(TechIndexingMessage.TARGET_TECH_NEWS, messages[0].target)
         }
     }
 
@@ -110,7 +110,7 @@ class AdminTechPostIndexingServiceTest {
 
         @Test
         fun `1부터 max id까지 쪼개 발행한다`() {
-            whenever(postRepository.findMaxId()).thenReturn(45L)
+            whenever(newsRepository.findMaxId()).thenReturn(45L)
 
             val published = service.fullIndex()
 
@@ -122,8 +122,8 @@ class AdminTechPostIndexingServiceTest {
         }
 
         @Test
-        fun `글이 하나도 없으면 발행하지 않는다`() {
-            whenever(postRepository.findMaxId()).thenReturn(null)
+        fun `뉴스가 하나도 없으면 발행하지 않는다`() {
+            whenever(newsRepository.findMaxId()).thenReturn(null)
 
             val published = service.fullIndex()
 
@@ -133,7 +133,7 @@ class AdminTechPostIndexingServiceTest {
 
         @Test
         fun `max id가 0이면 발행하지 않는다`() {
-            whenever(postRepository.findMaxId()).thenReturn(0L)
+            whenever(newsRepository.findMaxId()).thenReturn(0L)
 
             val published = service.fullIndex()
 
@@ -142,8 +142,8 @@ class AdminTechPostIndexingServiceTest {
         }
 
         @Test
-        fun `글이 하나뿐이면 한 건만 발행한다`() {
-            whenever(postRepository.findMaxId()).thenReturn(1L)
+        fun `뉴스가 하나뿐이면 한 건만 발행한다`() {
+            whenever(newsRepository.findMaxId()).thenReturn(1L)
 
             val published = service.fullIndex()
 
@@ -153,7 +153,7 @@ class AdminTechPostIndexingServiceTest {
 
         @Test
         fun `비동기 진입점도 같은 범위를 발행한다`() {
-            whenever(postRepository.findMaxId()).thenReturn(45L)
+            whenever(newsRepository.findMaxId()).thenReturn(45L)
 
             service.fullIndexAsync()
 
@@ -166,7 +166,7 @@ class AdminTechPostIndexingServiceTest {
         @Test
         fun `비동기 진입점은 발행 실패를 삼킨다`() {
             // @Async라 예외를 호출자에게 전달할 수 없다 — 밖으로 던지면 기본 핸들러 로그로만 남는다
-            whenever(postRepository.findMaxId()).thenReturn(45L)
+            whenever(newsRepository.findMaxId()).thenReturn(45L)
             whenever(publisher.publish(org.mockito.kotlin.any())).thenThrow(RuntimeException("sqs down"))
 
             service.fullIndexAsync()
@@ -175,7 +175,7 @@ class AdminTechPostIndexingServiceTest {
         @Test
         fun `동기 fullIndex는 실패를 전파한다`() {
             // 비동기 래퍼만 삼킨다 — 안쪽은 그대로 두어 다른 호출자가 실패를 알 수 있게 한다
-            whenever(postRepository.findMaxId()).thenReturn(45L)
+            whenever(newsRepository.findMaxId()).thenReturn(45L)
             whenever(publisher.publish(org.mockito.kotlin.any())).thenThrow(RuntimeException("sqs down"))
 
             assertFailsWith<RuntimeException> { service.fullIndex() }
@@ -184,7 +184,7 @@ class AdminTechPostIndexingServiceTest {
         @Test
         fun `삭제로 id에 공백이 있어도 max id까지 전부 훑는다`() {
             // 삭제된 id 구간은 워커가 조회 0건으로 흘려보낸다 — 발행 단계에서 걸러내지 않는다
-            whenever(postRepository.findMaxId()).thenReturn(21L)
+            whenever(newsRepository.findMaxId()).thenReturn(21L)
 
             val published = service.fullIndex()
 
