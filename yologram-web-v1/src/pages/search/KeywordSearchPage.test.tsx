@@ -1,9 +1,17 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, afterAll } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
 import { Routes, Route } from 'react-router'
+import { server } from '../../test/server'
 import { renderWithProviders } from '../../test/utils'
 import KeywordSearchPage from './KeywordSearchPage'
+
+const NEWS_SEARCH_URL = 'http://localhost:5001/api/v1/search/tech/news'
+
+beforeAll(() => server.listen())
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
 
 function renderPage(path: string, basePath = '/tech') {
   return renderWithProviders(
@@ -42,13 +50,37 @@ describe('KeywordSearchPage', () => {
     expect(screen.getByRole('tab', { name: '뉴스' })).toBeInTheDocument()
   })
 
-  it('뉴스 탭은 준비 중 안내를 보여준다', async () => {
-    // 뉴스는 아직 색인이 없다 (todos — tech-news-index 신설이 선행)
+  it('뉴스 탭은 뉴스 검색 결과를 보여준다', async () => {
+    server.use(
+      http.get(NEWS_SEARCH_URL, () =>
+        HttpResponse.json({
+          data: [
+            {
+              id: 900,
+              title: '제미나이 3 공개',
+              summary: '요약',
+              link: 'https://news.test/900',
+              sourceName: 'GeekNews',
+              categories: ['AI'],
+              publishedAt: '2026-08-10T16:23:47',
+            },
+          ],
+          page: 0,
+          size: 10,
+          totalPages: 1,
+          totalCount: 1,
+          first: true,
+          last: true,
+        })
+      )
+    )
     const user = userEvent.setup()
     renderPage('/tech/keywords/%EC%A0%9C%EB%AF%B8%EB%82%98%EC%9D%B4')
 
     await user.click(screen.getByRole('tab', { name: '뉴스' }))
 
-    expect(await screen.findByText('페이지 준비 중입니다')).toBeInTheDocument()
+    // 커뮤니티 탭과 별개로 자기 검색·페이징을 갖는다
+    expect(await screen.findByText('제미나이 3 공개')).toBeInTheDocument()
+    expect(await screen.findByText('총 1건')).toBeInTheDocument()
   })
 })
