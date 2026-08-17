@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation'
 import { Tabs, Typography } from 'antd'
 import SearchBar from './SearchBar'
-import ComingSoon from './ComingSoon'
+import NewsSearchResults from '@/components/search/NewsSearchResults'
 import PostSearchResults from '@/components/search/PostSearchResults'
 import styles from './SectionKeywordPage.module.css'
 
@@ -28,7 +28,6 @@ function decodeKeyword(raw: string) {
  * _score를 인덱스 간 비교할 수 없기 때문이다 — 각 탭이 자기 페이징·정렬을 갖는다.
  * 홈의 탭(뉴스·관심뉴스·커뮤니티·채용)과는 별개다: 여기엔 검색 가능한 대상만 올라온다.
  *
- * 뉴스는 아직 색인이 없어 준비 중이다(todos — tech-news-index 신설이 선행).
  * 탭 라벨에 건수를 넣지 않은 이유: 부모가 자식의 검색 결과를 알려면 상태를 끌어올려야 하고,
  * 총 건수는 이미 각 결과 영역에 "총 N건"으로 표시된다.
  */
@@ -57,7 +56,7 @@ export default function SectionKeywordPage({ basePath }: SectionKeywordPageProps
           {
             key: 'news',
             label: '뉴스',
-            children: <ComingSoon />,
+            children: <NewsSearchResults keyword={keyword} section={section} />,
           },
         ]}
       />

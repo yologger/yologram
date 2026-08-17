@@ -1,8 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, afterAll } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/server'
 import { renderWithProviders } from '../../test/utils'
 import SectionKeywordPage from './SectionKeywordPage'
+
+const NEWS_SEARCH_URL = 'http://localhost:5002/api/v2/search/tech/news'
 
 const mockPush = vi.fn()
 const mockUseParams = vi.fn()
@@ -16,10 +20,13 @@ function setViewport(width: number) {
   Object.defineProperty(window, 'innerWidth', { value: width, writable: true, configurable: true })
 }
 
+beforeAll(() => server.listen())
 beforeEach(() => {
   mockPush.mockClear()
   setViewport(1024)
 })
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
 
 describe('SectionKeywordPage', () => {
   it('인코딩된 한글 키워드를 디코딩해 검색결과 텍스트를 렌더링한다', () => {
@@ -58,14 +65,38 @@ describe('SectionKeywordPage', () => {
     expect(screen.getByRole('tab', { name: '뉴스' })).toBeInTheDocument()
   })
 
-  it('뉴스 탭은 준비 중 안내를 보여준다', async () => {
-    // 뉴스는 아직 색인이 없다 (todos — tech-news-index 신설이 선행)
+  it('뉴스 탭은 뉴스 검색 결과를 보여준다', async () => {
+    server.use(
+      http.get(NEWS_SEARCH_URL, () =>
+        HttpResponse.json({
+          data: [
+            {
+              id: 900,
+              title: '제미나이 3 공개',
+              summary: '요약',
+              link: 'https://news.test/900',
+              sourceName: 'GeekNews',
+              categories: ['AI'],
+              publishedAt: '2026-08-10T16:23:47',
+            },
+          ],
+          page: 0,
+          size: 10,
+          totalPages: 1,
+          totalCount: 1,
+          first: true,
+          last: true,
+        })
+      )
+    )
     mockUseParams.mockReturnValue({ keyword: encodeURIComponent('제미나이') })
     const user = userEvent.setup()
     renderWithProviders(<SectionKeywordPage basePath="/tech" />)
 
     await user.click(screen.getByRole('tab', { name: '뉴스' }))
 
-    expect(await screen.findByText('페이지 준비 중입니다')).toBeInTheDocument()
+    // 커뮤니티 탭과 별개로 자기 검색·페이징을 갖는다
+    expect(await screen.findByText('제미나이 3 공개')).toBeInTheDocument()
+    expect(await screen.findByText('총 1건')).toBeInTheDocument()
   })
 })

@@ -1,11 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { Alert, Empty, Pagination, Skeleton } from 'antd'
-import PostCard from '@/components/community/PostCard'
-import usePostSearchQuery, { SEARCH_PAGE_SIZE } from '@/queries/usePostSearchQuery'
-import usePostCategoriesQuery from '@/queries/usePostCategoriesQuery'
+import NewsCard from '@/components/news/NewsCard'
+import useNewsSearchQuery from '@/queries/useNewsSearchQuery'
+import { SEARCH_PAGE_SIZE } from '@/queries/usePostSearchQuery'
 import { getErrorMessage } from '@/lib/error'
 import SearchResultSort from './SearchResultSort'
 import type { SearchSort } from '@/apis/search'
@@ -13,26 +12,21 @@ import styles from './SearchResults.module.css'
 
 interface Props {
   keyword: string
-  /** 섹션 기본 경로 (예: "/tech") — 상세 이동에 쓴다 */
-  basePath: string
   /** 검색 대상 섹션 (예: "tech") */
   section: string
 }
 
 /**
- * 커뮤니티(게시글) 검색 결과 — 목록 + 페이지 네비게이션.
+ * 뉴스 검색 결과 — 게시글 결과(PostSearchResults)와 같은 구조이고 카드·데이터만 다르다.
  *
- * 무한 스크롤이 아니라 페이지 번호를 쓴다: 검색은 총 건수가 정보이고(커서로는 만들 수 없다),
- * 결과에서 상세로 들어갔다 돌아올 때 위치가 유지돼야 한다. 피드의 무한 스크롤과 의도적으로 다르다.
+ * 게시글과 달리 basePath가 없다: 뉴스는 상세 페이지가 없고 카드가 원문 링크로 바로 나간다.
+ * 카테고리도 조회하지 않는다 — 응답이 이미 라벨 문자열로 온다(백엔드가 cms에서 해석).
  */
-export default function PostSearchResults({ keyword, basePath, section }: Props) {
-  const router = useRouter()
+export default function NewsSearchResults({ keyword, section }: Props) {
   const [page, setPage] = useState(0)
   const [sort, setSort] = useState<SearchSort>('RELEVANCE')
 
-  const { data, isLoading, isError, error } = usePostSearchQuery(section, keyword, page, sort)
-  const { data: categories = [] } = usePostCategoriesQuery(section)
-  const nameById = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories])
+  const { data, isLoading, isError, error } = useNewsSearchQuery(section, keyword, page, sort)
 
   if (isError) {
     // 검색 설정 없음(503)·조회 한계 초과(400) 등 — 서버 메시지를 그대로 노출한다
@@ -43,13 +37,13 @@ export default function PostSearchResults({ keyword, basePath, section }: Props)
     return <Skeleton className={styles.skeleton} active paragraph={{ rows: 6 }} />
   }
 
-  const posts = data?.data ?? []
+  const news = data?.data ?? []
   const total = data?.totalCount ?? 0
 
   if (total === 0) {
     return (
       <div className={styles.empty}>
-        <Empty description={`'${keyword}'에 대한 게시글이 없습니다.`} />
+        <Empty description={`'${keyword}'에 대한 뉴스가 없습니다.`} />
       </div>
     )
   }
@@ -69,15 +63,8 @@ export default function PostSearchResults({ keyword, basePath, section }: Props)
       </div>
 
       <div className={styles.list}>
-        {posts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            categoryNames={post.categoryIds
-              .map((id) => nameById.get(id))
-              .filter((n): n is string => !!n)}
-            onClick={() => router.push(`${basePath}/community/${post.id}`)}
-          />
+        {news.map((item) => (
+          <NewsCard key={item.id} news={item} />
         ))}
       </div>
 
