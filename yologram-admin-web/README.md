@@ -13,6 +13,10 @@ yologram 어드민 웹. 유저/게시글/뉴스/카테고리 관리 기능을 �
 
 ![소스 관리](docs/images/news-sources.png)
 
+검색 관리 > 게시글 인덱싱 > 기술 — Opensearch Fullindexing, Range indexing:
+
+![검색 관리](docs/images/admin_opensearch_reindexing.png)
+
 ## 기술 스택
 
 - React 19 + React Router 7 (web-v1과 동일 구성)

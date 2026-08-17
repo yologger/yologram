@@ -12,6 +12,11 @@ React 기반 하이브리드 웹 애플리케이션. 투자/정치/기술 서비
 - Vitest + Testing Library + MSW (테스트), ESLint + Prettier
 - Yarn Berry (non-zero-install), Node 24
 
+## 데모
+
+- [https://web.v1.yologram.link/](https://web.v1.yologram.link/): React.js + Spring Boot MVC
+- 테스트 계정: `tester0@yologram.link` / `tester0@`
+
 ## React ↔ Next.js 비교 (학습 목적)
 
 web-v2(Next.js)와 동일 기능을 React로 구현한 비교 학습용 프로젝트.

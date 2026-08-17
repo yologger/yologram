@@ -12,6 +12,12 @@ Next.js 16 기반 웹 애플리케이션.
 - Vitest + Testing Library + MSW (테스트)
 - Yarn Berry (non-zero-install), 일반 next start (standalone 미사용)
 
+## 데모
+
+- [https://web.v2.yologram.link/](https://web.v2.yologram.link/)
+- 테스트 계정: `tester0@yologram.link` / `tester0@`
+
+
 ## 디렉토리 구조
 
 ```

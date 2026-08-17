@@ -358,3 +358,28 @@
   - 색인 서비스는 조건부 빈이라 검색이 꺼진 환경에는 없다 — 요약 배치는 ObjectProvider로 부재를 확인하고 건너뛴다(직접 주입하면 검색을 끈 환경에서 배치까지 기동 실패한다)
   - 클래스명 정리: 큐를 공유하게 되면서 TechPostIndexMessage·TechPostIndexSubscriber가 뉴스도 다루는데 이름은 게시글만 가리켰다 → TechIndexingMessage·TechIndexingMessageSubscriber(worker)·TechIndexingMessagePublisher(api)로 세 프로젝트 함께 변경
   - 테스트: worker 신규 7개(배치 끝 1회 색인·전환 없으면 미호출·색인 실패해도 배치 성공·검색 꺼진 환경 건너뛰기·TECH_NEWS 분기·재전달·target 계약). 세 프로젝트 전체 통과
+- [x] (Search) 뉴스 인덱싱 발행 — api-v1·api-v2 어드민 API + admin-web 페이지
+  - PUT /search/admin/tech/news/indexing{,/{id},/{from}/{to}} — 게시글과 같은 경로 규칙·같은 큐를 쓰고 메시지 target만 TECH_NEWS다
+  - 게시글과 뉴스가 쪼개기·발행 로직을 공유한다(AdminTechIndexingPublisher / indexing_publisher) — 대상이 늘어도 청크 크기·범위 검증·전체 인덱싱 상한 계산이 한 곳에 있다. 서비스는 대상과 max id만 정한다
+  - 평상시 뉴스 색인은 이 API가 아니라 worker의 요약 배치가 직접 한다. 이 API는 그 실시간 경로가 놓친 구간을 메우는 보정 도구다 — 색인 실패로 빠진 건, 매핑 변경 후 재색인, 검색을 나중에 켠 경우의 과거 데이터
+  - admin-web은 게시글과 화면을 공유한다(IndexingPage에 target prop 추가) — 조작이 전체·범위·단건으로 동일하고 경로·라벨만 다르다. 별도 페이지로 두면 같은 화면이 둘로 갈려 유지비만 는다. 파일명도 대상 중립으로 정리(postIndexing.ts → indexing.ts, useIndexAllPostsMutation → useIndexAllMutation)
+  - prod 검증: 전체 인덱싱 202 → 46개 메시지 소진, 뉴스 50건 → 908건(DB SUMMARIZED 908과 일치, FAILED 9는 요약이 없어 대상 아님), DLQ 0. 색인에서 한 건을 지우고 단건 인덱싱으로 복구되는 것까지 확인
+  - api-v2 파일명도 대상별로 정리: service.py·router.py → post_indexing_service.py·post_indexing_router.py (뉴스가 생기면서 이름만으로 대상을 알 수 없게 됐다)
+- [x] (Search) 뉴스 검색 API — api-v1·api-v2
+  - GET /search/tech/news?q&page&size&sort — 게시글 검색과 같은 구조(offset 페이징·정렬 2차 키·trackTotalHits·max_result_window 400·비활성 503)
+  - 검색 대상은 title·summary다. 본문이 아닌 이유: 색인에 원문 본문이 없다(RSS는 발췌만 주고 우리가 가진 전문은 LLM 한국어 요약이다). 사용자가 화면에서 읽는 텍스트와 검색 대상이 같아진다
+  - "최신순"의 기준 시각이 게시글과 다르다 — 게시글은 작성 시각(createdAt), 뉴스는 발행 시각(publishedAt)이다. 뉴스 목록 API 정렬과 같은 기준을 써야 목록과 검색의 순서가 어긋나지 않는다
+  - 응답은 뉴스 목록 API와 같은 TechNewsResponse. 색인에 없는 값은 카테고리 라벨뿐이라 문서의 categoryIds로 cms에서 배치 해석한다(게시글 검색이 닉네임을 ums에서 채우는 것과 같은 구조) — 라벨을 색인하면 이름이 바뀔 때마다 재색인이 필요하다
+  - 게시글 검색과 달리 인증을 받지 않는다 — 뉴스에는 개인화 값(likedByMe 같은)이 없다
+  - 정렬 enum을 게시글·뉴스 공용으로 바꿨다(TechPostSearchSort → TechSearchSort, api-v1·v2 동시) — 값이 같고 대상만 늘어난다
+  - 색인 문서 역직렬화 테스트를 뉴스에도 뒀다 — OpenSearch 설정이 조건부라 통합 테스트가 이 계약을 검증하지 못한다(worker에서 같은 이유로 mapper 문제를 배포 후에 발견했다)
+  - prod 검증: "마이그레이션" 28건·10페이지, api-v1과 api-v2의 결과·순서·총건수 동일, 400 4종 동일
+- [x] (Search) 검색 결과 뉴스 탭 — web-v1·web-v2 (ComingSoon 대체)
+  - 게시글 결과(PostSearchResults)와 같은 구조이고 카드·데이터만 다르다. 두 결과 컴포넌트가 스타일(SearchResults.module.css)과 정렬 전환·페이지 네비게이션을 공유한다
+  - 뉴스 결과에는 basePath가 없다 — 뉴스는 상세 페이지가 없고 카드가 원문 링크로 바로 나간다. 카테고리 API도 부르지 않는다(응답이 이미 라벨 문자열이다)
+  - 검색 api 모듈을 SearchPage<T> 제네릭으로 정리하고 쿼리 조립(toQuery)을 공유했다 — 대상이 늘 때 페이지 응답 타입을 매번 복사하지 않는다
+  - 테스트: 양쪽 신규 9개씩(총 web-v1 219 / web-v2 226) — 요청 파라미터·페이지 전환·정렬 변경 시 1페이지 복귀·원문 링크 target·503/400 메시지. 키워드 페이지의 "준비 중" 케이스는 실데이터 렌더 검증으로 교체
+- [x] (Web) 관심 뉴스·채용 탭 숨김 — web-v1·web-v2
+  - 세 섹션(tech·invest·politics)의 탭 배열에서 주석 처리. 라우트·페이지는 남겼다 — 되살릴 때 주석 한 줄만 풀면 되고, URL 직접 접근은 그대로 동작한다
+  - 실제로 노출되던 건 tech뿐이지만(invest·politics는 layout이 ComingSoon으로 가로챈다) 세 섹션이 같은 형태라 함께 처리했다
+

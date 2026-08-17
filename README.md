@@ -6,7 +6,6 @@
 - [https://web.v2.yologram.link/](https://web.v2.yologram.link/): Next.js + FastAPI
 
 ## 프로젝트 & 기술 스택
-
 - `yologram-api-v1`: Spring Boot MVC + Kotlin ([기술 스택](yologram-api-v1/README.md))
 - `yologram-api-v2`: FastAPI + Python ([기술 스택](yologram-api-v2/README.md))
     - 스터디 목적으로 api-v1을 Python 기반으로 구현
@@ -19,19 +18,9 @@
     - Cron Batch 실행
 - `yologram-admin-web`: React + TypeScript 기반 ([기술 스택](yologram-admin-web/README.md))
     - 어드민 웹
+- `terraform`: yologram infra ([기술 스택](terraform/README.md))
 
 ## 인프라
-
-- IaC: Terraform ([terraform/](terraform/README.md))
-- ECS Fargate: api-v1(5000), api-v2(5000), web-v2(3000)
-- API Gateway: api.yologram.link / web.v2.yologram.link → /api/v1/{proxy+}는 api-v1, /api/v2/{proxy+}는 api-v2, /{proxy+}는 web-v2
-- web-v1: S3 + CloudFront (web.v1.yologram.link)
-- admin-web: S3 + CloudFront (admin.yologram.link)
-- worker: ECS Fargate (인바운드 없음)
-- 캐시: ElastiCache Valkey (valkey-prod, cache.t4g.micro)
-- 스트림: Kinesis + DynamoDB (checkpoint + shedlock)
-    - api-v1·v2가 발행하고 worker가 Spring Cloud Stream Kinesis binder로 소비
-
 
 ```mermaid
 flowchart LR
@@ -60,8 +49,23 @@ flowchart LR
 
         ECS_WORKER["yologram-worker<br/> (ECS Fargate)"]
         MQ -. "consume" .-> ECS_WORKER
+
+        OPENSEARCH[("OpenSearch</br> (Lightsail)")]
+        ECS_WORKER -- "index" --> OPENSEARCH
+        ECS_API_V1 -- "search" --> OPENSEARCH
+        ECS_API_V2 -- "search" --> OPENSEARCH
     end
 ```
+
+- IaC: Terraform ([terraform/](terraform/README.md))
+- ECS Fargate: api-v1(5000), api-v2(5000), web-v2(3000)
+- API Gateway: api.yologram.link / web.v2.yologram.link → /api/v1/{proxy+}는 api-v1, /api/v2/{proxy+}는 api-v2, /{proxy+}는 web-v2
+- web-v1: S3 + CloudFront (web.v1.yologram.link)
+- admin-web: S3 + CloudFront (admin.yologram.link)
+- worker: ECS Fargate (인바운드 없음)
+- 캐시: ElastiCache Valkey (valkey-prod, cache.t4g.micro)
+- 스트림: Kinesis + DynamoDB (checkpoint + shedlock)
+    - api-v1·v2가 발행하고 worker가 Spring Cloud Stream Kinesis binder로 소비
 
 ## CI/CD
 
