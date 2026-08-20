@@ -312,10 +312,13 @@ resource "aws_ecs_task_definition" "this" {
   family                   = "yologram-api-v2-prod"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
-  execution_role_arn       = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecs-task-execution-role"
-  task_role_arn            = aws_iam_role.task.arn
+  # 0.25vCPU/0.5GB에서 한 단계 상향. 0.25vCPU는 JVM·워커 부팅에 빡빡해
+  # worker도 같은 이유로 0.5vCPU로 올린 선례가 있다(0.25에서 KCL 소비가 멈췄다).
+  # Fargate Spot 기준 태스크당 월 $3.11 → $6.22
+  cpu                = "512"
+  memory             = "1024"
+  execution_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecs-task-execution-role"
+  task_role_arn      = aws_iam_role.task.arn
 
   container_definitions = jsonencode([
     {

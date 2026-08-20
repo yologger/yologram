@@ -11,12 +11,17 @@ variable "instance_name" {
 }
 
 # 관리형 OpenSearch(t3.small.search $40.88/월) 대체 목적이라 인스턴스 비용이 판단 기준이다.
-# small_3_0(2GB)은 OpenSearch heap 512m + Dashboards(~400MB) + Caddy를 올리면 여유가 적어 swap으로 보완한다.
-# 부족하면 medium_3_0(4GB)으로 리사이즈 — Lightsail은 스냅샷 경유로 상향이 간단하다
+# small_3_0(2GB)에서 medium_3_0(4GB)으로 상향($12 → $24/월): heap 512m + Dashboards(~400MB) + Caddy를
+# 2GB에 올리면 여유가 없어 swap에 의존했고, 검색 응답이 느렸다.
+#
+# 주의: bundle_id는 aws_lightsail_instance의 재생성 속성이다 — apply하면 인스턴스가 파괴되고 새로 만들어져
+# 인덱스가 사라진다. 데이터는 어드민 인덱싱(게시글·뉴스 전체 발행)으로 복구 가능하고 user_data가
+# OpenSearch·Dashboards·Caddy를 다시 구성하지만, 재색인을 전제로만 apply할 것.
+# 데이터를 유지하려면 콘솔에서 스냅샷 → 큰 번들로 새 인스턴스 생성 후 state를 맞추는 경로를 써야 한다.
 variable "bundle_id" {
   description = "Lightsail bundle (micro_3_0: 1GB, small_3_0: 2GB, medium_3_0: 4GB)"
   type        = string
-  default     = "small_3_0"
+  default     = "medium_3_0"
 }
 
 variable "blueprint_id" {
