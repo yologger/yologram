@@ -35,50 +35,36 @@ aws/
 
 ## 요금
 
-월 예상 요금
+월 예상 요금 (2026-08 실측 단가 × 730h. Cost Explorer 청구 데이터에서 뽑은 단가라 추정치가 아니다)
 
-| 리소스 | 프리티어 | 온디멘드 + RI | 비고 |
-| --- | --- | --- | --- |
-| VPC·서브넷 | 무료 | 무료 | 과금 없음 |
-| Cloud Map | 무료 | 무료 | 과금 없음 |
-| VPC Link | 무료 | 무료 | 과금 없음 |
-| Data Transfer | $0.23 | $0.23 | 아웃바운드 전송 |
-| Route 53 | $1.01 | $1.01 | hosted zone + 쿼리 |
-| API Gateway | ~$0 | ~$0 | 사용량 비례 |
-| CloudFront | ~$0 | ~$0 | 사용량 비례 |
-| VPC Public IPv4 주소 | $18.00 | $18.00 | 퍼블릭 IP 5개(Fargate 4 + RDS 1), $0.005/h |
-| ECS Fargate SPOT | $12.28 | $12.28 | 태스크 4개(api-v1·api-v2·web-v2·worker), 0.25 vCPU / 0.5 GB |
-| ElastiCache | $3.51 | $8.93 (RI) | Valkey, cache.t4g.micro |
-| RDS MySQL | $0 | $13.50 (RI) | db.t4g.micro |
-| OpenSearch | $0 | $40.88 (온디멘드) | t3.small.search, RI 불가 |
-| Kinesis | $13.51 | $13.51 | yologram-post-view-event-prod, provisioned 1샤드 $0.0185/h (프리티어 없음) |
-| DynamoDB | $0 | $0 | KCL 리스 테이블 1개(워커가 자동 생성, on-demand) — 항목 수개라 사실상 무과금 |
-| Lightsail (n8n) | $0 (첫 3개월 무료) | $5 | 무료 종료 후 $5/월 |
-| S3 | ~$0 | ~$0 | 사용량 비례 |
-| SES | ~$0 | ~$0 | 사용량 비례 |
-| ECR | $0.09 | $0.09 | 사용량 비례 |
-| Google Workspace | $7.56 | $7.56 | Starter 플랜 |
-| 합계($) | $56.19 | $120.99 | Google Workspace 포함 |
-| 합계(₩) | 약 ₩84,000 | 약 ₩181,000 | ₩1,500/$ 기준 |
-
-
-RI 요금
-
-| 리소스 | 타입 | 온디멘드<br/>(시간당) | 온디멘드<br/>(월간) | 온디멘드<br/>(연간) | RI<br/>(시간당) | RI<br/>(월간) | RI<br/>(연간) |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| RDS MySQL | db.t4g.micro | $0.025 | $18.25 | $219 | $0.018 | $13.5 | $162.00 |
-| ElastiCache (Valkey) | cache.t4g.micro | $0.0192 | $14.016 | $168.192 | $0.012237 | $8.93 | $107.20 |
-| Opensearch | t3.small.search | $0.056 | $40.88 | $490.56 | - | - | - |
-
-### 합계
-
-(Google Workspace $7.56 포함, ₩1,500/$ 기준)
-
-| 시나리오 | 월 | 연 |
+| 리소스 | 월 | 비고 |
 | --- | --- | --- |
-| 현재(프리티어) | 약 $56 (₩84,000) | 약 $674 (₩1,011,000) |
-| 프리티어 만료 후(RI 적용) | 약 $121 (₩181,000) | 약 $1,452 (₩2,178,000) |
-| 만료 후 + OpenSearch self-host($7) | 약 $88 (₩131,000) | 약 $1,050 (₩1,575,000) |
+| VPC·서브넷 / Cloud Map / VPC Link | 무료 | 과금 없음 |
+| VPC 퍼블릭 IPv4 주소 | $18.25 | IP 5개(Fargate 4 + RDS 1) × $0.005/h. 2024-02부터 모든 퍼블릭 IP 과금 |
+| RDS MySQL db.t4g.micro | $18.25 | 온디맨드 $0.025/h |
+| RDS 스토리지·스냅샷 | $2.73 | gp2 20GB × $0.131/GB-월 |
+| ECS Fargate SPOT | $21.76 | 태스크 4개 — api-v1·v2 0.5vCPU/1GB, web-v2 0.25/0.5, worker 0.5/1. Spot 단가는 온디맨드의 30% |
+| Lightsail (OpenSearch self-host) | $24.00 | medium_3_0 4GB/2vCPU/80GB. 관리형 t3.small.search($40.88) 대체 |
+| ElastiCache | $14.02 | Valkey cache.t4g.micro $0.0192/h |
+| Kinesis | $13.50 | provisioned 1샤드 $0.0185/h (프리티어 없음) |
+| Route 53 | $1.00 | hosted zone 2개 |
+| ECR | $0.23 | $0.10/GB-월 × 약 1.5GB |
+| DynamoDB | ~$0 | KCL 리스 테이블 1개(on-demand, 항목 수개) |
+| API Gateway / CloudFront / S3 / SES / Data Transfer | ~$0.5 | 사용량 비례 |
+| **AWS 합계** | **$114** | |
+| Google Workspace | $7.56 | Starter 플랜 |
+| **총 합계** | **$122** | 약 ₩183,000 (₩1,500/$ 기준) |
 
-- 프리티어는 계정 생성 후 12개월 한정. 이후 만료 요금 적용
-- 최대 절감 레버: OpenSearch 관리형($40.88) → Lightsail self-host($7)로 전환 시 만료 후 월 $34 절감
+### 요금 변화 (2026-08-20)
+
+| 시점 | 월 | 연 |
+| --- | --- | --- |
+| MySQL 8.0 + 기존 스펙 | 약 $271 | 약 $3,252 |
+| MySQL 8.4 업그레이드 후 | 약 $96 | 약 $1,152 |
+| + api-v1·v2·OpenSearch 스케일업 (현재) | 약 $114 | 약 $1,368 |
+
+- **MySQL 8.0 Extended Support가 월 $175였다** — 2 vCPU × $0.12/vCPU-h로, 인스턴스 요금($18)의 10배이자 전체의 65%였다. 8.4 LTS로 올려 제거했다. 8.0 계열은 마이너를 올려도 이 요금이 붙는다
+- 스케일업(+$18)은 그 절감분 안에서 처리된다 — api-v1·v2 0.25→0.5 vCPU가 +$6.22, OpenSearch 2GB→4GB가 +$12.23
+- 현재 청구는 크레딧으로 전액 상쇄되고 있다. 위 금액은 크레딧 소진 후 실제로 나갈 금액이다
+- 퍼블릭 IPv4($18)를 줄이려면 Fargate를 프라이빗 서브넷으로 옮겨야 하는데 NAT Gateway가 월 $43라 오히려 3배 비싸진다 — 현 구성이 최적이다
+- OpenSearch 관리형($40.88) → Lightsail self-host 전환은 이미 반영돼 있다

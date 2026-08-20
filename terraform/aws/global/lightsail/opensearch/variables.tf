@@ -54,11 +54,13 @@ variable "opensearch_version" {
   default     = "2.19.6"
 }
 
-# JVM heap. 물리 메모리의 절반 이하 권장이고, 2GB 인스턴스에서 Dashboards와 공존하려면 512m가 상한에 가깝다
+# JVM heap. 물리 메모리의 절반 이하 권장. 4GB(medium_3_0)로 올렸으니 1g까지 준다 —
+# 인스턴스만 키우고 heap을 512m로 두면 검색·색인이 그대로라 상향 효과가 거의 없다.
+# 남는 3GB는 Dashboards(~400MB)·Caddy·OS와 파일 캐시(루씬 세그먼트)가 쓴다
 variable "opensearch_heap" {
   description = "OpenSearch JVM heap (-Xms/-Xmx)"
   type        = string
-  default     = "512m"
+  default     = "1g"
 }
 
 # security plugin의 admin 비밀번호. 2.12+는 이 값이 없으면 컨테이너가 기동에 실패한다.

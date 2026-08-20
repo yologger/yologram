@@ -12,7 +12,8 @@ resource "aws_lightsail_instance" "opensearch" {
     #!/bin/bash
     set -euo pipefail
 
-    # ── swap 2GB: 2GB 인스턴스에서 OpenSearch(heap ${var.opensearch_heap}) + Dashboards가 공존하려면 필요.
+    # ── swap 2GB: OpenSearch(heap ${var.opensearch_heap}) + Dashboards 공존용 여유. 4GB에서는 여유가 있지만
+    #    피크에 OOM으로 죽는 것보다 스왑을 쓰는 편이 낫다.
     #    OpenSearch는 스와핑을 싫어하지만(bootstrap.memory_lock 권장) 여기서는 OOM kill 방지가 우선이다
     if [ ! -f /swapfile ]; then
       dd if=/dev/zero of=/swapfile bs=1M count=2048
