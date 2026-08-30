@@ -6,7 +6,7 @@
 - VPC: 10.0.0.0/16, pub-a/pub-b 서브넷
 - ECS: 클러스터 ecs-prod (FARGATE_SPOT), Cloud Map ecs-prod.internal, ecs-task-execution-role
 - API Gateway: HTTP API yologram-gateway, 커스텀 도메인 api.yologram.link, prod-vpc-link
-- Database: RDS MySQL 8.0 (db.t4g.micro)
+- Database: RDS MySQL 8.4 (db.t4g.micro)
 - ElastiCache: Valkey 8.0 (cache.t3.micro)
 - OpenSearch: 2.19 (t3.small.search)
 

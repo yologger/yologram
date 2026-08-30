@@ -31,7 +31,7 @@ yologram 모노레포의 terraform/ (AWS 인프라)에서 작업하는 에이전
 - VPC Link: prod-vpc-link (새 VPC 서브넷 연결)
 
 ### Database (aws/global/database/)
-- RDS MySQL 8.0, db.t4g.micro (프리티어)
+- RDS MySQL 8.4, db.t4g.micro — 8.0은 표준 지원이 끝나 Extended Support(월 약 $175)가 붙어 2026-08-20에 8.4 LTS로 올렸다
 - 인스턴스: mysql-prod, username: master
 - storage_encrypted: false (크로스 계정 스냅샷 이전 고려)
 - apply 시 db_password 입력 필요
@@ -43,7 +43,7 @@ yologram 모노레포의 terraform/ (AWS 인프라)에서 작업하는 에이전
 - 관리형 도메인 코드 — 요금($40.88/월, RI 불가) 때문에 미생성. 셀프호스팅으로 대체 (아래 Lightsail)
 
 ### OpenSearch 셀프호스팅 (aws/global/lightsail/opensearch/)
-- Lightsail small_3_0(2GB, Amazon Linux 2023) — OpenSearch + Dashboards + Caddy를 Docker Compose로 기동
+- Lightsail medium_3_0(4GB, Amazon Linux 2023) — OpenSearch(heap 1g) + Dashboards + Caddy를 Docker Compose로 기동
 - 도메인: opensearch.yologram.link / opensearch-dashboard.yologram.link (Route 53 A 레코드 + 정적 IP)
 - HTTPS: Caddy가 Let's Encrypt 인증서 자동 발급·갱신
 - 데이터: 인스턴스 디스크 바인드 마운트 (재시작·컨테이너 교체에도 유지) + 자동 스냅샷 일 1회(7일 롤링 고정, 기간 지정 불가)
@@ -69,7 +69,7 @@ yologram 모노레포의 terraform/ (AWS 인프라)에서 작업하는 에이전
 ## Services
 
 ### yologram-api-v1 (aws/services/yologram-api-v1/)
-- ECS Fargate SPOT (0.25 vCPU, 512MB)
+- ECS Fargate SPOT (0.5 vCPU, 1GB)
 - Spring Boot, 컨테이너 포트 5000
 - ECR: yologram-api-v1
 - API Gateway 경로: api.yologram.link/api/v1/*
@@ -80,7 +80,7 @@ yologram 모노레포의 terraform/ (AWS 인프라)에서 작업하는 에이전
 - vpc_link_id 변수 필요
 
 ### yologram-api-v2 (aws/services/yologram-api-v2/)
-- ECS Fargate SPOT (0.25 vCPU, 512MB)
+- ECS Fargate SPOT (0.5 vCPU, 1GB)
 - FastAPI (Python), 컨테이너 포트 5000
 - ECR: yologram-api-v2
 - API Gateway 경로: api.yologram.link/api/v2/*
